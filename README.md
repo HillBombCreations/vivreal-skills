@@ -67,7 +67,7 @@ Idle skills cost nothing — only the matched skill's body is pulled into contex
 
 1. **Add this repo as a marketplace** (one time):
    ```bash
-   claude marketplace add HillBombCreations/vivreal-skills
+   claude plugin marketplace add HillBombCreations/vivreal-skills
    ```
    This registers the `github`-sourced marketplace, so it works on any machine without depending on a local checkout path.
 
