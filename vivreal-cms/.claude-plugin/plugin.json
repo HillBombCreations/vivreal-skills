@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-cms",
+  "version": "1.0.0",
+  "description": "Operate a Vivreal account via the Vivreal MCP server — content collections and items, social scheduling, site deploys, and Stripe billing, with the canonical set-active-group workflow and silent-failure gotchas.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "cms", "mcp", "content", "skill"]
+}

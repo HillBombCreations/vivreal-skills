@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-growth-analytics",
+  "version": "1.0.0",
+  "description": "Growth analytics and funnel analysis for Vivreal — unified GA4, PostHog, and MongoDB user data queries with actionable growth recommendations",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "analytics", "growth", "funnel", "ga4", "posthog", "marketing", "acquisition"]
+}

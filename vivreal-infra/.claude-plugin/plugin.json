@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-infra",
+  "version": "1.0.0",
+  "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills for the Vivreal AWS stack — Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager, MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, and the WebSocket real-time API. Spans repos (unlike the per-repo digests in vivreal-knowledge). Skills load passively from intent; install everywhere you do AWS/deploy/scaling/ops work.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "infrastructure", "aws", "lambda", "sam", "cloudformation", "amplify", "step-functions", "cognito", "iam", "secrets-manager", "mongodb", "atlas", "cloudfront", "websocket", "skills", "ops"]
+}

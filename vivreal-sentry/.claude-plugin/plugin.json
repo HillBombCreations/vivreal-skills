@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-sentry",
+  "version": "1.0.0",
+  "description": "Active Sentry investigation tooling for the Vivreal stack — the `sentry` agent (wired to the Sentry MCP) and the /sentry-trace command. Reconstructs cross-stack timelines (browser → edge proxy → backend Lambda → MongoDB → WebSocket) from Sentry telemetry to answer \"what happened when I did X\", investigate errors, validate deploys, and run tenant-scoped triage. The active companion to the passive sentry-tracer knowledge skill in vivreal-knowledge.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "sentry", "observability", "tracing", "distributed-tracing", "telemetry", "incident", "deploy-validation", "agent", "command"]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-ops",
+  "version": "1.0.0",
+  "description": "The vivreal-ops agent — a READ-ONLY investigator of RUNNING Vivreal infrastructure (live AWS Lambda config/concurrency, Step Functions execution history, API Gateway, IAM, Secrets Manager, and MongoDB Atlas state). Investigates and reports; never edits source (fixes route to principal-coder/coder). Grounded in the vivreal-infra + vivreal-db knowledge skills. Distinct from principal-architect (design) and the sentry agent (Sentry telemetry).",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "ops", "infrastructure", "aws", "lambda", "concurrency", "step-functions", "atlas", "mongodb", "iam", "secrets-manager", "read-only", "investigation", "agent"]
+}

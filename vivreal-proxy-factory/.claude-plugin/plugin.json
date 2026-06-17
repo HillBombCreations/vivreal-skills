@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-proxy-factory",
+  "version": "1.0.0",
+  "description": "Generate factory-based proxy routes and guard against manual route drift for the Vivreal portal",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "proxy", "factory", "edge", "api"]
+}

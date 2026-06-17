@@ -1,0 +1,16 @@
+{
+  "description": "Guards proxy routes to ensure they use the createProxyHandler() factory pattern",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Check if the file being written/edited is inside `src/app/api/proxy/` and has a path ending in `route.ts`. If so, verify that it uses the `createProxyHandler()` factory pattern (imported from `../_helpers/createProxyHandler`). The following routes are KNOWN MANUAL routes that cannot use the factory — do NOT flag these:\n\n- calendar/bulk-update-publish-date\n- calendar/events\n- calendar/scheduled-objects\n- calendar/update-publish-date\n- collections/create\n- collections/update\n- get-media\n- group/billing\n- group/create\n- group/join\n- integrations/oauth/init\n- sites/create\n- sites/update\n- uploadFiles\n- user/login\n- user/ssoLogin\n- user/switch-profile\n- user/update-default-profile\n\nIf the file IS a proxy route, is NOT in the manual list above, and does NOT use `createProxyHandler()`, respond with:\n\n⚠️ This proxy route should use `createProxyHandler()` factory. Manual proxy routes outside the known exceptions cause maintenance drift. Use `/proxy-route` command to generate a factory-based route instead.\n\nIf the file is not a proxy route, or it already uses the factory, or it's in the manual list, respond with nothing (empty)."
+          }
+        ]
+      }
+    ]
+  }
+}

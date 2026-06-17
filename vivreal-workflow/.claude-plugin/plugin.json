@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-workflow",
+  "version": "1.0.0",
+  "description": "The Vivreal bug/feature workflow — coordinator plus research, architect, coder, tester, reviewer, documenter, and vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix, and more), and the shared-standards skill.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "agents", "workflow", "orchestration", "code-review", "tdd"]
+}

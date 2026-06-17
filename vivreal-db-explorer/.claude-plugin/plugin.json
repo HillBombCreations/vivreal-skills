@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-db-explorer",
+  "version": "1.0.0",
+  "description": "Safe multi-tenant MongoDB querying and schema exploration for the Vivreal platform",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["vivreal", "mongodb", "database", "multi-tenant", "schema"]
+}
