@@ -1,0 +1,17 @@
+{
+  "description": "After a Vivreal_Templates or Vivreal_Portal_Mobile change, nudge to track the resulting customer-site deploy (once per session).",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/deploy-nudge.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

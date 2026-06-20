@@ -1,0 +1,17 @@
+{
+  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and do a clean reinstall (once per session).",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/package-nudge.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
