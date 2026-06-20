@@ -32,5 +32,16 @@ prompt: |
 
 ## Post-Dispatch
 
-1. Show the user files modified and lint/type-check results
-2. Suggest: "Run `/reviewer` to get a senior-level review before shipping."
+1. Show the user files modified and lint/type-check results.
+2. Auto-dispatch the reviewer on the diff (this is the review for solo runs):
+
+```
+subagent_type: reviewer
+prompt: Review the diff just produced for "$ARGUMENTS" in diff mode. Cite
+  file:line for every FAIL. Verdict PASS or FAIL.
+```
+
+3. Show the reviewer verdict. If FAIL, dispatch the coder to fix the flagged
+   items, then re-review (cap 3 passes). If still failing, escalate to the user.
+4. Only report the task complete once the reviewer verdict is PASS (or the user
+   accepts remaining notes).
