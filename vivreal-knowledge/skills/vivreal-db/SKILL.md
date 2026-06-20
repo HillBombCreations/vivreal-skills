@@ -46,7 +46,10 @@ never fabricate results.
 **Security — the connection string IS a secret:**
 - It embeds the Atlas username + password. NEVER echo it, write it to a file, paste it
   into a doc/PR/commit, or log it. It goes ONLY into the connect call.
-- Prefer a **read-only** Atlas user for exploration/validation.
+- Use a **read-only** Atlas database user — that DB-level restriction, not the
+  `MDB_MCP_READ_ONLY` flag, is the real security boundary (the flag is defense-in-depth).
+  A read-only user also protects sensitive collections (`groups.apiKey`, `webhooks.secret`,
+  `groups.integrations`) from a misbehaving server.
 - The read-only query rules below still apply after connecting.
 
 ## The three databases

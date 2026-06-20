@@ -2,7 +2,7 @@
   "mcpServers": {
     "mongodb": {
       "command": "npx",
-      "args": ["-y", "mongodb-mcp-server"],
+      "args": ["-y", "--ignore-scripts", "mongodb-mcp-server@1.13.0"],
       "env": {
         "MDB_MCP_CONNECTION_STRING": "${MDB_MCP_CONNECTION_STRING}",
         "MDB_MCP_READ_ONLY": "true"
