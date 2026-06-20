@@ -39,8 +39,10 @@ Every plan MUST start with this header:
 ````markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** Implement task-by-task with the Vivreal `coder` agent
-> (via `/implement` or `/coordinator`). Steps use checkbox (`- [ ]`) syntax.
+> **For agentic workers:** Execute task-by-task with the `vivreal-subagent-driven`
+> skill (recommended — fresh `coder` per task + `reviewer` gate between tasks), or
+> the `coder` agent via `/implement` / `/coordinator`. Steps use checkbox
+> (`- [ ]`) syntax.
 
 **Goal:** [one sentence]
 **Architecture:** [2-3 sentences]
@@ -87,6 +89,9 @@ prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
 ## Execution handoff
 
 After the plan PASSes review, offer:
-1. **Coder-driven (recommended)** — dispatch the `coder` agent per task via
-   `/implement` (solo) or `/coordinator` (full gated workflow).
-2. **Inline** — implement tasks in this session with checkpoints.
+1. **Subagent-driven (recommended)** — invoke the `vivreal-subagent-driven` skill
+   to execute the plan in this session: a fresh `coder` per task, a `reviewer`
+   gate (spec + quality) after each, and a final whole-branch `reviewer` pass.
+2. **Coordinator-driven** — `/implement` (solo coder) or `/coordinator` (full
+   gated bug/feature workflow).
+3. **Inline** — implement tasks in this session with checkpoints.
