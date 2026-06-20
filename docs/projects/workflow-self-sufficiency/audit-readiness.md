@@ -27,11 +27,13 @@ where this work was done — neither the main loop nor a dispatched agent could
 reach it. So the documented schema was **not** verified against live Mongo. Do
 this before (or early in) the audit, since the audit touches schemas/shared:
 
-**Why it's blocked:** no `.mcp.json` in this repo registers a MongoDB MCP server, and
-none was configured in Claude's settings for this session — so the `mcp__mongodb__*`
-tools don't exist here. To unblock, either register the MongoDB MCP server (Claude MCP
-config / a plugin `.mcp.json`) with a connection string, or run in a session that
-already has it.
+**Status:** `vivreal-db-explorer/.mcp.json` now registers a **read-only** MongoDB MCP
+server (`mongodb-mcp-server`, `MDB_MCP_READ_ONLY=true`) that reads
+`MDB_MCP_CONNECTION_STRING` from the environment. To run the validation: export that
+env var (see the `vivreal-db` skill → "Getting connected" for the one-liner sourcing it
+from `hb-api-secrets:CLUSTER_URL`), start a fresh session so the server loads, approve
+it, then run the calls below. It could not run in the authoring session because MCP
+servers load at session start.
 
 **Connection string source** (now documented in the `vivreal-db` skill → "Getting
 connected"): AWS Secrets Manager secret `hb-api-secrets`, key `CLUSTER_URL`; or a

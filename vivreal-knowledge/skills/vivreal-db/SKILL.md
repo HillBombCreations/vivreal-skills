@@ -28,10 +28,20 @@ tool's `database` arg) or by appending `/<dbName>`.
    (e.g. `${VIVREAL_REPOS}/VR_CMS_API/.env`) carries `CLUSTER_URL=mongodb+srv://…`. See
    that repo's `.env.example` for the shape.
 
-**Then connect:** pass the string to `mcp__mongodb__connect`, or set it as the MongoDB
-MCP server's connection string (`MDB_MCP_CONNECTION_STRING`) before the session so it
-auto-connects. If the MongoDB MCP server isn't registered or no connection is live, the
-`mcp__mongodb__*` tools won't exist — stop and report that; never fabricate results.
+**Then connect:** the `vivreal-db-explorer` plugin registers a **read-only** MongoDB
+MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`, `MDB_MCP_READ_ONLY=true`).
+It reads the connection string from the `MDB_MCP_CONNECTION_STRING` environment variable,
+so export it before launching the session:
+
+```bash
+export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id hb-api-secrets \
+  --query SecretString --output text \
+  | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)')"
+```
+
+The server loads at session start (approve it on first use). If it isn't registered or
+no connection is live, the `mcp__mongodb__*` tools won't exist — stop and report that;
+never fabricate results.
 
 **Security — the connection string IS a secret:**
 - It embeds the Atlas username + password. NEVER echo it, write it to a file, paste it
