@@ -1,7 +1,7 @@
 {
   "name": "vivreal-infra",
   "version": "1.0.0",
-  "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills for the Vivreal AWS stack — Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager, MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, and the WebSocket real-time API. Spans repos (unlike the per-repo digests in vivreal-knowledge). Skills load passively from intent; install everywhere you do AWS/deploy/scaling/ops work.",
+  "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills for the Vivreal AWS stack — Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager, MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, and the WebSocket real-time API. Also ships the ACTIVE deploy tracker (vivreal-deploy-tracker skill + /deploy-status command) that checks a specific customer site's live deploy status across Step Functions + Amplify. Spans repos (unlike the per-repo digests in vivreal-knowledge). Skills load passively from intent; install everywhere you do AWS/deploy/scaling/ops work.",
   "author": {
     "name": "Vivreal",
     "email": "justin@vivreal.io"
