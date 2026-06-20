@@ -1,6 +1,6 @@
 ---
 name: vivreal-db
-description: Use when querying or exploring Vivreal's MongoDB — choosing which database (Vivreal mainDb vs general_shared vs pro_plus), which collection, how to scope a query to a tenant, or debugging "content created in the portal but missing on the site". Teaches the safe multi-tenant query rules and the dbKey vs group.key vs bucketname distinctions that are the #1 source of bugs. Triggers on: query mongo, find documents, which database, which collection, collection schema, group/tenant data, publishDate, dbKey, groupID.
+description: Use when querying or exploring Vivreal's MongoDB — including any time you are about to use the mcp__mongodb__* MCP tools — choosing which database (Vivreal mainDb vs general_shared vs pro_plus), which collection, how to scope a query to a tenant, or debugging "content created in the portal but missing on the site". Teaches the safe multi-tenant query rules and the dbKey vs group.key vs bucketname distinctions that are the #1 source of bugs. Triggers on: mcp__mongodb, query mongo via MCP, mongodb find/aggregate/count, list collections, list databases, collection schema, which database, which collection, group/tenant data, publishDate, dbKey, groupID.
 ---
 
 # Vivreal Multi-Tenant MongoDB — Safe Query Rules
