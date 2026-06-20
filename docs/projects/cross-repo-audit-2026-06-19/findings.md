@@ -125,6 +125,34 @@ No **Critical** found. The items below are the ones worth acting on before/aroun
   - **VR_Outreach_API** — the false-success/false-report seams are correctly closed in `bulkInsertEnrollments`
     (insert-only, never resets existing enrollments); both migrations guard against unique-index-build-on-dups.
 
+## Live Mongo validation findings (2026-06-19)
+
+Connected read-only to the live cluster (via `hb-api-secrets:CLUSTER_URL`) and reconciled the
+`vivreal-db` skill against reality. Field-level safety claims (string `groupID`/`refID`,
+`publishDate` as Date, `_id` ObjectId) all **verified correct**. Topology/collection claims were not:
+
+14. **[Medium — data bug] `Vivreal.domainOrders` is an orphan duplicate of `Vivreal.domainorders`.**
+    camelCase collection: 0 docs, **non-partial** unique indexes on `stripeSetupIntentId`/`stripeSubscriptionId`.
+    lowercase collection: 3 docs, active, **partial** unique indexes. Classic Mongoose model-name vs
+    collection-name mismatch — two collections where there should be one. The non-partial unique indexes
+    on the empty one would reject multi-null inserts if it ever received writes. **Fix:** consolidate to
+    one collection name in the owning backend; drop the orphan.
+
+15. **[Low — doc drift, now fixed] `media_files` and `usage_trackings` live in `Vivreal` (mainDb), not the tenant DB.**
+    The skill/`db-query` doc listed them as tenant collections. Corrected in this commit.
+
+16. **[Low — doc drift, now fixed] Collection names are snake_case in reality.**
+    `checkout_sessions`, `audit_logs`, `content_versions`, `media_files`, `usage_trackings` (docs had the
+    concatenated forms). Undocumented collections found: `site_versions`, `stripe_webhook_events`,
+    `stripe_products`, `collection_templates`, `prospects`, `inquiries`. Corrected in this commit.
+
+17. **[Low] `justinceccarelligroup` is a stray per-group database** containing only `audit_logs` (~4 docs).
+    Suggests an old/edge audit-log routing path for one group. Worth confirming nothing still writes there.
+
+18. **[Info] Outreach contacts/companies/enrollments are `collection_objects`** in `general_shared` (under
+    system collection-groups, enforced by `outreach_*` partial/unique indexes), NOT a separate DB. The
+    `outreach` DB holds only `suppressions`. Documented in the skill now.
+
 ## Recommended next actions
 
 1. **Triage HIGH #1 (Client API cache header)** before any API-GW/CloudFront cache is enabled — it's the one

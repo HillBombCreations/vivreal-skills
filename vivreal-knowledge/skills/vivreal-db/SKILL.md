@@ -1,18 +1,17 @@
 ---
 name: vivreal-db
-description: Use when querying or exploring Vivreal's MongoDB — including any time you are about to use the mcp__mongodb__* MCP tools — choosing which database (Vivreal mainDb vs general_shared vs pro_plus), which collection, how to scope a query to a tenant, or debugging "content created in the portal but missing on the site". Teaches the safe multi-tenant query rules and the dbKey vs group.key vs bucketname distinctions that are the #1 source of bugs. Triggers on: mcp__mongodb, query mongo via MCP, mongodb find/aggregate/count, list collections, list databases, collection schema, which database, which collection, group/tenant data, publishDate, dbKey, groupID.
+description: Use when querying or exploring Vivreal's MongoDB — including any time you are about to use the mcp__mongodb__* MCP tools — choosing which database, which collection, how to scope a query to a tenant, how to LINK collections together (collection_group ↔ collection_objects ↔ integration_objects, groups ↔ everything, sites ↔ versions/media), or debugging "content created in the portal but missing on the site". Teaches the safe multi-tenant query rules, the dbKey vs group.key vs bucketname distinctions, and the string-ref ↔ ObjectId cross-collection join rule that are the #1 source of bugs. Triggers on: mcp__mongodb, query mongo via MCP, mongodb find/aggregate/count, $lookup, join collections, link collection group to objects, list collections, collection schema, which database, which collection, group/tenant data, publishDate, dbKey, groupID.
 ---
 
-# Vivreal Multi-Tenant MongoDB — Safe Query Rules
+# Vivreal Multi-Tenant MongoDB — Safe Query & Linking Rules
 
-Vivreal is multi-tenant MongoDB with **three databases** — there is NO per-group database. Confusing the routing keys is the most common bug. Read this before touching the `mcp__mongodb__*` tools. For an interactive, argument-driven query/schema helper, use the `/db-query` and `/db-schema` commands (from the `vivreal-db-explorer` plugin) — this skill is the passive knowledge those commands assume.
+> **Topology, collection names, indexes and the join rules below were verified against live Mongo on 2026-06-19.** Read this before touching the `mcp__mongodb__*` tools. For an interactive helper, use the `/db-query` and `/db-schema` commands (`vivreal-db-explorer` plugin) — this skill is the passive knowledge those commands assume.
 
 ## Getting connected (sourcing the connection string)
 
 The `mcp__mongodb__*` tools need a MongoDB connection string to reach Atlas — it is
 NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
-(`mongodb+srv://…`) with NO database path; the database is selected per query (the
-tool's `database` arg) or by appending `/<dbName>`.
+(`mongodb+srv://…`) with NO database path; the database is selected per query.
 
 **Where the connection string lives** (priority order):
 
@@ -25,13 +24,11 @@ tool's `database` arg) or by appending `/<dbName>`.
      | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
    ```
 2. **Local backend `.env`** (dev fallback) — any backend repo under `${VIVREAL_REPOS}`
-   (e.g. `${VIVREAL_REPOS}/VR_CMS_API/.env`) carries `CLUSTER_URL=mongodb+srv://…`. See
-   that repo's `.env.example` for the shape.
+   (e.g. `${VIVREAL_REPOS}/VR_CMS_API/.env`) carries `CLUSTER_URL=mongodb+srv://…`.
 
 **Then connect:** the `vivreal-db-explorer` plugin registers a **read-only** MongoDB
 MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`, `MDB_MCP_READ_ONLY=true`).
-It reads the connection string from the `MDB_MCP_CONNECTION_STRING` environment variable,
-so export it before launching the session:
+It reads `MDB_MCP_CONNECTION_STRING` from the environment — export it before launching:
 
 ```bash
 export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id hb-api-secrets \
@@ -41,83 +38,204 @@ export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret
 
 The server loads at session start (approve it on first use). If it isn't registered or
 no connection is live, the `mcp__mongodb__*` tools won't exist — stop and report that;
-never fabricate results.
+never fabricate results. No MCP? You can still connect read-only via a backend repo's
+driver: `NODE_PATH=${VIVREAL_REPOS}/VR_CMS_API/node_modules node <script using MongoClient>`.
 
 **Security — the connection string IS a secret:**
-- It embeds the Atlas username + password. NEVER echo it, write it to a file, paste it
-  into a doc/PR/commit, or log it. It goes ONLY into the connect call.
+- It embeds the Atlas username + password. NEVER echo it, write it to a file, paste it into
+  a doc/PR/commit, or log it. It goes ONLY into the connect call.
 - Use a **read-only** Atlas database user — that DB-level restriction, not the
   `MDB_MCP_READ_ONLY` flag, is the real security boundary (the flag is defense-in-depth).
-  A read-only user also protects sensitive collections (`groups.apiKey`, `webhooks.secret`,
-  `groups.integrations`) from a misbehaving server.
-- The read-only query rules below still apply after connecting.
+  A read-only user also protects `groups.apiKey`, `webhooks.secret`, `groups.integrations`.
 
-## The three databases
+## Database topology (5 databases — verified live)
 
-| Database | Holds | Which groups |
-|---|---|---|
-| `Vivreal` (the mainDb) | Control plane: `groups`, `checkoutsessions`, `leads` | All groups — this is the registry |
-| `general_shared` | Tenant content: `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `mediafiles`, `auditlogs`, `contentversions`, `webhooks`, `usagetrackings` | `free` / `basic` / `pro` tier groups |
-| `pro_plus` | Same tenant collections as `general_shared` | `proplus` tier groups |
+There is no single "per-group database" model, but it is ALSO wrong to say there are
+exactly three. Live cluster:
 
-Tenants in the same tier **share** a database. Isolation is by the `groupID` field on every tenant document — never by a separate DB.
+| Database | Role | Holds | Which groups |
+|---|---|---|---|
+| `Vivreal` | **Control plane (mainDb)** | `groups`, `leads`, `checkout_sessions`, `media_files`, `usage_trackings`, `domainorders`, `prospects`, `inquiries`, analytics caches, push subs, oauth verifiers | ALL groups (registry) |
+| `general_shared` | **Tenant content** | `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events` | `free` / `basic` / `pro` tiers |
+| `pro_plus` | **Tenant content** (same collections as general_shared, plus `stripe_products`, `collection_templates`) | same shape as general_shared | `proplus` tier (currently empty — no group is `proplus` yet) |
+| `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here** — see below. | service-global |
+| `justinceccarelligroup` | **Legacy/anomalous per-group DB** | only `audit_logs` (~4) for one group | a single group — likely stale routing; do not rely on this pattern |
 
-To find where a group's data lives: look up the group in `Vivreal.groups`, read its `tier`, route to `general_shared` (free/basic/pro) or `pro_plus` (proplus). This is exactly what `VR_Client_Auth` and `deriveDbKey()` do at runtime.
+**Routing rule:** look up the group in `Vivreal.groups`, read `tier`, route tenant
+content to `general_shared` (free/basic/pro) or `pro_plus` (proplus). This is what
+`deriveDbKey()` does. The `justinceccarelligroup` DB is an anomaly (a slugified-groupName
+DB containing only audit_logs) — treat it as legacy drift, not the model.
+
+**⚠️ Two collections are NOT where you'd expect:** `media_files` and `usage_trackings`
+live in the **`Vivreal` (mainDb)** scoped by `groupID` — NOT in the tenant DB. Query them
+against `Vivreal`, not `general_shared`.
 
 ## The three keys you must not confuse
 
-These three values look similar and are routinely swapped by mistake. They come from the `active_ctx` JWT in the portal:
+From the `active_ctx` JWT in the portal:
 
 | Field | Example | What it is | Used for |
 |---|---|---|---|
-| `groupID` | `68f27fec32e7acbb755c087e` | The group's Mongo `_id` in `Vivreal.groups` | The `groupID` filter on EVERY tenant query — tenant scoping |
-| `dbKey` | `general_shared` / `pro_plus` | The tier-mapped **database name** (`deriveDbKey()` maps tier → db) | Selecting the tenant database (`dynamicDb[dbKey]`). Passed as the `key` query param to CMS API routes. Equals `group.key` ONLY by coincidence is FALSE — it is the database name, not the slug. |
-| `bucketname` / `group.key` | `thecomedycollective` → bucket `vivreal-thecomedycollective` | The group's URL slug | S3 bucket naming (`vivreal-{group.key}`), CDN media paths — NOT database routing |
+| `groupID` | `6795c1358b97114840265e65` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc — tenant scoping |
+| `dbKey` | `general_shared` / `pro_plus` | Tier-mapped **database name** (`deriveDbKey()`) | Selecting the tenant database; passed as the `key` query param to CMS API |
+| `bucketname` / `group.key` | `exodussalescollective` → bucket `vivreal-exodussalescollective` | The group's URL **slug** | S3 bucket naming, CDN media paths — NOT database routing |
 
-**Hard rule:** `dbKey` is the database name (`general_shared`/`pro_plus`). `group.key` is the S3 slug. They are different values. Treating `group.key` as a database name (or vice versa) is a classic failure.
+`dbKey` is the database name. `group.key` is the S3 slug. They are different values.
+
+## Linking collections together (the ER map)
+
+**THE GOLDEN RULE (verified live):** tenant reference fields are stored as **strings**
+that equal the *string form* of a target document's **ObjectId `_id`**.
+
+- Going FROM a string ref → the target `_id` doc: **cast** `new ObjectId(ref)` (or
+  `$toObjectId` in aggregation). Matching `{ _id: ref }` with the raw string returns
+  **zero rows** (confirmed: `{_id: refID}` → NOT FOUND; `{_id: ObjectId(refID)}` → FOUND).
+- Going FROM an `_id` doc → its referencing children: match the child's string field
+  against `String(_id)`. Do NOT wrap the child field in `ObjectId()` — it's a string, and
+  an ObjectId filter silently matches 0.
+
+| From (string field) | → To collection (`_id` ObjectId) | DB |
+|---|---|---|
+| `<any tenant doc>.groupID` | `Vivreal.groups._id` | tenant → Vivreal |
+| `collection_objects.collectionObj.refID` | `collection_groups._id` | within tenant DB |
+| `collection_objects.collectionGroupID` (newer, indexed) | `collection_groups._id` | within tenant DB |
+| `integration_objects.collectionGroup.refID` | `collection_groups._id` | within tenant DB |
+| `media_files.collectionGroup.refID` | `collection_groups._id` | Vivreal → tenant DB |
+| `media_files.collectionObjID` | `collection_objects._id` | Vivreal → tenant DB |
+| `content_versions.entityId` (when `entityType='collectionObject'`) | `collection_objects._id` | within tenant DB |
+| `site_versions.entityId` | `sites._id` | within tenant DB |
+| `audit_logs.entityId` (+ `entityType`) | the named entity's `_id` | within tenant DB |
+| `sites.collectionGroups[]`, `sites.collectionObjIds[]`, `sites.pages[].collectionId` | embedded id refs | within tenant DB |
+
+`group.key` (slug) → S3 bucket `vivreal-{key}`; it is NOT a join key for Mongo.
+
+## Cross-collection query recipes
+
+**Recipe A — objects WITH their collection group (single $lookup, type-converted).**
+A naive `localField/foreignField` lookup fails (string vs ObjectId). Convert in a pipeline:
+```js
+db.collection_objects.aggregate([
+  { $match: { groupID: "<gid>", archived: { $ne: true } } },
+  { $lookup: {
+      from: "collection_groups",
+      let: { gref: { $toObjectId: "$collectionObj.refID" } },   // string -> ObjectId
+      pipeline: [
+        { $match: { $expr: { $eq: ["$_id", "$$gref"] } } },
+        { $project: { name: 1, type: 1 } }
+      ],
+      as: "group"
+  } },
+  { $unwind: { path: "$group", preserveNullAndEmptyArrays: true } }
+])
+```
+(Converting the *local* string to ObjectId lets the lookup hit the foreign `_id` index.
+Alternatively convert the foreign side with `{ $toString: "$_id" }`, but that scans.)
+
+**Recipe B — manual two-step (use this via the MCP `find` tool, no aggregation needed):**
+1. `find` the schema: `collection_groups` where `{ groupID: gid, name: "Blogs" }` → take its `_id`.
+2. `find` the items: `collection_objects` where `{ "collectionObj.refID": "<that _id as a STRING>", archived: { $ne: true } }`.
+   (refID is a string, so pass the string form — do NOT wrap in `$oid`.)
+
+**Recipe C — a group's whole content footprint (counts per collection):**
+```js
+db.collection_objects.aggregate([
+  { $match: { groupID: gid, archived: { $ne: true } } },
+  { $group: { _id: "$collectionObj.name", count: { $sum: 1 } } }
+])
+```
+
+**Recipe D — an object's version history:** `content_versions` where
+`{ entityId: "<object _id as string>", entityType: "collectionObject" }`, sort `{ version: -1 }`.
+
+**Recipe E — media for an object (note the DB!):** `Vivreal.media_files` where
+`{ collectionObjID: "<object _id as string>", groupID: gid }`.
+
+**Recipe F — group → everything (cross-DB):** there is no cross-database `$lookup`. To go
+from `Vivreal.groups` to tenant content you must issue separate queries against the
+tenant DB resolved from `tier`. Resolve `tier` first, then query `general_shared`/`pro_plus`.
+
+**MCP note:** the `mcp__mongodb__find` `_id` filter uses extended JSON `{"$oid":"..."}`;
+tenant string refs (`groupID`, `collectionObj.refID`, `collectionObjID`, `entityId`) use
+plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
+
+## Collection field shapes (verified live, tenant DB)
+
+- **`collection_groups`** — `_id`, `name`, `type`, `groupID`(str), `archived`, `linked`,
+  `tags[]`, `schema`(strict:false), `widget`, `tableConfig`, `label`, `author{name,email}`,
+  timestamps. Indexes: `groupID`, `groupID+type`. `_id` is referenced as a **string**
+  `collectionObj.refID` on objects.
+- **`collection_objects`** — `collectionObj{name, refID(str)}`, `groupID`(str),
+  `objectValue`(strict:false), `integrationInfo`, `archived`, `publishDate`(**Date**|null),
+  newer `published`(bool)/`publishedAt`(Date), `approvalStatus`. Indexes include
+  `collectionObj.refID`, `collectionGroupID`, `groupID`, `publishDate`, `approvalStatus`,
+  and the **outreach** indexes (`outreach_contacts_*`, `outreach_companies_*`,
+  `outreach_enrollments_seq_contact_unique` — partial+unique).
+- **`integration_objects`** — `platform`(str, e.g. `stripe`), `collectionGroup{name,refID(str)}`,
+  `groupID`(str), `objectValue`(strict:false), `publishDate`, `accountHandle`. Indexes:
+  `groupID+platform`, `platform`, `accountHandle`.
+- **`sites`** — `groupID`(str), `key`(site slug), `collectionGroups[]`, `collectionObjIds[]`,
+  `integrationIds[]`, `pages[]`, `navigation{}`, `footer{}`, `deployment{status,...}`,
+  `siteDetails{schema,values}`, `domainInformation`. Index: `groupID`.
+- **`content_versions` / `site_versions`** — `entityId`(str), `entityType`, `version`(num),
+  `snapshot`, `changeSummary{changedFields, changeType}`, `groupID`. Index: `entityId+version`.
+- **`audit_logs`** — `action`, `entityType`, `entityId`(str), `groupID`, `actor{email,name}`.
+  Indexes: `groupID+createdAt`, `groupID+entityType+entityId+createdAt`.
+
+Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tier`,
+`owner`, usage counters), **`leads`** (`email` unique, `attribution.first/last`),
+**`media_files`** (groupID-scoped), **`usage_trackings`** (`groupID+docKey` unique),
+**`domainorders`** (active; `dbKey`, `siteId`, stripe/route53/amplify state),
+**`prospects`** (outreach prospecting pool, `domain` unique), **`inquiries`** (contact forms).
 
 ## Query safety rules (read-only by default)
 
-1. **Read-only.** Use `find` / `aggregate` / `count` only. No `updateMany` / `deleteMany` / `insertMany` unless the user explicitly asks for a mutation and you confirm scope.
-2. **Always scope tenant queries by `groupID`.** Every doc in `general_shared`/`pro_plus` carries `groupID`. A query without it crosses tenant boundaries.
-3. **Never query mainDb by `groupName`.** `active_ctx` carries NO `groupName`. Use `{ _id: <groupID> }` or `{ key: <group.key> }`. `groupName` is display-only and was a recurring delete-service bug.
-4. **`groupID` and `collectionObj.refID` are stored as STRINGS on tenant docs** — never wrap them in `ObjectId()`. Filtering a string field with an ObjectId silently returns zero rows. (This bit the Outreach contacts work: group refIDs stored as strings meant ObjectId filters matched 0.)
-5. **`_id` filters via the MCP tool use `{"$oid": "..."}`** extended-JSON syntax; tenant `groupID`/`refID` filters use plain strings.
-6. **Filter `archived`.** Unless asked for archived items, add `{ "archived": { "$ne": true } }` (use `$ne: true` so docs missing the field still match).
-7. **Limit results** — default 10, cap ~50. Sample at most ~5 groups for cross-tenant questions.
-8. **Redact secrets** in output: `credentials`, `apiKey`, `secretKey`, `accessToken`, `refreshToken`, `stripeKey`, `integrationKey`, anything matching `password|secret|token`. Show `[REDACTED]`.
+1. **Read-only.** `find`/`aggregate`/`count` only. No `updateMany`/`deleteMany`/`insertMany`
+   unless the user explicitly asks AND you confirm scope.
+2. **Always scope tenant queries by `groupID`.** Every doc in `general_shared`/`pro_plus`
+   (and `media_files`/`usage_trackings` in Vivreal) carries `groupID`. Omitting it crosses tenants.
+3. **Never query mainDb by `groupName`.** `active_ctx` carries no `groupName`. Use
+   `{ _id: <ObjectId(groupID)> }` or `{ key: <group.key> }`. `groupName` is display-only.
+4. **String refs vs ObjectId** — `groupID`, `collectionObj.refID`, `collectionGroupID`,
+   `collectionObjID`, `entityId` are **strings** on tenant docs. To filter them, pass strings.
+   To JOIN them to an `_id`, cast `ObjectId(ref)` (see the linking section). Mixing these up
+   silently returns zero rows.
+5. **`_id` filters via the MCP tool use `{"$oid": "..."}`** extended JSON; string refs use plain strings.
+6. **Filter `archived`** with `{ "archived": { "$ne": true } }` (so docs missing the field still match).
+7. **Limit** — default 10, cap ~50. Sample ≤5 groups for cross-tenant questions.
+8. **Redact secrets** in output: `apiKey`, `credentials`, `secret`, `accessToken`, `refreshToken`,
+   `stripeKey`, `integrationKey`, anything matching `password|secret|token`. Show `[REDACTED]`.
 
 ## The publishDate storefront gate — the #1 "missing content" cause
 
-The public site (VR_Client_API) hides content where `publishDate` is `null` (draft) or in the future. So "I created it in the portal but it's not on the live site" almost always means:
+The public site (VR_Client_API) hides content where `publishDate` is `null` (draft) or in the
+future. "I created it in the portal but it's not on the live site" almost always means:
+- `publishDate: null` → still a draft. Set a past/now Date to publish.
+- `publishDate` stored as a **string** instead of a `Date` → silently dropped by the date filter.
+- Future `publishDate` → scheduled, not yet live.
+Check `publishDate` type and value FIRST. (Verified live: it is a `Date` on healthy docs.)
 
-- `publishDate: null` → still a draft. Set a past/now ISO date to publish.
-- `publishDate` is a **string instead of a Date** → silently dropped by the date-range filter. Store it as a real `Date`/ISO timestamp, not a bare string.
-- Future `publishDate` → scheduled, not yet live (EventBridge publishes at the time).
+## Outreach data lives in `collection_objects`
 
-When debugging a storefront-visibility issue, check `publishDate` type and value FIRST.
+Outreach **contacts, companies, and enrollments are `collection_objects`** in the tenant DB
+(`general_shared`), under system `collection_groups`, differentiated by `collectionObj.refID`.
+The dedicated `outreach_*` partial/unique indexes on `collection_objects` (e.g.
+`outreach_contacts_email_unique`, `outreach_enrollments_seq_contact_unique`) enforce this.
+The `outreach` database holds only the global `suppressions` list. So to find a tenant's
+outreach contacts: resolve the Contacts system `collection_group` `_id`, then query
+`collection_objects` by `collectionObj.refID` (string) — same pattern as any content.
 
-## Key collections (tenant DBs)
+## Known drift / data bugs (as of 2026-06-19)
 
-| Collection | Notes |
-|---|---|
-| `collection_groups` | Content-type schemas. `_id` is referenced as `collectionObj.refID` (a STRING) on objects. `schema` is `strict:false`. |
-| `collection_objects` | Content items. `objectValue` is `strict:false`. `publishDate` gates storefront. `collectionObj.refID` (string) links to the schema. |
-| `integration_objects` | Stripe products / social posts. Single collection differentiated by `platform` field (not 6 collections). `strict:false`. |
-| `sites` | Deployed sites. `deployment.status` (`pending`/`deploying`/`live`/`failed`), `pages[].format` drives layout. |
-| `mediafiles` | S3 metadata only — media bytes live in S3, never Mongo. |
-| `auditlogs` | Fire-and-forget audit trail. Indexed `{ groupID, createdAt }`. |
-| `contentversions` | Version history; `{ entityId, version }` indexed. |
-
-## Key collections (mainDb `Vivreal`)
-
-| Collection | Notes |
-|---|---|
-| `groups` | The tenant registry. `tier` → DB routing; `key` → S3 slug; `_id` → `groupID`. Usage counters (`entries`, `mediaUsage`, `apiUsage`, `cdnUsage`, `agentUsage`) can drift from real counts. |
-| `checkoutsessions` | Stripe checkout, 90-day TTL. |
-| `leads` | Owned/written by VR_Main_API; read-only mirror in VR_Secure_API for the admin attribution endpoint. |
+- **`Vivreal.domainOrders` (camelCase) is an orphan duplicate** of `Vivreal.domainorders`
+  (lowercase, the active one). The camelCase collection has 0 docs and non-partial unique
+  indexes; the lowercase has the real data. Likely a Mongoose model-name mismatch — flag to
+  the domain-orders owner; query `domainorders` (lowercase).
+- **`media_files` / `usage_trackings` are in `Vivreal`, not the tenant DB** (older docs/skills
+  said tenant DB — they were wrong).
+- **`justinceccarelligroup`** is a stray per-group DB containing only `audit_logs`; don't
+  generalize a per-group-DB model from it.
 
 ## When NOT to use this skill
 
 - Non-Vivreal MongoDB work (generic Mongo questions).
-- Editing Mongoose schema source code (that's a backend repo task — see the per-repo knowledge skills).
+- Editing Mongoose schema source code (a backend repo task — see the per-repo knowledge skills).

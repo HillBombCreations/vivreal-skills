@@ -9,6 +9,11 @@ user-invocable: true
 
 Query Vivreal's multi-tenant MongoDB with built-in awareness of the database routing scheme and safety guards.
 
+> **Source of truth:** the `vivreal-db` skill carries the live-verified topology (5 databases),
+> the real snake_case collection names, and the cross-collection linking rules (string-ref ↔
+> ObjectId joins, `$lookup` recipes). The per-field schemas below are still accurate, but note
+> the collection-name + DB-location corrections in "Multi-Tenant Database Routing" below.
+
 ## Arguments
 
 `/db-query <database> <collection> [filter] [--limit=10] [--sort=field:asc|desc] [--project=field1,field2] [--count] [--aggregate]`
@@ -27,19 +32,26 @@ Query Vivreal's multi-tenant MongoDB with built-in awareness of the database rou
 
 ## Multi-Tenant Database Routing
 
-Vivreal uses multi-tenant MongoDB with **three databases** — NOT one database per group:
+Vivreal uses multi-tenant MongoDB. Tenant **content** lives in two shared databases by tier,
+but the live cluster has **5 databases** (verified 2026-06-19):
 
 | Database | Contents | Which groups? |
 |---|---|---|
-| `Vivreal` | Control plane: groups, users, checkout sessions | All (this is the mainDb) |
-| `general_shared` | Tenant data: collections, objects, sites, integrations, media, audit logs, versions | free / basic / pro tier groups |
-| `pro_plus` | Tenant data (same collections as general_shared) | pro_plus tier groups |
+| `Vivreal` | Control plane: `groups`, `leads`, `checkout_sessions`, **`media_files`**, **`usage_trackings`**, `domainorders`, `prospects`, `inquiries` | All (mainDb) |
+| `general_shared` | Tenant content: `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks` | free / basic / pro |
+| `pro_plus` | Tenant content (same shape + `stripe_products`, `collection_templates`) | proplus (currently empty) |
+| `outreach` | `suppressions` only (global) | service-global |
+| `justinceccarelligroup` | only `audit_logs` (~4) — legacy/anomalous per-group DB | one group (do not rely) |
 
-**There is no per-group database.** All tenants in the same tier share a database. Tenant isolation is achieved via the `groupID` field on every document.
+**Collection-name corrections (live names are snake_case):** `checkoutsessions`→`checkout_sessions`,
+`mediafiles`→`media_files`, `auditlogs`→`audit_logs`, `contentversions`→`content_versions`,
+`usagetrackings`→`usage_trackings`. **`media_files` and `usage_trackings` live in `Vivreal`,
+NOT the tenant DB.** New collections not listed in the per-field schemas below: `site_versions`,
+`stripe_webhook_events`, `stripe_products`, `collection_templates`, `prospects`, `inquiries`.
 
-To find which database holds a group's data: look up the group in `Vivreal.groups`, read its `tier` field, then route to `general_shared` or `pro_plus`.
-
-The `key` field on a group document is used for **S3 bucket naming**, NOT for database routing.
+Tenant isolation is via the `groupID` field on every document. To find which DB holds a group's
+content: look up the group in `Vivreal.groups`, read `tier`, route to `general_shared` (free/basic/pro)
+or `pro_plus` (proplus). The `key` field is **S3 bucket naming**, NOT database routing.
 
 ## Collections & Schemas
 
