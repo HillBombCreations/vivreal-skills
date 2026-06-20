@@ -1,6 +1,6 @@
 {
   "name": "vivreal-knowledge",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Auto-invoked knowledge skills for the Vivreal ecosystem — safe multi-tenant MongoDB query rules (vivreal-db), cross-stack Sentry tracing (sentry-tracer), the site product/authoring model (vivreal-sites), the portal design system (vivreal-design-system), the cost/margin/pricing model (vivreal-unit-economics), the brand voice (vivreal-brand-voice), and a per-repo knowledge digest for each Vivreal repo (portal, CMS/Secure/Main APIs, the public Client stack, EventHandler, Templates, site-renderer, MCP server, and the Outreach API). Skills load passively based on intent; install everywhere you touch Vivreal code or data.",
   "author": {
     "name": "Vivreal",

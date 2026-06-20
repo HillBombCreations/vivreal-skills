@@ -1,6 +1,6 @@
 {
   "name": "vivreal-workflow",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The Vivreal bug/feature workflow — coordinator plus research, architect, coder, tester, reviewer, documenter, and vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /plan, /test, /reviewer, /vuln-fix, /bump-package, and more). Also ships the vivreal-brainstorming + vivreal-writing-plans skills (self-contained forks; the planner auto-reviews its plan), the vivreal-package-update skill (cross-repo dependency bumps for private @hillbombcreations GitHub Packages), and the shared-standards skill.",
   "author": {
     "name": "Vivreal",
