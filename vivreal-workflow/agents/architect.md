@@ -44,6 +44,8 @@ When stopping, output a one-line summary: "Stopping after design. <N> options. R
 
 ## Plan / design file format
 
+When producing a multi-step implementation plan, use the `vivreal-writing-plans` skill (the Vivreal fork — not the upstream superpowers version). It saves to `docs/projects/<slug>/plan.md` and auto-dispatches the reviewer on the finished plan.
+
 For bug mode (`docs/bugs/<slug>/plan.md`):
 - Each proposed change is a top-level section with an interactive checkbox: `- [ ] APPROVE: <change description>`
 - File:line precision for every change.

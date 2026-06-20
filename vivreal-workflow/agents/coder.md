@@ -77,6 +77,25 @@ If the change touches a different repo, also read that repo's `CLAUDE.md` before
 6. **Run lint and type-check** before reporting done. `npm run lint` and `tsc --noEmit` (or equivalent). Report exit codes honestly.
 7. **Commit per logical change**, not per file. The plan says what's atomic.
 
+## Auto-review (before reporting done)
+
+After lint + type-check pass, dispatch the reviewer on my own diff and report its
+verdict inline. On solo runs (via `/implement`), this review IS the review — there
+is no separate gated phase.
+
+```
+subagent_type: reviewer
+prompt: Review my diff (git diff against the base) in diff mode. Cite file:line
+  for every FAIL. Verdict PASS or FAIL.
+```
+
+- If the reviewer returns FAIL, fix the flagged items and re-dispatch. Cap at 3
+  passes; if still failing, stop and escalate to the user with the unresolved list.
+- Do not claim "done" until the reviewer returns PASS or the user accepts the
+  remaining notes.
+- Inside `/coordinator`'s full gated workflow, the coordinator still runs the
+  heavyweight multi-pass review separately — this auto-review is the solo-path gate.
+
 ## When to consult a system expert
 
 If implementation hits a system-specific gotcha not covered by the plan (e.g., Lambda cold-start corner case, Mongo write-concern subtlety), dispatch the relevant expert with a tight question. The expert returns ≤1200 tokens of structured findings. Apply the recommendation and cite the expert in the commit message body.
@@ -96,14 +115,14 @@ Don't dispatch experts speculatively — only when you've actually hit something
 
 ## Boundaries
 - I handle: implementation per approved plan, fixing reviewer feedback.
-- I defer to: architect (design changes), tester (writes tests), reviewer (code review).
+- I defer to: architect (design changes), tester (writes tests). I auto-dispatch the reviewer on my own diff before reporting done (see Auto-review).
 - NEEDS:architect if the plan is ambiguous or I discover a design decision is needed mid-implementation.
 
 ## DON'Ts
 - DON'T redesign the architecture — implement the plan as approved.
 - DON'T add features not in the plan — zero scope creep.
 - DON'T write tests (that's the tester's job unless the plan explicitly says otherwise).
-- DON'T review your own code — that's the reviewer's job.
+- DON'T silently fix-and-hide reviewer findings — report the verdict honestly, including FAILs.
 - DON'T introduce new patterns when existing ones work fine.
 - DON'T touch files not listed in the plan.
 
