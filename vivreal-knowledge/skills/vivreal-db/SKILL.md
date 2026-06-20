@@ -7,6 +7,38 @@ description: Use when querying or exploring Vivreal's MongoDB — including any 
 
 Vivreal is multi-tenant MongoDB with **three databases** — there is NO per-group database. Confusing the routing keys is the most common bug. Read this before touching the `mcp__mongodb__*` tools. For an interactive, argument-driven query/schema helper, use the `/db-query` and `/db-schema` commands (from the `vivreal-db-explorer` plugin) — this skill is the passive knowledge those commands assume.
 
+## Getting connected (sourcing the connection string)
+
+The `mcp__mongodb__*` tools need a MongoDB connection string to reach Atlas — it is
+NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
+(`mongodb+srv://…`) with NO database path; the database is selected per query (the
+tool's `database` arg) or by appending `/<dbName>`.
+
+**Where the connection string lives** (priority order):
+
+1. **AWS Secrets Manager** — secret `hb-api-secrets`, key `CLUSTER_URL`. Every backend
+   Lambda resolves it via `{{resolve:secretsmanager:hb-api-secrets:SecretString:CLUSTER_URL}}`.
+   Retrieve it (requires AWS credentials for the account):
+   ```bash
+   aws secretsmanager get-secret-value --secret-id hb-api-secrets \
+     --query SecretString --output text \
+     | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
+   ```
+2. **Local backend `.env`** (dev fallback) — any backend repo under `${VIVREAL_REPOS}`
+   (e.g. `${VIVREAL_REPOS}/VR_CMS_API/.env`) carries `CLUSTER_URL=mongodb+srv://…`. See
+   that repo's `.env.example` for the shape.
+
+**Then connect:** pass the string to `mcp__mongodb__connect`, or set it as the MongoDB
+MCP server's connection string (`MDB_MCP_CONNECTION_STRING`) before the session so it
+auto-connects. If the MongoDB MCP server isn't registered or no connection is live, the
+`mcp__mongodb__*` tools won't exist — stop and report that; never fabricate results.
+
+**Security — the connection string IS a secret:**
+- It embeds the Atlas username + password. NEVER echo it, write it to a file, paste it
+  into a doc/PR/commit, or log it. It goes ONLY into the connect call.
+- Prefer a **read-only** Atlas user for exploration/validation.
+- The read-only query rules below still apply after connecting.
+
 ## The three databases
 
 | Database | Holds | Which groups |

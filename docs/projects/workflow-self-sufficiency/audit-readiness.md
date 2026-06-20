@@ -27,8 +27,19 @@ where this work was done — neither the main loop nor a dispatched agent could
 reach it. So the documented schema was **not** verified against live Mongo. Do
 this before (or early in) the audit, since the audit touches schemas/shared:
 
-**To run it:** open a session with the MongoDB MCP server configured + authenticated
-(read-only Atlas user), then run these read-only calls and reconcile any drift into
+**Why it's blocked:** no `.mcp.json` in this repo registers a MongoDB MCP server, and
+none was configured in Claude's settings for this session — so the `mcp__mongodb__*`
+tools don't exist here. To unblock, either register the MongoDB MCP server (Claude MCP
+config / a plugin `.mcp.json`) with a connection string, or run in a session that
+already has it.
+
+**Connection string source** (now documented in the `vivreal-db` skill → "Getting
+connected"): AWS Secrets Manager secret `hb-api-secrets`, key `CLUSTER_URL`; or a
+backend repo `.env` (`${VIVREAL_REPOS}/VR_CMS_API/.env`, key `CLUSTER_URL`). It's the
+Atlas cluster URI with no db path — append `/<dbName>` or use the tool's `database` arg.
+
+**To run it:** in a session with the MongoDB MCP server live (read-only Atlas user),
+run these read-only calls and reconcile any drift into
 `vivreal-knowledge/skills/vivreal-db/SKILL.md` and `vivreal-db-explorer/commands/db-query.md`:
 
 | Step | Tool | Args |
