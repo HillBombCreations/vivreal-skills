@@ -73,17 +73,60 @@ re-ships the bug.
 - Sites/integrations pages are serialized under parallel workers — don't break that.
 - No `.only`. No `sleep()`. Use `waitFor()`.
 
-## Backend tests
+## Backend tests (Mocha + Chai + Sinon + NYC)
 
-VR_Main_API, VR_Secure_API, VR_CMS_API, VR_Client_API use Mocha + Chai + Sinon + NYC. 100% coverage gate via `npm test`.
+VR_Main_API, VR_Secure_API, VR_CMS_API, VR_Client_API are Express-on-Lambda, JS, Mongoose. 100% branches/functions/lines/statements gate via `npm test`. VR_Client_Auth has minimal/no tests.
 
-Test conventions per backend:
-- Tests in `test/**/*.test.js` (NOT in `test/test.js` — that's legacy).
-- Heavy mocking via `test/helpers/loadWithMocks.js` — mock DB adapters, AWS SDK, sockets, service deps.
+Conventions:
+- Tests in `test/**/*.test.js` (NOT `test/test.js` — legacy, outside the glob).
+- Heavy mocking via `test/helpers/loadWithMocks(modulePath, mockMap)` — mockMap keys are the **EXACT require strings** the module uses (relative `../scripts`, alias `@shared/x`, `./socket`, etc.). It intercepts `Module._load` and returns the stub for that exact string; un-mocked requires fall through to the real module.
 - Endpoint-focused: route wiring + handler + controller + validator + service.
-- Branch coverage: success path, validation failure, empty response, error branches.
-- Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate).
-- VR_Client_Auth has minimal/no tests.
+- Per-unit branch coverage: success, validation failure, empty/no-result, each error branch; for socket/webhook/audit emitters, both the success send AND the failure-is-logged-but-doesn't-crash branch.
+- Run: `npm run test:unit` (no gate, fast iteration) or `npm test` (NYC 100% gate).
+
+### Harness bootstrap — CHECK THIS FIRST (the #1 cause of a dead suite)
+
+A backend suite that fails *everywhere* with `Cannot find module '@shared/...'` or `ValidationError: "CLIENT_ID" is required` is almost never broken tests — it's a missing harness bootstrap. Ensure `.mocharc.json` exists and `require`s both:
+- **`module-alias/register`** — registers the `@shared`→`src/shared` alias (the same alias Webpack uses at build). Without it, every un-mocked `@shared/...` transitive require throws `Cannot find module`. `module-alias` + `_moduleAliases` are usually already in `package.json`.
+- **`./test/helpers/setupEnv.js`** — sets inert dummy values for every var each `config/config.js` `.required()`s (Joi validates `process.env` and THROWS at module load if any is missing). Config only reads env and DB factories connect lazily, so dummies are safe. Add a new var here whenever a config adds one.
+
+If these don't exist in the repo yet, create them — it's the prerequisite for any other backend test work. Don't put a `spec` glob in `.mocharc.json` if you want to run single files via `npx mocha <file>` (it forces the whole suite).
+
+### Inheriting a broken / drifted suite — diagnose systemically, don't fix file-by-file blindly
+
+1. Run `npm test` and read the totals + failing count. A suite far below its own gate with many failures is **drift** (code evolved, tests didn't), not rot.
+2. Bucket the failures by signature, not by test: `npm run test:unit 2>&1 | grep -E "Error:|TypeError:|AssertionError" | sed -E 's/[0-9]+/N/g' | sort | uniq -c | sort -rn`. One systemic cause usually explains dozens of failures (missing alias/env, a renamed shared dep, a changed DB shape).
+3. Fix **systemic** causes first (harness bootstrap, a `@shared` module the mocks don't stub) — re-run and watch large swaths clear before touching individual files.
+4. Map remaining failures to files: loop `for f in test/unit/*.test.js; do npx mocha "$f" ...; done` and list only the ones still failing.
+
+### Stale-mock & dead-code patterns (assert the CURRENT intended behavior)
+
+- **DB-shape drift**: e.g. a refactor moves `mainDb.groups.findOne` → `mainDb.DB.groups.findOne`. Update the mock shape to the current one; don't preserve the old shape.
+- **Moved/renamed modules → DELETE the obsolete test**: if `services/usage/*` or `services/S3Functions/*` were absorbed into `@shared/*`, the tests for the deleted paths test code that no longer exists. Remove them (and their dead `.nycrc` include entries) and re-establish that coverage against the new home — don't "fix" a test for deleted code.
+- **Barrel-export drift**: `index.js` re-export tests break when exports are added/removed. Read the real barrel and assert its true current shape.
+- **The real-AWS-call trap**: a controller that calls `socket.sendToGroup` / an AWS SDK client without a mock often "passes" only because the call fails fast offline — then **times out under NYC instrumentation** (slower). Always stub socket/AWS/network in the controller's `loadWithMocks` map, even when the test isn't "about" the socket.
+
+### Driving an untested area to 100% — per-file isolation loop
+
+For a coverage push, fan work out by domain (one area per pass / per agent) and drive each file to 100% in isolation so the report is focused:
+```
+npx nyc --check-coverage=false --reporter=text --include 'src/<area>/**' -- npx mocha <your new test files + the existing ones that touch those files>
+```
+Read the uncovered line/branch numbers from the `text` reporter and write a targeted test for each: the alternate side of a ternary, a `?? default` / `|| ''` fallback (often only hit when claims/optional fields are ABSENT — pass a request with no `apiGateway`), an optional-chaining null, a `catch (auditErr)`/`catch (socketError)` fire-and-forget block (make the emitter throw/reject). When reconciling the global gate, the stragglers are usually **sub-barrels** (`services/<x>/index.js` that the top-level barrel test mocked away) and **controllers split across efforts** — cover them explicitly.
+
+### `istanbul ignore` policy — last resort, never a shortcut
+
+Only annotate code that is **genuinely unreachable**: a path gated by a hardcoded constant, an internal-helper default arg whose only callers always pass it, a `switch` default over a fixed list. Each ignore needs an inline reason. NEVER use it to skip a branch you could test (e.g. an error path, a real fallback). When code is dead because of a constant toggle, prefer **removing** it (or flagging it for removal) over hiding it — surface it to the user; don't silently bury ~80 lines behind an ignore.
+
+### Validators: assert accept AND reject; tighten while you cover
+
+- Every validator test asserts a valid payload passes AND an empty/invalid one rejects. Reaching 100% on `validators.js` means exercising both.
+- Coverage work is the moment to **tighten** loose Joi (an unbounded `Joi.string()` for a money/amount/email/enum field) and remove dead validators (left behind by deleted controllers). Add explicit reject tests for the tightened rules so they can't silently regress.
+- Security: fields the server resolves itself (encrypted creds, `integrationInfo`) must be **rejected** from client payloads — assert that with a dedicated test, not just omitted.
+
+### Bugs are the point, not the obstacle
+
+100% coverage forces you to execute every branch, which surfaces real defects (a `CustomError` class called without `new` masking the true AWS error; a silent fallback hiding a failure). When a branch reveals a bug, **fix the source and report it (file:line, before/after)** — do not contort the test to accommodate the bug. Behavior-preserving dead-branch removal (an unreachable `|| ''`) is also fair game and often the cleanest way to a real 100%.
 
 ## Test verification protocol
 
@@ -109,9 +152,12 @@ If a test passes on the unfixed code, it's not testing the bug — rewrite.
 - DON'T weaken an assertion (`toBe`→`toContain`, exact→`expect.anything()`, deleting a check) to turn a red suite green.
 - DON'T import from `@playwright/test` directly — always use the fixtures wrapper.
 - DON'T add new fixtures when an existing one fits.
-- DON'T mock what you should integration-test (network, DB).
+- DON'T mock what you should integration-test (network, DB) in e2e — but in backend UNIT tests, DO mock all DB/AWS/socket/network (a real call that "fails fast offline" is a hidden flake that times out under NYC).
 - DON'T use `.only` in committed tests.
 - DON'T add `sleep()` — use `waitFor()` with explicit conditions.
+- (Backend) DON'T use `/* istanbul ignore */` to skip a branch you could test — reserve it for genuinely-unreachable code, with a reason.
+- (Backend) DON'T "fix" a test for code that was deleted/moved — remove the obsolete test (and its dead `.nycrc` include) and re-cover the new home.
+- (Backend) DON'T assume a mass `Cannot find module '@shared/...'` / `"X" is required` failure is broken tests — check the `.mocharc.json` harness bootstrap (alias + env) first.
 
 ## Output Format
 - You ARE Tester. Don't say "As the tester, I would..."
