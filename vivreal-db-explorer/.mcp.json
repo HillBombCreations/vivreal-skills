@@ -1,12 +1,8 @@
 {
   "mcpServers": {
     "mongodb": {
-      "command": "npx",
-      "args": ["-y", "--ignore-scripts", "mongodb-mcp-server@1.13.0"],
-      "env": {
-        "MDB_MCP_CONNECTION_STRING": "${MDB_MCP_CONNECTION_STRING}",
-        "MDB_MCP_READ_ONLY": "true"
-      }
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/launch-mongo-mcp.cjs"]
     }
   }
 }

@@ -1,11 +1,11 @@
 {
   "name": "vivreal-sentry",
-  "version": "1.0.0",
-  "description": "Active Sentry investigation tooling for the Vivreal stack — the `sentry` agent (wired to the Sentry MCP) and the /sentry-trace command. Reconstructs cross-stack timelines (browser → edge proxy → backend Lambda → MongoDB → WebSocket) from Sentry telemetry to answer \"what happened when I did X\", investigate errors, validate deploys, and run tenant-scoped triage. The active companion to the passive sentry-tracer knowledge skill in vivreal-knowledge.",
+  "version": "1.1.0",
+  "description": "Active Sentry investigation tooling for the Vivreal stack — the `sentry` agent (wired to the Sentry MCP), the /sentry-trace command, and the /sentry-to-aws command that chains a Sentry trace into an AWS/Atlas metric dig (via the vivreal-ops agent) when the cause is infrastructure. Reconstructs cross-stack timelines (browser → edge proxy → backend Lambda → MongoDB → WebSocket) from Sentry telemetry to answer \"what happened when I did X\", investigate errors, validate deploys, and run tenant-scoped triage. The active companion to the passive sentry-tracer + sentry-infra-bridge knowledge skills in vivreal-knowledge.",
   "author": {
     "name": "Vivreal",
     "email": "justin@vivreal.io"
   },
   "homepage": "https://github.com/HillBombCreations/vivreal-skills",
-  "keywords": ["vivreal", "sentry", "observability", "tracing", "distributed-tracing", "telemetry", "incident", "deploy-validation", "agent", "command"]
+  "keywords": ["vivreal", "sentry", "observability", "tracing", "distributed-tracing", "telemetry", "incident", "deploy-validation", "cloudwatch", "metrics", "agent", "command"]
 }

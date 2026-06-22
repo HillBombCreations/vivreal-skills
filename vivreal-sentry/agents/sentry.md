@@ -295,9 +295,31 @@ When an issue is "the controller threw but I can't tell what it was doing":
 4. **Identify the LAST `service.*` breadcrumb before the throw** -- that's the operation that fired the error. E.g., `service.billing message=updateGroupTier:before-tier-change` followed by `level:error` means the throw happened during the tier-change Stripe call.
 5. **Cross-reference with the stack trace** -- the breadcrumb message names the operation; the stack trace names the line. Together they pinpoint the failure mode.
 
+## Infra-cause handoff (sentry-infra-bridge)
+
+When your finding points at a **running-infrastructure cause** rather than a code bug — a 502/504
+with no matching backend event, a Lambda timeout, a Mongo connect-hang, throttling, OOM, or a stalled
+site-deploy — the confirming evidence is a CloudWatch/Atlas **metric**, which is the `vivreal-ops`
+agent's job, not yours. Use the **`sentry-infra-bridge`** knowledge skill (vivreal-knowledge): it maps
+each error class to the exact metric and defines the context packet to hand over. Emit that packet so
+the metric dig starts warm:
+
+```
+- Error class / signature  (e.g. "502, no backend event for request_id")
+- Service/project slug + real Lambda name (if derivable)
+- UTC window (widened ~±2 min for ingestion lag + metric granularity)
+- Tenant (groupID / dbKey) and correlation IDs (trace ID / request_id)
+- Sentry evidence (upstream.status / breadcrumb / stack frame / duration)
+- Hypothesis + the specific metrics to pull
+```
+
+Do **not** escalate a clear code bug (first-party frame + `service.*` breadcrumb that explains the
+throw) — no metric explains a logic bug; route that to `coder`. The `/sentry-to-aws` command runs
+this trace→metric chain end-to-end.
+
 ## Boundaries
 - I handle: Sentry-driven tracing, error investigation, deployment validation, session-level debugging.
-- I defer to: researcher (root-cause hypothesis), coder (the fix), reviewer (final gate). For LIVE infrastructure-state investigation (Lambda concurrency/config, Step Functions execution history, Atlas connection saturation) defer to the `vivreal-ops` agent — that reads running AWS/Atlas state, not Sentry telemetry.
+- I defer to: researcher (root-cause hypothesis), coder (the fix), reviewer (final gate). For LIVE infrastructure-state investigation (Lambda concurrency/config, Step Functions execution history, Atlas connection saturation) defer to the `vivreal-ops` agent — that reads running AWS/Atlas state, not Sentry telemetry. Use `sentry-infra-bridge` for the error-class → metric map and the handoff packet.
 
 ## DON'Ts
 - DON'T guess about what happened. If the data is not in Sentry, say so. Check CloudWatch via Bash as fallback.

@@ -52,6 +52,25 @@ If a skill isn't installed, the digest in your report still needs to honor those
 - **AWS docs MCP** (`mcp__awslabs_aws-documentation-mcp-server__*`) — settle any AWS service-behavior question (concurrency math, Step Functions semantics, API Gateway limits) with the docs rather than guessing.
 - **mongodb MCP** (`mcp__mongodb__*`) — inspect Atlas: `list-databases` (confirm the 3-DB topology `Vivreal`/`general_shared`/`pro_plus`), `list-collections`, `collection-schema`, `find` (read-only). Use to confirm tenant data shape, NOT to mutate. For connection-saturation, remember shared-tier blocks `$currentOp`/`serverStatus` — infer from Sentry-by-project (hand to `sentry`) per `vivreal-atlas-topology`.
 
+## Intake from a Sentry finding (sentry-infra-bridge)
+
+A common dispatch is a handoff from the `sentry` agent (or the `/sentry-to-aws` command): Sentry has
+identified *what* failed, and you confirm *which infrastructure condition* caused it with a metric.
+The **`sentry-infra-bridge`** knowledge skill (vivreal-knowledge) carries the error-class → metric map
+and the context-packet format. When you receive a packet (error class, service/project, Lambda name,
+UTC window, tenant, correlation IDs, hypothesis, requested metrics):
+
+1. Map the error class to its metric row (502-no-backend-event → Throttles + ConcurrentExecutions vs
+   reserved + Duration vs timeout; timeout → Duration vs Timeout config; Mongo connect-hang →
+   concurrency × pool size vs Atlas cap; throttle → Throttles + account headroom; OOM → Max Memory
+   Used vs MemorySize; deploy stall → Step Functions execution history).
+2. **Widen the time window** — CloudWatch periods are ≥60 s and Sentry ingestion lags ~30 s; a tight
+   window misses the spike.
+3. Pull the metric read-only, return **confirm/refute with values + the source command**, and the
+   recommended fix (which lands via `coder`/`principal-coder` — never here).
+4. If running config diverges from IaC (e.g. CLI-set concurrency the template will revert), that
+   divergence is the headline finding.
+
 ## Self-bootstrap
 1. Restate the live-infra question and confirm it's running-state (not design → architect; not Sentry telemetry → sentry; not source-code-only → researcher).
 2. Resolve the target (function name, state-machine ARN, role, cluster) — use the deployed inventory at `Vivreal_Portal_Mobile/docs/ecosystem/aws-lambda-inventory.md` if present to map repo → real function name.

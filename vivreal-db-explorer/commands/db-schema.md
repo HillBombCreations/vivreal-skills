@@ -1,13 +1,29 @@
 ---
 name: db-schema
 description: Show the Mongoose schema definition, indexes, and a sample document for any Vivreal MongoDB collection
-allowed-tools: mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, Read, Glob, Grep
+allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, Read, Glob, Grep
 user-invocable: true
 ---
 
 # /db-schema — Collection Schema Explorer
 
 Shows the full picture of a MongoDB collection: Mongoose schema definition (from source code), actual indexes, and a sample document.
+
+## Connecting (self-service — NEVER ask the user for the connection string)
+
+The MCP server is normally **already connected** — the `vivreal-db-explorer` plugin launches it via
+`scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets Manager
+(`hb-api-secrets`) at startup. Try your first MCP call directly. If it returns "not connected",
+source the string yourself and call `mcp__mongodb__connect` — do **NOT** ask the user to paste one:
+
+```bash
+aws secretsmanager get-secret-value --secret-id hb-api-secrets --query SecretString --output text \
+  | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
+```
+
+It is a secret (embeds the Atlas user + password): pass it only into the connect call, never log or
+persist it. Only ask the user as a true last resort, and only if Secrets Manager is genuinely
+unreachable — say which step failed first. See the `vivreal-db` skill for the full detail.
 
 ## Arguments
 

@@ -1,7 +1,7 @@
 ---
 name: db-query
 description: Safely query Vivreal's multi-tenant MongoDB via MCP — with built-in dbKey routing, safety guards, and result formatting
-allowed-tools: mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats
+allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats
 user-invocable: true
 ---
 
@@ -29,6 +29,30 @@ Query Vivreal's multi-tenant MongoDB with built-in awareness of the database rou
 - `--project`: Comma-separated fields to include in projection
 - `--count`: Return count instead of documents
 - `--aggregate`: Treat filter as an aggregation pipeline
+
+## Connecting (self-service — NEVER ask the user for the connection string)
+
+The MCP server is normally **already connected**: the `vivreal-db-explorer` plugin launches it
+through `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets
+Manager (`hb-api-secrets`) at startup. So your first query usually just works — try it first.
+
+**If a query returns "you need to connect first" / "not connected":** the launcher could not
+reach Secrets Manager (e.g. AWS creds weren't present at launch). Source the string yourself and
+connect — do **NOT** ask the user to paste a connection string. It is the Atlas **cluster** URI
+(`mongodb+srv://…`, no database path; the DB is chosen per query):
+
+```bash
+aws secretsmanager get-secret-value --secret-id hb-api-secrets --query SecretString --output text \
+  | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
+```
+
+Pass that value to `mcp__mongodb__connect`, then re-run the query. The `vivreal-db` knowledge skill
+(vivreal-knowledge plugin) carries the full sourcing detail and a no-MCP driver fallback.
+
+**The connection string is a secret** — it embeds the Atlas user + password. Pass it ONLY into the
+connect call. Never echo it, write it to a file, or paste it into a doc/PR/commit. Only ask the user
+for it as a true last resort, and only if AWS Secrets Manager is genuinely unreachable (no creds, no
+network) — say *which* step failed before asking.
 
 ## Multi-Tenant Database Routing
 
@@ -265,7 +289,7 @@ or `pro_plus` (proplus). The `key` field is **S3 bucket naming**, NOT database r
 
 ## Procedure
 
-1. **Connect** to MongoDB if not already connected (use `mcp__mongodb__connect`)
+1. **Connect** — try the query first (the launcher usually has the server connected). If it reports "not connected", follow the **Connecting** section above: source `CLUSTER_URL` from `hb-api-secrets` yourself and call `mcp__mongodb__connect`. Never ask the user for the string.
 2. **Resolve database name**:
    - `main` or `Vivreal` → use `Vivreal` (control plane)
    - If user gives a group name → look up the group in `Vivreal.groups` to find its `tier`, then route to `general_shared` or `pro_plus`
