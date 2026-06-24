@@ -46,7 +46,7 @@ The portal also signs a `user_ctx`; for the outreach API the gmail/email routes 
 
 ## Debugging 401/403
 
-- **403 on a brand-new route** → API Gateway has no event for it (missing SAM fragment), so the authorizer never fires. Deploy-config miss, not auth. See `vivreal-lambda`.
+- **403 (CMS) / 502 (Secure) on a brand-new route** → API Gateway has no event for it (missing SAM fragment). CMS/Secure/Client wire **explicit per-route events, not a catch-all `{proxy+}`**, so an unknown path never reaches Express — it falls through to the default IAM-protected resource and the Cognito authorizer never fires. The CMS 403 is SigV4/IAM on that fall-through resource, *not* an auth bug. Fix: add the per-route event in the `cloudformation/` fragment (never hand-edit the generated `allRoutes.yaml`). Deploy-config miss. (Main API is exempt — public routes, no gateway authorizer.) See `vivreal-lambda`.
 - **401 "Invalid active context"** → `CTX_SECRET` mismatch between portal and the verifying service.
 - **401 to a backend** in the portal → a proxy route used native `fetch()` instead of `createAuthAxios()` (only the latter redirects on 401) — portal concern, see `vivreal-portal-knowledge`.
 - **Client API Deny** → API key not found in `groups.apiKey`, or key regenerated. Check mainDb `groups`.

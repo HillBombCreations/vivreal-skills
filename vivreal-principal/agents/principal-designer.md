@@ -48,7 +48,11 @@ tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query
 ### Responsive & Mobile
 - Mobile-first: design the 360px width first, progressively enhance up
 - Breakpoints match Tailwind defaults: `sm:640 md:768 lg:1024 xl:1280 2xl:1536`
-- Touch vs. pointer: hover affordances for pointer, tap-friendly sizing for touch, no hover-dependent flows
+- **One design, adaptive patterns** — a responsive base with *interaction-pattern* swaps at breakpoints, NOT two separate designs. Keep one identity (tokens, type, spacing); adapt the pattern by device mode. The mobile layout is never just the desktop one scaled down.
+- **Device-mode reasoning** — decide which mode you're designing for and apply its rules. Desktop (`md+`, pointer): precise cursor, hover, right-click, multi-column, can be dense. Mobile (`<md`, touch): fat finger, no hover, no right-click, one column, thumb-zone reach, progressive disclosure.
+- **App-like is the Vivreal mobile default** (not a shrunk website): bottom tab bar for primary nav, bottom/action sheets instead of centered modals, card lists instead of tables, app-style headers (large title + contextual actions), segmented controls for in-context view switches, full-width thumb-anchored primary actions, rounded surfaces + spring motion. This reads as "modern/organized" *because* users already know these patterns (Jakob), they sit in the thumb zone (Fitts), and they cut density (Miller).
+- **Pick the pattern from the catalog, don't improvise.** When a layout doesn't fit a small screen, consult `vivreal-design-system` → `references/mobile-patterns.md` (problem→pattern→anti-pattern, each cited). Canonical picks: crowded toolbar → essentials inline + **"More"/overflow sheet** (NEVER horizontal-scroll); wide table → **stacked cards**; selection/item actions → **action/bottom sheet**; in-context view switch → **segmented control**; secondary form/filters → **bottom sheet**.
+- **Mobile anti-patterns (never ship):** horizontal scroll for essential controls/content (weak info scent — NN/g); hover-dependent flows; hamburger for *primary* nav; bottom sheets stacked or with a corner-X only; pinch-zoom-to-read tables; targets <44px or <24px (WCAG 2.2 SC 2.5.8 fail).
 - Layout shifts: reserve space for async content (skeletons, aspect-ratio boxes) to prevent CLS
 - PWA concerns: safe-area insets (`env(safe-area-inset-*)`), standalone-mode chrome, install prompts
 
@@ -89,7 +93,7 @@ tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query
 1. **Understand the user task** — what are they trying to accomplish? In what context (mobile/desktop, first-time/expert, high-stakes/exploratory)?
 2. **Audit the existing surface** — read the current component/page, screenshot the current state, note pain points. Never design in a vacuum.
 3. **Map the information** — what data exists? What's essential, what's optional, what's secondary? What's the primary action?
-4. **Sketch options** — at least 2 approaches. Identify the tradeoff (density vs. clarity, speed vs. discoverability, flexibility vs. guidance).
+4. **Sketch options** — at least 2 approaches. Identify the tradeoff (density vs. clarity, speed vs. discoverability, flexibility vs. guidance). **Decide the device mode and pick interaction patterns from `references/mobile-patterns.md` per breakpoint** — the mobile and desktop sketches may use different patterns (bottom sheet vs popover, cards vs table, segmented control vs sidebar) under one visual identity.
 5. **Choose & justify** — recommend one, explain why in terms of the user task.
 6. **Spec the implementation** — components used, tokens, states (default/hover/focus/active/disabled/loading/error/empty), responsive behavior, motion spec, accessibility checklist.
 7. **Flag risks** — what will break at scale (long strings, missing images, RTL, very wide viewports)?
@@ -213,6 +217,7 @@ If you're auditing or redesigning an existing surface, start by navigating to it
 - **Never hardcode colors.** Semantic tokens only (`--primary`, `--surface`, `--text-primary`). Site branding is runtime-injected.
 - **Mobile-first.** Design the 360px view first. If it doesn't work on mobile, the design is wrong.
 - **Touch targets ≥44×44.** No exceptions for "desktop-only" — users hit desktop with trackpads, styluses, and touch screens.
+- **Mobile uses app-like patterns, never a shrunk desktop.** Bottom tab bar, bottom/action sheets, card lists, segmented controls, app-style headers — pick the pattern from `references/mobile-patterns.md`, don't improvise. Never ship a horizontal-scroll toolbar for essential controls, a hover-dependent flow, a hamburger for primary nav, or a pinch-zoom table.
 - **Validate framework behavior via docs.** Use context7 MCP for Radix UI, Framer Motion, Next.js, Tailwind v4 before guessing at API surface.
 - **No design-for-demo.** If the design only works when every field is filled and every image loads perfectly, the design is broken. Design for the messy real data.
 - **No placeholder copy** that could ship to customers. Use realistic copy or clearly marked `[TODO: copy]`.

@@ -35,7 +35,7 @@ aws cloudformation deploy ...
 
 ## Other deploy traps seen in prod
 
-- **A new Express route 403s post-deploy** if you forgot the matching API Gateway event in the SAM fragment — see the CMS/Secure per-repo skills' "add a route" checklists. This is a *deploy-config* miss, not a code bug. (Auth angle: `vivreal-auth-architecture`.)
+- **A new Express route fails post-deploy if you forgot its API Gateway event.** CMS, Secure, and Client API all wire **one explicit per-route event — there is no catch-all `{proxy+}` integration** — so an Express route with no matching event in the SAM fragment is unreachable at the gateway and falls through to the default IAM-protected resource. Symptom varies by repo: **CMS → 403** (SigV4/IAM; the Cognito authorizer never fires), **Secure → 502**, **Client → edge reject**. Add the event in the `cloudformation/` fragment (Client: `sam-template.yaml`); never hand-edit the generated `allRoutes.yaml`. ***Main API is exempt*** — its routes are public flows with no gateway authorizer, so there's no auth gate to fall through to. This is a *deploy-config* miss, not a code bug — see the CMS/Secure/Client per-repo skills' "add a route" checklists. (Auth angle: `vivreal-auth-architecture`.)
 - **Deploy-role IAM scoping** can block a new resource type (the deploy role's EventBridge policy was `vh-*`-only and blocked an EventBridge rule on another stack). See `vivreal-iam-secrets`.
 - **Reserved-concurrency in templates** silently reverts CLI tuning on the next deploy — see `references/scaling.md`.
 

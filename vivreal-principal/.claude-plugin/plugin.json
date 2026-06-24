@@ -1,6 +1,6 @@
 {
   "name": "vivreal-principal",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Repo-agnostic principal-level agents — single-dispatch coordinator, coder, architect, researcher, reviewer, designer, and growth auditor. Proactively dispatched for design-then-build, audits, refactors, code review, and GTM analysis in any repository.",
   "author": {
     "name": "Vivreal",

@@ -56,6 +56,10 @@ Media served via `media.vivreal.io` with signed URLs (unsigned → 403). `buildM
 
 `frozenCheck` middleware reads `frozen` from authorizer context and returns 400 "The group is frozen" on every route for suspended groups.
 
+### Adding a route — the per-route SAM-event rule
+
+VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway event per route** — there is **no catch-all `{proxy+}` integration**. Adding the Express route is not enough: if the gateway has no event for the path, the request never reaches Express and is rejected at the edge (it falls through to the default IAM-protected resource). **Always add the matching per-route event to the SAM template when you add a route.** `VR_Client_Auth` (the API-key authorizer) is **Serverless Framework** (`serverless.yml`) and only changes when the *authorizer* logic does — not for new content routes. (Same rule bites CMS as a 403 and Secure as a 502: `vivreal-lambda` deploy reference + `vivreal-auth-architecture`.)
+
 ### Gotchas
 
 - **Array media-signing latent bug (fixed 2026-05-27, commit b3558ab):** the `targetField.name` pattern silently no-op'd on arrays; the bug lived in 5 duplicate copies (3 inline + 2 helpers). Galleries never signed despite appearing to work. Now one shared impl. Watch for regressions in media-signing helpers; `looksLikeMediaItem` requires `mimeType`. (Full bug class: `vivreal-media-cdn`.)
