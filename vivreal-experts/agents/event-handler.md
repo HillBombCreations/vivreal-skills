@@ -38,14 +38,14 @@ Read `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` before reasoning. Do NOT 
 Multi-step Step Functions site-deploy pipeline. Forks customer site branches from Vivreal_Templates, creates Amplify app, deploys, associates custom domain via Route53. Plus the domainPurchase* Lambda family (Plan 3 shipped ~2026-05) — see `docs/ecosystem/aws-lambda-inventory.md` for the deployed function list. Serverless Framework + esbuild, Node.js 20. Different deploy stack from the SAM-based backends.
 
 ### Known gotchas
-- Step Functions site-deploy steps: createGithubBranch → createAmplifyApp → startAmplifyDeploy → checkAmplifyDeploy → getDefaultUrl → associateDomain → checkDomainAssociaion (typo intentional — do NOT rename) → markSiteLive (or markSiteFailed). Verify the current step list against the state machine definition in the repo when it matters.
-- `createBranch.js:29-31` forks `refs/heads/${templateType}` from HillBombCreations/Vivreal_Templates. KNOWN BUG (inbox #91): no `ecommerce`/`showcase` branches exist (only `main` + per-customer). hosted_by_us site creation fails for those template types at the Step Function.
-- `templateType` flow: `hosted_by_us` triggers Step Function → forks branch by templateType. `link_existing_collections` and `self_hosted_collections` do NOT trigger Step Function.
-- Stripe key injection: `STRIPE_SECRET_KEY` set as Amplify env var via `integrationKey` param; written to `.env.production` during Amplify preBuild.
+- Step Functions site-deploy steps (ASL state names are PascalCase): SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy → WaitBeforeCheck(30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl → AssociateDomain? → AssociateDomain → WaitBeforeCheckingDomain(30s) → CheckDomainAssociation → DomainAssociated? → MarkLive (or MarkFailed). The `checkDomainAssociaion` typo survives only in the Lambda name/ARN. Verify against the state machine definition when it matters.
+- `createBranch.js:9` `BASE_BRANCH="main"`, `:35` forks `refs/heads/main` for every template type (#91 FIXED). The runtime storefront differentiates via `pageConfigs[].format`, not per-template-type branches.
+- `templateType` flow: `hosted_by_us` triggers Step Function → forks the per-customer branch off `main`. `link_existing_collections` and `self_hosted_collections` do NOT trigger Step Function.
+- Stripe key: `STRIPE_SECRET_KEY` is NOT injected into Amplify. It's a provider-level Secrets Manager env (`serverless.yml:48-50`) used by the domain-purchase saga's `activateStripeSubscription` step.
 - buildSpec is defined in EventHandler, NOT in `Vivreal_Templates` repo.
-- `databaseDict` lookup duplicated from VR_Secure_API — keep in sync if tier→DB mapping changes.
-- 290s timeout on Step Function steps that poll AWS APIs (Amplify deploy, Route53) — Lambda is provisioned with this in mind.
-- Domain purchase flow: `domainPurchase*` Lambdas integrate with Route53 Domains API; polling is bounded.
+- `dbKey` is passed in the Step Function input (not a duplicated `databaseDict` lookup); scheduled jobs resolve DB via `src/shared/utils/deriveDbKey.js`.
+- No 290s timeout. Poll Lambdas are 30–60s with 30s Wait states between polls; only `subdomainCleanup` + `domainPurchaseReconciliation` crons are 300s (`serverless.yml:196,260`).
+- Domain purchase is a second state machine (`docs/ops/domain-purchase-saga.asl.json`) with a Stripe `invoice.paid` task-token wait + reconciliation cron. Plus `subdomainCleanup` daily cron + `updateSiteEnvVars` Lambda.
 
 ### AWS Lambda best-practice alignment
 - Serverless Framework + esbuild — different deploy stack from the 3 Express APIs (which use SAM). Verify deploy commands and IAM separately.
@@ -57,10 +57,10 @@ Multi-step Step Functions site-deploy pipeline. Forks customer site branches fro
 
 ### MongoDB consistency & performance
 - Reads `groups` collection in mainDb to fetch `key`, `bucketname`, and integration credentials for the site being deployed.
-- Writes: site status updates (`PROVISIONING` → `LIVE` | `FAILED`) atomically via `findOneAndUpdate`.
-- No tenant DB writes — site provisioning is a control-plane operation.
-- Lock pattern: use a status-based optimistic lock (`{ _id, status: 'PROVISIONING' }`) to prevent double-provisioning on retry.
-- Domain purchase records: separate `domainPurchases` collection, indexed on `groupID` and `siteID`.
+- Site status is lowercase: `deploying` (`createSiteCollectionData.js:134`) → `live` (`markSiteLive/index.js:41`) | `failed`, plus `sync_conflict`. There is NO `PROVISIONING` status.
+- `seedCollections` DOES write the tenant DB (collection groups + objects) + mainDb counters directly via `@hillbombcreations/schemas` — it is not control-plane-only.
+- Idempotency, not a status lock: the seed step no-ops if `site.collectionGroups` is non-empty (`seedCollections/index.js:145-170`); `CreateBranchCommand` is wrapped in try/catch for retry safety.
+- Domain purchase records live in the `domainOrders` collection (`src/shared/db/domainOrders.js:54`).
 
 ## Output Format (MANDATORY)
 

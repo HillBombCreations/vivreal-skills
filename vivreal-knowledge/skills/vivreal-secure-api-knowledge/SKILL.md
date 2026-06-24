@@ -7,9 +7,9 @@ description: Use when working in VR_Secure_API — Vivreal's authenticated-opera
 
 The authenticated-ops backend: group/team mgmt, site creation+deploy, Stripe billing/subscriptions, profile switching, roles. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `C:\repos\VR_Secure_API\CLAUDE.md` for full route lists.
 
-## Architecture — 6 Lambdas
+## Architecture — 9 Lambdas
 
-`userAndAuth` (profile switch, email, logout), `billingAndSubscription` (Stripe checkout/portal/webhooks/preflight), `createAndJoinGroup`, `createSites` (templates, Route53, Step Functions, WebSockets — most files + AWS integrations), `getGroupInformation` (read-only + admin attribution), `updateGroup` (members, roles, API keys, integrations, overage). Shared: `encryptionUtils.js` (AES-256-GCM for integration creds), `handleHBRoutes.js`, `socket.js`, `auditLog.js`, `tierQuotas.js`.
+`userAndAuth` (profile switch, email, logout), `billingAndSubscription` (Stripe checkout/portal/webhooks/preflight), `createAndJoinGroup`, `createSites` (templates, Route53, Step Functions, WebSockets — most files + AWS integrations), `getGroupInformation` (read-only + admin attribution), `updateGroup` (members, roles, API keys, integrations, overage), `agent` (`src/agent/` — AI agent orchestrator + tool layer), `webhookDelivery` (`src/webhookDelivery/` — SQS consumer, HMAC-signed outbound webhooks), `analyticsSnapshot` (`src/analyticsSnapshot/` — EventBridge cron). Shared: `encryptionUtils.js` (AES-256-GCM for integration creds), `handleHBRoutes.js`, `socket.js`, `auditLog.js`, `tierQuotas.js`.
 
 ## Multi-tenant routing — `dbKey` (NOT `key`)
 
@@ -31,6 +31,7 @@ The authenticated-ops backend: group/team mgmt, site creation+deploy, Stripe bil
 ## Other patterns
 
 - `createSiteCollectionData` is now site-doc-only (~p95 <5s); collection seeding moved to `Vivreal_EventHandler/seedCollections` (first Step Function state) to fix a 504. Keep manifests in `templates/*.manifest.js` synced with EventHandler.
+- **Sites doc shape on create** — `createSiteCollectionData` inserts: `name`, `domainInformation`, `deployment{status:'deploying'}`, `siteInfo{templateType,mode}`, `key` (slugified siteName), `groupID`, `pages` (empty unless the portal supplies them), `collectionGroups:[]`, `homeSections:[]`, `integrationsUsed` (`['stripe']` for ecommerce, else `[]`), `businessInfo`, `socialLinks`, `siteDetails{schema,values}` (service `createSiteCollectionData.js:127-163`). The EventHandler `seedCollections` step backfills `pages` + `collectionGroups`. The full schema (`Vivreal-Schemas/schemas/siteSchema.js:46-171`) also carries `deployment{status,message,errorMessage,updatedAt,appId}`, `domainInformation{domain,subdomain,live_url,pendingCustomDomain,purchasedDomain{...}}`, `pages[].blocks[]`, `collectionGroups[]` (`CollectionGroupRef` = name+id), deprecated `homeSections[]`, `navigation{}`, `footer{}`, `emailPopup`, `businessInfo{}`, `archived`.
 - Audit logging fire-and-forget to tenant `auditLogs`; 5 instrumented services (role/user/integration/tier changes). No content versioning here (that's CMS).
 - Integration creds encrypted AES-256-GCM (`enc:v1:` prefix); plaintext fallback for pre-migration keys. `validateIntegrationCreds()` only really validates Stripe; social types return `true` (Phase 1).
 

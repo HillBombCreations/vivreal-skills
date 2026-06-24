@@ -31,11 +31,11 @@ All routes are under `/tenant/`. **CMS reads the tenant DB key from `req.query.k
 - **Audit logging** (`src/shared/auditLog.js`) — fire-and-forget, lazy Mongoose model registration, 10 controllers instrumented. If it fails the main op still succeeds.
 - **Content versioning** (`src/shared/contentVersion.js`) — `createVersion` (auto-increment + tier-based pruning), hooked into create/update/delete; revert via `PUT /tenant/collectionObject/revert`. Versioning lives ONLY here, not Secure API.
 - **Integration sync** (`services/sync/`) — provider adapter pattern (`collectionName`, `fetchExternalItems`, `mapToDocument`, `getExternalId`). `bulkWrite` upsert keyed on external ID (idempotent). Stripe works immediately; social adapters need OAuth creds (throw `MISSING_CREDENTIALS`). Called by VR_Secure_API, not the portal directly.
-- `publishDate: null` = draft (hidden from public). Scheduling via EventBridge → SQS FIFO → integrations Lambda.
+- **Multi-provider integration surface** — Shopify, Square, Mailchimp, and 5 social platforms, plus an `integration_accounts` multi-account publishing model (one provider can have several connected accounts; posts target a specific account).
+- `publishDate: null` = draft (hidden from public). Scheduling is a **per-post EventBridge Scheduler one-shot** (`schedulerClient.createSchedule`, `scheduleExpression: at(...)`, `actionAfterCompletion: DELETE`) → SQS → `processSocialPost` (createIntegrationObject.js:246-267) — not a standing SQS FIFO pipe.
 
 ## Gotchas
 
 - **arm64 Lambda layers only.** An x86_64 layer extension binary crashes at init (`Extension.Crash`). OTEL collector layer caused this; removed March 2026. FFmpeg layer must also be arm64.
 - Nearly zero custom indexes — missing on `collectionObjects.refID`, `.publishDate`, `sites.groupID`.
-- Known tech debt: `createStripeIntegrationObject.js:118` undefined `extra`; `updateIntegrationObject.js:54` undefined `id`/`bucketName`.
 - Stripe fulfillment webhook is the one route with `Auth: NONE` (validates Stripe signature instead).

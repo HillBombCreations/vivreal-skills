@@ -188,7 +188,7 @@ Dispatch `coder`:
 ```
 description: Implement <slug> fix
 subagent_type: coder
-prompt: Implement the approved plan at docs/bugs/<slug>/plan.md for bug <slug>. Read the shared-standards skill first. Apply only changes marked [x] APPROVE. Follow plan exactly, zero scope creep. Run npm run lint when done. Report files modified, lint result, and any blockers.
+prompt: Implement the approved plan at docs/bugs/<slug>/plan.md for bug <slug>. Read the shared-standards skill first. Apply only changes marked [x] APPROVE. Follow plan exactly, zero scope creep. Run npm run lint when done. Report files modified, lint result, and any blockers. You are running inside the /coordinator gated workflow — SKIP your auto-review step; Phase 5 runs the review gate. Just lint + type-check and report.
 ```
 
 Wait for completion. If coder reports blockers, halt and surface to user.
@@ -227,7 +227,7 @@ Read `docs/bugs/<slug>/review-<N>.md`.
       ```
       description: Address review-<N> for <slug>
       subagent_type: coder
-      prompt: Fix mode. Read the shared-standards skill, docs/bugs/<slug>/plan.md, and docs/bugs/<slug>/review-<N>.md. Address every FAIL item with the precise fix the reviewer asked for. ZERO new scope. Re-run lint. Report files modified.
+      prompt: Fix mode. Read the shared-standards skill, docs/bugs/<slug>/plan.md, and docs/bugs/<slug>/review-<N>.md. Address every FAIL item with the precise fix the reviewer asked for. ZERO new scope. Re-run lint. Report files modified. Skip your auto-review — the coordinator re-runs the reviewer (pass <N+1>) after your fix.
       ```
     - If reviewer flagged test issues, also dispatch `tester` to update tests
     - Increment `N`. Loop.

@@ -28,6 +28,7 @@ prompt: |
 
   Write production-grade code. Run lint and type-check when done.
   Report all files modified and any decisions you made.
+  SKIP your auto-review — this command runs the review gate in Post-Dispatch.
 ```
 
 ## Post-Dispatch

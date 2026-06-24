@@ -91,7 +91,7 @@ WAIT. On `cancel`: halt. On `go`: parse approval state; if any REVISE remains, h
 
 ## Phase 4 - Implementation (AUDIT, FEATURE, REFACTOR, DOCS)
 
-Dispatch `coder`. Prompt must include: read the `shared-standards` skill, `CLAUDE.md`, `brief.md`, `findings.md`; if design ran read `design.md` and apply only `[x] APPROVE` items with zero scope creep; if no design (DOCS workflow) use findings.md as spec; read relevant backend `CLAUDE.md`. Production-grade expectations (edge cases, never swallow errors, portal conventions: `createAuthAxios` for proxy routes, signed URLs via `/api/proxy/get-media` for media, `createProxyHandler` factory for proxy routes unless cookie-setting). Write tests where testable logic exists. Run `npm run lint`; run `npm run build` if TS/Next config touched. Report files modified, tests added, lint/build result, any decisions outside the design.
+Dispatch `coder`. Prompt must include: read the `shared-standards` skill, `CLAUDE.md`, `brief.md`, `findings.md`; if design ran read `design.md` and apply only `[x] APPROVE` items with zero scope creep; if no design (DOCS workflow) use findings.md as spec; read relevant backend `CLAUDE.md`. Production-grade expectations (edge cases, never swallow errors, portal conventions: `createAuthAxios` for proxy routes, signed URLs via `/api/proxy/get-media` for media, `createProxyHandler` factory for proxy routes unless cookie-setting). Write tests where testable logic exists. Run `npm run lint`; run `npm run build` if TS/Next config touched. Report files modified, tests added, lint/build result, any decisions outside the design. You are inside the /orchestrate gated workflow — SKIP your auto-review (Phase 5 runs the review gate).
 
 After: verify via `git status`, append Phase 4 metrics. If coder blocks: halt and surface. Else proceed.
 
@@ -99,7 +99,7 @@ After: verify via `git status`, append Phase 4 metrics. If coder blocks: halt an
 
 Dispatch `reviewer`. Prompt must include: read the `shared-standards` skill, `CLAUDE.md`, `brief.md`, `findings.md`, `design.md`. Diff source: `git diff HEAD`. Review 8 dimensions (Correctness, Security, Performance, Error handling, Testing, Conventions, Maintainability, Docs/observability) with `SOLID` / `CONCERN` / `BLOCK` ratings and file:line citations. Verdict: `Ship it` / `Ship with notes` / `Do not ship`. Write to `docs/projects/<slug>/review.md`.
 
-After: extract verdict + counts, append Phase 5 metrics. On `Do not ship`: dispatch coder once in fix mode addressing every `BLOCK`, then reviewer pass 2. If blockers remain after pass 2: HALT and surface to user.
+After: extract verdict + counts, append Phase 5 metrics. On `Do not ship`: dispatch coder once in fix mode addressing every `BLOCK` (tell it to skip its auto-review — the reviewer pass 2 follows), then reviewer pass 2. If blockers remain after pass 2: HALT and surface to user.
 
 ## Phase 6 - Wrap-up (optional)
 

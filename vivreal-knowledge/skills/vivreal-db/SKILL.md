@@ -98,7 +98,6 @@ that equal the *string form* of a target document's **ObjectId `_id`**.
 |---|---|---|
 | `<any tenant doc>.groupID` | `Vivreal.groups._id` | tenant → Vivreal |
 | `collection_objects.collectionObj.refID` | `collection_groups._id` | within tenant DB |
-| `collection_objects.collectionGroupID` (newer, indexed) | `collection_groups._id` | within tenant DB |
 | `integration_objects.collectionGroup.refID` | `collection_groups._id` | within tenant DB |
 | `media_files.collectionGroup.refID` | `collection_groups._id` | Vivreal → tenant DB |
 | `media_files.collectionObjID` | `collection_objects._id` | Vivreal → tenant DB |
@@ -162,24 +161,34 @@ plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
 
 - **`collection_groups`** — `_id`, `name`, `type`, `groupID`(str), `archived`, `linked`,
   `tags[]`, `schema`(strict:false), `widget`, `tableConfig`, `label`, `author{name,email}`,
-  timestamps. Indexes: `groupID`, `groupID+type`. `_id` is referenced as a **string**
+  `hasMedia`, `useAsTemplate`, `system`, `skipAudit`, `skipVersioning`, `siteRole`,
+  `variantKeys`, `approvalRequired`, timestamps. **Indexes: none declared** — the schema
+  defines only the default `_id` index (no `groupID` or `groupID+type` secondary index).
+  `siteRole` is a constrained enum (`subscribers|reviews|reservations|quote-requests|contact|testimonials|null`)
+  — the stable discriminator for built-in site forms, orthogonal to both `type` and `system`
+  (three orthogonal discriminators). `_id` is referenced as a **string**
   `collectionObj.refID` on objects.
 - **`collection_objects`** — `collectionObj{name, refID(str)}`, `groupID`(str),
   `objectValue`(strict:false), `integrationInfo`, `archived`, `publishDate`(**Date**|null),
-  newer `published`(bool)/`publishedAt`(Date), `approvalStatus`. Indexes include
-  `collectionObj.refID`, `collectionGroupID`, `groupID`, `publishDate`, `approvalStatus`,
-  and the **outreach** indexes (`outreach_contacts_*`, `outreach_companies_*`,
-  `outreach_enrollments_seq_contact_unique` — partial+unique).
-- **`integration_objects`** — `platform`(str, e.g. `stripe`), `collectionGroup{name,refID(str)}`,
-  `groupID`(str), `objectValue`(strict:false), `publishDate`, `accountHandle`. Indexes:
-  `groupID+platform`, `platform`, `accountHandle`.
+  `approvalStatus`(enum: draft/pending_review/approved/rejected), `approvalRequestedAt`/`approvalRequestedBy`,
+  `approvalDecidedAt`/`approvalDecidedBy`, `approvalNote`, `usingVariant`, `author`,
+  `embedding`/`embeddingModel` (both `select:false`). Schema indexes: `collectionObj.refID`,
+  `publishDate`, `approvalStatus` (collectionObjectSchema.js:96-98). The only genuinely missing
+  index is `groupID`.
+- **`integration_objects`** — `id`(str), `platform`(str, e.g. `stripe`), `collectionGroup{name,refID(str)}`,
+  `groupID`(str), `author`, `usingVariant`, `accountId`(**ObjectId**), `accountHandle`,
+  `publishDate`, `scheduledTaskId`, `sourceRef{objectID,collectionName,collectionID}`,
+  `embedding`/`embeddingModel`, `objectValue`(strict:false). Schema is `strict:false`, so social
+  docs also persist `accountType`/`status`/`errorMessage`. Indexes: single-field `platform` and
+  `accountHandle` only (integrationSchema.js:57,64) — there is **no** `groupID+platform` compound index.
 - **`sites`** — `groupID`(str), `key`(site slug), `collectionGroups[]`, `collectionObjIds[]`,
   `integrationIds[]`, `pages[]`, `navigation{}`, `footer{}`, `deployment{status,...}`,
   `siteDetails{schema,values}`, `domainInformation`. Index: `groupID`.
 - **`content_versions` / `site_versions`** — `entityId`(str), `entityType`, `version`(num),
   `snapshot`, `changeSummary{changedFields, changeType}`, `groupID`. Index: `entityId+version`.
 - **`audit_logs`** — `action`, `entityType`, `entityId`(str), `groupID`, `actor{email,name}`.
-  Indexes: `groupID+createdAt`, `groupID+entityType+entityId+createdAt`.
+  Indexes: `{groupID:1, createdAt:-1}`, `{groupID:1, entityType:1, entityId:1, createdAt:-1}`
+  (auditLogSchema.js:35,37).
 
 Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tier`,
 `owner`, usage counters), **`leads`** (`email` unique, `attribution.first/last`),
@@ -195,7 +204,7 @@ Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tie
    (and `media_files`/`usage_trackings` in Vivreal) carries `groupID`. Omitting it crosses tenants.
 3. **Never query mainDb by `groupName`.** `active_ctx` carries no `groupName`. Use
    `{ _id: <ObjectId(groupID)> }` or `{ key: <group.key> }`. `groupName` is display-only.
-4. **String refs vs ObjectId** — `groupID`, `collectionObj.refID`, `collectionGroupID`,
+4. **String refs vs ObjectId** — `groupID`, `collectionObj.refID`,
    `collectionObjID`, `entityId` are **strings** on tenant docs. To filter them, pass strings.
    To JOIN them to an `_id`, cast `ObjectId(ref)` (see the linking section). Mixing these up
    silently returns zero rows.
@@ -219,10 +228,12 @@ Check `publishDate` type and value FIRST. (Verified live: it is a `Date` on heal
 Outreach **contacts, companies, and enrollments are `collection_objects`** in the tenant DB
 (`general_shared`), under system `collection_groups`, differentiated by `collectionObj.refID`.
 The dedicated `outreach_*` partial/unique indexes on `collection_objects` (e.g.
-`outreach_contacts_email_unique`, `outreach_enrollments_seq_contact_unique`) enforce this.
-The `outreach` database holds only the global `suppressions` list. So to find a tenant's
-outreach contacts: resolve the Contacts system `collection_group` `_id`, then query
-`collection_objects` by `collectionObj.refID` (string) — same pattern as any content.
+`outreach_contacts_email_unique`, `outreach_enrollments_seq_contact_unique`) are **not in the
+shared Vivreal-Schemas `collectionObjectSchema` nor in VR_CMS_API** — they are created by
+VR_Outreach_API / applied directly to live Mongo, so treat them as live-DB/outreach-service
+artifacts, not schema-backed. The `outreach` database holds only the global `suppressions` list.
+So to find a tenant's outreach contacts: resolve the Contacts system `collection_group` `_id`,
+then query `collection_objects` by `collectionObj.refID` (string) — same pattern as any content.
 
 ## Known drift / data bugs (as of 2026-06-19)
 

@@ -32,6 +32,7 @@ These bite constantly — know them even before opening a reference:
 | Need | Skill |
 |---|---|
 | How a site gets BUILT + DEPLOYED on AWS (Step Functions, Amplify, Route53, auto-sync) | `vivreal-site-deploy-pipeline` |
+| How a **Save → live** edit propagates to a built site (on-publish cache-revalidation webhook) | `vivreal-site-deploy-pipeline` |
 | The renderer package (composePage, primitives, publishing it) | `vivreal-renderer-knowledge` |
 | The customer-template repo (clientFetch, branch model) | `vivreal-templates-knowledge` |
 | Safe Mongo queries against the `sites` / `collection_objects` collections | `vivreal-db` |

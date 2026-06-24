@@ -47,6 +47,7 @@ Next.js 16 App Router web app with PWA capabilities. basePath: /app. 100+ edge-r
 - Edge runtime: no Node-only APIs in proxy routes (no `fs`, no `child_process`, no Node `Buffer` assumptions). Web Crypto IS available — `crypto.randomUUID()` and `crypto.subtle` work fine.
 - Hydration: any `useAuth()` in app layout MUST use `useHydrated()` guard.
 - Theme CSS vars injected at runtime — brief flash before applied.
+- Rich text = TipTap LongTextEditor (`src/components/Universal/LongTextEditor/`); stores image S3 keys (`data-media-key`), signed at render via `/api/proxy/get-media`; emitted markup must stay within the `capabilities.ts` sanitizer-parity allowlist.
 
 ### AWS Lambda best-practice alignment
 - Edge runtime is NOT AWS Lambda — it's Vercel Edge / Cloudflare Workers under the hood for Next.js.

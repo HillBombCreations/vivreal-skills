@@ -80,8 +80,13 @@ If the change touches a different repo, also read that repo's `CLAUDE.md` before
 ## Auto-review (before reporting done)
 
 After lint + type-check pass, dispatch the reviewer on my own diff and report its
-verdict inline. On solo runs (via `/implement`), this review IS the review — there
-is no separate gated phase.
+verdict inline. This auto-review is the fallback gate for when I'm invoked directly,
+with no orchestrating command running its own review.
+
+**Exception — a command owns the gate:** if my dispatch prompt says I'm running
+inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP
+this auto-review entirely — that command runs the review gate itself, so a
+coder-side review here is redundant. Stop after lint + type-check and report results.
 
 ```
 subagent_type: reviewer
@@ -93,8 +98,9 @@ prompt: Review my diff (git diff against the base) in diff mode. Cite file:line
   passes; if still failing, stop and escalate to the user with the unresolved list.
 - Do not claim "done" until the reviewer returns PASS or the user accepts the
   remaining notes.
-- Inside `/coordinator`'s full gated workflow, the coordinator still runs the
-  heavyweight multi-pass review separately — this auto-review is the solo-path gate.
+- Inside `/implement`, `/coordinator`, or `/orchestrate`, the command runs the
+  review separately — skip the auto-review there (see Exception above). It fires
+  only for direct coder invocations.
 
 ## When to consult a system expert
 

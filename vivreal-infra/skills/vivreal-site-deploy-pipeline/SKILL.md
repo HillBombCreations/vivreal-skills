@@ -12,16 +12,18 @@ How a site goes from "create" to "live on a custom domain." This is the AWS orch
 Invoked **only** by `VR_Secure_API/createSites`. State machine = Deploy-Site. Ordered states (each its own `vh_site_deployment_*` Lambda — **typos are real, do NOT rename**):
 
 ```
-seedCollections → createGithubBranch → createAmplifyApp → startAmplifyDeploy
-→ checkAmplifyDeploy (poll) → getDefaultUrl → associateDomain (optional)
-→ checkDomainAssociaion (SIC) → markSiteLive | markSiteFailed
+SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy
+→ WaitBeforeCheck (30s) → CheckAmplifyDeploy (poll) → DeployComplete? (Choice)
+→ GetDefaultUrl → AssociateDomain? (Choice) → AssociateDomain (optional)
+→ WaitBeforeCheckingDomain (30s) → CheckDomainAssociation → DomainAssociated? (Choice)
+→ MarkLive | MarkFailed
 ```
 
-- **`seedCollections`** (front state) — lifted 17+ sequential CMS-API invokes out of the API Gateway 29s / Lambda 30s budget that was causing 504s. Reads `seed.{author,token}` + `templateType`, seeds collection groups/objects in parallel via CMS create endpoints, writes `pages`/`collectionGroups`/`integrationsUsed` back to the site doc. Failure → `markSiteFailed`; partial seeds cleaned by `VR_Secure_API/deleteSite`.
+- **`seedCollections`** (front state) — lifted the (then ~17+) sequential CMS-API invokes out of the API Gateway 29s / Lambda 30s budget that was causing 504s. Reads `seed.{author,token}` + `templateType`, then writes collection groups/objects **directly to Mongo** (mainDb + tenant DB) via `@hillbombcreations/schemas` — **no CMS create endpoints** (`seedCollections/index.js:9-32`). Writes `pages`/`collectionGroups`/`integrationsUsed` back to the site doc. Failure → `markSiteFailed`; partial seeds cleaned by `VR_Secure_API/deleteSite`.
 - **`createGithubBranch`** — forks a per-customer branch from `refs/heads/main` of **Vivreal_Templates** (always `main`; runtime doesn't read `templateType`).
 - **`createAmplifyApp` / `startAmplifyDeploy` / `checkAmplifyDeploy`** — creates the Amplify app pointed at that branch and triggers/polls the build.
 - **`associateDomain` / `checkDomainAssociaion`** — optional custom-domain wiring via Route53 (+ a domain-purchase saga for newly registered domains).
-- **`markSiteLive` / `markSiteFailed`** — terminal; sets `sites.deployment.status` (`pending`/`deploying`/`live`/`failed`).
+- **`markSiteLive` / `markSiteFailed`** — terminal; sets `sites.deployment.status`. Initial status is `deploying` (`createSiteCollectionData.js:134`); the `POST /api/siteCollectionData` response returns `queued` (`controllers/createSiteCollectionData.js:80`); terminal is `live` (`markSiteLive/index.js:41`) or `failed`. A separate `sync_conflict` is set by the template-sync webhook (`templateSyncWebhook.js:62`). No `pending` is ever written.
 
 ### State machine is NOT in IaC
 The Deploy-Site state machine pre-dates the serverless setup; VR_Secure_API invokes it by a static ARN (`STATE_MACHINE_ID` in `hb-api-secrets`). Source of truth = `Vivreal_EventHandler/docs/ops/deploy-site-state-machine.asl.json`, pushed by `scripts/update-state-machine.sh` (idempotent; CI runs it after `serverless deploy` on `main`). **Console edits are drift and get clobbered.**
@@ -29,7 +31,8 @@ The Deploy-Site state machine pre-dates the serverless setup; VR_Secure_API invo
 ## Amplify customer sites — how they build
 
 - Each customer site = a **git branch off `Vivreal_Templates`** with its own Amplify app. The branch builds a Next.js site that renders via `vivreal-site-renderer` against live CMS/Client-API data.
-- **`createAmplifyApp` injects build env vars** so the branch builds against the right tenant: `API_KEY`, `SITE_ID`, `BUCKET_NAME` (`vivreal-{group.key}`), `CDN_BASE_URL`, collection-group IDs (`SHOWS_ID`, etc.), and `STRIPE_SECRET_KEY` if Stripe is active. Written to `.env.production` in Amplify's `preBuild` phase.
+- **`createAmplifyApp` injects build env vars** so the branch builds against the right tenant: `API_KEY`, `SITE_ID`, `NODE_AUTH_TOKEN` (PAT for `npm ci` against GitHub Packages), `NEXT_PUBLIC_SENTRY_DSN`, optional analytics vars, and the optional cache-invalidation pair `SITE_CACHE_TTL_SECONDS` + `REVALIDATE_WEBHOOK_SECRET`. A var only reaches the app if it is also grepped in the buildSpec allowlist (`src/shared/amplify/buildSpec.js:22-30`). **`BUCKET_NAME`, `CDN_BASE_URL`, collection-group IDs (`SHOWS_ID`, …), and `STRIPE_SECRET_KEY` are NOT injected.** Written to `.env.production` in Amplify's `preBuild` phase.
+- **Per-site cache-invalidation provisioning** — when `SITE_CACHE_TTL_SECONDS` is set, each deploy mints a per-site `REVALIDATE_WEBHOOK_SECRET` and auto-upserts a `webhooks` subscription so on-publish revalidation works out of the box (`createAmplifyApp/index.js:121-221`; gated via `serverless.yml:22-28`).
 
 ## "Sync main to site branches" — NO manual sync step
 
@@ -37,9 +40,11 @@ The Deploy-Site state machine pre-dates the serverless setup; VR_Secure_API invo
 
 So: renderer change → publish renderer package → bump dep on Templates main → push → branches auto-sync → Amplify rebuilds → live. (The renderer publishes via its own CI on push to its `master`.)
 
+If a branch sync hits a **merge conflict**, the sync workflow POSTs `/api/templateSyncWebhook`, which flips the affected sites to `deployment.status = sync_conflict` and alerts the portal — those need a manual merge (`VR_Secure_API/templateSyncWebhook.js:6-14,62`).
+
 ## Debugging a stuck / wrong site
 
-- **Stuck `pending`/`deploying`** → inspect the Step Functions execution for the failed state; check `checkAmplifyDeploy` (build failed) or `checkDomainAssociaion` (domain not yet associated).
+- **Stuck `deploying`** (the in-flight status; the API response says `queued`) → inspect the Step Functions execution for the failed state; check `checkAmplifyDeploy` (build failed) or `checkDomainAssociaion` (domain not yet associated).
 - **`failed`** → `markSiteFailed` ran; read the execution input/output and the failing state's logs. Re-create via `createSites` after fixing.
 - **"My Templates/renderer change isn't on the live site"** → either (a) you didn't push Templates `main` (branches only sync from main), (b) the renderer package wasn't published/bumped, or (c) Amplify hasn't finished rebuilding. NOT a manual-sync problem — there is none.
 - **"Content created in portal missing on site"** → that's the publishDate storefront gate, not the deploy pipeline — see `vivreal-db`.

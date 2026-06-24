@@ -11,10 +11,11 @@ auto-sync, env-var injection) read `vivreal-site-deploy-pipeline`; this is the r
 checking ONE deploy.
 
 **Region:** `us-east-1`. **State machine:** `Deploy-Site` (ARN in `hb-api-secrets:STATE_MACHINE_ID`).
-**Ordered states** (typos are REAL — do not "fix" them):
-`seedCollections → createGithubBranch → createAmplifyApp → startAmplifyDeploy →
-checkAmplifyDeploy → getDefaultUrl → associateDomain → checkDomainAssociaion →
-markSiteLive | markSiteFailed`.
+**Ordered states** (typos are REAL — do not "fix" them; Wait/Choice states show up in `get-execution-history`):
+`SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy →
+WaitBeforeCheck (30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl →
+AssociateDomain? → AssociateDomain → WaitBeforeCheckingDomain (30s) →
+CheckDomainAssociation → DomainAssociated? → MarkLive | MarkFailed`.
 
 ## Inputs you can start from
 A group key / site key / site name, a `sites._id`, or an Amplify `appId`. Resolve to the
@@ -32,7 +33,8 @@ sites.findOne({ groupID: "<gid>" })  // or { key: "<siteSlug>" }, scoped by grou
 ```
 - `status: live` → done. Report the `domainInformation.live_url`.
 - `status: failed` → `markSiteFailed` ran; `deployment.message`/`errorMessage` has the reason. Go to step 2 to find the failing state.
-- `status: pending`/`deploying` → in flight or stuck. Go to step 2.
+- `status: deploying` (in-flight; `pending` is never written) → in flight or stuck. Go to step 2.
+- `status: sync_conflict` → a Templates `main` auto-sync hit a merge conflict on this site's branch; needs a manual merge, not a deploy re-run.
 
 **Shortcut:** the `mcp__awslabs_lambda-tool-mcp-server__vh_site_deployment_check` tool (available
 to the `vivreal-ops` agent) wraps steps 1–2 — dispatch `vivreal-ops` if you have it and want a one-shot.
@@ -68,10 +70,13 @@ aws amplify list-jobs --region us-east-1 --app-id "<appId>" --branch-name "<bran
 aws amplify get-job --region us-east-1 --app-id "<appId>" --branch-name "<branch>" --job-id "<jobId>" \
   --query "job.steps[].{step:stepName,status:status,reason:statusReason}" --output table
 ```
-- A `FAILED` job step (usually `BUILD`) with its `statusReason` is the root cause. Common: missing/stale
-  build env var (`API_KEY`/`SITE_ID`/`BUCKET_NAME`/collection-group IDs injected by `createAmplifyApp`),
-  a renderer/Templates build break, or a private-package install failure (`@hillbombcreations/*` — see
-  the GitHub Packages note in the package-update skill).
+- A `FAILED` job step (usually `BUILD`) with its `statusReason` is the root cause. The canonical
+  failure is a private-package install failure on `npm ci` for `@hillbombcreations/*` — a `403
+  "Permission ... not allowed to Read organization package"` when the build env's `NODE_AUTH_TOKEN`
+  is missing/stale (`createAmplifyApp/index.js:90-100`; see the GitHub Packages note in the
+  package-update skill). Also possible: a missing/stale `API_KEY`/`SITE_ID` (the env vars
+  `createAmplifyApp` injects — note it does NOT inject `BUCKET_NAME` or collection-group IDs), or a
+  renderer/Templates build break.
 
 ### 4. Report
 - Current `deployment.status` + `updatedAt`.
