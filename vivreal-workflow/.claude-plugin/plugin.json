@@ -1,7 +1,7 @@
 {
   "name": "vivreal-workflow",
-  "version": "1.2.1",
-  "description": "The Vivreal bug/feature workflow — coordinator plus research, architect, coder, tester, reviewer, documenter, and vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /plan, /test, /reviewer, /vuln-fix, /bump-package, and more). Also ships the vivreal-brainstorming + vivreal-writing-plans + vivreal-subagent-driven skills (self-contained forks of the brainstorm → plan → execute chain; the planner auto-reviews its plan, and the executor dispatches a fresh coder per task with a reviewer gate between tasks), the vivreal-package-update skill (cross-repo dependency bumps for private @hillbombcreations GitHub Packages), and the shared-standards skill.",
+  "version": "1.3.0",
+  "description": "The Vivreal bug/feature workflow — coordinator plus research, architect, coder, tester, reviewer, documenter, and vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /plan, /test, /reviewer, /vuln-fix, /bump-package, and more). Also ships /promptify, which turns a messy, half-formed request into a structured, well-routed prompt using the bundled prompt playbook (picks the scenario, fills the brackets, flags what's missing, names the slash command it routes to). Plus the vivreal-brainstorming + vivreal-writing-plans + vivreal-subagent-driven skills (self-contained forks of the brainstorm → plan → execute chain; the planner auto-reviews its plan, and the executor dispatches a fresh coder per task with a reviewer gate between tasks), the vivreal-package-update skill (cross-repo dependency bumps for private @hillbombcreations GitHub Packages), and the shared-standards skill.",
   "author": {
     "name": "Vivreal",
     "email": "justin@vivreal.io"

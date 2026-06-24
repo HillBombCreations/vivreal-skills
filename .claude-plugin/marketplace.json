@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling — installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.6.0"
+    "version": "1.7.0"
   },
   "plugins": [
     {
@@ -22,7 +22,7 @@
     {
       "name": "vivreal-workflow",
       "source": "./vivreal-workflow",
-      "description": "The Vivreal bug/feature workflow: coordinator + research/architect/coder/tester/reviewer/documenter/vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix), and the shared-standards skill."
+      "description": "The Vivreal bug/feature workflow: coordinator + research/architect/coder/tester/reviewer/documenter/vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix), /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill."
     },
     {
       "name": "vivreal-knowledge",
