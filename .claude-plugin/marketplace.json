@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling — installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.7.0"
+    "version": "1.7.1"
   },
   "plugins": [
     {

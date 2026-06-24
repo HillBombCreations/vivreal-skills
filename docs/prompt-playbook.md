@@ -9,7 +9,7 @@ and a slash-command quick reference.
 The **canonical** playbook ships inside the `vivreal-workflow` plugin so the `/promptify` command can
 read it at runtime, even when the plugin is installed in another repo:
 
-> **[`vivreal-workflow/skills/cmd-promptify/prompt-playbook.md`](../vivreal-workflow/skills/cmd-promptify/prompt-playbook.md)**
+> **[`vivreal-workflow/references/prompt-playbook.md`](../vivreal-workflow/references/prompt-playbook.md)**
 
 Read that file for the full templates. Edit it there too — it's the single source of truth (this
 pointer exists only so the playbook is discoverable from `docs/`).

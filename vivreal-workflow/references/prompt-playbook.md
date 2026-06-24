@@ -3,8 +3,9 @@
 A set of reusable prompt templates for invoking the `vivreal-skills` plugin ecosystem
 correctly and getting optimal routing. Copy a template, fill the **[brackets]**, and send.
 
-> This file is the **canonical** playbook and ships inside the `vivreal-workflow` plugin so the
-> `/promptify` command can read it at runtime. A human-facing pointer lives at `docs/prompt-playbook.md`.
+> This file is the **canonical** playbook. It ships inside the `vivreal-workflow` plugin (at
+> `references/prompt-playbook.md`) so the `/promptify` command can read it at runtime, even when the
+> plugin is installed in another repo. A human-facing pointer lives at `docs/prompt-playbook.md`.
 
 ## How routing actually works
 

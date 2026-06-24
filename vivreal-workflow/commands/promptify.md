@@ -11,13 +11,13 @@ Your job is to transform that raw request into a polished, well-routed prompt bu
 
 ## Step 1 — Load the source of truth
 
-Read the bundled **`prompt-playbook.md`** that sits in this skill's own directory — the same folder as this `SKILL.md` (i.e. `${CLAUDE_PLUGIN_ROOT}/skills/cmd-promptify/prompt-playbook.md`). It ships with the plugin, so it's always present wherever this skill is installed. It contains:
+Read the bundled prompt playbook that ships with this plugin: **`${CLAUDE_PLUGIN_ROOT}/references/prompt-playbook.md`**. (If that variable isn't expanded for you, it's the `references/prompt-playbook.md` file at the root of the `vivreal-workflow` plugin — glob for it.) It contains:
 - 11 numbered scenario templates with fill-in **[brackets]**,
 - the three routing habits (name the repo/system, state the phase, state the definition-of-done + approval gate),
 - a **trigger cheat-sheet** (words → which agent they route to),
 - a **slash-command quick reference** (scenario → deterministic command).
 
-Treat that file as canonical. If it has changed since this skill was written, follow the file, not your memory.
+Treat that file as canonical. If it has changed since this command was written, follow the file, not your memory.
 
 ## Step 2 — Classify the request
 
@@ -55,5 +55,5 @@ Do **not** auto-run. The default is to hand back the formatted prompt and the op
 
 ## Notes
 
-- This skill is a router/formatter, not a worker. Keep your own output short — the value is the prompt block, not your narration.
+- This command is a router/formatter, not a worker. Keep your own output short — the value is the prompt block, not your narration.
 - If `$ARGUMENTS` is empty, ask the user for the one-line request you should format. Don't guess a topic.
