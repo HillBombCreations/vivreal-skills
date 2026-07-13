@@ -1,6 +1,6 @@
 {
   "name": "vivreal-product",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Read-only product & business audit agents for Vivreal: finance-auditor (unit economics, gross margin, cost stack, scale economics, margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), and ux-critic (dual-lens naive-user + designer usability critique of portal and customer-site screens, with a Playwright walkthrough). All three are advisory — they evaluate and recommend; fixes route to principal-coder/coder, content-creator/content-planner, or designer/principal-designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agents (which design and build).",
   "author": {
     "name": "Vivreal",

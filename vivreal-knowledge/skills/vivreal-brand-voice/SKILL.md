@@ -1,13 +1,19 @@
 ---
 name: vivreal-brand-voice
-description: Use when writing, reviewing, or critiquing Vivreal marketing copy, messaging, or brand content — landing pages, pricing copy, social posts, cold email, ad copy, onboarding/in-app copy, taglines, or any customer-facing words. Teaches the defined Vivreal voice (the "Approachable Guide" register for non-technical SMB founders), the hard-banned words/patterns (em dashes, corporate fluff, developer jargon), the positive voice rules, an on-voice audit rubric, channel best-practices (founder-led LinkedIn spine, sequenced multi-channel, short-form video, one-primary-CTA, benefit-led copy, quantified social proof), and AI prompt scaffolding for staying on-voice. Triggers on: brand voice, tone, copy, messaging, marketing content, landing page copy, pricing copy, cold email, social post, ad copy, tagline, headline, value prop, positioning, on-voice, off-voice, jargon, CTA, social proof, founder-led, channel strategy. The `marketing-auditor` agent grounds in this skill; the `content-planner`/`content-creator` agents PRODUCE content to this voice. For funnel/conversion ECONOMICS use `principal-growth-auditor`; for internal cost/margin use vivreal-unit-economics.
+description: Use when writing, reviewing, or critiquing Vivreal marketing copy, messaging, or brand content — landing pages, pricing copy, social posts, cold email, ad copy, onboarding/in-app copy, taglines, or any customer-facing words. Teaches the Vivreal voice (the "Approachable Guide" for non-technical SMB founders), the promise ("Create once. Publish everywhere." + easy, phone-first), the hard-banned words/patterns, the framing rules + honesty floor, the competitive frame, an on-voice audit rubric, channel best-practices, and AI prompt scaffolding. Triggers on: brand voice, tone, copy, messaging, marketing content, landing page copy, pricing copy, cold email, social post, ad copy, tagline, headline, value prop, positioning, on-voice, jargon, CTA, social proof, founder-led. The `marketing-auditor` agent grounds in this skill; the content agents in vivreal-content PRODUCE to this voice. Canonical source: C:\repos\vivreal-content\knowledge\01-voice-and-rules.md.
 ---
 
 # Vivreal Brand Voice — definition, rubric & channel playbook
 
-The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor that `content-planner`/`content-creator` write to. Distilled from the portal content agents + June-2026 brand-voice research (full source: `Vivreal_Portal_Mobile/docs/projects/vivreal-skills-global-agents/research-inspiration.md` §2).
+The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor that `content-planner`/`content-creator` write to (those agents live in `C:\repos\vivreal-content\.claude\agents\` — content tooling moved out of the portal 2026-06-25).
 
-> If `C:/Leads/.claude/agents/VIVREAL_BRAND.md` exists, it is the canonical brand guide — read it. This skill encodes the same voice so it works on any machine.
+> **Canonical voice source: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md`.** If that file and this skill diverge, that file wins — read it when it's available. This skill encodes the same voice so it works on any machine.
+
+Last synced: 2026-07-13
+
+## The promise behind every word
+
+**Create once. Publish everywhere.** We sell bigger reach with less effort, in plain language a baker or a plumber would use — never "a better CMS." The second half carries equal weight: **it's genuinely easy, and you run the whole thing from your phone or tablet like an app.** Lead with ease and mobile as often as the one-click pitch.
 
 ## Who we write for
 
@@ -31,24 +37,66 @@ Defined on four dimensions ([Technotize](https://technotize.io/insights/brand-vo
 - **Direct.** Short sentences. Active voice.
 - **Confident.** No hedges ("helps you," "enables you to"). Just: "Publish to Instagram. One button."
 - **Practical.** Describe what features DO, not what they ARE.
-- **Honest.** If a feature isn't shipped, don't pitch it.
+- **Plain-spoken.** No word a non-technical owner wouldn't use. "Update your site in a minute, not a call to a web guy."
+- **Honest.** If a feature isn't shipped, don't pitch it. Owners spot a fake instantly and trust tools that don't bluff.
 - **Show, don't tell.** Scenes over abstractions.
+
+### Framing rules (how any piece is framed)
+
+- **Gain frame, not loss frame.** "Would look sharper on phones" beats "you're losing mobile customers." Encourage, don't alarm.
+- **One observation, not a list.** Mention one thing. A second turns a helpful person into an auditor.
+- **Respect the competitor.** Name what they're genuinely good at, then win on product. Never punch down — their user is reading.
+- **Honesty floor.** Every claim must be one an owner would confirm is true. When in doubt, leave it out.
 
 ## Hard bans (any hit = rewrite)
 
 | Banned | Why | Use instead |
 |---|---|---|
-| Em dashes (`—`) | Strong AI-generated tell; damages credibility with SMB audiences | Periods, commas, semicolons, parentheses, line breaks |
-| "Leverage," "synergize," "empower," "revolutionize," "unleash," "unlock" | Corporate fluff | Verbs that describe what happens: "publish," "replace," "send" |
+| Em dashes (`—`) or en dashes (`–`) | Strong AI-generated tell; damages credibility with SMB audiences | Periods, commas, semicolons, parentheses, line breaks |
+| "Leverage," "synergize," "empower," "revolutionize," "unleash," "unlock," "solutions," "robust," "seamless," "optimize," "utilize" | Corporate fluff | Verbs that describe what happens: "publish," "replace," "send" |
 | "AI-powered ___ engine/platform/solution" | Tells what it IS, not what it DOES | "Write a caption. AI turns it into IG + LinkedIn + an email subject." |
 | "Game-changer," "best-in-class," "next-gen," "world-class" | Hype words cofounders distrust on sight | Specific outcomes with numbers |
 | "Are you struggling with…?" / "Tired of…?" openers | Infomercial cadence | A specific scene |
 | "Thoughts?" / "Agree?" closers | Engagement-bait cliché; LinkedIn downranks | A real question, or none |
-| Developer jargon: API, headless, schema, manifest, webhook, OAuth, JWT, edge runtime, multi-tenant, composable | ICP is non-technical | Plain English: "connection," "template," "behind the scenes" |
+| Developer jargon: API, API-first, headless, schema, manifest, webhook, OAuth, JWT, edge runtime, multi-tenant, composable, omnichannel, "content at scale" | ICP is non-technical | Plain English: "connection," "template," "behind the scenes" |
+| Any non-owner-visible term: "404," "structured data," "render," "meta description," "PWA" | **Owner-visible language only** — reference what an owner can SEE or DO | What the owner experiences: "that page is missing," "how it looks in Google," "installs on your phone" |
 | Excessive emoji (>5 IG, >2 LinkedIn/X/TikTok) | Reads as bot/spam | One anchor emoji max |
 | Empty hashtags (`#business`, `#marketing`, `#content`) | Pure noise | Niche tags + branded `#Vivreal #PublishOnce` |
 | Naming real customers / quoting real prospects | Privacy | Anonymized scenes |
 | Citing metrics ("3x reach," "saves 2 hours") not in the brand guide / not user-provided | Unverifiable claims | Omit, or flag for verification |
+
+## The competitive frame
+
+Lead against the tools owners actually know (plus the niche industry CMS a trade gets locked into), never enterprise-CMS jargon. Grant the strength, then win on product.
+
+| What they use | Their pain | Our opening |
+|---|---|---|
+| **WordPress** | Monolithic, slow, needs a developer to touch | A modern site they edit themselves, no dev |
+| **Squarespace / Wix** | Editing is a guessing game; nothing for social or email | True live-preview plus one-button publish everywhere |
+| **Shopify** | Store is fine; blog, social, email are separate tools | One portal for store, content, social, and email |
+| **Buffer / Mailchimp / Hootsuite** | Five tools that don't talk to each other | Replace the stack; create once, publish everywhere |
+| **Webflow** | Powerful, but built for designers | A professional site the owner can run, no designer |
+| **Niche / industry-specific CMS** | Clunky, dated, built for one trade; locked in, thin support | One easy system for site, social, and email together, on any device |
+
+The through-line that beats all of them: **it's easy, and it runs from your phone like an app.** An owner can update the site, post to social, and send an email between customers. Nothing else does that.
+
+## Honesty floor — claims to verify before publishing
+
+These recur in proof points. Confirm each is true and current before asserting it; if it isn't shipped, soften or cut.
+
+- **"Installs on your phone/tablet like an app"** (the PWA install prompt) — if install isn't live, say "works great on your phone" instead.
+- **Real AI checkout through a Stripe-connected store.**
+- **The plain-English AI assistant making site edits.**
+- **Live-preview parity in Site Studio** (what you see is what publishes).
+- **Any pricing number** — always swap in real current pricing, never placeholder ranges.
+
+## The shared page standard (web pages / comparison briefs)
+
+- Respect the competitor: name what they're good at, then win on product.
+- Structure for AI search: open with a one-paragraph direct answer, then a comparison table, then the detail.
+- Meta description 150–160 characters, benefit first, plain words, soft action.
+- One clear call to action, top and bottom. Default: start free, no credit card, setup in two minutes.
+- No em dashes, no jargon.
 
 ## On-voice audit rubric (score each 0-2)
 
@@ -92,11 +140,16 @@ founders (restaurant owners, venues, boutiques, creators).
 RULES:
 - Direct, short sentences, active voice. Confident, no hedges. Practical: say what
   the feature DOES, not what it IS. Show, don't tell — scenes over abstractions.
-- NO em dashes. NO corporate fluff (leverage/empower/revolutionize/unlock/synergize).
+- NO em or en dashes. NO corporate fluff (leverage/empower/revolutionize/unlock/
+  synergize/solutions/robust/seamless/optimize/utilize).
 - NO hype (game-changer/best-in-class/next-gen). NO infomercial openers
   ("Tired of…?") or engagement-bait closers ("Thoughts?").
-- NO developer jargon (API/headless/schema/manifest/multi-tenant/composable) — use
-  plain English ("connection," "template," "behind the scenes").
+- NO developer jargon (API/headless/schema/manifest/multi-tenant/composable/
+  omnichannel/"content at scale") and owner-visible language ONLY (no "404,"
+  "structured data," "render," "meta description," "PWA") — use plain English
+  ("connection," "template," "behind the scenes").
+- Gain frame, not loss frame. One observation per piece, not a list. Respect the
+  competitor: grant their strength, then win on product.
 - One primary CTA. Benefit-led. Don't invent unshipped features. Don't cite metrics
   you weren't given. Don't name real customers.
 - The non-technical-cofounder wedge shows up: "run your own site without calling a
@@ -111,4 +164,4 @@ Then self-check against the 6-point on-voice rubric before returning.
 - **`principal-growth-auditor`** — owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
 - **`vivreal-unit-economics`** — for the cost/margin numbers behind pricing copy.
 
-Sources: portal `.claude/agents/content-planner.md` + `content-creator.md` (hard bans, positive voice rules), `principal-growth-auditor` (ICP/wedge), research §2.
+Sources: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md` (canonical: promise, five traits, ban list, competitive frame, honesty floor), `vivreal-content\.claude\agents\content-planner.md` + `content-creator.md` (hard bans, per-platform limits, self-check), `principal-growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.

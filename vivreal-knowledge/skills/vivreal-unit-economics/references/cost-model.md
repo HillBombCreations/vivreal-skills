@@ -44,9 +44,9 @@ One M10 cluster holds all tenant DBs (`general_shared`, `pro_plus`, etc.) — no
 |---|---|---|---|---|---|
 | Basic | $19 | 50 | ~$2.50 | ~$1.40 | — |
 | Pro | $59 | 500 | ~$25 | ~$14 | — |
-| **Pro Plus** | **$119** | **5,000** | **~$250 (underwater)** | **~$140** | **~$50-80 (margin-positive)** |
+| **Pro Plus** | **$119** | **500** (was 5,000) | **~$25** | **~$14** | **~$5-8** |
 
-The core margin tail-risk: an uncached, maxed Pro Plus customer costs more in tokens than the plan charges. Optimized (caching + trimmed resent context + a leaner model like Haiku 4.5 for routine actions, Sonnet for complex), every tier is comfortably margin-positive even at max utilization.
+**The historical tail-risk is closed (July 2026):** the Pro Plus quota was cut 5,000 → 500 in `@hillbombcreations/tier-quotas` v2.3.0 (prompt caching was the shipping prerequisite), so a maxed Pro Plus customer now costs ~$14-25 against a $119 plan instead of ~$140-250. A per-group `group.agentUsage.quota` override can deliberately raise an account's quota — model any override against the pre-cut row (~$0.028-0.05/action uncached-to-cached).
 
 ## Scale ladder + margin
 

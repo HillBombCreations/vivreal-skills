@@ -1,7 +1,9 @@
 ---
 name: vivreal-unit-economics
-description: Use when reasoning about Vivreal's COST, MARGIN, PRICING, or UNIT ECONOMICS — gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches the real numbers: pricing $19/$59/$119 (~$45 blended/customer), gross margin ~84-90%, AWS ~$35/mo flat, Atlas tiers ($0 free → ~$60 M10 → ~$150 M20 → ~$400+ M30), Anthropic ~$4/customer blended WITH prompt caching, that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder (50→$2.25k, 500→$22.5k, 1k→$45k, 5k→$225k/mo). Triggers on: unit economics, gross margin, cost per customer, blended margin, pricing, $19/$59/$119, AWS cost, MongoDB Atlas cost, M10/M20/M30, Anthropic cost, AI token cost, prompt caching, infra cost at scale, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin/profitability — for GTM/funnel/retention/conversion economics use the `growth`/`principal-growth-auditor`/`growth-advisor` agents instead.
+description: Use when reasoning about Vivreal's COST, MARGIN, PRICING, or UNIT ECONOMICS — gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches the real numbers: pricing $19/$59/$119 (~$45 blended/customer), gross margin ~84-90%, AWS ~$35/mo flat, Atlas tiers ($0 free → ~$60 M10 → ~$150 M20 → ~$400+ M30), Anthropic ~$4/customer blended WITH prompt caching, AI quotas (Pro Plus now 500 actions), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. Triggers on: unit economics, gross margin, cost per customer, blended margin, pricing, AWS cost, MongoDB Atlas cost, M10/M20/M30, Anthropic cost, AI token cost, prompt caching, AI quota, infra cost at scale, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin — for GTM/funnel/retention economics use the growth agents instead.
 ---
+
+Last synced: 2026-07-13
 
 # Vivreal Unit Economics — cost, margin & pricing model
 
@@ -11,11 +13,11 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 
 ## Pricing & blended revenue
 
-| Tier | Price | Rough mix | Monthly action quota |
+| Tier | Price | Rough mix | Monthly AI action quota |
 |---|---|---|---|
 | Basic | **$19/mo** | ~50% | 50 |
 | Pro | **$59/mo** | ~35% | 500 |
-| Pro Plus | **$119/mo** | ~15% | 5,000 |
+| Pro Plus | **$119/mo** | ~15% | **500** (reduced from 5,000 in tier-quotas v2.3.0, July 2026 — per-group `agentUsage.quota` override can raise it) |
 
 - Blended ≈ **~$45/customer/mo** at the ~50/35/15 mix.
 - **Gross margin ~84-90%** today and it *improves with scale* — fixed infra is tiny and amortizes; the dominant cost is per-customer payment + AI, both small.
@@ -24,7 +26,7 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 
 1. **AWS ≈ $35/mo, essentially FLAT** at current scale (WorkMail + Amplify + Route53 dominate; Lambda is $0 free-tier-absorbed). Customer count barely moves this line. The M10 Mongo upgrade does NOT change it.
 2. **MongoDB Atlas — billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). $0 free → **~$60 M10** → **~$150 M20** → **~$400+ M30**. One cluster holds all tenant DBs — you don't pay per database.
-3. **Anthropic — the AI agent calls the Claude API directly (not Bedrock), billed directly.** ≈ **~$4/customer blended WITH prompt caching** (caching cuts ~45%, and a leaner model for routine actions cuts more). The tail risk: a maxed **Pro Plus** customer can cost ~$50-80/mo in AI *with* optimization (vs ~$250 uncached) against a $119 plan — optimized, every tier stays margin-positive.
+3. **Anthropic — the AI agent calls the Claude API directly (not Bedrock), billed directly.** ≈ **~$4/customer blended WITH prompt caching** (caching cuts ~45%, and a leaner model for routine actions cuts more). The old tail risk (a maxed Pro Plus at 5,000 actions costing ~$50-80/mo optimized against a $119 plan) was **closed in July 2026 by cutting the Pro Plus quota to 500** — the worst case is now an order of magnitude smaller; per-group overrides reopen it deliberately, case by case.
 
 ## The non-obvious rule: DB tier tracks PEAK CONCURRENCY, not signups
 
