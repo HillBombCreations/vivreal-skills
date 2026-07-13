@@ -152,6 +152,34 @@ audit from becoming a rewrite.
 
 ---
 
+## 12. Migrating an external website into Vivreal
+
+> Migrate **[URL]** into Vivreal for **[customer/group]**.
+> Follow the full pipeline — crawl → ingest → collections/integrations → site → assemble → audit — with the parity standard, both audit passes (live-DOM sweep + local render vs live), and stop at each human gate (pre-flight, pre-creation, cutover) for my approval.
+
+Migration is operated FROM `C:\repos\Vivreal_Site_Migrator` — open a session there and run
+**`/migrate <url>`** (its in-repo command with the 3 approval gates). From any other repo, the
+`vivreal-migrator-knowledge` skill supplies the pipeline map, heuristics, and the renderer
+capability manifest (`capabilities/CAPABILITIES.md`).
+
+---
+
+## 13. Content planning / production (social, posts, calendars)
+
+> **[Plan:]** Plan next week's content calendar — **[N posts across IG/LinkedIn/X/TikTok, theme if you have one]**.
+>
+> **— or —**
+>
+> **[Produce:]** Expand **[calendar row / this brief]** into platform-ready drafts with per-platform limits and the on-voice self-check.
+
+Content work is operated FROM `C:\repos\vivreal-content` — its in-repo `content-planner` /
+`content-creator` agents own calendars, drafts, and rendered assets (the tooling moved out of the
+portal 2026-06-25). From anywhere else: voice/copy *critique* routes to `marketing-auditor`, and
+the `vivreal-brand-voice` + `vivreal-content-knowledge` skills carry the voice rules and the
+knowledge-base map (strategy, posting playbook, earned media, niche verticals).
+
+---
+
 ## Trigger cheat-sheet — the words that route the request
 
 | You want… | Put this in the prompt | Routes to |
@@ -163,6 +191,10 @@ audit from becoming a rewrite.
 | Funnel/conversion numbers | "signups", "churn", "funnel", "WoW", "acquisition" | `growth-advisor` |
 | Copy/voice critique | "is this on-brand", "audit this copy/email/headline" | `marketing-auditor` |
 | Usability of a screen | "is this confusing", "fewer clicks", "walk this as a new user" | `ux-critic` |
+| Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth-advisor` for interpretation) |
+| Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `cms-api` / `secure-api` / `client-stack` experts (Square spans all three) |
+| Site migration | "migrate this site", "cutover", "parity audit", a source-site URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/migrate` |
+| Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-content` |
 
 ## Slash-command quick reference
 
