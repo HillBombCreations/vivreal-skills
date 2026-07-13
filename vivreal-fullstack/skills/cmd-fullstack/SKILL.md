@@ -30,7 +30,7 @@ The user wants to scaffold a new feature that spans the Vivreal stack. Generate 
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Architecture | 5 Lambdas | 6+ Lambdas | 1 monolithic Lambda |
+| Architecture | 5 Lambdas | 11 Lambdas | 3 Lambdas |
 | Route handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey query param | `key` | `dbKey` | N/A (no tenant routing) |
 | Auth at API Gateway | Cognito authorizer | Cognito authorizer | None (unauthenticated) |
@@ -62,7 +62,7 @@ Generate this checklist (adapt based on feature):
 - [ ] Add `transformResponse` to reshape upstream data before wrapping in envelope
 - [ ] CSRF is automatic for POST/PUT/DELETE (override with `requireCsrf: false` if needed)
 
-**When NOT to use the factory** (19 manual routes exist for these cases):
+**When NOT to use the factory** (28 manual routes exist for these cases, as of 2026-07-13):
 - Routes that set cookies (login, ssoLogin, switch-profile, group/create, group/join)
 - Routes with complex body transforms that need full control (collections/create, sites/create)
 - Routes with custom validation logic (calendar routes)

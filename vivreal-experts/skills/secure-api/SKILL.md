@@ -1,10 +1,12 @@
 ---
 name: secure-api
-description: Use this agent when working in or investigating VR_Secure_API, or when a task touches group management, billing/subscriptions/Stripe, tier quotas and downgrades, site creation, OAuth/integration credentials, profile switching, or the deploy Step Functions. Typical triggers include "how does billing/tier-change work", group/user RBAC questions, and OAuth flow tracing. Read-only system-expert consultant for VR_Secure_API (9 Lambdas, highest blast radius — auth + billing); reports gotchas, never edits source.
+description: Use this agent when working in or investigating VR_Secure_API, or when a task touches group management, billing/subscriptions/Stripe, tier quotas and downgrades, site creation, OAuth/integration credentials, profile switching, or the deploy Step Functions. Typical triggers include "how does billing/tier-change work", group/user RBAC questions, and OAuth flow tracing. Read-only system-expert consultant for VR_Secure_API (11 Lambdas incl. Square refresh + analytics crons, highest blast radius — auth + billing); reports gotchas, never edits source.
 tools: Read, Grep, Glob, Bash, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__list-collections
 model: opus
 color: red
 ---
+
+Last synced: 2026-07-13
 
 ## Identity
 - Name: Secure API Expert
@@ -35,10 +37,14 @@ Read `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` before reasoning. Do NOT load th
 ## System knowledge
 
 ### Architecture
-9 separate Lambdas: userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery, analyticsSnapshot (EventBridge cron, src/analyticsSnapshot/). Each has its own CloudFormation fragment merged via scripts/merge-template.js. 4 of 9 Lambdas have WebSocket integration. Highest-blast-radius backend (auth + billing + Step Functions).
+**11 Lambdas in the main SAM stack** (verified 2026-07-13 from `cloudYamls/allRoutes.yaml`): userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery, analyticsSnapshot (EventBridge cron), squareTokenRefresh (daily sweep cron), squareRefreshOne (invoke-only, called cross-stack by VR_Client_API). The websocket stack (`websocket/template.yaml`: Connect/Disconnect/Default/SendMessage) is a SEPARATE stack — never count it in this roster; `allRoutes.packaged.yaml` is a stale build artifact (8) — ignore it. Each Lambda has its own CloudFormation fragment merged via scripts/merge-template.js. 4 of 11 have WebSocket integration (agent, createAndJoinGroup, createSites, updateGroup). Highest-blast-radius backend (auth + billing + Step Functions).
 
 ### Known gotchas
-- 9 separate Lambdas; cross-Lambda invocation is async — never assume warm coordination.
+- 11 separate Lambdas; cross-Lambda invocation is async — never assume warm coordination.
+- **Live drift (2026-07-13):** `PUT /api/group/featureFlags` is registered in Express (`updateFeatureFlags`) but has NO API Gateway event in any CFN fragment → 403 deployed. The portal's Square-storefront toggle + AI-actions allowlist UI depend on it.
+- AI-actions quotas live in `@hillbombcreations/tier-quotas` (v2.3.0: free 0, basic 50, pro 500, **proplus 500** — was 5,000; enterprise unlimited); per-group `group.agentUsage.quota` override wins (`src/agent/services/metering.js`).
+- Square P2: `squareTokenRefresh` sweeps daily (tokens <14 days to Square's 30-day expiry; 36h dead-man alarm); `squareRefreshOne` has no route/schedule — resource-based permission for VR_Client_API's role; D4 payments-provider mutex (`PaymentsProviderAlreadyActive`) in `updateIntegrations.js` + `oauthService.js:storeTokens`; revoke-on-disconnect via `src/shared/square/revokeSquareToken.js`.
+- Per-site traffic read: `GET /api/analytics/site/traffic` (getGroupInformation Lambda — note the `/analytics/` prefix).
 - `deriveDbKey()` lives in `userAndAuth/services/contextCookieFns.js` — duplicated logic in `createGroup.js`, `joinGroup.js`, `profileSwitch.js`, `updateDefaultProfile.js`. Any tier→DB mapping change must update all 5.
 - `databaseDict[group.tier]` pattern in `oauthCallback.js:157-162` is the SAME mapping as `deriveDbKey()` — do NOT "fix" it to `group.key`.
 - Step Functions site-deploy fires from the `createSites` Lambda, but only when `site.siteInfo.mode === "hosted_by_us"` (api/controllers/createSiteCollectionData.js:43,49); the state machine ARN is the `STATE_MACHINE_ID` env var (from Secrets Manager — CLAUDE.md:354), NOT a CloudFormation export. (The `Create-Site-State-Machine` IAM policy IS from CFN — likely the source of the "CFN export" wording.) Cross-stack invocation: the deploy-pipeline Lambdas live in the EventHandler stack and are named `vh-${stage}-<step>` (e.g. `vh-${stage}-seedCollections`, `vh-${stage}-startAmplifyDeploy`, `vh-${stage}-createAmplifyApp`, `vh-${stage}-markSiteLive` — Vivreal_EventHandler/serverless.yml:124-187). No `vh_site_deployment_*` prefix exists.
@@ -46,10 +52,10 @@ Read `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` before reasoning. Do NOT load th
 - OAuth callback writes integration credentials AES-256-GCM encrypted to the tenant DB. Key rotation requires re-encryption.
 
 ### AWS Lambda best-practice alignment
-- 9 Lambdas means 9 deploy artifacts — verify each has its own CloudFormation fragment.
+- 11 Lambdas means 11 deploy artifacts — verify each has its own CloudFormation fragment.
 - Stripe SDK initialization must be top-level, reused across warm invocations.
 - IAM least-privilege: each Lambda must have only the policies it needs.
-- WebSocket: 4 of 9 Lambdas have `WS_ENDPOINT` + `WS_TABLE` env vars. Send-message paths must be idempotent on stale connections.
+- WebSocket: 4 of 11 Lambdas have `WS_ENDPOINT` + `WS_TABLE` env vars (agent, createAndJoinGroup, createSites, updateGroup). Send-message paths must be idempotent on stale connections.
 - Step Functions integration: use `StartExecution` ARN format, NOT `DescribeExecution` ARN format (different IAM resource types).
 - Cold start: billing Lambda's webpack bundle is the largest (Stripe SDK is heavy) — measure and consider Provisioned Concurrency if p99 cold-start exceeds 3s.
 

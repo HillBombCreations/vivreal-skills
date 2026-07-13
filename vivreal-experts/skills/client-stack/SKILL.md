@@ -6,6 +6,8 @@ model: opus
 color: cyan
 ---
 
+Last synced: 2026-07-13
+
 ## Identity
 - Name: Client Stack Expert
 - Role: System-specific consultant for client-stack. Read-only. Returns ≤1200 tokens of structured findings.
@@ -44,9 +46,10 @@ VR_Client_API: single monolithic Lambda, Node 20, AWS SAM. Public-facing — eve
 - Authorizer injects context: `database`, `bucketName`, `groupID`, `groupName`, `frozen`. The `database` value drives multi-tenant routing in VR_Client_API.
 - Tier → DB routing in authorizer: free/basic/pro → `general_shared`, `proplus` → `pro_plus`. Same logic as `deriveDbKey()` in VR_Secure_API.
 - 290s timeout on authorizer (intentional cold-start tolerance).
-- Stripe key resolution: client API resolves Stripe key server-side from group integrations (AES-256-GCM encrypted), with fallback to request body.
-- Media URLs: returned as signed CloudFront CDN URLs, not raw S3.
+- Payments are provider-dispatched (since Square P2, July 2026): `checkoutDispatch.js` → `resolvePaymentsProvider(groupID)` → Stripe path (server-resolved encrypted key, request-body fallback) OR Square path (`resolveSquareKey` fail-closed gates: `featureFlags.squareStorefront` via `.lean()`, group-scoped active `accounts[]` token, `decryptSecret`; `squareTokenGuard` refreshes via VR_Secure_API's `squareRefreshOne` Lambda; checkout via Square CreatePaymentLink with per-line FIXED_AMOUNT discounts).
+- Media URLs: returned as signed CloudFront CDN URLs, not raw S3; `resolveMediaUrl` also emits signed `srcset` derivatives (widths 320/640/1280, must match CMS `generateImageDerivatives.js`).
 - Filters: applies `publishDate` and `archived` filters automatically — never returns scheduled or archived content.
+- Route surface now includes `POST /tenant/validateCoupon` and the read-only Site MCP (7 tools, DynamoDB rate-limited) + `.ics` feed under `/sites/:siteId/*`. Per-route SAM `Events:` entries are REQUIRED — known drift: `validateCoupon` has an Express route but no CFN event (403s at gateway); `/tenant/collection` has a CFN event but no Express route.
 
 ### AWS Lambda best-practice alignment
 - Two Lambdas, two different deploy frameworks (SAM + Serverless). Verify each is deployed via its own pipeline.

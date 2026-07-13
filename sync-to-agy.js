@@ -48,8 +48,12 @@ marketplace.plugins.forEach(plugin => {
   }
 
   // Process commands -> skills (prefixed with cmd- to avoid naming clashes)
+  // Commands that must NOT get a cmd-* skill mirror (promptify ships as a
+  // command only — see commit 9168979)
+  const EXCLUDED_COMMANDS = new Set(['promptify']);
   if (fs.existsSync(commandsDir)) {
-    const commands = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'));
+    const commands = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'))
+      .filter(f => !EXCLUDED_COMMANDS.has(path.basename(f, '.md')));
     commands.forEach(file => {
       const name = 'cmd-' + path.basename(file, '.md');
       const targetSkillDir = path.join(skillsDir, name);
