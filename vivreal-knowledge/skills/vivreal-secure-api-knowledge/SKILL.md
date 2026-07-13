@@ -1,15 +1,28 @@
 ---
 name: vivreal-secure-api-knowledge
-description: Use when working in VR_Secure_API — Vivreal's authenticated-operations backend (NEXT_PUBLIC_SECURE_URL) for groups, sites, billing/subscriptions, profile switching, and user roles. Covers its 6-Lambda split, the `dbKey`-query-param routing (NOT `key`), the 7-step add-a-route checklist (502 if the SAM event is missed), Stripe downgrade preflight + cancellation behaviour, encrypted integration creds, and the orphaned OTEL layer gotcha. Triggers on: VR_Secure_API, Secure API, group management, site creation, billing, downgrade preflight, profileSwitch, overage billing, createSites, dbKey. Source of truth: C:\repos\VR_Secure_API\CLAUDE.md.
+description: Use when working in VR_Secure_API — Vivreal's authenticated-operations backend (NEXT_PUBLIC_SECURE_URL) for groups, sites, billing/subscriptions, profile switching, user roles, Square token lifecycle, the AI agent, and per-site analytics reads. Covers its 11-Lambda split, the `dbKey`-query-param routing (NOT `key`), the 7-step add-a-route checklist (502 if the SAM event is missed), Stripe downgrade preflight + cancellation behaviour, the Square refresh crons + payments-provider mutex, AI-actions quotas (tier-quotas package), encrypted integration creds, and the orphaned OTEL layer gotcha. Triggers on: VR_Secure_API, Secure API, group management, site creation, billing, downgrade preflight, profileSwitch, overage billing, createSites, dbKey, Square refresh, featureFlags, AI actions quota, site traffic route. Source of truth: C:\repos\VR_Secure_API\CLAUDE.md.
 ---
 
 # VR_Secure_API — knowledge digest
 
-The authenticated-ops backend: group/team mgmt, site creation+deploy, Stripe billing/subscriptions, profile switching, roles. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `C:\repos\VR_Secure_API\CLAUDE.md` for full route lists.
+Last synced: 2026-07-13
 
-## Architecture — 9 Lambdas
+The authenticated-ops backend: group/team mgmt, site creation+deploy, Stripe billing/subscriptions, Square token lifecycle, profile switching, roles, AI agent, per-site analytics reads. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `C:\repos\VR_Secure_API\CLAUDE.md` for full route lists.
 
-`userAndAuth` (profile switch, email, logout), `billingAndSubscription` (Stripe checkout/portal/webhooks/preflight), `createAndJoinGroup`, `createSites` (templates, Route53, Step Functions, WebSockets — most files + AWS integrations), `getGroupInformation` (read-only + admin attribution), `updateGroup` (members, roles, API keys, integrations, overage), `agent` (`src/agent/` — AI agent orchestrator + tool layer), `webhookDelivery` (`src/webhookDelivery/` — SQS consumer, HMAC-signed outbound webhooks), `analyticsSnapshot` (`src/analyticsSnapshot/` — EventBridge cron). Shared: `encryptionUtils.js` (AES-256-GCM for integration creds), `handleHBRoutes.js`, `socket.js`, `auditLog.js`, `tierQuotas.js`.
+## Architecture — 11 Lambdas (main SAM stack)
+
+`userAndAuth` (profile switch, email, logout), `billingAndSubscription` (Stripe checkout/portal/webhooks/preflight), `createAndJoinGroup`, `createSites` (templates, Route53, Step Functions, WebSockets — most files + AWS integrations), `getGroupInformation` (read-only + admin attribution + `GET /api/analytics/site/traffic`), `updateGroup` (members, roles, API keys, integrations, overage, featureFlags), `agent` (`src/agent/` — AI agent orchestrator + tool layer), `webhookDelivery` (SQS consumer, HMAC-signed outbound webhooks), `analyticsSnapshot` (EventBridge cron), `squareTokenRefresh` (daily sweep cron), `squareRefreshOne` (invoke-only — cross-stack target for VR_Client_API's `squareTokenGuard`). **The websocket stack (`websocket/template.yaml`) is separate — never count its 4 functions in this roster**; `allRoutes.packaged.yaml` is a stale build artifact. 4 of 11 have WebSocket integration (agent, createAndJoinGroup, createSites, updateGroup). Shared: `encryptionUtils.js` (AES-256-GCM for integration creds), `handleHBRoutes.js`, `socket.js`, `auditLog.js`, `deriveDbKey.js`.
+
+## Square P2 (token lifecycle + provider mutex)
+
+- `squareTokenRefresh`: daily `rate(24 hours)` sweep refreshing tokens <14 days from Square's 30-day hard expiry; 36h dead-man + Errors≥1 alarms.
+- `squareRefreshOne`: no route/schedule; resource-based `AWS::Lambda::Permission` for VR_Client_API's role (`SquareRefreshOneInvokerRoleArn`) — synchronous single-account refresh.
+- **D4 payments-provider mutex**: one active payments provider per group — `updateIntegrations.js` + `oauthService.js:storeTokens` throw `PaymentsProviderAlreadyActive`.
+- Revoke-on-disconnect via `src/shared/square/revokeSquareToken.js`. Feature gate: `group.featureFlags.squareStorefront` (write path `PUT /api/group/featureFlags` — see gotchas).
+
+## AI agent quotas
+
+Quotas live in **`@hillbombcreations/tier-quotas` v2.3.0** (`TIER_QUOTAS.<tier>.agentActions`): free 0 (no access), basic 50, pro 500, **proplus 500 (reduced from 5,000)**, enterprise 0 = unlimited. Per-group override `group.agentUsage.quota` wins (`src/agent/services/metering.js`). Allowlist gate + prompt caching + monthly usage reset live in `src/agent/`.
 
 ## Multi-tenant routing — `dbKey` (NOT `key`)
 
@@ -30,12 +43,15 @@ The authenticated-ops backend: group/team mgmt, site creation+deploy, Stripe bil
 
 ## Other patterns
 
-- `createSiteCollectionData` is now site-doc-only (~p95 <5s); collection seeding moved to `Vivreal_EventHandler/seedCollections` (first Step Function state) to fix a 504. Keep manifests in `templates/*.manifest.js` synced with EventHandler.
+- `createSiteCollectionData` is now site-doc-only (~p95 <5s); collection seeding moved to `Vivreal_EventHandler/seedCollections` (first Step Function state) to fix a 504. Keep manifests in `templates/*.manifest.js` synced with EventHandler. Blank sites: blank-template naming + explicit `POST /api/deploySite` first-deploy trigger (EventHandler short-circuits seeding on blank `templateType`).
+- **updateSiteValues data-safety (July 2026)**: multi-save page-media clobber guard, tenant-DB connect BEFORE `updateSiteValues`, JSON body limit raised 100kb→512kb, logo included in `mediaFields`.
 - **Sites doc shape on create** — `createSiteCollectionData` inserts: `name`, `domainInformation`, `deployment{status:'deploying'}`, `siteInfo{templateType,mode}`, `key` (slugified siteName), `groupID`, `pages` (empty unless the portal supplies them), `collectionGroups:[]`, `homeSections:[]`, `integrationsUsed` (`['stripe']` for ecommerce, else `[]`), `businessInfo`, `socialLinks`, `siteDetails{schema,values}` (service `createSiteCollectionData.js:127-163`). The EventHandler `seedCollections` step backfills `pages` + `collectionGroups`. The full schema (`Vivreal-Schemas/schemas/siteSchema.js:46-171`) also carries `deployment{status,message,errorMessage,updatedAt,appId}`, `domainInformation{domain,subdomain,live_url,pendingCustomDomain,purchasedDomain{...}}`, `pages[].blocks[]`, `collectionGroups[]` (`CollectionGroupRef` = name+id), deprecated `homeSections[]`, `navigation{}`, `footer{}`, `emailPopup`, `businessInfo{}`, `archived`.
-- Audit logging fire-and-forget to tenant `auditLogs`; 5 instrumented services (role/user/integration/tier changes). No content versioning here (that's CMS).
+- Audit logging fire-and-forget to tenant `auditLogs`; ~28 emitting services now, and the audit write routes by **`deriveDbKey(group)`, not `group.key`**. No content versioning here (that's CMS).
 - Integration creds encrypted AES-256-GCM (`enc:v1:` prefix); plaintext fallback for pre-migration keys. `validateIntegrationCreds()` only really validates Stripe; social types return `true` (Phase 1).
 
 ## Gotchas
 
+- **Live drift (2026-07-13): `PUT /api/group/featureFlags` has an Express route but NO API Gateway event in any CFN fragment** → 403 deployed. The portal's Square-storefront toggle + AI-allowlist UI depend on it — the repo's own "step 7" trap, live.
 - **`cloudformation/updateGroup.yaml` still references the orphaned OTEL layer ARN + `AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument`** — x86_64, will `Extension.Crash` on deploy. Remove. (arm64-only layers.)
-- P0 security debt: Stripe webhook signature NOT verified; `acceptRequest`/`denyRequest` have `Authorizer: NONE`; RBAC not enforced on write ops; duplicate CORS layers; Stripe live key hardcoded in 4 files.
+- P0 security debt: Stripe webhook signature NOT verified; `acceptRequest`/`denyRequest` have `Authorizer: NONE`; RBAC not enforced on write ops; duplicate CORS layers. (The hardcoded-Stripe-key debt is RESOLVED — billing uses `STRIPE_SECRET_KEY` from Secrets Manager.)
+- Deps: `@hillbombcreations/schemas ^1.20.0`, `@hillbombcreations/tier-quotas ^2.3.0`. X-Ray retired (`AWSXrayWriteOnlyAccess` no longer auto-attached).

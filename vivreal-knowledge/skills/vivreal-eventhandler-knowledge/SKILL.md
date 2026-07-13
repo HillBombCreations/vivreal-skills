@@ -3,6 +3,8 @@ name: vivreal-eventhandler-knowledge
 description: Use when working in Vivreal_EventHandler — the AWS Step Functions site-deployment pipeline that branches a template, creates an Amplify app, deploys, optionally registers a custom domain, and marks the site live/failed. Covers the ordered state list (with preserved typos you must NOT rename), the seedCollections front state, the hybrid template model, Amplify env-var injection, and the Serverless-Framework + esbuild build. Triggers on: Vivreal_EventHandler, site deployment, Step Functions, Amplify deploy, createGithubBranch, seedCollections, templateType, markSiteLive, deploy pipeline. Source of truth: C:\repos\Vivreal_EventHandler\CLAUDE.md.
 ---
 
+Last synced: 2026-07-13
+
 # Vivreal_EventHandler — knowledge digest
 
 Orchestrates the **full customer-site deploy pipeline** via AWS Step Functions. Called only by `VR_Secure_API/createSites`. **Serverless Framework + esbuild** (NOT SAM), Node 20, Step Functions + Amplify + Route53 + GitHub API + DynamoDB. Read `C:\repos\Vivreal_EventHandler\CLAUDE.md` for depth.
@@ -29,7 +31,7 @@ The Deploy-Site state machine pre-dates the serverless setup and is invoked by V
 
 ## Template model (hybrid — read before touching deploy logic)
 
-1. **Seed time (here, in `seedCollections`):** `templateType` drives which collection schemas + page configs get seeded. VR_Secure_API seeds nothing now — its `createSiteCollectionData` only creates the site doc + logo + counters and starts the Step Function (`VR_Secure_API/.../services/createSiteCollectionData.js:16-33`).
+1. **Seed time (here, in `seedCollections`):** `templateType` drives which collection schemas + page configs get seeded. **A blank/empty `templateType` short-circuits seeding entirely** (June 2026 — pairs with the portal's Blank-site flow, where the user deploys explicitly later). VR_Secure_API seeds nothing now — its `createSiteCollectionData` only creates the site doc + logo + counters and starts the Step Function.
 2. **Fork time (here):** `createBranch.js` forks from `refs/heads/main` (always `main`; runtime doesn't read `templateType`).
 3. **Runtime (Templates + site-renderer):** layout selection uses `pageConfigs[].format`, NOT `templateType`. `.vivreal-template.json` records `templateType` for traceability only.
 

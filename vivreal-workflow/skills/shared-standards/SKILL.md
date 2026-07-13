@@ -26,7 +26,7 @@ cat "$VIVREAL_REPOS/VR_CMS_API/CLAUDE.md"
 ```
 
 ### Ecosystem docs — `docs/ecosystem/`
-Cross-repo ecosystem docs (architecture, debugging guides, Lambda inventory, etc.) live in this repo at `docs/ecosystem/`. No env var resolution needed — they're version-controlled and always available.
+Cross-repo ecosystem docs (architecture, debugging guides, Lambda inventory, etc.) live in the portal repo at `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/docs/ecosystem/`. They're version-controlled and always available.
 
 ### When you see `${VIVREAL_REPOS}/...` in this doc or any agent prompt
 Resolve it before reading. Never paste the literal placeholder into a Read or Bash command — substitute the actual path. Ecosystem docs are at `docs/ecosystem/` (no resolution needed).
@@ -180,33 +180,44 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 
 | Repo | Path | Purpose |
 |---|---|---|
-| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal |
-| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 1 monolithic Lambda — auth, signup, email, Slack/Discord, Stripe products |
-| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 6 Lambdas — group, billing, sites, profile, OAuth init |
-| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | 5 Lambdas — collections, integrations, media, audit, versioning |
-| VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` | Public content delivery (read-only with publishDate filter) |
+| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (165 proxy routes) |
+| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 3 Lambdas — auth/signup, transactional + lifecycle email, Meta callbacks |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 11 Lambdas — group, billing, sites, profile, OAuth, Square refresh, AI agent, analytics |
+| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | 5 Lambdas — collections, integrations, media/derivatives, webhooks, audit, versioning |
+| VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` | Public content delivery + Stripe/Square checkout (publishDate filter) |
 | VR_Client_Auth | `${VIVREAL_REPOS}/VR_Client_Auth/CLAUDE.md` | TOKEN authorizer for VR_Client_API (Serverless Framework, not SAM) |
-| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Storefront templates (main + per-customer branches; NO ecommerce/showcase template branches — see inbox bug #91) |
-| VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with ~40 CMS tools (TypeScript, OAuth 2.1) |
-| VR_OnCall_Agent | `${VIVREAL_REPOS}/VR_OnCall_Agent/CLAUDE.md` | On-call agent |
-| VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | On-call webhook receiver |
-| Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline |
+| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/CLAUDE.md` | 4 Lambdas — sequences, contacts/companies, booking, SES send/replies (CLAUDE.md added 2026-07-13) |
+| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — `main` is the single template; other branches are per-customer sites |
+| vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer` — publishing hits every live customer site |
+| VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with ~72 CMS tools (TypeScript, OAuth 2.1) |
+| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (50 tools) |
+| VR_Analytics_API | `${VIVREAL_REPOS}/VR_Analytics_API/README.md` | First-party analytics ingest + rollup (no CLAUDE.md — README is truth) |
+| VR_OnCall_Agent | `${VIVREAL_REPOS}/VR_OnCall_Agent/CLAUDE.md` | On-call agent (auto-investigates Sentry incidents via GitHub Actions) |
+| VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
+| Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
+| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | External-site → Vivreal migration pipeline (no CLAUDE.md — README + docs/ are truth) |
+| vivreal-content | `${VIVREAL_REPOS}/vivreal-content/CLAUDE.md` | Content studio — voice/strategy knowledge base + asset pipeline (canonical brand voice) |
+| Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing\` | vivreal.io marketing/landing site |
+| vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
 | Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | Public docs site (Next.js, content under `content/`) |
 | Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas\` | Shared Mongoose schemas package |
-| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package |
+| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package (owns AI-action quotas) |
 
-All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino, X-Ray, AWS SAM (except VR_Client_Auth = Serverless Framework).
+All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino, AWS SAM (except VR_Client_Auth + Vivreal_EventHandler = Serverless Framework). X-Ray is retired where touched recently (Client/Secure) — Sentry is the telemetry layer.
+
+**Citation rule for docs in this plugin repo:** cite function/route/file names, not line numbers — `src/foo.js:123` rots in weeks. Stamp `Last synced: YYYY-MM-DD` when syncing a doc to source (log in vivreal-skills `docs/SYNC.md`).
 
 ## AWS Lambda & Infrastructure Reference
 
 **Full inventory:** `docs/ecosystem/aws-lambda-inventory.md` — READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
 
-### Quick reference — function counts per API
+### Quick reference — function counts per API (verified 2026-07-13)
 | API | Prod Lambdas | Has WebSocket | Deploy Trigger |
 |---|---|---|---|
-| VR_Secure_API | 8 (6 domain + agent + webhook-delivery) | 4 of 8 | Push to main/dogfood |
+| VR_Secure_API | 11 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + webhookDelivery; websocket stack is separate) | 4 of 11 | Push to main/dogfood |
 | VR_CMS_API | 5 | All 5 | Push to main/dogfood |
-| VR_Main_API | 2 (express + email consumer) | 1 of 2 | Push to main/dogfood |
+| VR_Main_API | 3 (express + email consumer + lifecycle scan) | 1 of 3 | Push to main/dogfood |
+| VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
 | VR_Client_API | 1 | No | Push to main |
 | VR_Client_Auth | 1 (Node 18, Serverless Framework) | No | Push to main |
 | EventHandler | 10 (Step Functions pipeline) | No | Push to main |

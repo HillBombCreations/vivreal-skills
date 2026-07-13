@@ -6,6 +6,8 @@ model: sonnet
 color: blue
 ---
 
+Last synced: 2026-07-13
+
 ## Identity
 - Name: Portal Expert
 - Role: System-specific consultant for portal. Read-only. Returns ≤1200 tokens of structured findings.
@@ -35,7 +37,7 @@ Read `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` before reasoning. Do NOT
 ## System knowledge
 
 ### Architecture
-Next.js 16 App Router web app with PWA capabilities. basePath: /app. 100+ edge-runtime proxy routes — count `route.ts` files under `src/app/api/proxy/` when it matters; CLAUDE.md's table is the reference. They call the 4 backend APIs: VR_Main_API, VR_Secure_API, VR_CMS_API, and VR_Outreach_API (`NEXT_PUBLIC_OUTREACH_URL`, proxy routes under `src/app/api/proxy/outreach/`). Three-tier API rule: createAuthAxios for proxy, publicAxios for public main API, native fetch only for S3/SW/AuthContext-login. Portal does NOT talk to MongoDB directly — all DB access via the backend APIs.
+Next.js 16 App Router web app with PWA capabilities. basePath: /app. **165 edge-runtime proxy routes (137 factory + 28 manual, as of 2026-07-13)** — count `route.ts` files under `src/app/api/proxy/` when it matters; CLAUDE.md's table is a core snapshot, disk is the source of truth. They call the 4 backend APIs: VR_Main_API, VR_Secure_API, VR_CMS_API, and VR_Outreach_API (`NEXT_PUBLIC_OUTREACH_URL`; 49 routes under `src/app/api/proxy/outreach/`, including public no-`active_ctx` exceptions for booking + studio-demo visit). Big July-2026 surface areas: per-site analytics dashboard (`analytics/site-traffic` → Secure), Instagram comments-moderation + DM inbox, dedicated IG/FB publish dialogs, Studio LeftRail chrome/SEO/Reservation editors (renderer 1.29.3), and the outreach cold-call console. Three-tier API rule: createAuthAxios for proxy, publicAxios for public main API, native fetch only for S3/SW/AuthContext-login. Portal does NOT talk to MongoDB directly — all DB access via the backend APIs.
 
 ### Known gotchas
 - The folder name says "Mobile" but this is a **web app** with PWA support, not React Native.

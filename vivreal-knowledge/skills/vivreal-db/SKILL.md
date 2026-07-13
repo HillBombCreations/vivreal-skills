@@ -3,6 +3,8 @@ name: vivreal-db
 description: Use when querying or exploring Vivreal's MongoDB — including any time you are about to use the mcp__mongodb__* MCP tools — choosing which database, which collection, how to scope a query to a tenant, how to LINK collections together (collection_group ↔ collection_objects ↔ integration_objects, groups ↔ everything, sites ↔ versions/media), or debugging "content created in the portal but missing on the site". Teaches the safe multi-tenant query rules, the dbKey vs group.key vs bucketname distinctions, and the string-ref ↔ ObjectId cross-collection join rule that are the #1 source of bugs. Triggers on: mcp__mongodb, query mongo via MCP, mongodb find/aggregate/count, $lookup, join collections, link collection group to objects, list collections, collection schema, which database, which collection, group/tenant data, publishDate, dbKey, groupID.
 ---
 
+Last synced: 2026-07-13
+
 # Vivreal Multi-Tenant MongoDB — Safe Query & Linking Rules
 
 > **Topology, collection names, indexes and the join rules below were verified against live Mongo on 2026-06-19.** Read this before touching the `mcp__mongodb__*` tools. For an interactive helper, use the `/db-query` and `/db-schema` commands (`vivreal-db-explorer` plugin) — this skill is the passive knowledge those commands assume.
@@ -55,8 +57,8 @@ exactly three. Live cluster:
 
 | Database | Role | Holds | Which groups |
 |---|---|---|---|
-| `Vivreal` | **Control plane (mainDb)** | `groups`, `leads`, `checkout_sessions`, `media_files`, `usage_trackings`, `domainorders`, `prospects`, `inquiries`, analytics caches, push subs, oauth verifiers | ALL groups (registry) |
-| `general_shared` | **Tenant content** | `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events` | `free` / `basic` / `pro` tiers |
+| `Vivreal` | **Control plane (mainDb)** | `groups`, `leads` (+ lifecycle `activated`/`activatedAt`), `checkout_sessions`, `media_files`, `usage_trackings`, `domainorders`, `prospects`, `inquiries`, `emailEvents`, `suppressions` (lifecycle-email), `dataDeletionRequests`, `site_traffic_daily` (first-party analytics rollup), analytics caches, push subs, oauth verifiers | ALL groups (registry) |
+| `general_shared` | **Tenant content** | `collection_groups`, `collection_objects` (incl. the SIX Outreach system groups — sequences/enrollments/contacts/senders/companies/segments, with `calls[]` + bookings on senders/companies), `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events`, `square_webhook_events`, `metaWebhookEvents`, `instagram_comments`/`instagram_conversations`/`instagram_messages` | `free` / `basic` / `pro` tiers |
 | `pro_plus` | **Tenant content** (same collections as general_shared, plus `stripe_products`, `collection_templates`) | same shape as general_shared | `proplus` tier (currently empty — no group is `proplus` yet) |
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here** — see below. | service-global |
 | `justinceccarelligroup` | **Legacy/anomalous per-group DB** | only `audit_logs` (~4) for one group | a single group — likely stale routing; do not rely on this pattern |

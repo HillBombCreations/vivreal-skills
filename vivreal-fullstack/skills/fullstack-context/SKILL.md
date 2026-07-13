@@ -1,8 +1,10 @@
 ---
 name: fullstack-context
 description: Auto-triggers when the user mentions a backend endpoint, API route, cross-repo feature, or any Vivreal backend service (VR_Main_API, VR_Secure_API, VR_CMS_API, VR_Client_API, EventHandler). Loads relevant cross-repo context so Claude can reason about the full stack.
-version: 1.1.0
+version: 1.1.1
 ---
+
+Last synced: 2026-07-13
 
 # Vivreal Fullstack Context Loader
 
@@ -18,10 +20,14 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | VR_CMS_API | `C:\repos\VR_CMS_API` | `C:\repos\VR_CMS_API\CLAUDE.md` | Collections, objects, integrations, media, audit, versioning |
 | VR_Client_API | `C:\repos\VR_Client_API` | `C:\repos\VR_Client_API\CLAUDE.md` | Public content delivery API for end-user sites |
 | VR_Client_Auth | `C:\repos\VR_Client_Auth` | `C:\repos\VR_Client_Auth\CLAUDE.md` | Lambda authorizer for Client API |
+| VR_Outreach_API | `C:\repos\VR_Outreach_API` | `C:\repos\VR_Outreach_API\CLAUDE.md` | Email outreach — sequences, contacts/companies, booking, SES |
+| VR_Analytics_API | `C:\repos\VR_Analytics_API` | N/A (README.md) | First-party analytics ingest + rollup pipeline |
 | Vivreal_EventHandler | `C:\repos\Vivreal_EventHandler` | `C:\repos\Vivreal_EventHandler\CLAUDE.md` | Step Functions site deployment pipeline |
-| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Site templates (each branch = one template) |
-| VR-MCP-Server | `C:\repos\VR-MCP-Server` | `C:\repos\VR-MCP-Server\CLAUDE.md` | OAuth 2.1 MCP server (~40 CMS tools) |
-| Vivreal-Schemas | `C:\repos\Vivreal-Schemas` | N/A | Shared Mongoose schemas (12 schemas, npm package `@hillbombcreations/schemas`) |
+| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Universal site template (`main` = the single template; other branches = per-customer sites) |
+| vivreal-site-renderer | `C:\repos\vivreal-site-renderer` | `C:\repos\vivreal-site-renderer\CLAUDE.md` | `@hillbombcreations/site-renderer` rendering engine |
+| VR-MCP-Server | `C:\repos\VR-MCP-Server` | `C:\repos\VR-MCP-Server\CLAUDE.md` | OAuth 2.1 MCP server (~72 CMS tools) |
+| VR-Outreach-MCP-Server | `C:\repos\VR-Outreach-MCP-Server` | `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` | Internal outreach MCP server (50 tools) |
+| Vivreal-Schemas | `C:\repos\Vivreal-Schemas` | N/A | Shared Mongoose schemas (npm package `@hillbombcreations/schemas`) |
 
 ## Upstream URL Mapping
 
@@ -30,11 +36,12 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | `NEXT_PUBLIC_MAIN_API` | VR_Main_API | `/api/*`, `/stripe/*` | N/A (no tenant routing) | `user/*`, `push/*` |
 | `NEXT_PUBLIC_SECURE_URL` | VR_Secure_API | `/api/*` | `dbKey` | `group/*`, `sites/*`, `dash/*`, `webhooks/*`, `agent/*` |
 | `NEXT_PUBLIC_CMS_URL` | VR_CMS_API | `/tenant/*` | `key` | `collections/*`, `collectionObjects/*`, `integrations/*`, `get-media`, `uploadFiles`, `calendar/*`, `audit`, `versions/*`, `activity`, `search/*` |
+| `NEXT_PUBLIC_OUTREACH_URL` | VR_Outreach_API | `/*` (Cognito + x-active-ctx) | HMAC `x-active-ctx` header | `outreach/*` (49 routes) |
 
-## Portal Proxy Layer (76 routes total)
+## Portal Proxy Layer (165 routes total, as of 2026-07-13)
 
-- **57 factory routes** use `createProxyHandler()` — handles auth, CSRF, body parsing, upstream fetch, response envelope
-- **19 manual routes** — cookie-setting routes, complex transforms, custom validation
+- **137 factory routes** use `createProxyHandler()` — handles auth, CSRF, body parsing, upstream fetch, response envelope
+- **28 manual routes** — cookie-setting routes, complex transforms, custom validation, third-party upstreams, public no-`active_ctx` exceptions
 - All routes: `export const runtime = 'edge'` + `export const dynamic = 'force-dynamic'`
 - Response envelope: `{ success: true, data, error: null }` or `{ success: false, data: null, error: "msg" }`
 - `createAuthAxios()` on the client automatically unwraps this envelope — components receive `res.data` = inner `data`
@@ -45,7 +52,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Lambdas | 5 (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) | 6+ (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery) | 1 monolithic |
+| Lambdas | 5 (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) | 11 (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery, analyticsSnapshot, squareTokenRefresh, squareRefreshOne) | 3 (express + email consumer + lifecycle scan) |
 | Handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey from | `req.query.key` | `req.query.dbKey` | N/A |
 | API Gateway auth | Cognito authorizer | Cognito authorizer (some routes Authorizer: NONE) | None (unauthenticated API) |

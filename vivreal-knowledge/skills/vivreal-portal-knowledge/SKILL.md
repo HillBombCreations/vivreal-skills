@@ -1,11 +1,13 @@
 ---
 name: vivreal-portal-knowledge
-description: Use when working in the Vivreal Portal (Vivreal_Portal_Mobile) — a Next.js 16 App Router web app (despite the "Mobile" folder name). Covers the proxy-route layer (createProxyHandler factory vs the 21 manual routes), the three-tier API client rule (createAuthAxios / publicAxios / native fetch), auth cookies (token + active_ctx), privacy masking, and SSR-safe patterns. Triggers on: portal, Vivreal_Portal_Mobile, proxy route, createAuthAxios, createProxyHandler, active_ctx, AuthContext, edge runtime, basePath /app. Source of truth: C:\repos\Vivreal_Portal_Mobile\CLAUDE.md (read it for the full proxy route table and depth).
+description: Use when working in the Vivreal Portal (Vivreal_Portal_Mobile) — a Next.js 16 App Router web app (despite the "Mobile" folder name). Covers the proxy-route layer (createProxyHandler factory vs the 28 manual routes; 165 routes total), the three-tier API client rule (createAuthAxios / publicAxios / native fetch), the four backend upstreams (Main/Secure/CMS/Outreach), auth cookies (token + active_ctx), privacy masking, and SSR-safe patterns. Triggers on: portal, Vivreal_Portal_Mobile, proxy route, createAuthAxios, createProxyHandler, active_ctx, AuthContext, edge runtime, basePath /app, site analytics dashboard, Instagram inbox, cold-call console, Studio editor. Source of truth: C:\repos\Vivreal_Portal_Mobile\CLAUDE.md (core proxy-route snapshot; disk is truth for the full list).
 ---
 
 # Vivreal Portal (Vivreal_Portal_Mobile) — knowledge digest
 
-A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix) — NOT React Native despite the folder name. Enterprise CMS management portal. `basePath: '/app'`. For full depth (the complete ~140-route proxy table, all gotchas), read `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` — this is a lean digest.
+Last synced: 2026-07-13
+
+A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix) — NOT React Native despite the folder name. Enterprise CMS management portal, v0.2.0. `basePath: '/app'`. For full depth (proxy-route snapshot, all gotchas), read `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` — this is a lean digest. July-2026 surfaces: per-site analytics dashboard (`Sites/SiteDetail/AnalyticsPanel`), Instagram comments-moderation + DM inbox (+ Human Agent window), dedicated IG/FB publish dialogs with inline-play tiles, Studio LeftRail chrome/SEO/Reservation editors, outreach cold-call console, NewSiteDialog template gallery + Blank-site first-deploy flow.
 
 ## API layer — pick the right client
 
@@ -19,11 +21,11 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix) �
 
 ## Proxy routes (edge runtime)
 
-- **117 factory + 21 manual = 138 routes** (~140 — count when it matters) in `src/app/api/proxy/`. All run `runtime: 'edge'` + `dynamic: 'force-dynamic'`.
-- Factory: `createProxyHandler()` (`_helpers/createProxyHandler.ts`) handles auth (`active_ctx` JWT verify), CSRF, body parse, upstream fetch, `{success,data,error}` envelope. A factory route is ~10-15 lines.
-- The **21 manual routes** are cookie-setting (login, ssoLogin, switch-profile, group/create, group/join), httpOnly reads (billing/upgrade, update-email), heavy transforms (collections/sites create+update), and complex validation (calendar). Don't force these through the factory.
+- **137 factory + 28 manual = 165 routes** (as of 2026-07-13 — count `route.ts` files when it matters; 49 of them are `outreach/*`) in `src/app/api/proxy/`. All run `runtime: 'edge'` + `dynamic: 'force-dynamic'`.
+- Factory: `createProxyHandler()` (`_helpers/createProxyHandler.ts`) handles auth (`active_ctx` JWT verify), CSRF, body parse, upstream fetch, `{success,data,error}` envelope. A factory route is ~10-15 lines. Classify factory-vs-manual by the actual `_helpers/createProxyHandler` import — naive string-grep overcounts (manual routes mention it in comments).
+- The **28 manual routes** are cookie-setting (login, ssoLogin, user/refresh, switch-profile, group/create, group/join), httpOnly reads (billing/upgrade, group/billing, update-email), heavy transforms (collections/sites create+update), complex validation (calendar), third-party upstreams (tiktok-oembed), and the **public no-`active_ctx` exceptions** (outreach/book/[slug] ×3, outreach/studio-demo/visit, marketing/sandbox-lead). Don't force these through the factory.
 - Helpers: `injectCtxParams()` sets `key` + `groupID` (CMS-shaped). Secure routes also need `p.set('dbKey', ctx.dbKey)` — Secure reads `dbKey`, CMS reads `key`.
-- Three upstreams: `NEXT_PUBLIC_CMS_URL` (`/tenant/*`), `NEXT_PUBLIC_SECURE_URL` (`/api/*`), `NEXT_PUBLIC_MAIN_API` (`/api/*`).
+- FOUR upstreams: `NEXT_PUBLIC_CMS_URL` (`/tenant/*`), `NEXT_PUBLIC_SECURE_URL` (`/api/*`), `NEXT_PUBLIC_MAIN_API` (`/api/*`), `NEXT_PUBLIC_OUTREACH_URL` (`/proxy/outreach/*` routes).
 
 ## Auth
 

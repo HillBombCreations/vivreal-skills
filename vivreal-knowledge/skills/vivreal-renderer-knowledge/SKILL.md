@@ -5,11 +5,20 @@ description: Use when working in vivreal-site-renderer (the @hillbombcreations/s
 
 # vivreal-site-renderer — knowledge digest
 
-The **rendering engine** (`@hillbombcreations/site-renderer`) that turns Vivreal site config (pages + collections + pageConfigs) into a live website. Consumed by `Vivreal_Templates` (customer sites) and `Vivreal_Portal_Mobile` (Studio live-preview) — both pull from GitHub Packages at build time. React 18+ peer, TypeScript, framer-motion, Tailwind classes in source. Read `C:\repos\vivreal-site-renderer\CLAUDE.md` and `docs/DESIGN_LANGUAGE.md` for depth. For the site product/authoring model that drives this renderer (page formats, sections, Studio↔live composePage parity) see `vivreal-sites`.
+Last synced: 2026-07-13 (published version **1.29.3**)
+
+The **rendering engine** (`@hillbombcreations/site-renderer`) that turns Vivreal site config (pages + collections + pageConfigs) into a live website. Consumed by `Vivreal_Templates` (customer sites) and `Vivreal_Portal_Mobile` (Studio live-preview) — both pull from GitHub Packages at build time. React 19 peer, next `^15||^16` peer, TypeScript, framer-motion 12, Tailwind classes in source. Read `C:\repos\vivreal-site-renderer\CLAUDE.md` and `docs/DESIGN_LANGUAGE.md` for depth. For the site product/authoring model that drives this renderer (page formats, sections, Studio↔live composePage parity) see `vivreal-sites`.
 
 ## Structure
 
-`src/components/` (Navbar/Footer/CTA/ScrollReveal), `src/HomeSections/`, `src/PageTemplates/` (Products/Shows/Team), `src/layouts/`, `src/primitives/` (editorial: SectionMasthead, MonoMeta, EditorialCard, Spotlight, CategoryChipRail), `src/context/SiteRendererContext`, `ContentRenderer.tsx` (top-level dispatch), `index.ts` (public barrel = what consumers import). `dist/` is generated — **never hand-edit** (it's gitignored; CI builds it).
+14 src dirs: `src/components/` (Navbar/Footer/CTA/ScrollReveal), `src/HomeSections/`, `src/PageTemplates/` (products/shows/team/menu/schedule/collection/subscribe/checkout-status), `src/layouts/`, `src/primitives/` (editorial: SectionMasthead, MonoMeta, EditorialCard, Spotlight, CategoryChipRail, RichText, SaleBadge), `src/composition/`, `src/registry/` (`registry.ts` = the canonical dispatchId source), `src/agent/` (`./agent` subpath export), `src/context/SiteRendererContext`, `ContentRenderer.tsx` (top-level dispatch), `index.ts` (public barrel). `dist/` is generated — **never hand-edit** (gitignored; CI builds it). Tests: `npm test` = SSR-render assertions via `renderToStaticMarkup` under `node --test`.
+
+## The June–July 2026 wave (1.5.0 → 1.29.3) — what exists now
+
+- **Layout dispatchIds** (check `src/registry/registry.ts`, not memory): `pricing`, `faq`, `steps`, `comparison`, `tabs`, `link-cards`, `video` (+`embed` alias), `channel-diagram`, `use-case-selector`, `home-comparison`, `editor-demo`, `feature-demo`. Static blocks: `section-header`, `about`, **`reservation`** (OpenTable/Resy/Tock, config-only via `config.labels`).
+- **Config surface**: `SiteData.floatingCta`, `SiteData.chrome: 'dark'|'light'`, per-page `PageConfig.palette` (rebase via `resolvePagePalette` with a WCAG guard), per-section `background:'dark'` band (SectionShell re-scopes palette vars), `navigation.headerWidth: 'contained'|'full'` + `megaMenu`, footer `socialStyle: 'column'|'icons'` + `newsletterPlacement: 'brand'|'bar'`, `sectionConfig.featureImage`/`detailEligible`, `PageHero.background {gradient|image|video}` + `emailCapture` + `variant`, `labels.animatedHero` (blur-mesh backdrop), `labels.heroMotif: 'publish-flow'|'publish-flow-storyboard'`, `CTASection config.gradient`.
+- **Skeletons**: `ComposedPageSkeleton` (structure-derived; `products` + `collection-list` arms render real `CollectionPage` in loading mode).
+- **`ResponsiveImage` is the srcset chokepoint** (since 1.18.5): raw `<img srcSet>` for CMS derivatives (next/image ignores manual srcSet), delegates to the injected `ImageComponent` otherwise. Route new image surfaces through it.
 
 ## Publishing = a production gate (it hits every live site)
 
@@ -24,7 +33,7 @@ Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older v
 
 ## Key patterns
 
-- **`SiteRendererContext.ImageComponent`** — the renderer does NOT import `next/image` (that would force Next.js on consumers). Default is plain `<img>`; Next consumers inject `next/image` via a provider. Studio preview strips it to plain `<img>` deliberately.
+- **`SiteRendererContext`** — the injection seam: `ImageComponent`/`LinkComponent` (typed `ElementType`), `previewMode`, `CartAdapter`, `mapsApiKey`, `onSubscribe`. The renderer does NOT import `next/image` (that would force Next.js on consumers). Default is plain `<img>`; Next consumers inject `next/image` via a provider. Studio preview strips it to plain `<img>` deliberately.
 - **Respect `prefers-reduced-motion`** — all motion primitives fall back to static (`useReducedMotion()` / `motion-reduce:`).
 - **Tailwind v4 `@source` requirement** — renderer utility classes silently no-op in v4 consumers unless the consumer's CSS `@source`-scans the renderer package/dist. Root cause of "padding missing / past shows not displaying" bugs. Portal `globals.css` `@source`-scans the renderer dist for Studio-preview parity.
 - **Source is authoritative** — grep `src/`, not `dist/`. **Styling anything? Read `docs/DESIGN_LANGUAGE.md` FIRST** (primitives, palette-proofing via `color-mix`/CSS vars, the inline-layout "Tailwind-generation-proof" rule, `object-contain` for showpiece imagery).

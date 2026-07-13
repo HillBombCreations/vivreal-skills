@@ -1,6 +1,6 @@
 {
   "name": "vivreal-fullstack",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cross-repo context loading, end-to-end feature scaffolding, and full-stack request tracing for the Vivreal ecosystem",
   "author": {
     "name": "Vivreal",
