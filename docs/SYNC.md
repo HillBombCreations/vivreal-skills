@@ -6,6 +6,7 @@ One row per sync of the vivreal-skills docs against the source repos. The `/skil
 |---|---|---|
 | 2026-06-24 | 4c5698a | Expert/knowledge/infra docs synced to code; promptify shipped |
 | 2026-07-13 | (this sync) | Full sync: 8 source-repo CLAUDE.mds refreshed (Outreach CLAUDE.md created); portal/outreach/secure/cms/main/client/renderer/templates docs updated; 4 new knowledge skills (analytics, outreach-mcp, content, migrator); brand-voice merged with vivreal-content 01-voice-and-rules (canonical); prompt playbook +2 scenarios; proxy-factory manual allowlist 18→28; /skills-sync guardrail added |
+| 2026-07-15 | (this sync) | Targeted branch-model sweep after site-provisioning Phase 2 shipped: per-site branches → shared `stable` channel + promote-stable release workflow. Updated: site-deploy-pipeline, deploy-tracker, deploy-nudge hook, eventhandler-knowledge, templates-knowledge, renderer-knowledge, vivreal-sites (+2 refs), experts event-handler (agent+skill). `sync_conflict`/`templateSyncWebhook`/auto-sync references marked dead |
 
 ## Conventions established 2026-07-13
 

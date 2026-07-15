@@ -1,9 +1,9 @@
 ---
 name: vivreal-eventhandler-knowledge
-description: Use when working in Vivreal_EventHandler — the AWS Step Functions site-deployment pipeline that branches a template, creates an Amplify app, deploys, optionally registers a custom domain, and marks the site live/failed. Covers the ordered state list (with preserved typos you must NOT rename), the seedCollections front state, the hybrid template model, Amplify env-var injection, and the Serverless-Framework + esbuild build. Triggers on: Vivreal_EventHandler, site deployment, Step Functions, Amplify deploy, createGithubBranch, seedCollections, templateType, markSiteLive, deploy pipeline. Source of truth: C:\repos\Vivreal_EventHandler\CLAUDE.md.
+description: Use when working in Vivreal_EventHandler — the AWS Step Functions site-deployment pipeline that assigns the shared `stable` channel branch (per-site branches are DEAD as of Phase 2, 2026-07-15), creates an Amplify app, deploys, optionally registers a custom domain, and marks the site live/failed. Covers the ordered state list (with preserved typos you must NOT rename), the seedCollections front state, the hybrid template model, Amplify env-var injection, and the Serverless-Framework + esbuild build. Triggers on: Vivreal_EventHandler, site deployment, Step Functions, Amplify deploy, createGithubBranch, seedCollections, templateType, markSiteLive, deploy pipeline, stable branch, channel branch. Source of truth: C:\repos\Vivreal_EventHandler\CLAUDE.md.
 ---
 
-Last synced: 2026-07-13
+Last synced: 2026-07-15
 
 # Vivreal_EventHandler — knowledge digest
 
@@ -32,10 +32,10 @@ The Deploy-Site state machine pre-dates the serverless setup and is invoked by V
 ## Template model (hybrid — read before touching deploy logic)
 
 1. **Seed time (here, in `seedCollections`):** `templateType` drives which collection schemas + page configs get seeded. **A blank/empty `templateType` short-circuits seeding entirely** (June 2026 — pairs with the portal's Blank-site flow, where the user deploys explicitly later). VR_Secure_API seeds nothing now — its `createSiteCollectionData` only creates the site doc + logo + counters and starts the Step Function.
-2. **Fork time (here):** `createBranch.js` forks from `refs/heads/main` (always `main`; runtime doesn't read `templateType`).
-3. **Runtime (Templates + site-renderer):** layout selection uses `pageConfigs[].format`, NOT `templateType`. `.vivreal-template.json` records `templateType` for traceability only.
+2. **Channel time (here):** the `createGithubBranch` state is now **channel assignment only** (Phase 2, 2026-07-15) — resolves `CHANNEL_BRANCH || 'stable'`, creates **no git branch**, writes **no marker file**. `createAmplifyApp` persists `deployment.branchName` on the site doc (schemas ≥1.21.0) and sets `enableBranchAutoDeletion: false`.
+3. **Runtime (Templates + site-renderer):** layout selection uses `pageConfigs[].format`, NOT `templateType`.
 
-Live template keys (5): `ecommerce`, `showcase`, `restaurant`, `services`, `portfolio` (`src/shared/templates/index.js:16-28`; mirrored in `VR_Secure_API` `validators.js:78`). Live branches: `main` + per-customer branches — **no `ecommerce`/`showcase` branch exists**.
+Live template keys (5): `ecommerce`, `showcase`, `restaurant`, `services`, `portfolio` (`src/shared/templates/index.js:16-28`; mirrored in `VR_Secure_API` `validators.js:78`). Live Templates branches: **only `main` + `stable`** (+ dev PR branches) — no per-customer and no per-template-type branches exist. Releases go out via the **promote-stable** workflow (main→stable FF), which rebuilds every site app.
 
 ## Amplify env-var injection (createAmplifyApp)
 
@@ -48,7 +48,8 @@ The bucket name itself is `${group.type}-${group.key}` (e.g. `pro_plus-foo`), no
 - **GitHub App auth** — `GITHUB_APP_ID` / `GITHUB_APP_PRIVATE_KEY` / `GITHUB_APP_INSTALLATION_ID` mint a short-lived installation token for the git clone; a long-lived `NODE_AUTH_TOKEN` PAT (replacing the old `GITHUB_TOKEN`) is what `npm ci` uses for org packages.
 - **Domain-purchase saga** — a separate state machine (`docs/ops/domain-purchase-saga.asl.json`) with a Stripe `invoice.paid` task-token wait + reconciliation cron.
 - **`subdomainCleanup` daily cron** + **`updateSiteEnvVars` Lambda** (`serverless.yml:186-205`).
-- New terminal/intermediate status: `sync_conflict` (set by `VR_Secure_API/templateSyncWebhook.js` on template-sync merge conflicts).
+- `sync_conflict` status is **legacy only** — `VR_Secure_API/templateSyncWebhook.js` was deleted in Phase 2 (2026-07-15); nothing writes it anymore.
+- **Migration script** (reusable): `scripts/migrate-to-channel-branch.js` — dry-run default, `--execute`, `--app-id`, `--profile`, `--region`, `--db-keys`, separate verify-first `--delete-old-branches` pass; needs `CLUSTER_URL`. Gotcha: Amplify returns the apex subdomain prefix as `null` but UpdateDomainAssociation requires `""`.
 
 ## Hard rules / gotchas
 

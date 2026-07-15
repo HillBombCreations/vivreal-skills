@@ -27,9 +27,9 @@ Content edits are live on Save. But changes to the **renderer** or **template co
 
 1. Publish the new `@hillbombcreations/site-renderer` version (its CI publishes on push to its `master`).
 2. Bump the renderer dep in `Vivreal_Templates` `package.json` + lockfile.
-3. **Merge to Vivreal_Templates `main`** → the **"Sync main to site branches"** GitHub Actions workflow auto-syncs ALL customer site branches, which auto-rebuild on Amplify.
+3. **Merge to Vivreal_Templates `main`**, then **run the promote-stable workflow** (Actions → promote-stable → Run workflow). It fast-forwards `main`→`stable`; every customer site's Amplify app builds the shared `stable` branch, so that push rebuilds them all (including cross-account Waves of Grain).
 
-**There is NO manual `/sync-templates` step, ever** — merging Templates `main` IS the rollout (including for renderer bumps). The live gate is the renderer version pinned in Templates `package.json`+lockfile. Disregard any stale "sync pending" note. (Full pipeline: `vivreal-site-deploy-pipeline`; the auto-sync fact: memory `insight_templates_main_autosync.md`. Per-site Amplify **env vars** are NOT covered by the sync — those are per-app.)
+**Merging Templates `main` alone releases NOTHING** (Phase 2, 2026-07-15 — per-site branches and the old auto-sync workflow are deleted). The rollout gate is the promote-stable run; the live gate for renderer changes is the renderer version pinned in Templates `package.json`+lockfile. (Full pipeline: `vivreal-site-deploy-pipeline`. Per-site Amplify **env vars** are per-app — a release does not touch them.)
 
 ## Local visual loop (unpublished renderer edits)
 

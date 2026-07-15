@@ -25,7 +25,9 @@ try {
   try { fs.writeFileSync(marker, '1'); } catch (e) {}
 
   const which = isTemplates ? 'Vivreal_Templates' : 'Vivreal_Portal_Mobile';
-  const msg = `You changed ${which}. Once you push/deploy, the customer-site Amplify build + the Deploy-Site Step Functions pipeline run (pushing Templates \`main\` auto-syncs ALL customer branches). Use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm the deploy reached "live" and isn't stuck in a Step Functions/Amplify state.`;
+  const msg = isTemplates
+    ? `You changed Vivreal_Templates. Merging \`main\` alone releases NOTHING to customer sites — all sites build the shared \`stable\` branch. To release, run the promote-stable workflow (Actions → promote-stable → Run workflow), which fast-forwards main→stable and rebuilds every site's Amplify app. Use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm builds reached "live".`
+    : `You changed Vivreal_Portal_Mobile. The portal deploys on merge to main (Amplify). If your change affects site deploys, use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm a deploy reached "live" and isn't stuck in a Step Functions/Amplify state.`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: msg } }));
 } catch (e) { /* fail open — never disrupt the edit */ }
 process.exit(0);

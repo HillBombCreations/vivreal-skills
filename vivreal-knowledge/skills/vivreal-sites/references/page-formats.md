@@ -60,4 +60,4 @@ The home Product Showcase emits `/products?f_productType=<objectValue.product-ty
 2. Add the format to the renderer (`src/types`, a `*Page.tsx` template, registry entry, `composePage` section builder + `renderSection` case, index exports) — publish a renderer minor bump.
 3. Add the format string to `Vivreal_Templates` `COMPOSE_FORMATS` (`src/app/[slug]/page.tsx`) + bump the renderer dep on Templates main.
 4. If the format needs server data the public API doesn't yet return, add it in VR_Client_API.
-5. Going live = publish renderer + bump Templates dep + merge Templates main (auto-syncs all customer branches — see `references/authoring-and-parity.md` + `vivreal-site-deploy-pipeline`).
+5. Going live = publish renderer + bump Templates dep + merge Templates main + **run the promote-stable workflow** (main→stable FF; all sites build `stable` — see `references/authoring-and-parity.md` + `vivreal-site-deploy-pipeline`).

@@ -27,7 +27,7 @@ The renderer is a published npm package; a publish reaches every deployed custom
 2. **Bump the version** (semver — patch/minor; major unused). Never republish a version (GitHub Packages rejects it).
 3. **Push to `master`** → `.github/workflows/publish.yml` runs `npm ci` + build + `npm publish` automatically. (Local `npm publish` is discouraged + 403s with the read-only hb-api-secrets token; CI uses its own write token.)
 4. **Bump consumers** — `Vivreal_Portal_Mobile` + `Vivreal_Templates` `package.json` → new version → `npm install` → commit each separately.
-5. Deploy: portal on merge to main; Templates `main` push auto-syncs to all customer branches (no manual sync). Expect a rollout wave.
+5. Deploy: portal on merge to main; Templates releases via the **promote-stable** workflow (main→stable FF) — merging Templates `main` alone releases nothing; the stable push rebuilds every site app. Expect a rollout wave after promote-stable.
 
 Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older version as an emergency lock.
 

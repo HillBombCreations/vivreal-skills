@@ -1,13 +1,13 @@
 ---
 name: vivreal-templates-knowledge
-description: Use when working in Vivreal_Templates — the Next.js 16 universal customer-site template (main is the single template; per-customer branches fork off it) that renders a Vivreal customer's content via VR_Client_API and the @hillbombcreations/site-renderer package. Covers the data-driven (no hardcoded brand) rule, server-component-first fetch via clientFetch/clientFetchCached + tag revalidation, CloudFront signed media, the two analytics components (SiteAnalytics third-party tag vs SiteBeacon first-party), per-page SEO + dynamic OG images, per-site theming (fonts/favicon/chrome), the branch model + auto-sync workflow, and GitHub-Packages renderer installs. Triggers on: Vivreal_Templates, site template, customer site, clientFetch, getSiteData, template branch, site-renderer install, SiteBeacon, site analytics beacon, OG image route, per-site font, revalidate webhook. Source of truth: C:\repos\Vivreal_Templates\CLAUDE.md.
+description: Use when working in Vivreal_Templates — the Next.js 16 universal customer-site template (ALL customer sites build the shared `stable` channel branch; per-customer branches are DEAD as of Phase 2, 2026-07-15) that renders a Vivreal customer's content via VR_Client_API and the @hillbombcreations/site-renderer package. Covers the data-driven (no hardcoded brand) rule, server-component-first fetch via clientFetch/clientFetchCached + tag revalidation, CloudFront signed media, the two analytics components (SiteAnalytics third-party tag vs SiteBeacon first-party), per-page SEO + dynamic OG images, per-site theming (fonts/favicon/chrome), the promote-stable release workflow, and GitHub-Packages renderer installs. Triggers on: Vivreal_Templates, site template, customer site, clientFetch, getSiteData, stable branch, promote-stable, site-renderer install, SiteBeacon, site analytics beacon, OG image route, per-site font, revalidate webhook. Source of truth: C:\repos\Vivreal_Templates\CLAUDE.md.
 ---
 
 # Vivreal_Templates — knowledge digest
 
 Last synced: 2026-07-13
 
-Next.js **16** (App Router, TS strict, Tailwind 4, Turbopack builds) **universal customer-site template**, v0.2.0. `main` is the SINGLE template rendering every site type from Studio page configs — the old branch-per-template-type model (showcase/ecommerce branches) is gone. EventHandler forks per-customer branches off `main`; `sync-main-to-sites.yml` merges `main` into every customer branch on push — **never push WIP to main, it syncs to every customer site**. Fully data-driven from the Vivreal CMS via VR_Client_API. Read `C:\repos\Vivreal_Templates\CLAUDE.md` for depth. For the cross-repo site product/authoring model see `vivreal-sites`; for the AWS deploy pipeline see `vivreal-site-deploy-pipeline`; for site-visitor stats see `vivreal-analytics-knowledge`.
+Next.js **16** (App Router, TS strict, Tailwind 4, Turbopack builds) **universal customer-site template**, v0.2.0. The repo has **only `main`, `stable`, and dev PR branches** (Phase 2, 2026-07-15): every customer site's Amplify app builds the shared **`stable`** branch. Merging `main` releases NOTHING — releases go out via the **promote-stable** workflow (workflow_dispatch, fast-forward-only main→stable, GitHub App auth), which auto-builds every site app including the cross-account Waves of Grain app. Fully data-driven from the Vivreal CMS via VR_Client_API. Read `C:\repos\Vivreal_Templates\CLAUDE.md` for depth. For the cross-repo site product/authoring model see `vivreal-sites`; for the AWS deploy pipeline see `vivreal-site-deploy-pipeline`; for site-visitor stats see `vivreal-analytics-knowledge`.
 
 ## Data flow
 
@@ -42,7 +42,7 @@ Origin resolution chain: `NEXT_PUBLIC_SITE_URL` → `domainInformation.live_url`
 
 ## Branch model + env
 
-- `main` = the only template. Everything else = per-customer site branches (suffixes like `-ecommerce`/`-blank` are just site names, NOT template types). Auto-sync on push; no manual sync step.
+- `main` = the only template; `stable` = the release channel every site builds. There are NO per-customer or per-template-type branches. Release = run the promote-stable workflow; per-site emergency hold = disable that app's `stable` auto-build + explicit `start-job`.
 - Env injected by EventHandler at Amplify deploy: `API_KEY`, `SITE_ID`, `NEXT_PUBLIC_SITE_URL`, `SITE_CACHE_TTL_SECONDS`, `REVALIDATE_WEBHOOK_SECRET`, `NEXT_PUBLIC_ANALYTICS_ENDPOINT`, `NEXT_PUBLIC_SENTRY_DSN`, `PARTNERS_ID` (`SHOWS_ID`/`TEAMMEMBERS_ID` legacy fallbacks). `BUCKET_NAME`/`CDN_BASE_URL` are gone.
 
 ## Updating @hillbombcreations/site-renderer

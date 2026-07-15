@@ -18,7 +18,7 @@ A **site** is a Mongo document (`sites` collection, in the group's tenant DB) ho
 - **Site values + navbar/footer chrome** → `references/site-values.md`
   (what lives in site values, the Q3b authored navbar/footer overrides + lazy auto-derive, where they persist + the strict-mode subdoc trap.)
 - **Authoring + Studio↔live parity + going live** → `references/authoring-and-parity.md`
-  (Studio is the single surface, content goes live on **Save** (no Publish button), composePage preview parity seams, and the Templates `main` auto-sync rollout.)
+  (Studio is the single surface, content goes live on **Save** (no Publish button), composePage preview parity seams, and the promote-stable release rollout.)
 
 ## The TWO rules that most often make content "not show up"
 
@@ -31,7 +31,7 @@ These bite constantly — know them even before opening a reference:
 
 | Need | Skill |
 |---|---|
-| How a site gets BUILT + DEPLOYED on AWS (Step Functions, Amplify, Route53, auto-sync) | `vivreal-site-deploy-pipeline` |
+| How a site gets BUILT + DEPLOYED on AWS (Step Functions, Amplify, Route53, promote-stable releases) | `vivreal-site-deploy-pipeline` |
 | How a **Save → live** edit propagates to a built site (on-publish cache-revalidation webhook) | `vivreal-site-deploy-pipeline` |
 | The renderer package (composePage, primitives, publishing it) | `vivreal-renderer-knowledge` |
 | The customer-template repo (clientFetch, branch model) | `vivreal-templates-knowledge` |

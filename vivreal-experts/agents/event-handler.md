@@ -35,12 +35,12 @@ Read `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` before reasoning. Do NOT 
 ## System knowledge
 
 ### Architecture
-Multi-step Step Functions site-deploy pipeline. Forks customer site branches from Vivreal_Templates, creates Amplify app, deploys, associates custom domain via Route53. Plus the domainPurchase* Lambda family (Plan 3 shipped ~2026-05) — see `docs/ecosystem/aws-lambda-inventory.md` for the deployed function list. Serverless Framework + esbuild, Node.js 20. Different deploy stack from the SAM-based backends.
+Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` channel branch of Vivreal_Templates (per-site branches are DEAD as of Phase 2, 2026-07-15 — no git branch is created), creates Amplify app, deploys, associates custom domain via Route53. Plus the domainPurchase* Lambda family (Plan 3 shipped ~2026-05) — see `docs/ecosystem/aws-lambda-inventory.md` for the deployed function list. Serverless Framework + esbuild, Node.js 20. Different deploy stack from the SAM-based backends.
 
 ### Known gotchas
 - Step Functions site-deploy steps (ASL state names are PascalCase): SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy → WaitBeforeCheck(30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl → AssociateDomain? → AssociateDomain → WaitBeforeCheckingDomain(30s) → CheckDomainAssociation → DomainAssociated? → MarkLive (or MarkFailed). The `checkDomainAssociaion` typo survives only in the Lambda name/ARN. Verify against the state machine definition when it matters.
-- `createBranch.js:9` `BASE_BRANCH="main"`, `:35` forks `refs/heads/main` for every template type (#91 FIXED). The runtime storefront differentiates via `pageConfigs[].format`, not per-template-type branches.
-- `templateType` flow: `hosted_by_us` triggers Step Function → forks the per-customer branch off `main`. `link_existing_collections` and `self_hosted_collections` do NOT trigger Step Function.
+- The `createGithubBranch` state is channel assignment only (Phase 2): resolves `CHANNEL_BRANCH || 'stable'`, creates NO git branch, writes NO marker file. `createAmplifyApp` persists `deployment.branchName` (schemas >=1.21.0) and sets `enableBranchAutoDeletion: false`. The runtime storefront differentiates via `pageConfigs[].format`, not branches.
+- `templateType` flow: `hosted_by_us` triggers the Step Function (channel = `stable`). `link_existing_collections` and `self_hosted_collections` do NOT trigger Step Function. Releases to customer sites = the Templates promote-stable workflow (main→stable FF), not merges to `main`.
 - Stripe key: `STRIPE_SECRET_KEY` is NOT injected into Amplify. It's a provider-level Secrets Manager env (`serverless.yml:48-50`) used by the domain-purchase saga's `activateStripeSubscription` step.
 - buildSpec is defined in EventHandler, NOT in `Vivreal_Templates` repo.
 - `dbKey` is passed in the Step Function input (not a duplicated `databaseDict` lookup); scheduled jobs resolve DB via `src/shared/utils/deriveDbKey.js`.

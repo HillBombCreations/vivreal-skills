@@ -7,10 +7,10 @@ description: Use to actively CHECK the live deploy status of a customer site —
 
 Tells you, for a given customer site, **where its deploy actually is right now** and
 **why it's stuck/failed**. Read-only AWS + Mongo. For the pipeline design (state order,
-auto-sync, env-var injection) read `vivreal-site-deploy-pipeline`; this is the runbook for
+the promote-stable release flow, env-var injection) read `vivreal-site-deploy-pipeline`; this is the runbook for
 checking ONE deploy.
 
-**Region:** `us-east-1`. **State machine:** `Deploy-Site` (ARN in `hb-api-secrets:STATE_MACHINE_ID`).
+**Region:** `us-east-1`. (Exception: the Waves of Grain app lives in acct 095232028948, us-east-2, profile `wavesofgrain`.) **State machine:** `Deploy-Site` (ARN in `hb-api-secrets:STATE_MACHINE_ID`).
 **Ordered states** (typos are REAL — do not "fix" them; Wait/Choice states show up in `get-execution-history`):
 `SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy →
 WaitBeforeCheck (30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl →
@@ -34,7 +34,7 @@ sites.findOne({ groupID: "<gid>" })  // or { key: "<siteSlug>" }, scoped by grou
 - `status: live` → done. Report the `domainInformation.live_url`.
 - `status: failed` → `markSiteFailed` ran; `deployment.message`/`errorMessage` has the reason. Go to step 2 to find the failing state.
 - `status: deploying` (in-flight; `pending` is never written) → in flight or stuck. Go to step 2.
-- `status: sync_conflict` → a Templates `main` auto-sync hit a merge conflict on this site's branch; needs a manual merge, not a deploy re-run.
+- `status: sync_conflict` → **legacy value only** — the template-sync webhook that wrote it was deleted in Phase 2 (2026-07-15); nothing produces it anymore. If seen, it's a stale doc from before the shared-`stable` migration.
 
 **Shortcut:** the `mcp__awslabs_lambda-tool-mcp-server__vh_site_deployment_check` tool (available
 to the `vivreal-ops` agent) wraps steps 1–2 — dispatch `vivreal-ops` if you have it and want a one-shot.
@@ -55,7 +55,7 @@ aws stepfunctions get-execution-history --region us-east-1 --execution-arn "<exe
 - A `*Failed` / `TaskFailed` event = where it **broke**; the `cause` is the error.
 - Map the state to its meaning:
   - `seedCollections` stuck/failed → CMS seeding hit the 29s/30s budget or a create endpoint errored (partial seeds get cleaned by `VR_Secure_API/deleteSite`).
-  - `createGithubBranch` failed → GitHub branch fork from `Vivreal_Templates@main` failed (token/permissions).
+  - `createGithubBranch` failed → despite the name it no longer forks a branch (Phase 2: channel assignment only, resolves `CHANNEL_BRANCH || 'stable'`) — a failure here is config/env, not GitHub.
   - `checkAmplifyDeploy` stuck/failed → the Amplify build itself — go to step 3.
   - `checkDomainAssociaion` (SIC) stuck → Route53 domain association not complete yet.
 
@@ -82,11 +82,12 @@ aws amplify get-job --region us-east-1 --app-id "<appId>" --branch-name "<branch
 - Current `deployment.status` + `updatedAt`.
 - The Step Functions state it's IN or FAILED at, with the failure `cause`.
 - If Amplify-related: the job status + failing step `statusReason`.
-- One-line root cause + the next action (re-run `createSites` after fix, push Templates `main`, wait on Route53, etc.).
+- One-line root cause + the next action (re-run `createSites` after fix, run promote-stable, wait on Route53, etc.).
 
 ## Gotchas
-- **"My Templates/renderer change isn't live"** is usually NOT a stuck deploy — it's the auto-sync/publish
-  chain (push Templates `main` → branches auto-sync → Amplify rebuilds). See `vivreal-site-deploy-pipeline`.
+- **"My Templates/renderer change isn't live"** is usually NOT a stuck deploy — merging Templates `main`
+  releases NOTHING; someone must run the **promote-stable** workflow (main→stable FF), which rebuilds every
+  site's `stable` branch. See `vivreal-site-deploy-pipeline`.
 - **"Content created in portal missing on site"** is the `publishDate` storefront gate, not the deploy — see `vivreal-db`.
 - The state machine is NOT in IaC; console edits are drift. Source of truth is
   `Vivreal_EventHandler/docs/ops/deploy-site-state-machine.asl.json`.
