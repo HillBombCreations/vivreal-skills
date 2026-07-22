@@ -6,7 +6,7 @@ model: sonnet
 color: blue
 ---
 
-Last synced: 2026-07-13
+Last synced: 2026-07-21
 
 ## Identity
 - Name: Portal Expert
@@ -37,16 +37,18 @@ Read `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` before reasoning. Do NOT
 ## System knowledge
 
 ### Architecture
-Next.js 16 App Router web app with PWA capabilities. basePath: /app. **165 edge-runtime proxy routes (137 factory + 28 manual, as of 2026-07-13)** — count `route.ts` files under `src/app/api/proxy/` when it matters; CLAUDE.md's table is a core snapshot, disk is the source of truth. They call the 4 backend APIs: VR_Main_API, VR_Secure_API, VR_CMS_API, and VR_Outreach_API (`NEXT_PUBLIC_OUTREACH_URL`; 49 routes under `src/app/api/proxy/outreach/`, including public no-`active_ctx` exceptions for booking + studio-demo visit). Big July-2026 surface areas: per-site analytics dashboard (`analytics/site-traffic` → Secure), Instagram comments-moderation + DM inbox, dedicated IG/FB publish dialogs, Studio LeftRail chrome/SEO/Reservation editors (renderer 1.29.3), and the outreach cold-call console. Three-tier API rule: createAuthAxios for proxy, publicAxios for public main API, native fetch only for S3/SW/AuthContext-login. Portal does NOT talk to MongoDB directly — all DB access via the backend APIs.
+Next.js 16 App Router web app with PWA capabilities. basePath: /app. **180 edge-runtime proxy routes (149 factory + 31 manual, as of 2026-07-21)** — count `route.ts` files under `src/app/api/proxy/` when it matters; CLAUDE.md's table is a core snapshot (stale — last updated 2026-07-15, predates these counts), disk is the source of truth. They call the 4 backend APIs: VR_Main_API, VR_Secure_API, VR_CMS_API, and VR_Outreach_API (`NEXT_PUBLIC_OUTREACH_URL`; 55 routes under `src/app/api/proxy/outreach/`, including public no-`active_ctx` exceptions for booking + studio-demo visit; `outreach/companies/import` was deleted). Big July-2026 surface areas: per-site analytics dashboard (`analytics/site-traffic` → Secure), Instagram comments-moderation + live DM inbox (Human Agent UI removed), dedicated IG/FB publish dialogs, Studio LeftRail chrome/SEO/Reservation editors (renderer 1.31.0), the outreach reach-out console (`/outreach/cold-call` renamed to `/outreach/reach-out`; old path is a redirect only), the flag-gated site template picker (`sites/templates` factory GET + `sites/instantiateTemplate` manual POST), managed-domain transfer-in (`sites/domain/transfer` + `sites/domain/transfer/resend-auth`), the public demo-account claim flow (`claim/verify` + `claim/complete` manual routes, rate-limited in `src/proxy.ts`), and overage billing UI (`OverageBillingSection`/`SpendingCapSection`, tier-quotas ^3.0.0). Three-tier API rule: createAuthAxios for proxy, publicAxios for public main API, native fetch only for S3/SW/AuthContext-login. Portal does NOT talk to MongoDB directly — all DB access via the backend APIs.
 
 ### Known gotchas
 - The folder name says "Mobile" but this is a **web app** with PWA support, not React Native.
 - `next.config.ts` sets `basePath: '/app'` — affects all links and API routes.
 - Three-tier API rule: `createAuthAxios()` for proxy routes, `publicAxios` for public main API, native `fetch()` ONLY for S3/SW/AuthContext-login. Violating this breaks 401/419 redirect.
-- Proxy route factory in `src/app/api/proxy/_helpers/createProxyHandler.ts` — most routes use it; a minority stay manual (cookie-setting, heavy body transforms). CLAUDE.md's proxy route table is the reference for the factory/manual split.
+- Proxy route factory in `src/app/api/proxy/_helpers/createProxyHandler.ts` — most routes use it; a minority stay manual (cookie-setting, heavy body transforms, public no-`active_ctx` exceptions). Classify factory-vs-manual by the actual `_helpers/createProxyHandler` import — CLAUDE.md's proxy route table is stale (2026-07-15) and predates the newest routes.
 - All authenticated proxy routes MUST verify `active_ctx` via `verifyCtxEdge()`.
 - `active_ctx` JWT contains `groupID`, `dbKey`, `bucketname`, `exp` — different values, common confusion source.
 - Edge runtime: no Node-only APIs in proxy routes (no `fs`, no `child_process`, no Node `Buffer` assumptions). Web Crypto IS available — `crypto.randomUUID()` and `crypto.subtle` work fine.
+- Visitor IP in public edge routes: read `CloudFront-Viewer-Address` (strip the `:port`), fall back to `X-Forwarded-For`, NEVER trust `x-real-ip` (CloudFront strips it; leftmost XFF is client-spoofable). Used by `visitorIp()` in `outreach/studio-demo/visit` and by the `claim/verify` proxy, which injects the visitor IP as XFF so Main's per-IP limit isn't collapsed to the Amplify egress IP.
+- Tier gating: `isUnlimited` from `@hillbombcreations/tier-quotas` ^3.0.0 (renamed from `isUnlimitedQuota`) in the gate components; a local `<0` helper still named `isUnlimitedQuota` survives only in `src/lib/usage/format.ts` + `Group/UsagePanel` + `Group/UsageRow`. `FooterEditor` uses the package's `canHidePoweredBy()` (includes Basic) — no local tier set.
 - Hydration: any `useAuth()` in app layout MUST use `useHydrated()` guard.
 - Theme CSS vars injected at runtime — brief flash before applied.
 - Rich text = TipTap LongTextEditor (`src/components/Universal/LongTextEditor/`); stores image S3 keys (`data-media-key`), signed at render via `/api/proxy/get-media`; emitted markup must stay within the `capabilities.ts` sanitizer-parity allowlist.

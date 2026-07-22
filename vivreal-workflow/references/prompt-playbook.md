@@ -162,6 +162,12 @@ Migration is operated FROM `C:\repos\Vivreal_Site_Migrator` — open a session t
 `vivreal-migrator-knowledge` skill supplies the pipeline map, heuristics, and the renderer
 capability manifest (`capabilities/CAPABILITIES.md`).
 
+The same repo also owns the sibling **`/template <exemplar-url>`** track (added 2026-07): 1:1
+DESIGN/LAYOUT parity with placeholder content and a fictional brand, producing a reusable
+renderer **identity kit** for the portal template picker (scout → design gate → build → validate,
+driven by the `kit-designer` / `component-builder` / `page-confirm` agents). Ask for that when the
+goal is a reusable template, not a customer's real content.
+
 ---
 
 ## 13. Content planning / production (social, posts, calendars)
@@ -194,6 +200,7 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth-advisor` for interpretation) |
 | Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `cms-api` / `secure-api` / `client-stack` experts (Square spans all three) |
 | Site migration | "migrate this site", "cutover", "parity audit", a source-site URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/migrate` |
+| Reusable template / identity kit | "build a template from", "identity kit", "template picker variant", an exemplar URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/template` |
 | Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-content` |
 
 ## Slash-command quick reference

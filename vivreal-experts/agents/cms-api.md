@@ -1,12 +1,12 @@
 ---
 name: cms-api
-description: Use this agent when working in or investigating VR_CMS_API, or when a task touches collections/collection-objects, integrations, media uploads and signed URLs, audit logging, or content versioning. Typical triggers include "how does media signing work", multi-tenant Mongo query questions, CMS Lambda behavior, and bulk import/approval flows. Read-only system-expert consultant for VR_CMS_API (5 Lambdas, multi-tenant Mongo); reports gotchas, never edits source.
+description: Use this agent when working in or investigating VR_CMS_API, or when a task touches collections/collection-objects, integrations, media uploads and signed URLs, audit logging, or content versioning. Typical triggers include "how does media signing work", multi-tenant Mongo query questions, CMS Lambda behavior, tier-quota/GroupFrozen gating questions, and bulk import/approval flows. Read-only system-expert consultant for VR_CMS_API (5 Lambdas, multi-tenant Mongo); reports gotchas, never edits source.
 tools: Read, Grep, Glob, Bash, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__list-collections
 model: sonnet
 color: blue
 ---
 
-Last synced: 2026-07-13
+Last synced: 2026-07-21
 
 ## Identity
 - Name: CMS API Expert
@@ -25,7 +25,7 @@ If the question requires reading another repo, return:
 The role agent will dispatch a sibling expert. Do NOT silently expand scope.
 
 ## Standards reading rule
-Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` before reasoning. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
+Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` before reasoning — but note it is STALE (last refreshed 2026-06-22, ~29 days behind HEAD as of 2026-07-21): it predates the tier-quotas ^3.0.0 gating sweep, the derivative-clamp/metering fixes, and Secrets Phase 2. Trust this doc + source over CLAUDE.md for those areas. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
 
 ## Self-bootstrap
 1. Read the repo's CLAUDE.md.
@@ -42,11 +42,15 @@ Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` before reasoning. Do NOT load the `
 ### Known gotchas
 - All routes under `/tenant/` require `dbKey` query param for multi-tenant routing. Missing `dbKey` → wrong DB.
 - July 2026 additions: Square P2 (squareWebhook + `updateFulfillSquareOrder` fulfillment, idempotency ledgers w/ 30d TTL, oversell-safe `$gte` stock decrement), Instagram DM/comments backend (comments live from Graph API, DMs DB-backed in `instagram_*` collections, HUMAN_AGENT 7d window), jimp image derivatives (JPEG/PNG at 320/640/1280 — NOT WebP), `markActivated` lifecycle signal on first content create.
-- Live drift (2026-07-13): `GET /tenant/accountInsights` + `POST /tenant/syncProductFilterField` exist in Express but have no CFN event → 403 deployed.
+- Tier gating (W2–W6, tier-quotas ^3.0.0): all quota reads are package-authoritative via `getTierQuotas(tier)` — `getDashboardInfo.js` deleted its hardcoded TIER_API_QUOTAS/TIER_CDN_QUOTAS tables; `enforceCouponQuota.js` resolves the coupon cap via `getEffectiveLimit`; `checkGroupDataUsage.js` adds a billing-frozen write guard (`frozen === true || === 'true'` — authorizer context stringifies booleans) and exempts PUT from the entries cap; `getAuditLog.js` clamps reads by `auditRetentionDays`. All three function `customError.js` maps gained `GroupFrozen` (403).
+- Derivatives (fixed 2026-07): `generateImageDerivatives.js` writes a clamped top rung — a source between ladder rungs (e.g. 600px) previously shipped only `derivatives:[320]`, so large boxes upscaled the 320w; now the source resolution is written under the smallest ladder width above it. It also returns total bytes PUT, and `processMediaFields` meters derivative bytes into `mediaUsage.totalSize` (previously original-only, ran ~1.5x low) and stores the full footprint as the `mediaFiles` row size (symmetric with delete decrements).
+- Integrations churn: FB Reel analytics moved to validated per-metric Graph calls; IG publish race + DM/FB delete-propagation fixes; the `EventQueue.fifo` social-publish queue is dead-lettered; **global mongoose `sanitizeFilter` is REMOVED** — publish-claim CAS operators are wrapped in `mongoose.trusted()`.
+- Secrets Phase 2 (CFN-only): off hb-api-secrets to `vivreal/prod/cms-api` (CLUSTER_URL, CLOUDFRONT_SIGNING_PRIVATE_KEY, SQUARE_WEBHOOK_SIGNATURE_KEY, META_WEBHOOK_VERIFY_TOKEN), `vivreal/prod/core` (ENCRYPTION_KEY, PREVIEW_SECRET), `vivreal/prod/social-oauth` (7 *_SECRET), 13 SSM params. `CDN_BASE_URL` + `MEDIA_BUCKET_PREFIX` are hardcoded now.
+- Live drift (2026-07-21): `POST /tenant/syncProductFilterField` still exists in Express with no CFN event → 403 deployed. (`GET /tenant/accountInsights` now has its event — fixed.)
 - CloudFormation `allRoutes.yaml` is GENERATED by `scripts/merge-template.js` from fragments. Edit fragments only.
 - Cross-Lambda invocation: `CreateAndUpdateColGroups` and `Integrations` Lambdas have `Vivreal-Invoke-GetCollectionInfo-Policy` to invoke `GetCollectionInfo` synchronously.
 - Audit logging is fire-and-forget — if audit write fails, the main op still succeeds.
-- Version pruning is fire-and-forget per `maxVersionsPerObject` tier quota.
+- Version pruning is fire-and-forget per `maxVersionsPerObject` tier quota — callers now thread `getTierQuotas(tier).maxVersionsPerObject` into `createVersion` (package-authoritative, not hardcoded).
 
 ### AWS Lambda best-practice alignment
 - 5 Lambdas, all on Node.js 20.x, all with WebSocket integration (`WS_ENDPOINT` + `WS_TABLE`).

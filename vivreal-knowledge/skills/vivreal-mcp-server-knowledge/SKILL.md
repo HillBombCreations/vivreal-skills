@@ -1,6 +1,6 @@
 ---
 name: vivreal-mcp-server-knowledge
-description: Use when working in VR-MCP-Server — Vivreal's remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing ~72 CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.
+description: Use when working in VR-MCP-Server — Vivreal's remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing 69 CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules and per-tier tool gating, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, TOOL_MIN_TIER, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.
 ---
 
 # VR-MCP-Server — knowledge digest
@@ -13,11 +13,13 @@ Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer toke
 |---|---|---|
 | Audience | Portal owner / Vivreal customer | Site-visitor agents (ChatGPT/Claude/Perplexity) |
 | Auth | Cognito OAuth 2.1 + PKCE (Bearer) | Per-site API key (raw header, no `Bearer`) |
-| Scope | Full CMS admin (~72 tools) | Read-only content + Stripe purchase intent on ONE site |
+| Scope | Full CMS admin (69 tools) | Read-only content + Stripe purchase intent on ONE site |
 
-## Tools — ~72 across 11 modules
+## Tools — exactly 69 across 11 modules
 
-Session (3) · Collections (9) · Objects (12) · Media (5) · Calendar (1) · Dashboard (1) · Sites (13) · Integrations (11) · Stripe (7) · Group Mgmt (7) · Docs (3). Also 8 guided **prompts** (`create-content-plan`, `launch-content-everywhere`, etc.) and 3 `vivreal://` **resources**.
+Per `toolRegistry` in `src/resource/manifests.ts`: Session (3) · Collections (9) · Objects (12) · Media (5) · Calendar (1) · Dashboard (1) · Sites (14) · Integrations (10) · Stripe (4) · Group Mgmt (7) · Docs (3). Also 8 guided **prompts** (`create-content-plan`, `launch-content-everywhere`, etc.) and 3 `vivreal://` **resources**.
+
+**Per-tier gating** — `TOOL_MIN_TIER` in `src/tools/catalog.ts`: `bulk-create-content`, `bulk-update-content-publish-date`, `sync-channel` require **pro**; `redeploy-site`, `deploy-site` require **pro_plus**. `tools/list` is filtered per tier, so a basic-tier client sees fewer than 69.
 
 ## Session model — set-active-group is the linchpin
 
@@ -34,4 +36,4 @@ Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is
 
 ## Runtime
 
-`src/index.ts` (local HTTP) + `src/lambda.ts` (API Gateway v2 adapter). SAM CloudFormation, GitHub Actions on `main`/`dogfood`. Required env: `AWS_REGION`, `USERPOOL_ID`, `MCP_CLIENT_ID`, `COGNITO_DOMAIN`.
+`src/index.ts` (local HTTP) + `src/lambda.ts` (API Gateway v2 adapter). SAM CloudFormation, GitHub Actions on `main`/`dogfood` (CI token scoped `packages: read`). Required env: `AWS_REGION`, `USERPOOL_ID`, `MCP_CLIENT_ID`, `COGNITO_DOMAIN`; Sentry config is resolved from SSM.

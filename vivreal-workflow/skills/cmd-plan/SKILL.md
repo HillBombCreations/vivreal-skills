@@ -26,7 +26,7 @@ prompt: Research the task at docs/projects/<slug>/brief.md. Slug is <slug>. Read
 
 ## Phase 2 — Plan
 
-Invoke the `vivreal-writing-plans` skill to turn research.md into
+Invoke the `vivreal-workflow:vivreal-writing-plans` skill (full plugin-qualified name — the bare name does not resolve) to turn research.md into
 `docs/projects/<slug>/plan.md`. The skill's terminal step auto-dispatches the
 reviewer in artifact mode — let it run.
 

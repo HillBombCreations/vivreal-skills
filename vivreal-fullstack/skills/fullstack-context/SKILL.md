@@ -4,7 +4,7 @@ description: Auto-triggers when the user mentions a backend endpoint, API route,
 version: 1.1.1
 ---
 
-Last synced: 2026-07-13
+Last synced: 2026-07-21
 
 # Vivreal Fullstack Context Loader
 
@@ -79,7 +79,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 ## Cross-Repo Conventions
 
 - All backend APIs are **Express.js + serverless-express**, AWS Lambda, **JavaScript** (not TypeScript)
-- Shared schemas in `@hillbombcreations/schemas` (npm): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`
+- Shared schemas in `@hillbombcreations/schemas` (npm, v1.25.0): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `siteVersionSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`, `domainOrderSchema` (orderType `purchase`|`transfer`, encrypted `authCode`, `bundleApplied`), `siteTrafficDailySchema`, `siteTemplatesSchema` (new `site_templates` collection — portal template-picker registry), plus the `domainOrderStatuses` constants export (13 purchase + 9 transfer statuses)
 - Auth flow: Cognito JWT (`token` cookie) + signed context JWT (`active_ctx` cookie)
 - The `active_ctx` contains: `groupID`, `dbKey`, `bucketname`, `exp` — NOT `groupName`
 - **Never use `groupName` for mainDb queries** — always `{ key: dbKey }` or `{ _id: groupID }`

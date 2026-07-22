@@ -180,28 +180,28 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 
 | Repo | Path | Purpose |
 |---|---|---|
-| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (165 proxy routes) |
+| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (180 proxy routes: 149 factory + 31 manual, as of 2026-07-21) |
 | VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 3 Lambdas — auth/signup, transactional + lifecycle email, Meta callbacks |
-| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 11 Lambdas — group, billing, sites, profile, OAuth, Square refresh, AI agent, analytics |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 12 Lambdas — group, billing, sites, profile, OAuth, Square refresh, AI agent, analytics, template-instantiate worker |
 | VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | 5 Lambdas — collections, integrations, media/derivatives, webhooks, audit, versioning |
 | VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` | Public content delivery + Stripe/Square checkout (publishDate filter) |
 | VR_Client_Auth | `${VIVREAL_REPOS}/VR_Client_Auth/CLAUDE.md` | TOKEN authorizer for VR_Client_API (Serverless Framework, not SAM) |
-| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/CLAUDE.md` | 4 Lambdas — sequences, contacts/companies, booking, SES send/replies (CLAUDE.md added 2026-07-13) |
+| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/README.md` | 4 Lambdas — sequences, contacts/companies, prospects, booking, SES send/replies (no CLAUDE.md on main — README + docs/ are truth) |
 | Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — `main` is the single template; other branches are per-customer sites |
 | vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer` — publishing hits every live customer site |
-| VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with ~72 CMS tools (TypeScript, OAuth 2.1) |
-| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (50 tools) |
+| VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with 69 CMS tools (TypeScript, OAuth 2.1; tier-gated via TOOL_MIN_TIER) |
+| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (58 tools incl. 8 prospects) |
 | VR_Analytics_API | `${VIVREAL_REPOS}/VR_Analytics_API/README.md` | First-party analytics ingest + rollup (no CLAUDE.md — README is truth) |
 | VR_OnCall_Agent | `${VIVREAL_REPOS}/VR_OnCall_Agent/CLAUDE.md` | On-call agent (auto-investigates Sentry incidents via GitHub Actions) |
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
-| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | External-site → Vivreal migration pipeline (no CLAUDE.md — README + docs/ are truth) |
+| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md — `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
 | vivreal-content | `${VIVREAL_REPOS}/vivreal-content/CLAUDE.md` | Content studio — voice/strategy knowledge base + asset pipeline (canonical brand voice) |
 | Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing\` | vivreal.io marketing/landing site |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
 | Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | Public docs site (Next.js, content under `content/`) |
 | Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas\` | Shared Mongoose schemas package |
-| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package (owns AI-action quotas) |
+| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package v3.0.0 (owns all tier quotas; sentinel scheme: -1 unlimited, 0 no access) |
 
 All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino, AWS SAM (except VR_Client_Auth + Vivreal_EventHandler = Serverless Framework). X-Ray is retired where touched recently (Client/Secure) — Sentry is the telemetry layer.
 
@@ -211,16 +211,17 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 
 **Full inventory:** `docs/ecosystem/aws-lambda-inventory.md` — READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
 
-### Quick reference — function counts per API (verified 2026-07-13)
+### Quick reference — function counts per API (verified 2026-07-21)
 | API | Prod Lambdas | Has WebSocket | Deploy Trigger |
 |---|---|---|---|
-| VR_Secure_API | 11 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + webhookDelivery; websocket stack is separate) | 4 of 11 | Push to main/dogfood |
+| VR_Secure_API | 12 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + webhookDelivery + instantiateTemplateWorker [direct-invoke]; websocket stack is separate) | 4 of 12 | Push to main/dogfood |
 | VR_CMS_API | 5 | All 5 | Push to main/dogfood |
 | VR_Main_API | 3 (express + email consumer + lifecycle scan) | 1 of 3 | Push to main/dogfood |
 | VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
-| VR_Client_API | 1 | No | Push to main |
+| VR_Client_API | 1 (+ CloudFront edge distribution `client.vivreal.io` in the same SAM stack) | No | Push to main |
 | VR_Client_Auth | 1 (Node 18, Serverless Framework) | No | Push to main |
-| EventHandler | 10 (Step Functions pipeline) | No | Push to main |
+| EventHandler | 27 (12 site-deploy pipeline + subdomainCleanup + 9 domainPurchase + domainPurchaseReconciliation + 6 domainTransfer — 2 separate Step Functions sagas) | No | Push to main |
+| VR_Analytics_API | 2 (ingest [public Function URL] + rollupCron) — LIVE, stack `vr-analytics-api` | No | Push to main |
 
 ### Infrastructure stacks (workflow_dispatch — manual trigger from GitHub Actions)
 | Stack | Repo Location | Workflow |
@@ -228,8 +229,8 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 | `vivreal-websocket` | `VR_Secure_API/websocket/` | `.github/workflows/websocket.yml` |
 | `Vivreal-Media-CDN` | `VR_Secure_API/cloudformation/media-cdn.yaml` | `.github/workflows/media-cdn.yml` |
 
-### Secrets Manager (`hb-api-secrets`)
-All backend Lambdas resolve env vars from `hb-api-secrets` at deploy time via `{{resolve:secretsmanager:hb-api-secrets:SecretString:KEY}}`. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth (6 providers), Encryption, CDN/Media, Push notifications (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
+### Secrets Manager (per-service `vivreal/prod/*` — secrets-audit Phase 2, 2026-07)
+The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`vivreal/prod/secure-api`, `vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/client-auth`, `vivreal/prod/main-api`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `/vivreal/prod/*` params. Values were copied verbatim — env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
 
 ### When to consult the Lambda inventory
 - **Env var mismatch bugs** — check which functions have which vars, verify against CloudFormation fragment

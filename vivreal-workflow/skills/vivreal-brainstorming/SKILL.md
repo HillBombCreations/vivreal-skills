@@ -1,13 +1,15 @@
 ---
 name: vivreal-brainstorming
-description: Use before any creative or design work in the Vivreal workflow — a new feature, component, refactor, migration, or behavior change — to turn an idea into an approved design before any code is written. Vivreal-owned fork of the brainstorming discipline; saves specs to docs/projects/<slug>/spec.md and hands off to vivreal-writing-plans. Triggers on: design X, build X, add a feature, how should we, plan the migration, brainstorm, new component.
+description: Use before any creative or design work in the Vivreal workflow — a new feature, component, refactor, migration, or behavior change — to turn an idea into an approved design before any code is written. Vivreal-owned fork of the brainstorming discipline; saves specs to docs/projects/<slug>/spec.md and hands off to vivreal-workflow:vivreal-writing-plans. Triggers on: design X, build X, add a feature, how should we, plan the migration, brainstorm, new component.
 ---
 
 # Vivreal Brainstorming — Ideas Into Approved Designs
 
 Vivreal-owned brainstorming discipline. Turns an idea into a validated design
-spec through collaborative dialogue, then hands off to `vivreal-writing-plans`.
-No dependency on the upstream superpowers skills.
+spec through collaborative dialogue, then hands off to `vivreal-workflow:vivreal-writing-plans`.
+No dependency on the upstream superpowers skills. (Always invoke sibling skills
+by their full plugin-qualified name — bare names like `vivreal-writing-plans` do
+NOT resolve.)
 
 <HARD-GATE>
 Do NOT write code, scaffold a project, or invoke any implementation skill/agent
@@ -25,7 +27,7 @@ simple work — but you MUST present it and get approval.
 5. Write the spec to `docs/projects/<slug>/spec.md` and commit it.
 6. Spec self-review — placeholder scan, internal consistency, scope, ambiguity. Fix inline.
 7. User reviews the written spec.
-8. Hand off — invoke the `vivreal-writing-plans` skill to create the implementation plan.
+8. Hand off — invoke the `vivreal-workflow:vivreal-writing-plans` skill to create the implementation plan.
 
 ## Process
 
@@ -65,5 +67,6 @@ simple work — but you MUST present it and get approval.
   > "Spec written and committed to `<path>`. Please review it and tell me if you
   > want changes before we write the implementation plan."
   Wait for approval. If changes are requested, make them and re-run the self-review.
-- Terminal state: invoke the `vivreal-writing-plans` skill. Do NOT invoke any
-  other skill — `vivreal-writing-plans` is the only next step.
+- Terminal state: invoke the `vivreal-workflow:vivreal-writing-plans` skill (the
+  full plugin-qualified name — the bare name does not resolve). Do NOT invoke any
+  other skill — `vivreal-workflow:vivreal-writing-plans` is the only next step.

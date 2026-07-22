@@ -5,7 +5,7 @@
 // instead of staying silent. Never blocks anything outside the proxy tree.
 const fs = require('fs');
 
-// Known manual routes (28 as of 2026-07-13) — path segment after src/app/api/proxy/,
+// Known manual routes (31 as of 2026-07-21) — path segment after src/app/api/proxy/,
 // without the trailing /route.ts. Prefix entries end with '/'.
 const MANUAL = [
   'billing/upgrade',
@@ -13,6 +13,8 @@ const MANUAL = [
   'calendar/events',
   'calendar/scheduled-objects',
   'calendar/update-publish-date',
+  'claim/complete',
+  'claim/verify',
   'collections/create',
   'collections/update',
   'get-media',
@@ -25,6 +27,7 @@ const MANUAL = [
   'outreach/book/', // [slug] + /create + /slots — public, no active_ctx
   'outreach/studio-demo/visit',
   'sites/create',
+  'sites/instantiateTemplate',
   'sites/update',
   'uploadFiles',
   'user/login',

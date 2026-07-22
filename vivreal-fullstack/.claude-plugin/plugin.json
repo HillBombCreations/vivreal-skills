@@ -1,11 +1,17 @@
 {
   "name": "vivreal-fullstack",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Cross-repo context loading, end-to-end feature scaffolding, and full-stack request tracing for the Vivreal ecosystem",
   "author": {
     "name": "Vivreal",
     "email": "justin@vivreal.io"
   },
   "homepage": "https://github.com/HillBombCreations/vivreal-skills",
-  "keywords": ["vivreal", "fullstack", "cross-repo", "scaffolding", "tracing"]
+  "keywords": [
+    "vivreal",
+    "fullstack",
+    "cross-repo",
+    "scaffolding",
+    "tracing"
+  ]
 }

@@ -33,11 +33,12 @@ you to execute the plan, so execute it.
 ## When to use
 
 - You have an approved `docs/projects/<slug>/plan.md` (or `design.md`) — usually
-  produced by `vivreal-writing-plans`.
+  produced by `vivreal-workflow:vivreal-writing-plans`.
 - Tasks are mostly independent (tightly-coupled work → implement inline instead).
 - You are staying in this session (no parallel-session handoff).
 
-If the plan does not exist yet, go back to `vivreal-writing-plans`. If the work
+If the plan does not exist yet, go back to `vivreal-workflow:vivreal-writing-plans`
+(invoke with the full plugin-qualified name — the bare name does not resolve). If the work
 is a production bug with a reproducer and user impact, use `/coordinator`
 instead — it adds the research/document phases and a 3-pass review gate.
 
@@ -241,8 +242,9 @@ on the fix, and reports results.
 
 ## Integration
 
-- **Upstream in the chain:** `vivreal-brainstorming` → `vivreal-writing-plans`
-  produces the `plan.md` this skill executes.
+- **Upstream in the chain:** `vivreal-workflow:vivreal-brainstorming` →
+  `vivreal-workflow:vivreal-writing-plans` produces the `plan.md` this skill
+  executes (invoke chain skills by their full plugin-qualified names).
 - **Subagents driven:** `coder` (implementer), `reviewer` (per-task + final),
   `tester` (optional regression coverage) — all from the vivreal-workflow plugin.
 - **Read-first for every dispatch:** the `shared-standards` skill.

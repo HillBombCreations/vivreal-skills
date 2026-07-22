@@ -10,7 +10,7 @@ Detail backing the `vivreal-unit-economics` skill. Figures are 2026-06; the live
 | Amplify | ~$11 | customer site hosting/builds |
 | Route 53 | ~$2.5 | hosted zones |
 | CloudWatch | ~$2 | logs/metrics |
-| Secrets Manager / KMS | ~$1 each | `hb-api-secrets` |
+| Secrets Manager / KMS | ~$1 each | `vivreal/prod/*` secrets (Phase 2 — former `hb-api-secrets` retired) |
 | S3 / API Gateway / CloudFront | <$1 each | media / edge |
 | **Lambda** | **$0** | free-tier absorbed |
 | **Bedrock** | **~$0** | confirms AI is NOT on Bedrock — it's the direct Anthropic API |
@@ -35,7 +35,7 @@ One M10 cluster holds all tenant DBs (`general_shared`, `pro_plus`, etc.) — no
 
 - A billed **"action" = one executed tool call**, NOT one model call.
 - One user request = an **agentic loop**: `while (tool_use) { messages.create() }` → one request = **N+1 model calls** for N tool rounds.
-- Every model call re-sends: system prompt (~800 tok) + 22 tool schemas (~2,500 tok) + **full tenant context JSON** (~3K-15K tok, grows with tenant size) + transcript. **No prompt caching today** — the static prefix is re-billed every loop iteration. This is the standing fix-before-GA item.
+- Every model call re-sends: system prompt (~800 tok) + 22 tool schemas (~2,500 tok) + **full tenant context JSON** (~3K-15K tok, grows with tenant size) + transcript. **Prompt caching SHIPPED (July 2026, VR_Secure_API PR #77)** — the static prefix now cache-hits across loop iterations (~45% cut); watch the hit rate as tool schemas + tenant context grow.
 - Pricing basis: Sonnet **$3/M input, $15/M output**. ~$0.05/mid action ≈ the $0.05/action overage rate, so overage actions roughly break even; in-quota actions are absorbed by the platform.
 
 ### Pro Plus worst-case exposure (full-quota utilization)
@@ -46,7 +46,7 @@ One M10 cluster holds all tenant DBs (`general_shared`, `pro_plus`, etc.) — no
 | Pro | $59 | 500 | ~$25 | ~$14 | — |
 | **Pro Plus** | **$119** | **500** (was 5,000) | **~$25** | **~$14** | **~$5-8** |
 
-**The historical tail-risk is closed (July 2026):** the Pro Plus quota was cut 5,000 → 500 in `@hillbombcreations/tier-quotas` v2.3.0 (prompt caching was the shipping prerequisite), so a maxed Pro Plus customer now costs ~$14-25 against a $119 plan instead of ~$140-250. A per-group `group.agentUsage.quota` override can deliberately raise an account's quota — model any override against the pre-cut row (~$0.028-0.05/action uncached-to-cached).
+**The historical tail-risk is closed (July 2026):** the Pro Plus quota was cut 5,000 → 500 in `@hillbombcreations/tier-quotas` v2.3.0 (prompt caching was the shipping prerequisite) and retained in v3.0.0, so a maxed Pro Plus customer now costs ~$14-25 against a $119 plan instead of ~$140-250. **The free per-group `agentUsage.quota` override is GONE (v3.0.0 read-flip)** — past-quota agent use requires `overageBilling.enabled`, is billed $0.05/action, and hard-stops at the spending cap (Pro Plus default: $120 agent bucket / $239 total ≈ ≤2,400 extra actions), so max exposure is bounded AND revenue-matched (~$0.028-0.05/action cost vs the $0.05 rate).
 
 ## Scale ladder + margin
 
@@ -73,9 +73,9 @@ Blended gross margin lands **~84-90%** and improves with scale because fixed inf
 
 1. **Edge / API-Gateway caching on the public Client API** — fewer requests → fewer warm containers → lower peak concurrency → defers the next Atlas tier step. Biggest infra lever because Atlas tier is concurrency-driven.
 2. **Reserved-concurrency caps** (see `vivreal-lambda`) — make total Mongo connections deterministic and bounded; convert DB-saturation into friendlier 429s and keep the Atlas tier step predictable.
-3. **Annual plans** — better cash collection, lower per-transaction Stripe fees, lower churn.
-4. **Tier review** — right-size the Pro Plus AI action quota (and/or enable the existing spending cap) so worst-case AI can't go margin-negative.
-5. **Ship agent prompt-caching before AI GA** — ~40-70% AI cost cut for ~1 day of work.
+3. **Annual plans** — better cash collection, lower per-transaction Stripe fees, lower churn. Live since tier-quotas v3.0.0 at $16/$49/$99 (`TIER_DISPLAY`); budget the W9 domain-bundle sweetener (≤$25 once per group, annual Pro/Pro Plus only).
+4. **Tier/cap review** — quotas are right-sized and spending caps are default-on (auto-enrolled ≈2× base: Basic $20/bucket $39 total, Pro $60/$119, Pro Plus $120/$239); remaining lever is cap tuning + settling the per-bucket-vs-total-cap design call flagged in the package docstring.
+5. **Agent prompt-caching — SHIPPED (July 2026, PR #77)**; the ~40-70% cut is banked, monitor the cache-hit rate.
 
 ## What's NOT a cost today
 

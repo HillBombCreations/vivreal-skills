@@ -1,23 +1,27 @@
 ---
 name: vivreal-outreach-mcp-knowledge
-description: Use when working in VR-Outreach-MCP-Server — the internal-only remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing the Vivreal Outreach pipeline (companies, contacts, sequences, enrollments, suppressions, segments, senders, outbound queue) as 50 tools for Claude Desktop. Covers the two-credential model (Cognito Bearer + per-request HMAC x-active-ctx, x-user-ctx for admin gates), the per-target token table, the CMS-fanout tools vs native stop/resume enrollment routes, the ADMIN_EMAILS connect gate, and the JWT-authorizer-audience deploy prerequisite. NOT the CMS MCP server — that is VR-MCP-Server (see vivreal-mcp-server-knowledge). Triggers on: VR-Outreach-MCP-Server, outreach MCP, outreach tools, enroll via MCP, sequence tools, x-active-ctx, x-user-ctx, cms-fanout, stop-enrollment, import-contacts, set-active-group, outreach-mcp.vivreal.io. Source of truth: C:\repos\VR-Outreach-MCP-Server\CLAUDE.md (fresh, 2026-07-07).
+description: Use when working in VR-Outreach-MCP-Server — the internal-only remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing the Vivreal Outreach pipeline (companies, contacts, sequences, enrollments, prospects, suppressions, segments, senders, outbound queue) as 58 tools for Claude Desktop. Covers the two-credential model (Cognito Bearer + per-request HMAC x-active-ctx, x-user-ctx for admin gates), the per-target token table, the CMS-fanout tools vs native stop/resume enrollment routes, the prospects lead-gen tools + hookless seeding, the ADMIN_EMAILS connect gate, and the JWT-authorizer-audience deploy prerequisite. NOT the CMS MCP server — that is VR-MCP-Server (see vivreal-mcp-server-knowledge). Triggers on: VR-Outreach-MCP-Server, outreach MCP, prospect tools, import-prospects, seed-prospects, x-active-ctx, x-user-ctx, cms-fanout, stop-enrollment, import-contacts, set-active-group, outreach-mcp.vivreal.io. Source of truth: C:\repos\VR-Outreach-MCP-Server\CLAUDE.md (updated 2026-07-16).
 ---
 
 # VR-Outreach-MCP-Server — knowledge digest
 
-Last synced: 2026-07-13
+Last synced: 2026-07-21
 
 **Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions) — but VR-MCP-Server is the **CMS** MCP server (~72 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` for depth.
 
-## Tool registry — 50 tools, 9 modules (`src/tools/`)
+## Tool registry — 58 tools, 10 modules (`src/tools/`)
 
-`session`(3: get/refresh-session-context, set-active-group) · `companies`(10, 2 admin gmail-history) · `contacts`(10, 2 admin gmail-history; `update-contact` is CMS-fanout) · `sequences`(8, 3 CMS-fanout + admin `bulk-enroll-contacts`) · `enrollments`(7, 3 CMS-fanout + 2 **native** stop/resume) · `suppressions`(3) · `segments`(4, 3 admin) · `senders`(4, 3 CMS-fanout) · `queue`(1: get-outbound-queue). 8 tools carry `admin: true` (x-user-ctx minted). Guards/validation in `src/tools/guards.ts` + `validation.ts`; catalog/tier filter in `catalog.ts`.
+`session`(3: get/refresh-session-context, set-active-group) · `companies`(10, 2 admin gmail-history) · `contacts`(10, 2 admin gmail-history; `update-contact` is CMS-fanout) · `sequences`(8, 3 CMS-fanout + admin `bulk-enroll-contacts`) · `prospects`(8: search-prospects, get-prospect, get-prospect-stats, import-prospects, save-prospect-profile, confirm-prospect-angles, update-prospect, seed-prospects — native `/prospects` routes; 5 admin = every write) · `enrollments`(7, 3 CMS-fanout + 2 **native** stop/resume) · `suppressions`(3) · `segments`(4, 3 admin) · `senders`(4, 3 CMS-fanout) · `queue`(1: get-outbound-queue). 13 tools carry `admin: true` (x-user-ctx minted). Guards/validation in `src/tools/guards.ts` + `validation.ts`. The `catalog.ts` "tier" system is an explicit **no-op** (single `"basic"` tier) — all 58 tools are exposed to every connected operator; the only gate is the ADMIN_EMAILS connect allow-list.
+
+## Prospects module (leads-migration phases 1+2, 2026-07)
+
+`src/tools/prospects.ts` registers the 8 prospect tools against VR_Outreach_API's native `/prospects` routes via `outreach-client.ts` (NOT CMS-fanout) — the prospects store is the control-plane mainDb `Vivreal.prospects` collection shared with the C:\Leads CLI during the hybrid period. **Hookless seeding** landed with it: `create-company`/`import-companies` no longer require hooks (name + website/domain is the seed bar) and `companies.ts` + `contacts.ts` were reworked for full pipeline-field pass-through (reachEmail, phone, address, socials, …). CLAUDE.md moved with the feature (updated 2026-07-16 — current).
 
 ## The thing that makes this server different: TWO credentials
 
 Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SHA256 `x-active-ctx` (VR-MCP-Server needs only the Bearer). Minting in `src/api/ctx.ts`, client in `src/api/outreach-client.ts`:
 
-- `x-active-ctx` payload `{ groupID, dbKey, email, exp }`, `exp = now + 600s`, signed with `CTX_SECRET` from `hb-api-secrets`, minted **per request**. `set-active-group` must run first (session tools) — the ctx carries the tenant routing; no `key`/`groupID` query params are sent.
+- `x-active-ctx` payload `{ groupID, dbKey, email, exp }`, `exp = now + 600s`, signed with `CTX_SECRET` from `vivreal/prod/core`, minted **per request**. `set-active-group` must run first (session tools) — the ctx carries the tenant routing; no `key`/`groupID` query params are sent.
 - `x-user-ctx` (`{ email, exp }`) minted **only for admin-gated tools** (gmail-history, segment writes, bulk-enroll).
 
 **Per-target token selection (do not get this wrong):** VR_Outreach_API → **access token** + ctx headers (JWT authorizer checks `aud`); VR_CMS_API fanout → **ID token** (`createCollectionObject.js` stamps `author` from ID-token claims absent on access tokens); VR_Secure_API bootstrap → id-or-access + **`x-app-source: vivreal`** (without the header the tenant query is `{type: undefined}` → empty).
@@ -40,8 +44,8 @@ Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SH
 
 - **Connect allow-list = `ADMIN_EMAILS`** (deny-by-default, `getOrCreateSession()` in `src/server.ts`): secret reachable → enforce (empty list → NO ONE connects, fail-closed); secret unreachable (local dev) → allow. Consequence: every connected user is an admin — split later via `OUTREACH_ALLOWED_EMAILS`.
 - **No JWT authorizer at the MCP gateway** — auth is application-level; the `401 + WWW-Authenticate` challenge must reach clients.
-- **Audience prerequisite (C1 — RESOLVED):** this server's Cognito client `7efagcmhehkdlnkth5g7vhsd48` must be in **VR_Outreach_API's JWT authorizer audience list** (`VR_Outreach_API/template.yaml` ~line 60) or every Outreach call 401s. If the client ID ever changes, re-add + redeploy VR_Outreach_API. VR_CMS_API/VR_Secure_API need no change.
-- Stacks: `VR-Outreach-MCP-Server` (prod, `main`) / `-DEV` (staging, `dogfood`); Sentry project `vivreal-outreach-mcp`. Secrets in `hb-api-secrets`: `CTX_SECRET`, `ADMIN_EMAILS`, `SENTRY_DSN_OUTREACH_MCP`.
+- **Audience prerequisite (C1 — RESOLVED):** this server's Cognito client `7efagcmhehkdlnkth5g7vhsd48` must be in **VR_Outreach_API's JWT authorizer audience list** (the HttpApi default authorizer in `VR_Outreach_API/template.yaml`) or every Outreach call 401s. If the client ID ever changes, re-add + redeploy VR_Outreach_API. VR_CMS_API/VR_Secure_API need no change.
+- Stacks: `VR-Outreach-MCP-Server` (prod, `main`) / `-DEV` (staging, `dogfood`); Sentry project `vivreal-outreach-mcp`. Secrets (secrets-audit Phase 2, config-only): `CTX_SECRET` + `ADMIN_EMAILS` read from `vivreal/prod/core` (`cloudformation/template.yaml`); Sentry DSN from SSM `/vivreal/prod/outreach-mcp/sentry-dsn`, environment from SSM `/vivreal/prod/shared/sentry-environment`. `hb-api-secrets` is retired here.
 
 ## Companions
 

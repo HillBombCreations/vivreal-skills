@@ -1,5 +1,7 @@
 # Vivreal portal — REAL component, layout & token conventions
 
+Last synced: 2026-07-21
+
 This is the as-built Vivreal portal design system, mined from source. Match these patterns; don't invent parallel ones. All paths are under `C:\repos\Vivreal_Portal_Mobile\`.
 
 ## Stack conventions
@@ -44,6 +46,13 @@ Defined in `@layer base :root`, overridable at runtime by `Providers` from `site
 - **`ActiveGroup/`** + **`Client/index.tsx`** + **`Loader/index.tsx`** — the Client/Loader split: `Loader` is the skeleton matching the real layout, `Client` is the hydrated interactive dashboard.
 
 **Dashboard layout order** (also the general SaaS rule): KPI **stat tiles at top** → activity feed / lists in the middle → secondary panels last. Group related tiles with whitespace (Law of Proximity), not dividers.
+
+## Tier gating & overage patterns
+
+- **Gate on the package helpers, never a hand-rolled tier set.** The quota-gate components (`CollectionObjects/Client`, `CollectionObjects/Wrapper`, `Integrations/Client`, `Sites/Client`, `Universal/SchemaFormDialog/Create` + `Update`) use `isUnlimited` from `@hillbombcreations/tier-quotas` (^3.0.0) — **renamed from `isUnlimitedQuota`**; a local `<0` helper still named `isUnlimitedQuota` survives only in `src/lib/usage/format.ts`, `src/components/Group/UsagePanel`, and `src/components/Group/UsageRow` — don't "fix" those to the package name or vice versa.
+- **`src/components/Group/OverageBillingSection/index.tsx`** + **`SpendingCapSection.tsx`** — the overage billing surface: auto-enroll disclosure copy plus a spending cap control with a "Default cap" badge. Copy this shape for any billing-disclosure panel (disclosure text adjacent to the control it explains, cap state as a badge not color alone).
+- **Group `UsagePanel` free-tier upgrade banner** — near/over-quota state driven by the Group usage flags (cdn/api/agent buckets, each `pctOfQuota`/`nearQuota`/`overQuota`). This is the near-limit peak-moment upgrade CTA (see ux-psychology peak-end) implemented in practice — reuse the flags, don't recompute percentages client-side.
+- **Studio `FooterEditor`** (`src/components/Sites/Studio/LeftRail/chrome/FooterEditor.tsx`) calls the package `canHidePoweredBy()` (which includes Basic) instead of a local `TIERS_CAN_HIDE` set — Basic tier gets the "Show Powered by Vivreal" toggle. Tier-copy accuracy matters: the false "Pro Plus = 10x actions" tooltip was removed (Pro and Pro Plus both get 500 agent actions/mo) — verify quota copy against tier-quotas before shipping it.
 
 ## Outreach list/detail conventions
 

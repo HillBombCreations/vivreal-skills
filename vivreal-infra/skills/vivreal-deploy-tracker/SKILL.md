@@ -1,6 +1,6 @@
 ---
 name: vivreal-deploy-tracker
-description: Use to actively CHECK the live deploy status of a customer site — is it pending/deploying/live/failed, which Step Functions state is it stuck or failing in, and what does Amplify say. Drives AWS (Step Functions + Amplify) and the sites.deployment doc to pinpoint a hung or failed deploy. For how the pipeline WORKS (the design), see vivreal-site-deploy-pipeline; this skill is the active runbook for tracking a specific deploy. Triggers on: deploy status, is the site live, site stuck pending, why did the deploy fail, track deployment, check amplify build, step functions execution for site, deployment status of <site>.
+description: Use to actively CHECK the live deploy status of a customer site — is it pending/deploying/live/failed, which Step Functions state is it stuck or failing in, and what does Amplify say. Drives AWS (Step Functions + Amplify) and the sites.deployment doc to pinpoint a hung or failed deploy. For how the pipeline WORKS (the design), see vivreal-site-deploy-pipeline; this skill is the active runbook for tracking a specific deploy. Triggers on: deploy status, is the site live, site stuck pending, why did the deploy fail, track deployment, check amplify build, step functions execution for site, deployment status of <site>, createAmplifyApp ValidationException.
 ---
 
 # Vivreal Deploy Tracker — active site-deploy status check
@@ -56,6 +56,7 @@ aws stepfunctions get-execution-history --region us-east-1 --execution-arn "<exe
 - Map the state to its meaning:
   - `seedCollections` stuck/failed → CMS seeding hit the 29s/30s budget or a create endpoint errored (partial seeds get cleaned by `VR_Secure_API/deleteSite`).
   - `createGithubBranch` failed → despite the name it no longer forks a branch (Phase 2: channel assignment only, resolves `CHANNEL_BRANCH || 'stable'`) — a failure here is config/env, not GitHub.
+  - `createAmplifyApp` failed → no Amplify app/job exists yet, so step 3 shows nothing. The canonical failure is an opaque `ValidationException`: the GitHub installation token blew Amplify's 255-char `accessToken` cap (GitHub's 2026 stateless rollout mints ~520-char tokens). `getInstallationToken.js` forces the classic ~40-char format via `X-GitHub-Stateless-S2S-Token: disabled` and throws if a minted token exceeds 255 chars — a throw here means GitHub likely sunset the override, and EVERY new-site deploy fails until it's addressed.
   - `checkAmplifyDeploy` stuck/failed → the Amplify build itself — go to step 3.
   - `checkDomainAssociaion` (SIC) stuck → Route53 domain association not complete yet.
 
@@ -91,4 +92,8 @@ aws amplify get-job --region us-east-1 --app-id "<appId>" --branch-name "<branch
 - **"Content created in portal missing on site"** is the `publishDate` storefront gate, not the deploy — see `vivreal-db`.
 - The state machine is NOT in IaC; console edits are drift. Source of truth is
   `Vivreal_EventHandler/docs/ops/deploy-site-state-machine.asl.json`.
+- **Deploy-Site is not the only state machine** — the domain-purchase saga and the domain-transfer-in saga
+  (`vivreal-event-handlers-site-deployment-domainTransferSaga`) are separate machines that track `domainOrders`,
+  not `sites.deployment`. A stuck domain order (e.g. `transfer_pending` — the transfer saga polls hourly over a
+  5–10 day window) is NOT a stuck site deploy; don't match its executions against a site's deploy.
 - All AWS calls here are read-only (`list-*`, `get-*`, `describe-*`). Never `start-execution`/`start-job` without explicit user ask.

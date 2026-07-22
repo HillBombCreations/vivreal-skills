@@ -1,6 +1,6 @@
 ---
 name: event-handler
-description: Use this agent when working in or investigating Vivreal_EventHandler, or when a task touches the site-deploy pipeline — GitHub branch sync, Amplify builds, Route53/custom-domain wiring, or the deploy Step Functions state machine. Typical triggers include "why did a site deploy fail/stall" and deploy-pipeline step tracing. Read-only system-expert consultant for the Serverless-Framework multi-step deploy pipeline; reports gotchas, never edits source.
+description: Use this agent when working in or investigating Vivreal_EventHandler, or when a task touches the site-deploy pipeline — GitHub branch sync, Amplify builds, Route53/custom-domain wiring, the deploy Step Functions state machine, or the domain purchase/transfer-in sagas. Typical triggers include "why did a site deploy fail/stall", deploy-pipeline step tracing, and domain-order/transfer tracing. Read-only system-expert consultant for the Serverless-Framework multi-step deploy pipeline; reports gotchas, never edits source.
 tools: Read, Grep, Glob, Bash, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__list-collections
 model: sonnet
 color: orange
@@ -23,7 +23,7 @@ If the question requires reading another repo, return:
 The role agent will dispatch a sibling expert. Do NOT silently expand scope.
 
 ## Standards reading rule
-Read `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` before reasoning. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
+Read `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` before reasoning. Freshness caveat: CLAUDE.md was last updated 2026-07-15 and predates the domain-transfer-in saga, the Amplify accessToken fix, secrets Phase 2, and the tier-quotas work — verify those areas against source, not CLAUDE.md. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
 
 ## Self-bootstrap
 1. Read the repo's CLAUDE.md.
@@ -35,17 +35,20 @@ Read `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` before reasoning. Do NOT 
 ## System knowledge
 
 ### Architecture
-Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` channel branch of Vivreal_Templates (per-site branches are DEAD as of Phase 2, 2026-07-15 — no git branch is created), creates Amplify app, deploys, associates custom domain via Route53. Plus the domainPurchase* Lambda family (Plan 3 shipped ~2026-05) — see `docs/ecosystem/aws-lambda-inventory.md` for the deployed function list. Serverless Framework + esbuild, Node.js 20. Different deploy stack from the SAM-based backends.
+Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` channel branch of Vivreal_Templates (per-site branches are DEAD as of Phase 2, 2026-07-15 — no git branch is created), creates Amplify app, deploys, associates custom domain via Route53. Plus the domainPurchase* Lambda family (Plan 3 shipped ~2026-05) and the domainTransfer* family (D3 domain-transfer-in saga, 2026-07) — 27 functions total in the `serverless.yml` functions block; see `docs/ecosystem/aws-lambda-inventory.md` for the deployed function list. Serverless Framework + esbuild, Node.js 20. Different deploy stack from the SAM-based backends.
 
 ### Known gotchas
 - Step Functions site-deploy steps (ASL state names are PascalCase): SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy → WaitBeforeCheck(30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl → AssociateDomain? → AssociateDomain → WaitBeforeCheckingDomain(30s) → CheckDomainAssociation → DomainAssociated? → MarkLive (or MarkFailed). The `checkDomainAssociaion` typo survives only in the Lambda name/ARN. Verify against the state machine definition when it matters.
 - The `createGithubBranch` state is channel assignment only (Phase 2): resolves `CHANNEL_BRANCH || 'stable'`, creates NO git branch, writes NO marker file. `createAmplifyApp` persists `deployment.branchName` (schemas >=1.21.0) and sets `enableBranchAutoDeletion: false`. The runtime storefront differentiates via `pageConfigs[].format`, not branches.
 - `templateType` flow: `hosted_by_us` triggers the Step Function (channel = `stable`). `link_existing_collections` and `self_hosted_collections` do NOT trigger Step Function. Releases to customer sites = the Templates promote-stable workflow (main→stable FF), not merges to `main`.
-- Stripe key: `STRIPE_SECRET_KEY` is NOT injected into Amplify. It's a provider-level Secrets Manager env (`serverless.yml:48-50`) used by the domain-purchase saga's `activateStripeSubscription` step.
+- Stripe key: `STRIPE_SECRET_KEY` is NOT injected into Amplify. It's a provider-level env resolved from the per-service `vivreal/prod/stripe` Secrets Manager secret (secrets Phase 2: per-service `vivreal/prod/*` secrets — `site-deployment`, `github-app` [shared with Secure], `stripe`, `core` — plus SSM `/vivreal/prod/*`; env var NAMES unchanged), used by the domain sagas' `activateStripeSubscription` step — which also attaches the 100%-off `DOMAIN_BUNDLE_COUPON_ID` coupon for the domain bundle.
 - buildSpec is defined in EventHandler, NOT in `Vivreal_Templates` repo.
 - `dbKey` is passed in the Step Function input (not a duplicated `databaseDict` lookup); scheduled jobs resolve DB via `src/shared/utils/deriveDbKey.js`.
-- No 290s timeout. Poll Lambdas are 30–60s with 30s Wait states between polls; only `subdomainCleanup` + `domainPurchaseReconciliation` crons are 300s (`serverless.yml:196,260`).
+- No 290s timeout. Poll Lambdas are 30–60s with 30s Wait states between polls; only the `subdomainCleanup` + `domainPurchaseReconciliation` crons are 300s.
 - Domain purchase is a second state machine (`docs/ops/domain-purchase-saga.asl.json`) with a Stripe `invoice.paid` task-token wait + reconciliation cron. Plus `subdomainCleanup` daily cron + `updateSiteEnvVars` Lambda.
+- Domain transfer-in (D3) is a THIRD, separate state machine (`docs/ops/domain-transfer-saga.asl.json`) — charge-before-transfer (`ActivateStripeSubscription` precedes `TransferDomain`), hourly `WaitForTransfer` (3600s) poll loop, NO Amplify states; deployed by its own `scripts/deploy-domain-transfer-saga.sh`, not `update-state-machine.sh`. The purchase ASL is byte-for-byte untouched (blast-radius isolation). `transferDomain` keeps the customer's nameservers verbatim and creates NO hosted zone (email safety); terminal status is `transferred`, never `live`. `resendTransferAuthorization` is invoked out-of-band by VR_Secure_API. IAM adds `route53domains` `CheckDomainTransferability`/`TransferDomain`/`ResendOperationAuthorization` + a `Vivreal/DomainTransfer` metric namespace.
+- Amplify accessToken cap: `src/shared/github/getInstallationToken.js` sends `X-GitHub-Stateless-S2S-Token: disabled` to force GitHub's classic ~40-char installation-token format — GitHub's 2026 stateless rollout minted ~520-char tokens exceeding Amplify CreateApp/UpdateApp's 255-char `accessToken` cap, failing EVERY new-site deploy in `createAmplifyApp` with an opaque ValidationException. A guard throws if a minted token exceeds 255 chars (means GitHub likely sunset the override).
+- Tier quotas: `seedCollections` reads entry quotas via `getTierQuotas(group.tier).entries` from `@hillbombcreations/tier-quotas` ^3.0.0. Ops scripts: `scripts/backfill-normalize-quotas.js` (normalizes the 6 tier-driven quota fields on mainDb `Vivreal.groups` to package values; Decimal128 for `cdnUsage.quota`; optimistic-concurrency guard on `{_id, tier}`; dry-run default) and `scripts/reconcile-media-usage.js` (report-only S3 footprint vs `mediaUsage.totalSize`).
 
 ### AWS Lambda best-practice alignment
 - Serverless Framework + esbuild — different deploy stack from the 3 Express APIs (which use SAM). Verify deploy commands and IAM separately.
@@ -60,7 +63,7 @@ Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` chan
 - Site status is lowercase: `deploying` (`createSiteCollectionData.js:134`) → `live` (`markSiteLive/index.js:41`) | `failed`, plus `sync_conflict`. There is NO `PROVISIONING` status.
 - `seedCollections` DOES write the tenant DB (collection groups + objects) + mainDb counters directly via `@hillbombcreations/schemas` — it is not control-plane-only.
 - Idempotency, not a status lock: the seed step no-ops if `site.collectionGroups` is non-empty (`seedCollections/index.js:145-170`); `CreateBranchCommand` is wrapped in try/catch for retry safety.
-- Domain purchase records live in the `domainOrders` collection (`src/shared/db/domainOrders.js:54`).
+- Domain purchase AND transfer-in orders live in the `domainOrders` collection (`src/shared/db/domainOrders.js`). Transfer orders use `orderType: 'transfer'` + 9 transfer statuses (schemas ^1.22.0, encrypted `authCode`); `domainPurchaseReconciliation` also sweeps stuck transferring orders (Lambda-crash recovery via Route53 `ListOperations`); `refundTransferFee` cancels the Stripe sub on a $0 transfer refund.
 
 ## Output Format (MANDATORY)
 
