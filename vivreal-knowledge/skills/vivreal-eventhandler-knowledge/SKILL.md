@@ -1,13 +1,13 @@
 ---
 name: vivreal-eventhandler-knowledge
-description: Use when working in Vivreal_EventHandler — the AWS Step Functions site-deployment pipeline that assigns the shared `stable` channel branch (per-site branches are DEAD as of Phase 2, 2026-07-15), creates an Amplify app, deploys, optionally registers a custom domain, and marks the site live/failed. Covers the ordered state list (with preserved typos you must NOT rename), the seedCollections front state, the hybrid template model, Amplify env-var injection, the Serverless-Framework + esbuild build, the domain purchase + transfer-in sagas (separate state machines), and the GitHub installation-token → Amplify accessToken 255-char fix. Triggers on: Vivreal_EventHandler, site deployment, Step Functions, Amplify deploy, createGithubBranch, seedCollections, templateType, markSiteLive, deploy pipeline, stable branch, channel branch, domain purchase, domain transfer, domainOrders, transferDomain, getInstallationToken. Source of truth: Vivreal_EventHandler source (its CLAUDE.md is stale, 2026-07-15).
+description: Use when working in Vivreal_EventHandler — the AWS Step Functions site-deployment pipeline that assigns the shared `stable` channel branch (per-site branches are DEAD as of Phase 2, 2026-07-15), creates an Amplify app, deploys, optionally registers a custom domain, and marks the site live/failed. Covers the ordered state list (with preserved typos you must NOT rename), the seedCollections front state, the hybrid template model, Amplify env-var injection, the Serverless-Framework + esbuild build, the domain purchase + transfer-in sagas (separate state machines), and the GitHub installation-token → Amplify accessToken 255-char fix. Triggers on: Vivreal_EventHandler, site deployment, Step Functions, Amplify deploy, createGithubBranch, seedCollections, templateType, markSiteLive, deploy pipeline, stable branch, channel branch, domain purchase, domain transfer, domainOrders, transferDomain, getInstallationToken. Source of truth: Vivreal_EventHandler source (CLAUDE.md refreshed 2026-07-21).
 ---
 
 Last synced: 2026-07-21
 
 # Vivreal_EventHandler — knowledge digest
 
-Orchestrates the **full customer-site deploy pipeline** via AWS Step Functions. Called only by `VR_Secure_API/createSites`. **Serverless Framework + esbuild** (NOT SAM), Node 20, Step Functions + Amplify + Route53 + GitHub API + DynamoDB. Read `C:\repos\Vivreal_EventHandler\CLAUDE.md` for depth — but note it is **stale (last updated 2026-07-15)**: it predates the domain-transfer-in saga, the Amplify accessToken fix, secrets Phase 2, and the tier-quotas work below.
+Orchestrates the **full customer-site deploy pipeline** via AWS Step Functions. Called only by `VR_Secure_API/createSites`. **Serverless Framework + esbuild** (NOT SAM), Node 20, Step Functions + Amplify + Route53 + GitHub API + DynamoDB. Read `C:\repos\Vivreal_EventHandler\CLAUDE.md` for depth (CLAUDE.md refreshed 2026-07-21 — current as of this sync).
 
 ## Pipeline (ordered — typos preserved, DO NOT rename)
 

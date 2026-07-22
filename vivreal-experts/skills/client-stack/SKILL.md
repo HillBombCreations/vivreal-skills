@@ -59,7 +59,7 @@ VR_Client_API: single monolithic Lambda, Node 20, AWS SAM, reserved concurrency 
 - Quota reads are package-authoritative (W6): tier-quotas ^3.0.0 — `getApiQuota`/`getCdnQuota`/agent spending-cap read `getTierQuotas(tier)`; the doc-first arms and six self-heal/mirror writes (which fired redundant socket broadcasts) are gone.
 - Filters: applies `publishDate` and `archived` filters automatically — never returns scheduled or archived content.
 - Route surface now includes `POST /tenant/validateCoupon` and the read-only Site MCP (7 tools, DynamoDB rate-limited) + `.ics` feed under `/sites/:siteId/*`. Per-route SAM `Events:` entries are REQUIRED — known drift (2026-07-21): `validateCoupon` STILL has an Express route but no CFN event (403s at gateway). The orphaned `/tenant/collection` event and the dead keyless `ApiUsagePlan` throttle were removed.
-- VR_Client_API's CLAUDE.md was refreshed 2026-07-18 (14 live routes, new env vars) but already predates the CloudFront edge cache, the W4 402 neutralization, and the W6 quota flip — trust this doc + source over it for those areas.
+- VR_Client_API's CLAUDE.md refreshed 2026-07-21 — current as of this sync (now documents both CloudFront distributions incl. client.vivreal.io).
 - VR_Client_Auth: housekeeping only this cycle — `@hillbombcreations/schemas` ^1.22.0, secrets moved to `vivreal/prod/client-auth`. Still Node 18 + Serverless Framework.
 
 ### AWS Lambda best-practice alignment

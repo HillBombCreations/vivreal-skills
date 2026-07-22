@@ -1,13 +1,13 @@
 ---
 name: vivreal-main-api-knowledge
-description: Use when working in VR_Main_API — Vivreal's public/unauthenticated backend (NEXT_PUBLIC_MAIN_API) for user auth/signup, login/SSO, password reset, the demo-account claim flow, transactional + lifecycle email (welcome, activation nudges, usage-quota nags), Meta deauthorize/data-deletion callbacks, and unsubscribe. Covers its three-Lambda shape (Express + EmailConsumer + LifecycleScan), the sendTemplatedEmail→SQS→SES spine, the suppressions/emailEvents idempotency model, deriveDbKey at login, the tier-quota gates at login/signup, and the `leads` collection it owns. Triggers on: VR_Main_API, Main API, login, signup, register, password reset, SSO, claim account, claim token, welcome email, activation nudge, lifecycle email, usage nag, sendTemplatedEmail, unsubscribe, suppressions, emailEvents, leads collection, deriveDbKey, tier quotas. Source of truth: C:\repos\VR_Main_API\CLAUDE.md — STALE (2026-06-23); this digest is newer for claim/quota/secrets.
+description: Use when working in VR_Main_API — Vivreal's public/unauthenticated backend (NEXT_PUBLIC_MAIN_API) for user auth/signup, login/SSO, password reset, the demo-account claim flow, transactional + lifecycle email (welcome, activation nudges, usage-quota nags), Meta deauthorize/data-deletion callbacks, and unsubscribe. Covers its three-Lambda shape (Express + EmailConsumer + LifecycleScan), the sendTemplatedEmail→SQS→SES spine, the suppressions/emailEvents idempotency model, deriveDbKey at login, the tier-quota gates at login/signup, and the `leads` collection it owns. Triggers on: VR_Main_API, Main API, login, signup, register, password reset, SSO, claim account, claim token, welcome email, activation nudge, lifecycle email, usage nag, sendTemplatedEmail, unsubscribe, suppressions, emailEvents, leads collection, deriveDbKey, tier quotas. Source of truth: C:\repos\VR_Main_API\CLAUDE.md (refreshed 2026-07-21 — current as of this sync).
 ---
 
 # VR_Main_API — knowledge digest
 
 Last synced: 2026-07-21
 
-The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `C:\repos\VR_Main_API\CLAUDE.md` for the full route list — but it's ~4 weeks stale (2026-06-23): trust this digest + source for the claim flow, quota gates, usage nags, and secrets.
+The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `C:\repos\VR_Main_API\CLAUDE.md` for the full route list (CLAUDE.md refreshed 2026-07-21 — current as of this sync).
 
 ## Architecture — THREE Lambdas now
 

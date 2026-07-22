@@ -7,7 +7,7 @@ description: Use when working in VR_Secure_API — Vivreal's authenticated-ops b
 
 Last synced: 2026-07-21
 
-The authenticated-ops backend: group/team mgmt, site creation+deploy+template instantiation, Stripe billing/subscriptions/overage, domain purchase+transfer, Square token lifecycle, profile switching, roles, AI agent, per-site analytics reads. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `C:\repos\VR_Secure_API\CLAUDE.md` for full route lists — but it currently LAGS HEAD (last updated 2026-07-15; the W2–W6 sentinel-quota/overage/read-flip work landed after), so verify quota/overage claims against source.
+The authenticated-ops backend: group/team mgmt, site creation+deploy+template instantiation, Stripe billing/subscriptions/overage, domain purchase+transfer, Square token lifecycle, profile switching, roles, AI agent, per-site analytics reads. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `C:\repos\VR_Secure_API\CLAUDE.md` for full route lists (CLAUDE.md refreshed 2026-07-21 — current as of this sync).
 
 ## Architecture — 12 Lambdas (main SAM stack)
 
@@ -59,5 +59,4 @@ Quotas live in **`@hillbombcreations/tier-quotas` v3.0.0** — **sentinel scheme
 - **Live drift (STILL live 2026-07-21): `PUT /api/group/featureFlags` has an Express route but NO API Gateway event in any CFN fragment** → 403 deployed. The portal's Square-storefront toggle + AI-allowlist UI depend on it — the repo's own "step 7" trap, live (tracked in CLAUDE.md Known Issues).
 - The orphaned-OTEL-layer gotcha is RESOLVED — `cloudformation/updateGroup.yaml`'s `Layers` now carries only the ffmpeg ARN via `/vivreal/prod/shared/ffmpeg-arn` SSM; no `AWS_LAMBDA_EXEC_WRAPPER`.
 - Former P0 security gaps are CLOSED + test-locked (SEC-1..3): Stripe webhook signature IS verified (`stripe.webhooks.constructEvent` in `handleEvents.js`, raw body captured via `express.json({ verify })` in `createApp.js`); `acceptRequest`/`denyRequest` inherit the Cognito default authorizer + owner/admin 403; RBAC enforced on write ops (`UnauthorizedRoleException`); CORS is single-layer (`createApp.js`). Legit `Authorizer: NONE` remains only on the Stripe webhook + OAuth callback.
-- **CLAUDE.md is STALE (last updated 2026-07-15 vs HEAD 2026-07-21)** — it predates the W2–W6 sentinel/overage/read-flip work; verify quota claims against source.
 - Deps: `@hillbombcreations/schemas ^1.24.0`, `tier-quotas ^3.0.0`, `site-loader ^0.1.3` (was a `file:` dep — now semver from GitHub Packages), `site-renderer` pinned EXACTLY `1.31.0` (byte-match the fleet renderer — do not loosen without regenerating `renderer.capability.json`). X-Ray retired (`AWSXrayWriteOnlyAccess` no longer auto-attached).

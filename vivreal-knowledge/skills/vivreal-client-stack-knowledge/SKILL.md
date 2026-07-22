@@ -7,7 +7,7 @@ description: Use when working in the Vivreal public content-delivery stack — V
 
 Last synced: 2026-07-21
 
-The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth` — a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth — VR_Client_API's CLAUDE.md was refreshed 2026-07-18 (14 live routes, new env vars) but already predates the CloudFront edge cache, the CDN-402 neutralization, and the tier-quotas ^3.0.0 flip; prefer this digest + source for those.
+The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth` — a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth — VR_Client_API's CLAUDE.md refreshed 2026-07-21 — current as of this sync (now documents both CloudFront distributions incl. client.vivreal.io).
 
 ## TWO CloudFront distributions — never conflate them
 

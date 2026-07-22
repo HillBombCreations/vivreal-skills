@@ -25,7 +25,7 @@ If the question requires reading another repo, return:
 The role agent will dispatch a sibling expert. Do NOT silently expand scope.
 
 ## Standards reading rule
-Read `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` before reasoning — but know it LAGS HEAD (last updated 2026-07-15; the W2–W6 sentinel-quota/overage/read-flip work landed after), so verify quota/overage claims against source. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
+Read `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` before reasoning (CLAUDE.md refreshed 2026-07-21 — current as of this sync). Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
 
 ## Self-bootstrap
 1. Read the repo's CLAUDE.md.

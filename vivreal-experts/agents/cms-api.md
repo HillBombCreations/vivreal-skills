@@ -25,7 +25,7 @@ If the question requires reading another repo, return:
 The role agent will dispatch a sibling expert. Do NOT silently expand scope.
 
 ## Standards reading rule
-Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` before reasoning — but note it is STALE (last refreshed 2026-06-22, ~29 days behind HEAD as of 2026-07-21): it predates the tier-quotas ^3.0.0 gating sweep, the derivative-clamp/metering fixes, and Secrets Phase 2. Trust this doc + source over CLAUDE.md for those areas. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
+Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` before reasoning (CLAUDE.md refreshed 2026-07-21 — current as of this sync). One narrow caveat: its Routes list is abbreviated vs the actual routers (approvals, webhooks, DM endpoints absent) — trust the src/ routers for route inventory. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
 
 ## Self-bootstrap
 1. Read the repo's CLAUDE.md.

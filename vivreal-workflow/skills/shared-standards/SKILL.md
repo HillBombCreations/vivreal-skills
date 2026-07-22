@@ -220,7 +220,7 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 | VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
 | VR_Client_API | 1 (+ CloudFront edge distribution `client.vivreal.io` in the same SAM stack) | No | Push to main |
 | VR_Client_Auth | 1 (Node 18, Serverless Framework) | No | Push to main |
-| EventHandler | 27 (12 site-deploy pipeline + subdomainCleanup + 9 domainPurchase + domainPurchaseReconciliation + 6 domainTransfer — 2 separate Step Functions sagas) | No | Push to main |
+| EventHandler | 27 (11 site-deploy incl. updateSiteEnvVars + subdomainCleanup + 9 domainPurchase incl. reconciliation cron + 6 domainTransfer — 3 state machines: deploy + purchase saga + transfer saga) | No | Push to main |
 | VR_Analytics_API | 2 (ingest [public Function URL] + rollupCron) — LIVE, stack `vr-analytics-api` | No | Push to main |
 
 ### Infrastructure stacks (workflow_dispatch — manual trigger from GitHub Actions)
