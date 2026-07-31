@@ -1,11 +1,11 @@
 ---
 name: vivreal-client-stack-knowledge
-description: Use when working in the Vivreal public content-delivery stack — VR_Client_API (the public backend customer sites call to fetch content + run Stripe/Square checkout) and its front-door VR_Client_Auth (the Lambda authorizer validating per-group API keys); the ONLY backend pair on API-key auth, not Cognito. Covers the TWO CloudFront distributions (media.vivreal.io signed media vs the NEW client.vivreal.io API edge cache), the /tenant/* + /sites/:siteId routes (Site MCP, .ics feed), payments-provider resolution (resolvePaymentsProvider/squareTokenGuard), tier→database mapping, signed srcset derivatives, frozenCheck, and the publishDate gate. Triggers on: VR_Client_API, VR_Client_Auth, client authorizer, signed URL, CloudFront, edge cache, client.vivreal.io, CDN cache, frozenCheck, API key auth, tier database mapping, frozen group, publishDate gate, Square checkout, site MCP, stale or missing content on live site. Source of truth: C:\repos\VR_Client_API\CLAUDE.md + C:\repos\VR_Client_Auth\CLAUDE.md.
+description: Use when working in the Vivreal public content-delivery stack — VR_Client_API (the public backend customer sites call to fetch content + run Stripe/Square checkout) and its front-door VR_Client_Auth (the Lambda authorizer validating per-group API keys); the ONLY backend pair on API-key auth, not Cognito. Covers the TWO CloudFront distributions (media.vivreal.io signed media vs the client.vivreal.io API edge cache — LIVE, Route53 cutover done 2026-07-21), the /tenant/* + /sites/:siteId routes (Site MCP, .ics feed), payments-provider resolution (resolvePaymentsProvider/squareTokenGuard), tier→database mapping, signed srcset derivatives, frozenCheck, and the publishDate gate. Triggers on: VR_Client_API, VR_Client_Auth, client authorizer, signed URL, CloudFront, edge cache, client.vivreal.io, CDN cache, frozenCheck, API key auth, tier database mapping, frozen group, publishDate gate, Square checkout, site MCP, stale or missing content on live site. Source of truth: C:\repos\VR_Client_API\CLAUDE.md + C:\repos\VR_Client_Auth\CLAUDE.md.
 ---
 
 # VR_Client_API + VR_Client_Auth — knowledge digest
 
-Last synced: 2026-07-21
+Last synced: 2026-07-30
 
 The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth` — a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth — VR_Client_API's CLAUDE.md refreshed 2026-07-21 — current as of this sync (now documents both CloudFront distributions incl. client.vivreal.io).
 
@@ -23,7 +23,7 @@ The **public content-delivery stack**: deployed customer sites (Vivreal_Template
 - Custom `ContentOriginRequestPolicy`: forwards Authorization + Origin + the two CORS-preflight headers + all query strings. **Host is deliberately NOT forwarded** — CloudFront must send the execute-api hostname; tenancy resolves from Authorization, not Host.
 - The three content GET controllers now send `Cache-Control: public, s-maxage=60, max-age=0` (was `private, max-age=60`) so the shared cache may store responses while browsers still revalidate.
 - `CustomErrorResponses` set error-caching min TTL 0 for 4xx/5xx — transient errors are never cached-and-replayed; 402 is not a CloudFront-cacheable status anyway.
-- Domain: `client.vivreal.io` alias + **us-east-1** ACM cert, gated by the optional `AcmCertificateArn` param (`HasCustomDomain` condition). Prod passes the `*.vivreal.io` wildcard ARN; DEV stays on `*.cloudfront.net`. **The Route53 cutover is a separate MANUAL ops step, not yet done — prod traffic still hits the regional API Gateway domain directly.**
+- Domain: `client.vivreal.io` alias + **us-east-1** ACM cert, gated by the optional `AcmCertificateArn` param (`HasCustomDomain` condition). Prod passes the `*.vivreal.io` wildcard ARN; DEV stays on `*.cloudfront.net`. **Route53 cutover DONE 2026-07-21** — `client.vivreal.io`'s A-alias points at the distribution and live traffic serves through CloudFront (verify with `Via`/`X-Cache` headers).
 - Observability: `ClientApiCloudFrontLogsBucket` (locked-down, SSE, 90-day expiry), a `MonitoringSubscription` (CacheHitRate), a CloudWatch dashboard, and Throttles / ConcurrentExecutions (135) / Duration-p95 alarms behind the optional `AlarmNotificationArn` param.
 - Per-tenant CDN byte metering off the edge logs (feeding `group.cdnUsage.totalBytes`) is a W11 TODO.
 
@@ -37,14 +37,16 @@ A tiny, focused **custom Lambda authorizer** in front of VR_Client_API. Its only
 - **Logic:** no token → Deny. Else connect to mainDb `Vivreal`, `groups.findOne({ apiKey: token })`. Found → Allow + context. Not found / any exception → **Deny (fail closed)**.
 - **Allow context injected** downstream into VR_Client_API (read via `req.apiGateway.event.requestContext.authorizer`): `{ database, bucketName, groupID, groupName, frozen }`.
 
-### Tier → database mapping (the routing decision, made at the edge)
+### Database routing (the decision, made at the edge — sticky dbKey Phase 5)
 
-| Tier | `database` injected |
+The authorizer now does `let database = foundGroup.dbKey || null` — the **persisted `group.dbKey` wins**; the tier branches are fallback for un-backfilled docs:
+
+| Tier (fallback only) | `database` injected |
 |---|---|
 | `free`, `basic`, `pro` | `general_shared` |
 | `proplus` | `pro_plus` |
 
-This is the same `dbKey` routing the rest of the stack uses (see `vivreal-db`), decided here at the edge for the public API.
+This retired the latent divergence where the enterprise branch returned the literal `'enterprise'` while every other `deriveDbKey` returns `slugify(groupName)`. It matters more than it looks: **VR_Client_API derives nothing** (`src/scripts/tenantDb.js` takes the key as a parameter) — this authorizer IS the whole public read path. Same `dbKey` routing as the rest of the stack (see `vivreal-db`).
 
 ### Authorizer oddities / gotchas
 
@@ -53,26 +55,26 @@ This is the same `dbKey` routing the rest of the stack uses (see `vivreal-db`), 
 - **Authorizer result TTL = 1 second** (set in VR_Client_API's SAM template) — essentially no caching; every request hits this Lambda.
 - **290s timeout** — intentionally long to survive cold-start + slow DB connect without auth failures.
 - Fails closed: any DB error → Deny. MongoDB connection pooled (`readyState === 1` check). All logic in `index.js`; `groupSchema.js` mirrors the group doc; `scripts/db.js` is the pooled singleton.
-- 2026-07 housekeeping only: `@hillbombcreations/schemas` bumped to ^1.22.0; secrets moved to `vivreal/prod/client-auth` (Secrets Manager + SSM).
+- 2026-07: `@hillbombcreations/schemas` bumped to ^1.27.0; secrets moved to `vivreal/prod/client-auth` (Secrets Manager + SSM). NOT housekeeping-only — the sticky-dbKey authorizer change above shipped this cycle.
 - **API Gateway stringifies the authorizer context it injects** — a boolean `frozen: false` reaches VR_Client_API as the string `"false"` (truthy!). Any consumer of context booleans must compare `=== true || === 'true'` (see frozenCheck below).
 
 ---
 
 ## VR_Client_API — the public content backend
 
-The public content-delivery API. Single monolith Lambda, Express + serverless-express (Node 20, arm64), SAM, `@hillbombcreations/schemas`. **API-key auth (not Cognito)** via VR_Client_Auth above. Reads tenant context from `req.apiGateway.event.requestContext.authorizer` — `database` / `groupID` / `groupName` / `bucketName` / `frozen`. Reserved concurrency **150** (raised from 120 after crawler bursts pegged the cap and throttled 792 requests); API GW throttle 50 rps / 100 burst. Secrets Phase 2: env resolves from `vivreal/prod/client-api` + `vivreal/prod/core` + SSM. (X-Ray is retired — Sentry only.)
+The public content-delivery API. Single monolith Lambda, Express + serverless-express (Node 20, arm64), SAM, `@hillbombcreations/schemas` ^1.29.0. **API-key auth (not Cognito)** via VR_Client_Auth above. Reads tenant context from `req.apiGateway.event.requestContext.authorizer` — `database` / `groupID` / `groupName` / `bucketName` / `frozen`. Reserved concurrency **150** (raised from 120 after crawler bursts pegged the cap and throttled 792 requests); API GW throttle 50 rps / 100 burst. Secrets Phase 2: env resolves from `vivreal/prod/client-api` + `vivreal/prod/core` + SSM. (X-Ray is retired — Sentry only.)
 
 ### Routes — 9 `/tenant/*` + 4 `/sites/:siteId/*`, all behind `frozenCheck`
 
 Tenant: `GET collectionObjects` (published only), `GET integrationObjects`, `GET siteDetails`, `GET preview` (bypasses publishDate), `POST createCheckoutSession` (dispatches Stripe or Square — see below), `POST validateCoupon`, `POST definedCollectionObject`, `POST sendContactEmail`, `POST sendOrderPlacedEmail`. Sites: the **Site MCP** (descriptor + `llms.txt` + MCP RPC with 7 read-only tools, DynamoDB rate-limited via `SITE_MCP_RATE_LIMIT_TABLE`) + `feeds/schedule.ics`.
 
-> **Known drift (verified 2026-07-21):** `/tenant/validateCoupon` STILL has an Express route but NO API-Gateway `Events:` entry in `sam-template.yaml` (would 403 at the gateway). The orphaned `/tenant/collection` event and the dead keyless `ApiUsagePlan` throttle were removed with the CloudFront work. (The template does carry an OPTIONS-only `/{proxy+}` event for CORS preflight — it does NOT rescue missing per-route events.)
+> **Known drift (verified 2026-07-30, STILL live):** `/tenant/validateCoupon` STILL has an Express route but NO API-Gateway `Events:` entry in `sam-template.yaml` (would 403 at the gateway). The orphaned `/tenant/collection` event and the dead keyless `ApiUsagePlan` throttle were removed with the CloudFront work. (The template does carry an OPTIONS-only `/{proxy+}` event for CORS preflight — it does NOT rescue missing per-route events.)
 
 ### Payments-provider resolution (Stripe | Square)
 
 `POST /tenant/createCheckoutSession` → `checkoutDispatch.js` → `resolvePaymentsProvider(groupID)` (reads mainDb `groups` `$elemMatch {type ∈ [stripe,square], active:true}`) → `'stripe'`/`null` delegates byte-untouched to the Stripe path (customer's OWN key); `'square'` → `resolveSquareKey(groupID)` → per-line `resolveSquareVariant` (matches `objectValue.variationId` on square `integrationObjects`; out-of-stock → 409 fail-closed) → `createSquareCheckoutSession()` via Square **CreatePaymentLink**, order-level `FIXED_AMOUNT`/`LINE_ITEM` discounts (exact integer subtraction, never per-unit rounding), `deriveIdempotencyKey` = SHA-256 over sorted priced lines.
 
-`resolveSquareKey` gates (fail-closed → null): (1) `group.featureFlags.squareStorefront === true` — **`.lean()` is load-bearing** (strict schema hides featureFlags on hydrated docs); (2) token ONLY from an `accounts[]` entry with `scope:'group' && status:'active'` (never root fields — disconnected-root orphan trap); (3) token decrypted via `decryptSecret`/`ENCRYPTION_KEY`. `squareTokenGuard`: >2 days to expiry → no-op; ≤2 days → fire-and-forget refresh; expired → sync `RequestResponse` invoke (4s abort) of **VR_Secure_API's `squareRefreshOne` Lambda** via `SQUARE_REFRESH_ONE_FUNCTION_ARN` (scoped `lambda:InvokeFunction` IAM).
+`resolveSquareKey` gates (fail-closed → null): (1) token ONLY from an `accounts[]` entry with `scope:'group' && status:'active'` (never root fields — disconnected-root orphan trap); (2) token decrypted via `decryptSecret`/`ENCRYPTION_KEY`. The **Square kill switch is RETIRED**: the `featureFlags.squareStorefront` gate was removed from `resolveSquareKey` and `featureFlags` dropped from its projection; `.lean()` stays as a perf choice, no longer load-bearing. WARNING preserved: the flag's polarity was INVERTED (absent = ON; only an explicit `false` disabled checkout) — verified no prod group sat at `false` before removal. `squareTokenGuard`: >2 days to expiry → no-op; ≤2 days → fire-and-forget refresh; expired → sync `RequestResponse` invoke (4s abort) of **VR_Secure_API's `squareRefreshOne` Lambda** via `SQUARE_REFRESH_ONE_FUNCTION_ARN` (scoped `lambda:InvokeFunction` IAM).
 
 ### Publish gate — the "content not showing" cause
 
@@ -80,15 +82,15 @@ Tenant: `GET collectionObjects` (published only), `GET integrationObjects`, `GET
 
 ### Media — the media CDN (distribution 1): signed URLs only
 
-Media served via `media.vivreal.io` with signed URLs (unsigned → 403) — this is the **media** distribution, not the `client.vivreal.io` API edge cache. `buildMediaUrl.js` builds the URL, `signCloudFrontUrl.js` signs with the CloudFront key pair (`CLOUDFRONT_SIGNING_KEY_PAIR_ID` from SSM; `CLOUDFRONT_SIGNING_PRIVATE_KEY` from Secrets Manager `vivreal/prod/client-api` — must be an RSA **private** key; public key → falls back to unsigned). `SignedUrlTtlSeconds` now defaults to **86400 (~24h)**, matching the live CI override — the old 300s default silently made non-CI deploys inert; wired to `CLOUDFRONT_SIGNED_URL_TTL_SECONDS`, decoupling signed-link TTL from cache length. The signed URL lands in `currentFile.source` on each media field — templates use it directly. Never build CDN URLs manually. **Signed srcset:** `resolveMediaUrl.js` returns `{name, source, srcset?}` — `buildSrcset` signs `${key}.${w}.${ext}` for widths `[320, 640, 1280]` (must match VR_CMS_API's `generateImageDerivatives.js`, which also writes a clamped source-resolution top rung for sources between ladder widths), emitted on collectionObjects/integrationObjects/preview/siteDetails read paths; files without derivatives degrade to `source` only. **Descriptor signing extended (2026-07):** `processSiteDetails.js` now signs previously-unsigned slots — `cta.{backgroundImage,backgroundVideo}`, media descriptors nested anywhere in `blocks[].config` (depth-bounded, cycle-safe walk), and navigation `menuItems` + footer chrome media; these rendered as "no media" before because renderer consumers read only the inlined `currentFile.source`. (Infra view: `vivreal-media-cdn`.)
+Media served via `media.vivreal.io` with signed URLs (unsigned → 403) — this is the **media** distribution, not the `client.vivreal.io` API edge cache. `buildMediaUrl.js` builds the URL, `signCloudFrontUrl.js` signs with the CloudFront key pair (`CLOUDFRONT_SIGNING_KEY_PAIR_ID` from SSM; `CLOUDFRONT_SIGNING_PRIVATE_KEY` from Secrets Manager `vivreal/prod/client-api` — must be an RSA **private** key; public key → falls back to unsigned). `SignedUrlTtlSeconds` now defaults to **86400 (~24h)**, matching the live CI override — the old 300s default silently made non-CI deploys inert; wired to `CLOUDFRONT_SIGNED_URL_TTL_SECONDS`, decoupling signed-link TTL from cache length. The signed URL lands in `currentFile.source` on each media field — templates use it directly. Never build CDN URLs manually. **Signed srcset:** `resolveMediaUrl.js` returns `{name, source, srcset?}` — `buildSrcset` signs `${key}.${w}.${ext}` for widths `[320, 640, 1280]` (must match VR_CMS_API's `generateImageDerivatives.js`, which also writes a clamped source-resolution top rung for sources between ladder widths), emitted on collectionObjects/integrationObjects/preview/siteDetails read paths; files without derivatives degrade to `source` only. **Descriptor signing extended (2026-07):** `processSiteDetails.js` now signs previously-unsigned slots — `cta.{backgroundImage,backgroundVideo}`, media descriptors nested anywhere in `blocks[].config` (depth-bounded, cycle-safe walk), navigation `menuItems` + footer chrome media, `hero.background.slides[].{image,video,poster}` (carousel masthead — slide images stored as bare `{key,name,type}` descriptors never got `currentFile.source`, so live mastheads rendered words-only while local preview looked fine), and the top-level `emailPopup` image (its own pass, deliberately BEFORE the `mediaFields` early-return, writing `src` as well as `currentFile`); the earlier slots rendered as "no media" before because renderer consumers read only the inlined `currentFile.source`. (Infra view: `vivreal-media-cdn`.)
 
 ### frozenCheck
 
 `frozenCheck` middleware reads `frozen` from authorizer context and returns 400 (`GroupFrozen`, "The group is frozen") on every route for suspended groups. **P0 fix (2026-07):** API Gateway stringifies authorizer context, so `frozen: false` arrived as the truthy string `"false"` and threw GroupFrozen on 18 non-frozen groups fleet-wide (triggered by the schemas 1.15.1→1.22.0 redeploy). `frozenCheck.js` now compares `=== true || === 'true'`.
 
-### CDN quota gate — neutralized (W4)
+### Quota gates — BOTH neutralized (CDN W4, API W12): over-cap never 402s
 
-`checkCdnUsageLimit` in `trackApiUsage.js` **no longer hard-402s** groups over their CDN cap — it falls through to `allowed: true`. Vivreal absorbs the overage and meters it via `cdnUsage.totalBytes`; customer sites never go down for CDN usage, and availability is bounded by the infra kill-switch, not this gate. API-quota exhaustion can still 402 (templates render `<QuotaExceeded />`). Quota reads are package-authoritative (W6, tier-quotas ^3.0.0): `getApiQuota`/`getCdnQuota`/agent spending-cap read `getTierQuotas(tier)` — the doc-first arms and six self-heal/mirror writes (with their redundant socket broadcasts) are gone.
+`checkCdnUsageLimit` in `trackApiUsage.js` **no longer hard-402s** groups over their CDN cap — it falls through to `allowed: true`. Vivreal absorbs the overage and meters it via `cdnUsage.totalBytes`; customer sites never go down for CDN usage, and availability is bounded by the infra kill-switch, not this gate. **API-quota exhaustion no longer 402s either (W12 step-3, resolved 2026-07):** over-quota without overage enrollment falls through to `allowed: true` in `src/scripts/trackApiUsage.js`, still metered via `apiUsage.totalCalls`. Driver: the W6 package-authoritative flip dropped two free-tier groups' effective quota below accumulated usage and both customer sites served empty pages for days. The only remaining tenant-path blocks are `frozenCheck` and the spending-cap 402s (overage-enrolled groups only); `src/api/handlers.js` logs `usageCheck.reason` on the surviving 402. Quota reads are package-authoritative (W6, tier-quotas ^3.0.0): `getApiQuota`/`getCdnQuota`/agent spending-cap read `getTierQuotas(tier)` — the doc-first arms and six self-heal/mirror writes (with their redundant socket broadcasts) are gone.
 
 ### Adding a route — the per-route SAM-event rule
 
@@ -97,7 +99,7 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 ### Gotchas
 
 - **Array media-signing latent bug (fixed 2026-05-27, commit b3558ab):** the `targetField.name` pattern silently no-op'd on arrays; the bug lived in 5 duplicate copies (3 inline + 2 helpers). Galleries never signed despite appearing to work. Now one shared impl. Watch for regressions in media-signing helpers; `looksLikeMediaItem` requires `mimeType`. (Full bug class: `vivreal-media-cdn`.)
-- Responses can be very large. CORS wide open with credentials (needed for customer sites). API-quota exhaustion → 402 (templates render `<QuotaExceeded />`) — but CDN over-cap no longer 402s (see "CDN quota gate — neutralized").
+- Responses can be very large. CORS wide open with credentials (needed for customer sites). Over-cap NEVER 402s — both the CDN (W4) and API (W12) quota gates are neutralized (see "Quota gates — BOTH neutralized"); only `frozenCheck` and the overage spending-cap 402s remain on the tenant path.
 - The old `basic/` + `ecommerce/` alternate-deploy dirs are DELETED — one deploy config now.
 - arm64-only. Sentry 100% dev / 20% prod, filters `GET /health`. (`aws-xray-sdk` in package.json is vestigial — zero code refs.)
 - This is the **public unbounded service** — its connection-manager health is critical (gold-standard connection mgmt: dedupe + dead-socket invalidation + rethrow). Saturating Atlas conns here can 500 the whole platform — it's the one capped via reserved concurrency. See `vivreal-atlas-topology` + `vivreal-lambda`.

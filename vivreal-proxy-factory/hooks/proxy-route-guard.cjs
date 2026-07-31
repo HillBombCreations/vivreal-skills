@@ -5,7 +5,7 @@
 // instead of staying silent. Never blocks anything outside the proxy tree.
 const fs = require('fs');
 
-// Known manual routes (31 as of 2026-07-21) — path segment after src/app/api/proxy/,
+// Known manual routes (32 as of 2026-07-30) — path segment after src/app/api/proxy/,
 // without the trailing /route.ts. Prefix entries end with '/'.
 const MANUAL = [
   'billing/upgrade',
@@ -24,6 +24,7 @@ const MANUAL = [
   'integrations/oauth/init',
   'integrations/tiktok-oembed',
   'marketing/sandbox-lead',
+  'media/share-image', // streams raw tenant media bytes — factory always ends in apiSuccess()
   'outreach/book/', // [slug] + /create + /slots — public, no active_ctx
   'outreach/studio-demo/visit',
   'sites/create',
@@ -61,7 +62,10 @@ try {
     try { content = fs.readFileSync(fp, 'utf8'); } catch (e) {}
     if (typeof ti.new_string === 'string') content += '\n' + ti.new_string; // Edit
   }
-  if (content.includes('createProxyHandler')) process.exit(0);
+  // Match the real factory import path, not the bare name — manual routes
+  // (e.g. sites/instantiateTemplate, media/share-image) mention the factory in
+  // prose comments explaining why they are NOT factory routes.
+  if (content.includes('_helpers/createProxyHandler')) process.exit(0);
 
   process.stderr.write(
     '⚠️ This proxy route should use `createProxyHandler()` factory. Manual proxy routes outside the known exceptions cause maintenance drift. Use `/proxy-route` to generate a factory-based route, or add the route to the allowlist in vivreal-proxy-factory/hooks/proxy-route-guard.cjs if it genuinely cannot use the factory.'

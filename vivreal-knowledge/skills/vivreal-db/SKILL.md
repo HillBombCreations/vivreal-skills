@@ -175,14 +175,14 @@ plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
   `approvalStatus`(enum: draft/pending_review/approved/rejected), `approvalRequestedAt`/`approvalRequestedBy`,
   `approvalDecidedAt`/`approvalDecidedBy`, `approvalNote`, `usingVariant`, `author`,
   `embedding`/`embeddingModel` (both `select:false`). Schema indexes: `collectionObj.refID`,
-  `publishDate`, `approvalStatus` (collectionObjectSchema.js:96-98). The only genuinely missing
+  `publishDate`, `approvalStatus` (collectionObjectSchema.js). The only genuinely missing
   index is `groupID`.
 - **`integration_objects`** — `id`(str), `platform`(str, e.g. `stripe`), `collectionGroup{name,refID(str)}`,
   `groupID`(str), `author`, `usingVariant`, `accountId`(**ObjectId**), `accountHandle`,
   `publishDate`, `scheduledTaskId`, `sourceRef{objectID,collectionName,collectionID}`,
   `embedding`/`embeddingModel`, `objectValue`(strict:false). Schema is `strict:false`, so social
   docs also persist `accountType`/`status`/`errorMessage`. Indexes: single-field `platform` and
-  `accountHandle` only (integrationSchema.js:57,64) — there is **no** `groupID+platform` compound index.
+  `accountHandle` only (integrationSchema.js) — there is **no** `groupID+platform` compound index.
 - **`sites`** — `groupID`(str), `key`(site slug), `collectionGroups[]`, `collectionObjIds[]`,
   `integrationIds[]`, `pages[]`, `navigation{}`, `footer{}`, `deployment{status,...}`,
   `siteDetails{schema,values}`, `domainInformation`. Index: `groupID`.
@@ -190,7 +190,7 @@ plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
   `snapshot`, `changeSummary{changedFields, changeType}`, `groupID`. Index: `entityId+version`.
 - **`audit_logs`** — `action`, `entityType`, `entityId`(str), `groupID`, `actor{email,name}`.
   Indexes: `{groupID:1, createdAt:-1}`, `{groupID:1, entityType:1, entityId:1, createdAt:-1}`
-  (auditLogSchema.js:35,37).
+  (auditLogSchema.js).
 
 Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tier`,
 `owner`, usage counters), **`leads`** (`email` unique, `attribution.first/last`),

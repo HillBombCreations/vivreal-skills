@@ -68,7 +68,7 @@ This file is read by every bug-fix subagent BEFORE doing any work. It encodes th
 
 ## Tech stack quick ref
 - Next.js 16 App Router, React 19, TypeScript 5 strict
-- Three backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media)
+- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking — 55 of the 189 proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
 - Public content delivery: VR_Client_API (read-only, applies publishDate/archived filters)
 - All proxy routes at `src/app/api/proxy/*` run on edge runtime
 - MongoDB multi-tenant — each group has its own DB identified by `dbKey`
@@ -85,10 +85,12 @@ NEVER use native `fetch()` for proxy routes. Any 401/419 from a proxy route MUST
 Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/helpers` — extracts the backend's `error.response.data.error` before falling back.
 
 ## Proxy route factory
-- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/` (see `src/app/api/proxy/` — count them when it matters; CLAUDE.md's route table is the reference)
-- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling
+- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/` — the **filesystem is the count reference** (CLAUDE.md's route table is a self-described "core snapshot — not exhaustive"). Classify factory-vs-manual by the `_helpers/createProxyHandler` **module path**, never a string grep — manual routes mention the factory in prose comments.
+- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling, **public no-`active_ctx` routes** (the factory 401s without `active_ctx` — `outreach/book/[slug]` ×3, `outreach/studio-demo/visit`, `marketing/sandbox-lead`, `claim/verify`, `claim/complete`), **raw-header/idempotency forwarding** (`sites/instantiateTemplate` — `ProxyContext` exposes no raw request), and **non-envelope responses** (`media/share-image` streams bytes; the factory always terminates in `apiSuccess()`)
 - All authenticated proxy routes MUST verify `active_ctx` via `verifyCtxEdge()`
-- Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`
+- Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`. `injectCtxParams()` sets **`key`** (CMS convention) + `groupID`; Secure endpoints whose Joi validator names the tenant key `dbKey` reject `key` as unknown — set `dbKey`/`groupID` manually **instead** for those
+- New portal surfaces ship "live but dark" behind `group.featureFlags.<flag>`, written only by operators at `/admin/flags`; the only live flag is `aiActionsEnabled` (`templatePicker` + `squareStorefront` retired 2026-07-29, both GA). Gated entry points **hide, never disable** (`useAgentAccess()` is the single gate). Absence of AI in a group's UI is the expected default, not a bug
+- The portal is **light-only** — a bare `dark:` Tailwind utility is a regression (no `@custom-variant dark`; it resolves against the OS scheme)
 
 ## Auth & multi-tenancy (CRITICAL)
 - `active_ctx` JWT contains: `groupID`, `dbKey`, `bucketname`, `exp`
@@ -113,11 +115,11 @@ fallback        → group.database (legacy)
 ```
 
 **Where `dbKey` is set in `active_ctx`:**
-- `profileSwitch.js:17` — `const dbKey = deriveDbKey(foundGroup)`
-- `updateDefaultProfile.js:37` — same
-- `createGroup.js:192` / `joinGroup.js:57` — same mapping inline
+- `profileSwitch.js` — `const dbKey = deriveDbKey(foundGroup)`
+- `updateDefaultProfile.js` — same
+- `createGroup.js` / `joinGroup.js` — same mapping inline
 
-**The `databaseDict` pattern you'll see in backend code** (e.g., `oauthCallback.js:157-162`) is the SAME tier→DB mapping as `deriveDbKey()`. When you see `databaseDict[group.tier]`, that IS the correct `dbKey` — do NOT "fix" it to `group.key`.
+**The `databaseDict` pattern you'll see in backend code** (e.g., `oauthCallback.js`) is the SAME tier→DB mapping as `deriveDbKey()`. When you see `databaseDict[group.tier]`, that IS the correct `dbKey` — do NOT "fix" it to `group.key`.
 
 ### MCP skill usage for database queries
 - **`vivreal-db-explorer:db-schema`** — Use to inspect Mongoose schema, indexes, and sample docs for any collection. Invoke during research before reasoning about data shape.
@@ -126,7 +128,8 @@ fallback        → group.database (legacy)
 
 ## Security non-negotiables (OWASP-aware)
 - CSRF: double-submit cookie on all state-changing proxy routes (`src/lib/csrf/`)
-- Rate limiting: `src/proxy.ts` on auth endpoints (10 attempts / 15 min / IP)
+- Rate limiting: `src/proxy.ts` on auth endpoints (10 attempts / 15 min / IP) and the public demo-claim routes (`claim/verify` 30 / `claim/complete` 10 per 15 min per IP)
+- Visitor IP in public edge routes: read `CloudFront-Viewer-Address` (strip the trailing `:port`), fall back to `X-Forwarded-For` only when absent, **never** `x-real-ip` (CloudFront strips it) — see `api/proxy/claim/_shared.ts`, `outreach/book/_forward.ts`, `outreach/studio-demo/visit`
 - HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy in `next.config.ts` — don't break them
 - Cookies: `secure: true` forced in production
 - Never log secrets. Never echo JWT contents in errors.
@@ -180,28 +183,28 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 
 | Repo | Path | Purpose |
 |---|---|---|
-| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (180 proxy routes: 149 factory + 31 manual, as of 2026-07-21) |
-| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 3 Lambdas — auth/signup, transactional + lifecycle email, Meta callbacks |
-| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 12 Lambdas — group, billing, sites, profile, OAuth, Square refresh, AI agent, analytics, template-instantiate worker |
+| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (189 proxy routes: 157 factory + 32 manual, as of 2026-07-30 — filesystem is the count reference) |
+| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 4 Lambdas — auth/signup, transactional + lifecycle + billing-rules email, web-push notification consumer, Meta callbacks |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 13 Lambdas — group, billing, sites, profile, OAuth, Square refresh, AI agent, analytics, template-instantiate worker + its DLQ consumer |
 | VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | 5 Lambdas — collections, integrations, media/derivatives, webhooks, audit, versioning |
 | VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` | Public content delivery + Stripe/Square checkout (publishDate filter) |
 | VR_Client_Auth | `${VIVREAL_REPOS}/VR_Client_Auth/CLAUDE.md` | TOKEN authorizer for VR_Client_API (Serverless Framework, not SAM) |
-| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/README.md` | 4 Lambdas — sequences, contacts/companies, prospects, booking, SES send/replies (no CLAUDE.md on main — README + docs/ are truth) |
-| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — `main` is the single template; other branches are per-customer sites |
+| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/README.md` | 4 Lambdas — sequences, contacts/companies, booking, SES send/replies (`/prospects` retired 2026-07-27; no CLAUDE.md on main — README + docs/ are truth) |
+| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — every site's Amplify app builds the shared **`stable`** channel branch (per-customer branches are DEAD, Phase 2 2026-07-15); releases via the promote-stable workflow (main→stable FF). CLAUDE.md stale at 2026-07-21 |
 | vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer` — publishing hits every live customer site |
 | VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with 69 CMS tools (TypeScript, OAuth 2.1; tier-gated via TOOL_MIN_TIER) |
-| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (58 tools incl. 8 prospects) |
+| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (50 tools, 9 modules, 0 prompts — prospects tools retired 2026-07-27) |
 | VR_Analytics_API | `${VIVREAL_REPOS}/VR_Analytics_API/README.md` | First-party analytics ingest + rollup (no CLAUDE.md — README is truth) |
 | VR_OnCall_Agent | `${VIVREAL_REPOS}/VR_OnCall_Agent/CLAUDE.md` | On-call agent (auto-investigates Sentry incidents via GitHub Actions) |
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
 | Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md — `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
-| vivreal-content | `${VIVREAL_REPOS}/vivreal-content/CLAUDE.md` | Content studio — voice/strategy knowledge base + asset pipeline (canonical brand voice) |
-| Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing\` | vivreal.io marketing/landing site |
+| vivreal-content | `${VIVREAL_REPOS}/vivreal-content/knowledge/README.md` (+ `content/README.md`; repo-root CLAUDE.md lags at 2026-06-25) | Content studio — voice/strategy knowledge base + social **video production pipeline** (footage library → edit brief → draft render; 6 agents, 5 slash commands). Canonical brand voice = `knowledge/01-voice-and-rules.md` |
+| Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | vivreal.io marketing/landing site — blog runs on **live CMS data** (server-only `API_KEY` → `/tenant/collectionObjects`, ISR `revalidate = 120`; never `NEXT_PUBLIC_` the key). Deploy gotchas: `amplify.yml` bakes `API_KEY` + `NEXT_PUBLIC_*` into `.env.production` for SSR; `next.config.ts` bypasses the broken Amplify image optimizer (covers from `public/blog-covers/`) |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
 | Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | Public docs site (Next.js, content under `content/`) |
-| Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas\` | Shared Mongoose schemas package |
-| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package v3.0.0 (owns all tier quotas; sentinel scheme: -1 unlimited, 0 no access) |
+| Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas\` | Shared Mongoose schemas package — **v1.29.0** (1.26 site-chrome fields, 1.27 Stripe billing block + dbKey, 1.28 webhook `system`, 1.29 `featureFlags`); consumers on ^1.29.0 except VR_Client_Auth at ^1.27.0 |
+| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package v3.1.0 (owns all tier quotas; sentinel scheme: -1 unlimited, 0 no access; 3.1.0 adds `aiSiteEditing`/`aiComponentGen` capability flags) |
 
 All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino, AWS SAM (except VR_Client_Auth + Vivreal_EventHandler = Serverless Framework). X-Ray is retired where touched recently (Client/Secure) — Sentry is the telemetry layer.
 
@@ -211,16 +214,16 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 
 **Full inventory:** `docs/ecosystem/aws-lambda-inventory.md` — READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
 
-### Quick reference — function counts per API (verified 2026-07-21)
+### Quick reference — function counts per API (verified 2026-07-30)
 | API | Prod Lambdas | Has WebSocket | Deploy Trigger |
 |---|---|---|---|
-| VR_Secure_API | 12 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + webhookDelivery + instantiateTemplateWorker [direct-invoke]; websocket stack is separate) | 4 of 12 | Push to main/dogfood |
+| VR_Secure_API | 13 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + webhookDelivery + instantiateTemplateWorker [direct-invoke] + instantiateTemplateWorkerDlqConsumer; websocket stack is separate) | 4 of 13 | Push to main/dogfood |
 | VR_CMS_API | 5 | All 5 | Push to main/dogfood |
-| VR_Main_API | 3 (express + email consumer + lifecycle scan) | 1 of 3 | Push to main/dogfood |
+| VR_Main_API | 4 (express + email consumer + notification consumer + lifecycle scan) | 1 of 4 | Push to main/dogfood |
 | VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
 | VR_Client_API | 1 (+ CloudFront edge distribution `client.vivreal.io` in the same SAM stack) | No | Push to main |
 | VR_Client_Auth | 1 (Node 18, Serverless Framework) | No | Push to main |
-| EventHandler | 27 (11 site-deploy incl. updateSiteEnvVars + subdomainCleanup + 9 domainPurchase incl. reconciliation cron + 6 domainTransfer — 3 state machines: deploy + purchase saga + transfer saga) | No | Push to main |
+| EventHandler | 27 (12 site-deploy incl. updateSiteEnvVars + subdomainCleanup + 9 domainPurchase incl. reconciliation cron + 6 domainTransfer — 3 state machines: deploy + purchase saga + transfer saga) | No | Push to main |
 | VR_Analytics_API | 2 (ingest [public Function URL] + rollupCron) — LIVE, stack `vr-analytics-api` | No | Push to main |
 
 ### Infrastructure stacks (workflow_dispatch — manual trigger from GitHub Actions)
@@ -408,11 +411,8 @@ The architect should flag any review that introduces an `Optional` render-prop w
 ## File writing reliability (critical for all agents)
 <!-- learned from observability-logging-audit on 2026-04-14 -->
 
-### PreToolUse Write hook interference
-A PreToolUse hook checks if files being written are inside `src/app/api/proxy/` and blocks non-factory proxy routes. This hook sometimes interferes with Write calls to OTHER directories (like `docs/`) — the hook runs, outputs its analysis, and the Write silently fails even though the hook approved. When this happens:
-- **Fallback 1:** Use Bash with a heredoc: `cat > path << 'EOF' ... EOF`
-- **Fallback 2:** If the heredoc fails due to quotes/special chars in content, use Python: write a temp `.py` script file first, then execute it
-- **Fallback 3:** Write a placeholder with `python3 -c "open(path,'w').write('placeholder')"`, then Read the file, then use the Write tool (which requires a prior Read)
+### Proxy-route guard hook (deterministic)
+The old prompt-based PreToolUse Write hook (which sometimes mis-fired on non-proxy files) was replaced by the deterministic `vivreal-proxy-factory/hooks/proxy-route-guard.cjs` — it exits 0 immediately for any path outside `src/app/api/proxy/**/route.ts` and never interferes with other writes. If it blocks a legitimate manual proxy route, add the route to its allowlist; do NOT route around the Write tool with heredocs or temp scripts.
 
 ### Bash heredoc quoting failures on Windows Git Bash
 Bash heredocs (`<< 'EOF'`) break when the content contains:

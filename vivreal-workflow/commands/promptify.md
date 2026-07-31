@@ -42,16 +42,26 @@ Produce exactly this, in this order:
 
 2. **The finished prompt**, alone, in a single fenced code block so it copy-pastes cleanly. Nothing else inside the block — no commentary, no headers.
 
-3. **Routing note** — the deterministic slash-command equivalent and the agent/expert it routes to, taken from the playbook (e.g. *"Routes to the `reviewer` agent. Deterministic equivalent: `/reviewer`."*). If there's a 1:1 slash command, the user almost always wants that — say so.
+3. **Routing note** — the deterministic slash-command equivalent and the agent/expert it routes to, taken from the playbook (e.g. *"Routes to the `reviewer` agent. Deterministic equivalent: `/reviewer` (Skill name: `vivreal-workflow:reviewer`)."*). If there's a 1:1 slash command, the user almost always wants that — say so. Always include the **plugin-qualified Skill name** (`vivreal-workflow:coordinator`, not bare `coordinator`) — bare names fail with "Unknown skill" when invoked.
 
 4. **If you inserted any `[NEED: …]` markers**, list them as a short "Before you run this, I need:" bullet list so the gaps are obvious at a glance.
 
 5. **Three next-step options**, then stop and wait:
-   - **Run it here** — "Say *run it* and I'll execute this prompt (or the slash command above) in this session."
+   - **Run it here** — "Say *run it* and I'll launch the routed command/agent with this prompt."
    - **Fresh session** — "Copy the block above into a new session for a clean context — best for big tasks or a tight token budget."
    - **Adjust** — "Tell me what to change (wrong scenario, add a constraint, fill a gap) and I'll re-emit."
 
-Do **not** auto-run. The default is to hand back the formatted prompt and the options — the user opts in to execution. The only exception: if the user's `$ARGUMENTS` itself explicitly says to run it (e.g. "...and just do it"), then after emitting the block, proceed to run it.
+Do **not** auto-run. The default is to hand back the formatted prompt and the options — the user opts in to execution. The only exception: if the user's `$ARGUMENTS` itself explicitly says to run it (e.g. "...and just do it"), then after emitting the block, proceed as below.
+
+## What "run it" means — delegate, never do the work yourself
+
+When the user opts to run it here, **you still do not do the underlying work in this session's main context.** Execution means handing the finished prompt to the routed machinery, in this priority order:
+
+1. **1:1 slash command exists** → invoke it with the **Skill tool** using the **plugin-qualified name** and pass the finished prompt as `args` (e.g. `Skill(skill: "vivreal-workflow:coordinator", args: "<the prompt block>")`). Bare names ("coordinator") return "Unknown skill" — always qualify.
+2. **No slash command, but the playbook names an agent** → dispatch that agent with the **Agent tool** (`subagent_type` = the qualified agent name, e.g. `vivreal-principal:principal-researcher`), passing the finished prompt verbatim as the agent's prompt.
+3. **Neither exists** (rare, from-scratch prompts) → say so and ask whether the user wants it run inline; only then may you work it directly.
+
+Never silently substitute yourself for the routed command or agent — investigating, editing, or querying inline when a route exists defeats the playbook's contracts (review gates, read-only guarantees, artifact outputs) that only fire inside the routed workflow.
 
 ## Notes
 

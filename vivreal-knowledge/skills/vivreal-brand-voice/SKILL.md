@@ -9,7 +9,7 @@ The defined Vivreal voice and the rules for keeping every customer-facing word o
 
 > **Canonical voice source: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md`.** If that file and this skill diverge, that file wins — read it when it's available. This skill encodes the same voice so it works on any machine.
 
-Last synced: 2026-07-13
+Last synced: 2026-07-30
 
 ## The promise behind every word
 
@@ -73,22 +73,27 @@ Lead against the tools owners actually know (plus the niche industry CMS a trade
 |---|---|---|
 | **WordPress** | Monolithic, slow, needs a developer to touch | A modern site they edit themselves, no dev |
 | **Squarespace / Wix** | Editing is a guessing game; nothing for social or email | True live-preview plus one-button publish everywhere |
-| **Shopify** | Store is fine; blog, social, email are separate tools | One portal for store, content, social, and email |
+| **Shopify** | Store is fine; blog, social, email are separate tools | One portal for store, content, social, and email (email = the Mailchimp integration — see the honesty floor) |
 | **Buffer / Mailchimp / Hootsuite** | Five tools that don't talk to each other | Replace the stack; create once, publish everywhere |
 | **Webflow** | Powerful, but built for designers | A professional site the owner can run, no designer |
-| **Niche / industry-specific CMS** | Clunky, dated, built for one trade; locked in, thin support | One easy system for site, social, and email together, on any device |
+| **Niche / industry-specific CMS** | Clunky, dated, built for one trade; locked in, thin support | One easy system for site, social, and email together, on any device (email = the Mailchimp integration — see the honesty floor) |
 
-The through-line that beats all of them: **it's easy, and it runs from your phone like an app.** An owner can update the site, post to social, and send an email between customers. Nothing else does that.
+The through-line that beats all of them: **it's easy, and it runs from your phone like an app.** An owner can update the site and post to social between customers (email goes out through the Mailchimp integration, not on Publish). Nothing else does that.
 
 ## Honesty floor — claims to verify before publishing
 
 These recur in proof points. Confirm each is true and current before asserting it; if it isn't shipped, soften or cut.
 
+- **Email (the #1 violation — resolved 2026-07-28).** Vivreal does NOT send native email, and publishing content does NOT create a campaign. Email is the **Mailchimp integration**. Never write "one Publish sends site, social, and email together" or "the email is built from the content on your site." The social fan-out claim IS true (and the free plan connects up to three channels) — email is the exception.
 - **"Installs on your phone/tablet like an app"** (the PWA install prompt) — if install isn't live, say "works great on your phone" instead.
 - **Real AI checkout through a Stripe-connected store.**
+- **Live preview (resolved 2026-07-28 — prohibition, not a verify-item).** Do NOT write "the preview is the real site" or "what you see is what publishes." Preview and live share one renderer/composition entry point (that IS claimable), but preview deliberately diverges (sample data + preview-only placeholder copy vs the live empty state). Approved wording: *"Edit and watch the page take shape, built with the same design your live site uses."*
 - **The plain-English AI assistant making site edits.**
-- **Live-preview parity in Site Studio** (what you see is what publishes).
 - **Any pricing number** — always swap in real current pricing, never placeholder ranges.
+
+**Stat quarantine** (a *sourced* stat on the wrong audience still fails the floor): never print **23×** in owner-facing copy (single-company Ahrefs case study; cross-industry is ~4.4–5×); the **51%** figure is about *software buyers*, not consumers — using it for consumers is a category error; the approved on-audience substitute is **BrightLocal: 45% of consumers use AI to find local businesses, up from 6%**; the **2.8×** multi-platform citation figure stands.
+
+**Where violations hide:** the honesty floor applies to the **meta description**, the **closing paragraph**, and any **cover-image copy** as much as to body prose — during Group B seeding, every violation that survived an earlier fix round was in one of exactly those three places. The mechanical checker (`vivreal-content/scripts/voice-check.mjs`, run on every draft) word-checks **only the `## Body` block** and **cannot check the honesty floor at all** — a green run proves nothing about these.
 
 ## The shared page standard (web pages / comparison briefs)
 

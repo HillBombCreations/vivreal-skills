@@ -36,7 +36,7 @@ For each repo below, run `git -C <path> log --since=<baseline> --format='%h %ad 
 | `VR_OnCall_Agent` / `VR_OnCall_Webhook` / `Vivreal_SSR_Landing` / `vivreal-edit-extractor` | `shared-standards` repo-table rows only |
 
 Cross-cutting checks to run every audit regardless of drift:
-1. **Count claims**: Secure Lambda roster, portal proxy-route count (165 @ 2026-07-13), MCP tool counts (~72 CMS / 50 outreach), Main Lambda count (3), Outreach (4) — grep the skills repo for the numbers and re-verify against source.
+1. **Count claims**: Secure Lambda roster (13 @ 2026-07-30), portal proxy-route count (189 = 157 factory + 32 manual @ 2026-07-30 — classify by the `_helpers/createProxyHandler` module path, not a string grep), MCP tool counts (69 CMS / 50 outreach), Main Lambda count (4), Outreach (4), EventHandler (27 = 12+9+6), renderer version (1.42.1 @ 2026-07-30), schemas (1.29.0), tier-quotas (3.1.0) — grep the skills repo for the numbers and re-verify against source.
 2. **`Last synced:` stamps**: list every expert/knowledge file whose stamp predates a medium+ drift repo it mirrors.
 3. **Prompt playbook** (`vivreal-workflow/references/prompt-playbook.md` + `docs/prompt-playbook.md` stub + `commands/promptify.md`): does any new platform capability deserve a scenario or trigger-row?
 4. **Line-number citations**: grep the expert/knowledge docs for `:\d+` file citations — policy is function/route names only; flag offenders.

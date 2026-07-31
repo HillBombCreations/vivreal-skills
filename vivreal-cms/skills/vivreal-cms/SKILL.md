@@ -65,7 +65,7 @@ Use the `post-to-all-socials` or `launch-content-everywhere` MCP prompt. Manual 
 3. create-channel-post(channelType, ...)    # one call per channel
 ```
 
-Scheduling: set `publishDate` to a future ISO timestamp. EventBridge handles the actual publish at the scheduled time.
+Scheduling: set `publishDate` to a future ISO timestamp. EventBridge handles the actual publish at the scheduled time. This is now genuinely true for CONTENT items too, not just channel posts: a future `publishDate` on content registers a one-shot EventBridge schedule (`reconcileContentGolive` → `EventQueue.fifo` → a `content.updated` webhook → each site's `/api/revalidate` subscription), so the live site updates itself at that moment rather than waiting on the 24h cache TTL.
 
 ### Build a site
 
@@ -82,8 +82,7 @@ For a customer's own domain, use `connect-custom-domain` *after* the site is liv
 ```
 get-stripe-balance                          # platform balance
 list-stripe-orders                          # orders for the connected channel
-fulfill-order(orderId)                      # mark fulfilled
-create-payout(amount)                       # tier: pro_plus only
+get-subscription-info                       # subscription state for the group
 get-customer-portal(userId)                 # Stripe Customer Portal session
 ```
 
@@ -108,7 +107,7 @@ Call `get-content-field-types` if you need the full validator-recognized list.
 The MCP server filters its `tools/list` response by the user's subscription tier. Tools NOT visible on the free tier:
 
 - `bulk-create-content`, `bulk-update-content-publish-date`, `sync-channel` — require `pro` or higher
-- `create-payout` — requires `pro_plus`
+- `redeploy-site`, `deploy-site` — require `pro_plus`
 
 If a workflow needs one of these and the user is on a lower tier, surface that clearly ("This requires the Pro tier — upgrade at vivreal.io/app/tier-select").
 
@@ -144,7 +143,7 @@ Eight workflow prompts ship with the server. Use them for multi-step tasks inste
 - `create-content-plan` — guided content creation with schema validation
 - `diagnose-failed-post` — debug a failed channel post
 - `import-data-wizard` — bulk import from CSV/JSON
-- `launch-content-everywhere` — publish to website + socials + email in one flow
+- `launch-content-everywhere` — publish to website + socials in one scheduled action (NO email — Vivreal does not send native email; email is the Mailchimp integration)
 - `post-to-all-socials` — multi-channel social post
 - `setup-integration-checklist` — connect a new channel correctly
 - `site-builder-guide` — guided site creation

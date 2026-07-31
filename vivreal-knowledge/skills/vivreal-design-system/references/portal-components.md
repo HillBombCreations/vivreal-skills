@@ -1,6 +1,6 @@
 # Vivreal portal — REAL component, layout & token conventions
 
-Last synced: 2026-07-21
+Last synced: 2026-07-30
 
 This is the as-built Vivreal portal design system, mined from source. Match these patterns; don't invent parallel ones. All paths are under `C:\repos\Vivreal_Portal_Mobile\`.
 
@@ -12,7 +12,7 @@ This is the as-built Vivreal portal design system, mined from source. Match thes
 - **Lucide React** icons only, sizes **16/20/24** (`w-5 h-5` is the dashboard default). No mixed icon libraries.
 - **Framer Motion v12** is installed — use it for motion, don't reintroduce CSS-only animation helpers.
 - `basePath: '/app'` (`next.config.ts`) — internal links start with `/app/...`.
-- **SSR-safe**: guard `window`/`document` (e.g. `UsagePanel` `loadVisible()` checks `typeof window === 'undefined'`, `src/components/Dashboard/UsagePanel/index.tsx:38-49`).
+- **SSR-safe**: guard `window`/`document` (e.g. `UsagePanel` `loadVisible()` checks `typeof window === 'undefined'`, `src/components/Dashboard/UsagePanel/index.tsx`).
 
 ## Design tokens (`src/styles/globals.css`)
 
@@ -33,7 +33,9 @@ Defined in `@layer base :root`, overridable at runtime by `Providers` from `site
 
 **Utility classes that already exist** (don't recreate): `.bg-glass` (white 80% + `blur(20px)`), `.hover-lift` (translateY -0.25rem + shadow on hover, 300ms cubic-bezier), `.text-balance`, `.content-grid` (full/breakout/content column system), `.pwa-layout` / `.browser-layout` (safe-area-aware app shells). (`globals.css:222-282`)
 
-**Dark mode** = `class` strategy (`html.light` / dark). Elevation in dark mode is a **lighter surface over a darker bg**, not heavy shadows. Pair-preview every color in both modes.
+**Light-only styling (no dark mode).** The portal has **no dark theme**: no `.dark` block, no `@custom-variant dark`, no `prefers-color-scheme` block — `globals.css` says "LIGHT ONLY … Do NOT add `dark:` utilities." In Tailwind v4 with no `@custom-variant dark` declared, a bare `dark:` utility resolves against the **OS** `prefers-color-scheme`, so it renders dark styles on this permanently-light surface for OS-dark users (in-repo trap: `Outreach/OutboundQueue/QueueItemView.tsx`). The banked `--viz-*` dark token column in `globals.css` is **validated but INERT** — not read by any selector; it activates only as a token swap if a real dark theme ever ships (re-validate if the dark surface moves off `#141a22`).
+
+**Data-viz palette (`--viz-*`)** — brand-independent categorical palette in `globals.css`, deliberately never derived from `--primary` (which is tenant-controlled), validated with the dataviz skill's `validate_palette.js`; used by the Group usage donuts (`CollectionUsage`/`MediaUsage` — the "readable usage donuts" fix). Tokens: `--viz-surface`, `--viz-card`, `--viz-row-hover`, `--viz-ink`, plus the categorical series. Chart colors come from these, never from the brand tokens.
 
 ## Dashboard patterns (the canonical primitives)
 
@@ -49,18 +51,28 @@ Defined in `@layer base :root`, overridable at runtime by `Providers` from `site
 
 ## Tier gating & overage patterns
 
-- **Gate on the package helpers, never a hand-rolled tier set.** The quota-gate components (`CollectionObjects/Client`, `CollectionObjects/Wrapper`, `Integrations/Client`, `Sites/Client`, `Universal/SchemaFormDialog/Create` + `Update`) use `isUnlimited` from `@hillbombcreations/tier-quotas` (^3.0.0) — **renamed from `isUnlimitedQuota`**; a local `<0` helper still named `isUnlimitedQuota` survives only in `src/lib/usage/format.ts`, `src/components/Group/UsagePanel`, and `src/components/Group/UsageRow` — don't "fix" those to the package name or vice versa.
+- **Gate on the package helpers, never a hand-rolled tier set.** The quota-gate components (`CollectionObjects/Client`, `CollectionObjects/Wrapper`, `Integrations/Client`, `Sites/Client`, `Universal/SchemaFormDialog/Create` + `Update`) use `isUnlimited` from `@hillbombcreations/tier-quotas` (declared ^3.0.0; **3.1.0 installed/required** — it adds the `aiSiteEditing`/`aiComponentGen` capability flags) — **renamed from `isUnlimitedQuota`**; a local `<0` helper still named `isUnlimitedQuota` survives only in `src/lib/usage/format.ts`, `src/components/Group/UsagePanel`, and `src/components/Group/UsageRow` — don't "fix" those to the package name or vice versa.
 - **`src/components/Group/OverageBillingSection/index.tsx`** + **`SpendingCapSection.tsx`** — the overage billing surface: auto-enroll disclosure copy plus a spending cap control with a "Default cap" badge. Copy this shape for any billing-disclosure panel (disclosure text adjacent to the control it explains, cap state as a badge not color alone).
 - **Group `UsagePanel` free-tier upgrade banner** — near/over-quota state driven by the Group usage flags (cdn/api/agent buckets, each `pctOfQuota`/`nearQuota`/`overQuota`). This is the near-limit peak-moment upgrade CTA (see ux-psychology peak-end) implemented in practice — reuse the flags, don't recompute percentages client-side.
 - **Studio `FooterEditor`** (`src/components/Sites/Studio/LeftRail/chrome/FooterEditor.tsx`) calls the package `canHidePoweredBy()` (which includes Basic) instead of a local `TIERS_CAN_HIDE` set — Basic tier gets the "Show Powered by Vivreal" toggle. Tier-copy accuracy matters: the false "Pro Plus = 10x actions" tooltip was removed (Pro and Pro Plus both get 500 agent actions/mo) — verify quota copy against tier-quotas before shipping it.
 
 ## Outreach list/detail conventions
 
-`src/app/(app)/outreach/` — `companies/`, `contacts/`, `queue/`, `senders/`, `suppressions/` each as a route, plus `[id]/` for detail, a shared `layout.tsx`, `loading.tsx`, `error.tsx`. This is the **list-of-entities → detail** convention: a sectioned layout wrapper, per-entity list routes, a dynamic `[id]` detail, and admin-gated sub-sections. Mirror this structure for new multi-entity admin surfaces (list route + `[id]` detail + shared layout + loading/error boundaries).
+`src/app/(app)/outreach/` — `companies/`, `contacts/`, `queue/`, `senders/`, `suppressions/`, `reach-out/` (the renamed cold-call console, channel `SegmentedControl` Calls/LinkedIn/Email; `cold-call/` survives as a redirect-only page) each as a route, plus `[id]/` for detail, a shared `layout.tsx`, `loading.tsx`, `error.tsx`. This is the **list-of-entities → detail** convention: a sectioned layout wrapper, per-entity list routes, a dynamic `[id]` detail, and admin-gated sub-sections. Mirror this structure for new multi-entity admin surfaces (list route + `[id]` detail + shared layout + loading/error boundaries).
 
 ## Admin tabbed-analytics pattern
 
-`src/app/(app)/admin/page.tsx` — a `force-dynamic` server page that reads `active_ctx` from cookies, renders a header (icon chip `grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary` + `{...privacyUnmask}` title/subtitle) and a `<Suspense key={activeCtx}>` around the resolved `AdminTabs` client component. The `void activeCtx` + `Suspense key` is the intentional "remount on profile switch to force re-fetch" idiom. Constraint container is `max-w-6xl mx-auto px-4 ... `. Use this header+chip+tabs shape for new internal dashboards. The page is gated client-side (`usePermissions().canViewAttribution`) AND server-side (`ADMIN_EMAILS` fail-closed) — internal pages need both.
+`src/app/(app)/admin/page.tsx` — a `force-dynamic` server page that reads `active_ctx` from cookies, renders a header (icon chip `grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary` + `{...privacyUnmask}` title/subtitle) and a `<Suspense key={activeCtx}>` around the resolved `AdminTabs` client component. The `void activeCtx` + `Suspense key` is the intentional "remount on profile switch to force re-fetch" idiom. Constraint container is `max-w-6xl mx-auto px-4 ... `. Use this header+chip+tabs shape for new internal dashboards. The page is gated client-side (`usePermissions().canViewAttribution`) AND server-side (`ADMIN_EMAILS` fail-closed) — internal pages need both. `src/components/Admin/` now also carries `EngagementPanel`, `FunnelPanel`, `TrafficPanel`, `StudioDemoVisitsPanel`, `shared.tsx`.
+
+**Feature-flag console** — a second internal surface: `src/app/(app)/admin/flags/page.tsx` + `src/components/Admin/FeatureFlagsPanel/`, gated by `usePermissions().canManageFeatureFlags` (`isGlobalAdmin`, **no** cohort/group condition — an operator must reach every group). The flag registry pattern (`defaultOn` + `confirmOff`) is deliberately retained even with one live flag (`aiActionsEnabled`) — this is the internal-control-surface pattern for future flags.
+
+## AI surfaces (`src/components/Agent/`)
+
+`AgentFab/`, `AgentDrawer/` (`ChatInput`, `MessageBubble`, `QuotaIndicator`, `ToolCallLog`), `StatusTicker.tsx`, `ConfirmationCard.tsx`, `TasksPage/{Client,Loader}`. Design rules: **hide, never disable** gated entry points (`useAgentAccess()` is the single access source); the FAB additionally hides on immersive routes (`isImmersiveRoute()` — Studio owns its own `AiRail`) and while the drawer is open; progress is a phrase-per-phase ticker (`StatusTicker`), never a token stream, and phrases never name a tool.
+
+## Sites hub component vocabulary
+
+`SiteCard/` (three-state logo skeleton fixing the "generic C" flash in `useSiteLogo`), `SiteAvatar.tsx` (adopts renderer `BrandMark` — **never crop a logo**; wide wordmarks fall back to a letter-mark or favicon), `SiteStatStrip`, `DomainBundleBanner`, `SiteManageHeader`/`SiteManageTabs` (centered manage tabs), `BuildProgress/` + `DeploymentStatusBadge` (watch-progress deploy checklist with a **monotonic stage ratchet** — status can only advance, never regress, regardless of event ordering). The `/social` hub layout runs health strip → cross-platform feed → schedule timeline → drafts.
 
 ## Responsive breakpoints
 

@@ -201,6 +201,11 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `cms-api` / `secure-api` / `client-stack` experts (Square spans all three) |
 | Site migration | "migrate this site", "cutover", "parity audit", a source-site URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/migrate` |
 | Reusable template / identity kit | "build a template from", "identity kit", "template picker variant", an exemplar URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/template` |
+| Restyle an already-live site | "restyle", "new look for <live site>", "apply the kit to the live site" | `vivreal-migrator-knowledge` (restyle mode); operate from `Vivreal_Site_Migrator` (`scripts/restyle-live-site.js` runbook) |
+| Renderer/Templates/site-loader internals | the repo name (`vivreal-site-renderer`, `Vivreal_Templates`, `site-loader`), "page format 404", "COMPOSE_FORMATS", "renderer release" | the read-only **`sites-stack` expert** + `vivreal-renderer-knowledge`/`vivreal-templates-knowledge` |
+| Content scheduling / go-live | "scheduled content didn't publish", "publishDate", "go-live", "content golive schedule" | `cms-api` expert + `vivreal-cms-api-knowledge` (content go-live scheduler) |
+| The AI assistant surface | "AI FAB", "agent drawer", "EditPlan", "AI assistant not showing", "agent quota" | `vivreal-agent-knowledge` (+ `portal`/`secure-api` experts per side) |
+| Push notifications | "push notification", "web push", "notification queue", "user wasn't notified" | `vivreal-notifications` (+ `main-api` expert for the consumer) |
 | Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-content` |
 
 ## Slash-command quick reference

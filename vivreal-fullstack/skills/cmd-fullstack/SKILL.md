@@ -30,7 +30,7 @@ The user wants to scaffold a new feature that spans the Vivreal stack. Generate 
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Architecture | 5 Lambdas | 11 Lambdas | 3 Lambdas |
+| Architecture | 5 Lambdas | 13 Lambdas | 4 Lambdas |
 | Route handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey query param | `key` | `dbKey` | N/A (no tenant routing) |
 | Auth at API Gateway | Cognito authorizer | Cognito authorizer | None (unauthenticated) |

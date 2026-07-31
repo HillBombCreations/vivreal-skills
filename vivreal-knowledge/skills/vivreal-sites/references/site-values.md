@@ -27,10 +27,11 @@ The `navigation`/`footer` subdocs are declared as **Mixed** on `siteSchema` **ex
 
 - The renderer chrome is **framework-free + token-driven** (CSS vars + an optional `accentColor`). Preserve the props API + the Q3b dual-mode resolvers + `data-chrome` / `data-nav` anchors when touching it.
 - Social links map `{type,link}` (storage) → `{platform,url}` (renderer).
+- **`BrandMark` is the canonical brand-logo slot renderer** (renderer `components/BrandMark.tsx`, 1.42.0+): a brand logo is never center-cropped; wide wordmarks fall back to a letter-mark or `siteData.favicon`. Consumed by the renderer chrome/cart AND Templates' cart dialogs — it's the answer to "the logo looks cropped in a small slot".
 
 ### hidePoweredBy is tier-gated
 
-`footer.hidePoweredBy` only takes effect for paid tiers. VR_Client_API `getSiteDetails` returns the group `tier`; the renderer's `canHidePoweredBy` = `pro` / `proplus` / `enterprise`. Free/basic/unknown always show the attribution (safe default). The tier piggybacks on an existing group read — no extra DB round-trip.
+`footer.hidePoweredBy` only takes effect for paid tiers. VR_Client_API `getSiteDetails` returns the group `tier`; the renderer's `src/chrome/poweredBy.ts` `TIERS_CAN_HIDE_POWERED_BY` = `{basic, pro, proplus, enterprise}` — **`basic` CAN hide the badge**; only `free`/unknown cannot (tier-quotas v3.0.0 Decision 2, safe default for unknown). The tier piggybacks on an existing group read — no extra DB round-trip.
 
 ## Where chrome is edited in Studio
 

@@ -13,11 +13,11 @@ Shows the full picture of a MongoDB collection: Mongoose schema definition (from
 
 The MCP server is normally **already connected** — the `vivreal-db-explorer` plugin launches it via
 `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets Manager
-(`hb-api-secrets`) at startup. Try your first MCP call directly. If it returns "not connected",
+(`vivreal/prod/main-api`) at startup. Try your first MCP call directly. If it returns "not connected",
 source the string yourself and call `mcp__mongodb__connect` — do **NOT** ask the user to paste one:
 
 ```bash
-aws secretsmanager get-secret-value --secret-id hb-api-secrets --query SecretString --output text \
+aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text \
   | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
 ```
 

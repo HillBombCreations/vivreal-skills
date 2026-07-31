@@ -6,12 +6,12 @@
  * string because the bare `mongodb-mcp-server` starts UNCONNECTED whenever
  * MDB_MCP_CONNECTION_STRING isn't exported in the launching shell. This wrapper
  * sources the string the same way every backend Lambda does — from AWS Secrets
- * Manager (secret `hb-api-secrets`, key `CLUSTER_URL`) — so the server is already
+ * Manager (secret `vivreal/prod/main-api`, key `CLUSTER_URL`) — so the server is already
  * connected before any agent runs a query. The agent never has to ask.
  *
  * Resolution order:
  *   1. MDB_MCP_CONNECTION_STRING already in the environment  → use verbatim.
- *   2. CLUSTER_URL from AWS Secrets Manager (hb-api-secrets)  → use that.
+ *   2. CLUSTER_URL from AWS Secrets Manager (vivreal/prod/main-api)  → use that.
  *   3. Neither available → start UNCONNECTED and tell stderr how to recover.
  *      The /db-query and /db-schema commands carry the self-service fallback:
  *      source the string + call mcp__mongodb__connect, still never asking the user.
@@ -33,11 +33,11 @@ function resolveConnectionString() {
     return process.env.MDB_MCP_CONNECTION_STRING;
   }
 
-  log('No MDB_MCP_CONNECTION_STRING in env — sourcing CLUSTER_URL from Secrets Manager (hb-api-secrets)…');
+  log('No MDB_MCP_CONNECTION_STRING in env — sourcing CLUSTER_URL from Secrets Manager (vivreal/prod/main-api)…');
   const res = spawnSync(
     'aws',
     ['secretsmanager', 'get-secret-value',
-      '--secret-id', 'hb-api-secrets',
+      '--secret-id', 'vivreal/prod/main-api',
       '--query', 'SecretString',
       '--output', 'text'],
     { encoding: 'utf8', shell: onWindows },
@@ -45,7 +45,7 @@ function resolveConnectionString() {
 
   if (res.status !== 0 || !res.stdout) {
     const why = res.error ? res.error.message : (res.stderr || '').trim();
-    log(`Could not read hb-api-secrets (aws CLI exit ${res.status}). ${why}`);
+    log(`Could not read vivreal/prod/main-api (aws CLI exit ${res.status}). ${why}`);
     log('Starting UNCONNECTED. The agent must source the string and call connect — see the');
     log('"Connecting" section of /db-query (sources CLUSTER_URL itself; never asks the user).');
     return null;
@@ -54,13 +54,13 @@ function resolveConnectionString() {
   try {
     const secret = JSON.parse(res.stdout);
     if (!secret.CLUSTER_URL) {
-      log('hb-api-secrets resolved but has no CLUSTER_URL key. Starting unconnected.');
+      log('vivreal/prod/main-api resolved but has no CLUSTER_URL key. Starting unconnected.');
       return null;
     }
     log('Resolved CLUSTER_URL from Secrets Manager — server will start connected (read-only).');
     return secret.CLUSTER_URL;
   } catch (e) {
-    log(`Failed to parse hb-api-secrets JSON: ${e.message}. Starting unconnected.`);
+    log(`Failed to parse vivreal/prod/main-api JSON: ${e.message}. Starting unconnected.`);
     return null;
   }
 }

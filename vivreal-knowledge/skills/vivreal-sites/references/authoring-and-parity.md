@@ -18,8 +18,13 @@ Deliberate preview **seams** (parity is intentional, these are not bugs):
 - Preview strips `next/image`/`next/font` to a plain `<img>` (blurDataURL/LQIP is unimplemented anyway).
 - The portal `globals.css` `@source`-scans the renderer dist so renderer-only Tailwind classes generate in the preview (Tailwind v4 `@source` requirement — see `vivreal-renderer-knowledge`).
 - The `(studio-frame)/layout.tsx` loads the display font via `next/font` through `--font-outfit` so preview headings match live; preview includes the same page set as live routing.
+- Renderer 1.39.x seams: the Navbar menu is CONTROLLED in Studio preview (`menuOpen`/`onMenuOpenChange`, 1.39.0); the controlled-open menu renders at ALL breakpoints in preview (1.39.1); and the desktop menu preview opens the nav dropdown FLYOUT, NOT the mobile drawer — 1.39.2 revised 1.39.1's drawer force (see `vivreal-renderer-knowledge`).
+
+**The announcement/email-popup page gate is ONE shared implementation** — the renderer's `isPageAllowed`/`normalizePageSlug` (1.36.0); the Templates hand-mirrored copy was deleted. Previously there were two hand-mirrored copies, which is why per-page announcement targeting was authored in Studio but honored by nobody.
 
 When touching Studio/preview/Templates parity, read the project artifacts first (the site-studio-next-level + composePage-migration docs in the portal) — the goal is that the same composePage runs in both places.
+
+Cross-link: the migrator now runs a **STUDIO GATE** (`confirm-studio` + the `studio-confirm`/`studio-registrar` agents) verifying every kit surface is editable in the real portal Studio, and template sites are created on the **Vivreal Content** group — see `vivreal-migrator-knowledge`.
 
 ## Going live = a code rollout (for renderer/template changes)
 

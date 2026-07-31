@@ -17,12 +17,13 @@ The single most important structural fact: **the rendered storefront selects lay
 - "Render differently for ecommerce vs showcase" is a **renderer** concern (`vivreal-site-renderer` + `Vivreal_Templates`), never branch/deploy logic.
 - A page `format` can be added to **any** site regardless of its `templateType`.
 
-### Live page formats
+### Live page formats — the `COMPOSE_FORMATS` registry (21 entries)
 
-- **`showcase`** — editorial showcase pages (Shows/portfolio style).
-- **`ecommerce`** — product storefront pages (`/products`, product detail), Stripe checkout.
-- **`schedule`** — agenda / upcoming-stops page for mobile/pop-up vendors (food trucks etc.). Page-level `format:"schedule"` addable to any site (deliberately NOT a templateType — lowest blast radius). v1: SMS capture-only, OSM iframe map (no key). Stops are collection objects; VR_Client_API ships a zero-dep RFC5545 `.ics` feed (`GET /sites/:siteId/feeds/schedule.ics`).
-- Several more formats exist commented-out in the seed templates (not live).
+The runtime allowlist is `COMPOSE_FORMATS` in Templates' `src/app/[slug]/page.tsx`: `static`, `about`, `shows`, `team`, `checkout-success`, `checkout-cancel`, `products`, `schedule`, `form`, `menu`, `subscribe`, `standard`, `list`, `grid`, `collection-list`, `catalog`, `location-hub`, `craft`, `profile`, `panorama`, `discography`.
+
+- **`ecommerce` and `showcase` are NOT in it** — `ecommerce` is a templateType (seed-time only, see above); the storefront format string is `products`. `showcase` is not a `pageConfigs[].format` value either.
+- **A format absent from `COMPOSE_FORMATS` 404s** — the page seeds fine, then hard-404s at runtime (the `/about-us` and `/shop` regressions).
+- **`schedule`** deserves detail — agenda / upcoming-stops page for mobile/pop-up vendors (food trucks etc.). Page-level `format:"schedule"` addable to any site (deliberately NOT a templateType — lowest blast radius). v1: SMS capture-only, OSM iframe map (no key). Stops are collection objects; VR_Client_API ships a zero-dep RFC5545 `.ics` feed (`GET /sites/:siteId/feeds/schedule.ics`).
 
 Page formats are a **forward/backward-compatible union**: the renderer renders an unknown future `format`/section value as `null` (no crash). Adding an enum value is a minor renderer bump; changing existing semantics is a major bump (see `vivreal-renderer-knowledge`).
 
@@ -31,6 +32,8 @@ Page formats are a **forward/backward-compatible union**: the renderer renders a
 Within a page, sections bind to the group's content collections (collection groups / objects, integration objects). A binding references a collection by `refID` and carries display config (section title, CTA, badges, subtitle). The renderer dispatches each section type via `ContentRenderer` / `composePage`.
 
 **Binding round-trip trap:** the portal's `pageUtils.ts` mappers (`refToCollectionBinding`) use a **field whitelist** — when you add ANY new field to a page/binding shape, add it to those mappers too, or it gets **silently erased on every load→save round-trip** (this bit `title`/`subtitle`). Verify mappers before shipping a new binding field.
+
+**Storefront cart/PDP wiring is format-agnostic** (Templates PR #80): via the shared `LIVE_PRODUCTS_OVERRIDES` module + `collectBindingTargets`, a products binding on a catalog/generic page gets a working cart AND product-detail page. Before that, the overrides were registered only for the `products` format — Add/Buy/card-click were silent no-ops on any other format.
 
 ## The publishDate storefront gate (content visibility rule #1)
 
@@ -57,7 +60,7 @@ The home Product Showcase emits `/products?f_productType=<objectValue.product-ty
 ## How to add a page / format
 
 1. Add the `format` to the portal `PageFormat` union (`pageBuilder.ts`) + both Add/Edit page dialog format lists. Preview then auto-works.
-2. Add the format to the renderer (`src/types`, a `*Page.tsx` template, registry entry, `composePage` section builder + `renderSection` case, index exports) — publish a renderer minor bump.
-3. Add the format string to `Vivreal_Templates` `COMPOSE_FORMATS` (`src/app/[slug]/page.tsx`) + bump the renderer dep on Templates main.
+2. Add the format to the renderer (`src/types`, a `*Page.tsx` template, registry entry, `composePage` section builder + `renderSection` case, index exports) — publish a renderer minor bump. The registry coverage guard (`registry.test.ts`) fails if a layout ships unregistered.
+3. Add the format string to `Vivreal_Templates` `COMPOSE_FORMATS` (`src/app/[slug]/page.tsx`) + bump the renderer dep on Templates main. **Do not skip this** — a format missing from `COMPOSE_FORMATS` 404s at runtime even though the page seeds and previews fine (the `/about-us` and `/shop` regressions).
 4. If the format needs server data the public API doesn't yet return, add it in VR_Client_API.
 5. Going live = publish renderer + bump Templates dep + merge Templates main + **run the promote-stable workflow** (main→stable FF; all sites build `stable` — see `references/authoring-and-parity.md` + `vivreal-site-deploy-pipeline`).

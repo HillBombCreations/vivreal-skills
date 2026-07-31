@@ -16,8 +16,8 @@ Creates a new edge proxy route using the `createProxyHandler()` factory pattern.
 - `<method>`: HTTP method — GET, POST, PUT, DELETE
 - `<path>`: Route path relative to `src/app/api/proxy/` (e.g., `integrations/analytics`)
 - `<upstream-path>`: Path on the upstream service (e.g., `/tenant/integrationAnalytics`)
-- `--upstream`: Which backend — `cms` (default), `secure`, `main`
-- `--params`: Comma-separated allowed query params to forward (in addition to dbKey/groupID which are auto-injected)
+- `--upstream`: Which backend — `cms` (default), `secure`, `main`. (Outreach routes are OUT OF SCOPE for this generator — the 55 `outreach/*` routes follow their own conventions incl. public no-`active_ctx` exceptions; build those by hand from a sibling route.)
+- `--params`: Comma-separated allowed query params to forward. Tenant params are injected per upstream — see the ctx-param rule below; they are NOT always `dbKey`/`groupID`.
 - `--csrf`: Override CSRF requirement (defaults to true for POST/PUT/DELETE, false for GET)
 - `--timeout`: Upstream timeout in ms (default: 15000)
 - `--validate`: Add a `validateBody` stub
@@ -26,11 +26,13 @@ Creates a new edge proxy route using the `createProxyHandler()` factory pattern.
 
 ## Upstream URL Map
 
-| Flag | Env Var | Default URL |
+| Flag | Env Var | Pinned prod host |
 |---|---|---|
-| `cms` | `NEXT_PUBLIC_CMS_URL` | `https://dev-cms.vivreal.io` |
-| `secure` | `NEXT_PUBLIC_SECURE_URL` | `https://dev-secure.vivreal.io` |
-| `main` | `NEXT_PUBLIC_MAIN_API` | `https://dev-api.vivreal.io` |
+| `cms` | `NEXT_PUBLIC_CMS_URL` | `https://cms.vivreal.io` |
+| `secure` | `NEXT_PUBLIC_SECURE_URL` | `https://secure.vivreal.io` |
+| `main` | `NEXT_PUBLIC_MAIN_API` | `https://api.vivreal.io` |
+
+**Never emit a `dev-*` fallback.** The old `?? 'https://dev-cms.vivreal.io'` pattern is the exact footgun the portal CLAUDE.md warns against: the `dev-*` hosts are live but serve old builds, so an unset env var fails SILENTLY with plausible-looking responses instead of refusing to connect. Pin the prod host as the fallback (per CLAUDE.md: "pin `NEXT_PUBLIC_MAIN_API` in new proxy routes").
 
 ## Generation Procedure
 
@@ -59,12 +61,21 @@ export const {METHOD} = createProxyHandler({
   {TRANSFORM_BODY}
   buildPath: ({ ctx, params }) => {
     {FILTER_PARAMS_LINE}
-    injectCtxParams(params, ctx);
+    {CTX_PARAMS_LINE}
     return `{UPSTREAM_PATH}?${params.toString()}`;
   },
   {TRANSFORM_RESPONSE}
 });
 ```
+
+## Ctx-param rule (per upstream)
+
+`injectCtxParams(params, ctx)` sets **`key`** (CMS convention) + `groupID`. Secure-API endpoints whose Joi validator names the tenant key `dbKey` **reject `key` as an unknown param** — for `--upstream=secure`, emit `params.set('dbKey', ctx.dbKey); params.set('groupID', ctx.groupID);` **instead of** `injectCtxParams()` (see `analytics/site-traffic` and `webhooks` routes, which do this manually and document why). `{CTX_PARAMS_LINE}` resolves accordingly:
+
+| Upstream | `{CTX_PARAMS_LINE}` |
+|---|---|
+| `cms` / `main` | `injectCtxParams(params, ctx);` |
+| `secure` | `params.set('dbKey', ctx.dbKey); params.set('groupID', ctx.groupID);` |
 
 ### Variable Resolution
 
@@ -92,6 +103,8 @@ All CMS API routes (`--upstream=cms`) MUST have upstream paths starting with `/t
 - Write `route.ts`
 - Report: route path, upstream target, method, what helpers are used
 - Remind the user to add the corresponding backend controller+service if it doesn't exist yet
+- The `runtime: 'edge'` + `dynamic: 'force-dynamic'` pair at the top is a non-negotiable invariant for every proxy route — never drop it
+- Only if the route genuinely CANNOT use the factory (cookie-setting, raw-byte streaming, public no-`active_ctx`): add it to the allowlist in `vivreal-proxy-factory/hooks/proxy-route-guard.cjs`, otherwise the guard will block edits to it
 
 ## Examples
 
@@ -104,7 +117,7 @@ export const dynamic = 'force-dynamic';
 
 import { createProxyHandler, injectCtxParams, filterParams } from '../_helpers/createProxyHandler';
 
-const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'https://dev-cms.vivreal.io';
+const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io';
 
 export const GET = createProxyHandler({
   method: 'GET',

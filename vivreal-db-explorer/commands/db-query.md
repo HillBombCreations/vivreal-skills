@@ -34,7 +34,7 @@ Query Vivreal's multi-tenant MongoDB with built-in awareness of the database rou
 
 The MCP server is normally **already connected**: the `vivreal-db-explorer` plugin launches it
 through `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets
-Manager (`hb-api-secrets`) at startup. So your first query usually just works — try it first.
+Manager (`vivreal/prod/main-api`) at startup. So your first query usually just works — try it first.
 
 **If a query returns "you need to connect first" / "not connected":** the launcher could not
 reach Secrets Manager (e.g. AWS creds weren't present at launch). Source the string yourself and
@@ -42,7 +42,7 @@ connect — do **NOT** ask the user to paste a connection string. It is the Atla
 (`mongodb+srv://…`, no database path; the DB is chosen per query):
 
 ```bash
-aws secretsmanager get-secret-value --secret-id hb-api-secrets --query SecretString --output text \
+aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text \
   | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
 ```
 
@@ -289,7 +289,7 @@ or `pro_plus` (proplus). The `key` field is **S3 bucket naming**, NOT database r
 
 ## Procedure
 
-1. **Connect** — try the query first (the launcher usually has the server connected). If it reports "not connected", follow the **Connecting** section above: source `CLUSTER_URL` from `hb-api-secrets` yourself and call `mcp__mongodb__connect`. Never ask the user for the string.
+1. **Connect** — try the query first (the launcher usually has the server connected). If it reports "not connected", follow the **Connecting** section above: source `CLUSTER_URL` from `vivreal/prod/main-api` yourself and call `mcp__mongodb__connect`. Never ask the user for the string.
 2. **Resolve database name**:
    - `main` or `Vivreal` → use `Vivreal` (control plane)
    - If user gives a group name → look up the group in `Vivreal.groups` to find its `tier`, then route to `general_shared` or `pro_plus`

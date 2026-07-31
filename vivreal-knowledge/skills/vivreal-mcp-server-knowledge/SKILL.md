@@ -17,7 +17,7 @@ Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer toke
 
 ## Tools — exactly 69 across 11 modules
 
-Per `toolRegistry` in `src/resource/manifests.ts`: Session (3) · Collections (9) · Objects (12) · Media (5) · Calendar (1) · Dashboard (1) · Sites (14) · Integrations (10) · Stripe (4) · Group Mgmt (7) · Docs (3). Also 8 guided **prompts** (`create-content-plan`, `launch-content-everywhere`, etc.) and 3 `vivreal://` **resources**.
+Per `toolRegistry` in `src/resource/manifests.ts`: Session (3) · Collections (9) · Objects (12) · Media (5) · Calendar (1) · Dashboard (1) · Sites (14) · Integrations (10) · Stripe (4) · Group Mgmt (7) · Docs (3). Also 8 guided **prompts** (`create-content-plan`, `launch-content-everywhere`, etc.) and 3 static `vivreal://` **resources** + 12 URI **templates** (`src/resources/templates.ts`, `vivreal://groups/{groupId}` and descendants).
 
 **Per-tier gating** — `TOOL_MIN_TIER` in `src/tools/catalog.ts`: `bulk-create-content`, `bulk-update-content-publish-date`, `sync-channel` require **pro**; `redeploy-site`, `deploy-site` require **pro_plus**. `tools/list` is filtered per tier, so a basic-tier client sees fewer than 69.
 

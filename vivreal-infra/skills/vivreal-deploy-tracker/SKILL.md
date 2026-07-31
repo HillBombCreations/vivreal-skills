@@ -10,7 +10,7 @@ Tells you, for a given customer site, **where its deploy actually is right now**
 the promote-stable release flow, env-var injection) read `vivreal-site-deploy-pipeline`; this is the runbook for
 checking ONE deploy.
 
-**Region:** `us-east-1`. (Exception: the Waves of Grain app lives in acct 095232028948, us-east-2, profile `wavesofgrain`.) **State machine:** `Deploy-Site` (ARN in `hb-api-secrets:STATE_MACHINE_ID`).
+**Region:** `us-east-1`. (Exception: the Waves of Grain app lives in acct 095232028948, us-east-2, profile `wavesofgrain`.) **State machine:** `Deploy-Site` (`hb-api-secrets` is retired — the ARN resolves from `vivreal/prod/*` secrets / the `/vivreal/prod/*` SSM param EventHandler reads as `DEPLOY_STATE_MACHINE_ARN`).
 **Ordered states** (typos are REAL — do not "fix" them; Wait/Choice states show up in `get-execution-history`):
 `SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy →
 WaitBeforeCheck (30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl →
@@ -33,7 +33,8 @@ sites.findOne({ groupID: "<gid>" })  // or { key: "<siteSlug>" }, scoped by grou
 ```
 - `status: live` → done. Report the `domainInformation.live_url`.
 - `status: failed` → `markSiteFailed` ran; `deployment.message`/`errorMessage` has the reason. Go to step 2 to find the failing state.
-- `status: deploying` (in-flight; `pending` is never written) → in flight or stuck. Go to step 2.
+- `status: deploying` (in-flight; `pending` is never written) → in flight or stuck. Go to step 2. Note: an env-var rebuild's doc + socket vocabulary is `queued` before the SFN advances `deploying` → `live`|`failed`.
+- **Triage branch — completion orphan:** status `deploying` + a SUCCESSFUL Amplify job + NO matching SFN execution = a pre-2026-07-29 completion orphan (a redeploy or env-var rebuild via the old direct Amplify StartJob, which had no terminal-status writer), NOT a stuck state; the doc will never self-correct (observed: cobaltcrumbsmoke, >1 day). Both paths now StartExecution the SFN, so new occurrences shouldn't appear.
 - `status: sync_conflict` → **legacy value only** — the template-sync webhook that wrote it was deleted in Phase 2 (2026-07-15); nothing produces it anymore. If seen, it's a stale doc from before the shared-`stable` migration.
 
 **Shortcut:** the `mcp__awslabs_lambda-tool-mcp-server__vh_site_deployment_check` tool (available
@@ -74,7 +75,7 @@ aws amplify get-job --region us-east-1 --app-id "<appId>" --branch-name "<branch
 - A `FAILED` job step (usually `BUILD`) with its `statusReason` is the root cause. The canonical
   failure is a private-package install failure on `npm ci` for `@hillbombcreations/*` — a `403
   "Permission ... not allowed to Read organization package"` when the build env's `NODE_AUTH_TOKEN`
-  is missing/stale (`createAmplifyApp/index.js:90-100`; see the GitHub Packages note in the
+  is missing/stale (`createAmplifyApp/index.js`; see the GitHub Packages note in the
   package-update skill). Also possible: a missing/stale `API_KEY`/`SITE_ID` (the env vars
   `createAmplifyApp` injects — note it does NOT inject `BUCKET_NAME` or collection-group IDs), or a
   renderer/Templates build break.

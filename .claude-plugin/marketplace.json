@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling — installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.9.2"
+    "version": "1.10.0"
   },
   "plugins": [
     {
@@ -17,7 +17,7 @@
     {
       "name": "vivreal-experts",
       "source": "./vivreal-experts",
-      "description": "Read-only system-expert consultants for the Vivreal backends and portal (cms-api, secure-api, main-api, client-stack, event-handler, outreach-api, portal). Auto-dispatched when working inside a Vivreal ecosystem repo and you need that system's gotchas."
+      "description": "Read-only system-expert consultants for the Vivreal backends and portal (cms-api, secure-api, main-api, client-stack, event-handler, outreach-api, portal, sites-stack). Auto-dispatched when working inside a Vivreal ecosystem repo and you need that system's gotchas."
     },
     {
       "name": "vivreal-workflow",
@@ -27,12 +27,12 @@
     {
       "name": "vivreal-knowledge",
       "source": "./vivreal-knowledge",
-      "description": "Auto-invoked knowledge skills: safe multi-tenant MongoDB query rules (vivreal-db), cross-stack Sentry tracing (sentry-tracer), the site product/authoring model (vivreal-sites), the portal design system (vivreal-design-system), the cost/margin model (vivreal-unit-economics), the brand voice (vivreal-brand-voice), and a per-repo knowledge digest for each Vivreal repo (portal, CMS/Secure/Main APIs, the public Client stack, EventHandler, Templates, site-renderer, MCP server, and the Outreach API). Skills load passively from intent — install everywhere you touch Vivreal code or data."
+      "description": "Auto-invoked knowledge skills: safe multi-tenant MongoDB query rules (vivreal-db), cross-stack Sentry tracing (sentry-tracer), the site product/authoring model (vivreal-sites), the portal design system (vivreal-design-system), the cost/margin model (vivreal-unit-economics), the brand voice (vivreal-brand-voice), the cross-repo AI assistant surface (vivreal-agent-knowledge), and a per-repo knowledge digest for each Vivreal repo (portal, CMS/Secure/Main APIs, the public Client stack, EventHandler, Templates, site-renderer, MCP server, and the Outreach API). Skills load passively from intent — install everywhere you touch Vivreal code or data."
     },
     {
       "name": "vivreal-infra",
       "source": "./vivreal-infra",
-      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (hb-api-secrets), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, and the WebSocket real-time API. Distinct from vivreal-knowledge's per-repo digests — this is the plumbing that crosses repos. Skills load passively from intent."
+      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service vivreal/prod/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Distinct from vivreal-knowledge's per-repo digests — this is the plumbing that crosses repos. Skills load passively from intent."
     },
     {
       "name": "vivreal-sentry",

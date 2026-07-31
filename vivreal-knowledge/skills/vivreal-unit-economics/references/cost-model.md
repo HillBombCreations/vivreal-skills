@@ -37,6 +37,7 @@ One M10 cluster holds all tenant DBs (`general_shared`, `pro_plus`, etc.) — no
 - One user request = an **agentic loop**: `while (tool_use) { messages.create() }` → one request = **N+1 model calls** for N tool rounds.
 - Every model call re-sends: system prompt (~800 tok) + 22 tool schemas (~2,500 tok) + **full tenant context JSON** (~3K-15K tok, grows with tenant size) + transcript. **Prompt caching SHIPPED (July 2026, VR_Secure_API PR #77)** — the static prefix now cache-hits across loop iterations (~45% cut); watch the hit rate as tool schemas + tenant context grow.
 - Pricing basis: Sonnet **$3/M input, $15/M output**. ~$0.05/mid action ≈ the $0.05/action overage rate, so overage actions roughly break even; in-quota actions are absorbed by the platform.
+- **Two-dimensional AI gating since tier-quotas v3.1.0**: the metered `agentActions` quota AND binary `TIER_FLAGS` capability flags `aiSiteEditing` + `aiComponentGen` (`src/tierQuotas.ts`) — free/basic false, pro gains `aiSiteEditing` only, proplus + enterprise gain both; helpers mirror `canHidePoweredBy` plus `lowestTierWithFlag()`, and `ENFORCEMENT_MANIFEST` entries are mandatory (total Record over TierFlags — omitting one fails build+test). Quota values and overage rates are unchanged in v3.1.0, so the margin math above stands; but "Pro and Pro Plus share the same 500 cap" is no longer the whole Pro→Pro Plus AI differentiator — `aiComponentGen` is Pro Plus+ only. First consumer: VR_Secure_API agent `tools/policy.js` (per-tool `requiredTier` derived from `TIER_FLAGS`).
 
 ### Pro Plus worst-case exposure (full-quota utilization)
 
@@ -46,7 +47,7 @@ One M10 cluster holds all tenant DBs (`general_shared`, `pro_plus`, etc.) — no
 | Pro | $59 | 500 | ~$25 | ~$14 | — |
 | **Pro Plus** | **$119** | **500** (was 5,000) | **~$25** | **~$14** | **~$5-8** |
 
-**The historical tail-risk is closed (July 2026):** the Pro Plus quota was cut 5,000 → 500 in `@hillbombcreations/tier-quotas` v2.3.0 (prompt caching was the shipping prerequisite) and retained in v3.0.0, so a maxed Pro Plus customer now costs ~$14-25 against a $119 plan instead of ~$140-250. **The free per-group `agentUsage.quota` override is GONE (v3.0.0 read-flip)** — past-quota agent use requires `overageBilling.enabled`, is billed $0.05/action, and hard-stops at the spending cap (Pro Plus default: $120 agent bucket / $239 total ≈ ≤2,400 extra actions), so max exposure is bounded AND revenue-matched (~$0.028-0.05/action cost vs the $0.05 rate).
+**The historical tail-risk is closed (July 2026):** the Pro Plus quota was cut 5,000 → 500 in `@hillbombcreations/tier-quotas` v2.3.0 (prompt caching was the shipping prerequisite) and retained through v3.1.0, so a maxed Pro Plus customer now costs ~$14-25 against a $119 plan instead of ~$140-250. **The free per-group `agentUsage.quota` override is GONE (v3.0.0 read-flip)** — past-quota agent use requires `overageBilling.enabled`, is billed $0.05/action, and hard-stops at the spending cap (Pro Plus default: $120 agent bucket / $239 total ≈ ≤2,400 extra actions), so max exposure is bounded AND revenue-matched (~$0.028-0.05/action cost vs the $0.05 rate).
 
 ## Scale ladder + margin
 

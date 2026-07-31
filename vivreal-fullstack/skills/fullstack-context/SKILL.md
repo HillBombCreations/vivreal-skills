@@ -4,7 +4,7 @@ description: Auto-triggers when the user mentions a backend endpoint, API route,
 version: 1.1.1
 ---
 
-Last synced: 2026-07-21
+Last synced: 2026-07-30
 
 # Vivreal Fullstack Context Loader
 
@@ -52,7 +52,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Lambdas | 5 (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) | 11 (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery, analyticsSnapshot, squareTokenRefresh, squareRefreshOne) | 3 (express + email consumer + lifecycle scan) |
+| Lambdas | 5 (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) | 13 (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery, analyticsSnapshot, squareTokenRefresh, squareRefreshOne, instantiateTemplateWorker, instantiateTemplateWorkerDlqConsumer) | 4 (express + email consumer + lifecycle scan + notification consumer) |
 | Handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey from | `req.query.key` | `req.query.dbKey` | N/A |
 | API Gateway auth | Cognito authorizer | Cognito authorizer (some routes Authorizer: NONE) | None (unauthenticated API) |
@@ -79,7 +79,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 ## Cross-Repo Conventions
 
 - All backend APIs are **Express.js + serverless-express**, AWS Lambda, **JavaScript** (not TypeScript)
-- Shared schemas in `@hillbombcreations/schemas` (npm, v1.25.0): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `siteVersionSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`, `domainOrderSchema` (orderType `purchase`|`transfer`, encrypted `authCode`, `bundleApplied`), `siteTrafficDailySchema`, `siteTemplatesSchema` (new `site_templates` collection — portal template-picker registry), plus the `domainOrderStatuses` constants export (13 purchase + 9 transfer statuses)
+- Shared schemas in `@hillbombcreations/schemas` (npm, v1.29.0): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `siteVersionSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`, `domainOrderSchema` (orderType `purchase`|`transfer`, encrypted `authCode`, `bundleApplied`), `siteTrafficDailySchema`, `siteTemplatesSchema` (new `site_templates` collection — portal template-picker registry), plus the `domainOrderStatuses` constants export (13 purchase + 9 transfer statuses). Version history since 1.25.0: **1.26.0** added 7 Studio-editable site-chrome fields to `siteSchema` (`footerNewsletter`, `motionPreset`, `announcement`, `utilityStrip`, `fulfillmentStrip`, `floatingCta`, `favicon` — all Mixed with `default: undefined` so absence stays meaningful; `demoRibbon` deliberately NOT declared — ops-only); **1.27.0** declared the phantom Stripe billing block on `groupSchema` (`dbKey`, `stripeSubscriptionID`, `subscriptionStatus`, `subscriptionCadence`, `currentPeriodEnd`, `overageBilling`, `scheduledTierChange`, `cancellation`, `pauseCollection`, `retentionDiscount`) — killed the silently-stripped class of bug; **1.28.0** added `system` to `webhookSchema`; **1.29.0** declared `featureFlags` on `groupSchema` as a strict:false sub-schema (only `aiActionsEnabled` declared, so an undeclared future flag persists instead of vanishing)
 - Auth flow: Cognito JWT (`token` cookie) + signed context JWT (`active_ctx` cookie)
 - The `active_ctx` contains: `groupID`, `dbKey`, `bucketname`, `exp` — NOT `groupName`
 - **Never use `groupName` for mainDb queries** — always `{ key: dbKey }` or `{ _id: groupID }`

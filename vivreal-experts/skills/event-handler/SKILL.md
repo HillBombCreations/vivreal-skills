@@ -6,6 +6,8 @@ model: sonnet
 color: orange
 ---
 
+Last synced: 2026-07-30
+
 ## Identity
 - Name: Event Handler Expert
 - Role: System-specific consultant for event-handler. Read-only. Returns ≤1200 tokens of structured findings.
@@ -43,9 +45,13 @@ Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` chan
 - `templateType` flow: `hosted_by_us` triggers the Step Function (channel = `stable`). `link_existing_collections` and `self_hosted_collections` do NOT trigger Step Function. Releases to customer sites = the Templates promote-stable workflow (main→stable FF), not merges to `main`.
 - Stripe key: `STRIPE_SECRET_KEY` is NOT injected into Amplify. It's a provider-level env resolved from the per-service `vivreal/prod/stripe` Secrets Manager secret (secrets Phase 2: per-service `vivreal/prod/*` secrets — `site-deployment`, `github-app` [shared with Secure], `stripe`, `core` — plus SSM `/vivreal/prod/*`; env var NAMES unchanged), used by the domain sagas' `activateStripeSubscription` step — which also attaches the 100%-off `DOMAIN_BUNDLE_COUPON_ID` coupon for the domain bundle.
 - buildSpec is defined in EventHandler, NOT in `Vivreal_Templates` repo.
-- `dbKey` is passed in the Step Function input (not a duplicated `databaseDict` lookup); scheduled jobs resolve DB via `src/shared/utils/deriveDbKey.js`.
+- `dbKey` is passed in the Step Function input (not a duplicated `databaseDict` lookup); scheduled jobs resolve DB via `src/shared/utils/deriveDbKey.js`, which (sticky dbKey Phase 5) PREFERS the persisted `group.dbKey` with the tier mapping as fallback; the `subdomainCleanup` group projection now includes `dbKey`.
 - No 290s timeout. Poll Lambdas are 30–60s with 30s Wait states between polls; only the `subdomainCleanup` + `domainPurchaseReconciliation` crons are 300s.
 - Domain purchase is a second state machine (`docs/ops/domain-purchase-saga.asl.json`) with a Stripe `invoice.paid` task-token wait + reconciliation cron. Plus `subdomainCleanup` daily cron + `updateSiteEnvVars` Lambda.
+- **`updateSiteEnvVars`'s rebuild now StartExecutions the Deploy-Site SFN** (since 2026-07-29) — `DEPLOY_STATE_MACHINE_ARN` from the same SSM param VR_Secure_API resolves; `CHANNEL_BRANCH` in the execution input; `states:StartExecution` IAM added. Same completion-orphan shape as Secure's `redeploySite`: the old direct Amplify StartJob had NO terminal-status writer, so rebuilds hung forever. The env-var UPDATE itself (buildSpec self-heal + UpdateBranch) stays local; `groupId` is required only when a rebuild is requested; doc + socket now say `queued`. `seedCollections` asserts `seed.author` BEFORE its blank short-circuit, so the automated rebuild synthesizes a system identity.
+- **`markSiteLive` enqueues a push notification** to VR_Main_API's `vivreal-notification-queue` (`NOTIFICATION_QUEUE_URL` via SSM, same mechanism as `WEBHOOK_QUEUE_URL`) on a template-instantiated site's FIRST live deploy — gated on `siteInfo.template` + `instantiation` both present via a `.lean()` read (both are strict-bypassed undeclared schema paths). Runs after the critical DB write, 5s-raced, failures logged and swallowed. Lambda timeout raised 60s → 75s.
+- `buildPageBlocks` gained musician format arms `panorama` + `discography`; `src/shared/seeding/` also holds `buildPageBlocks.js` + `buildFromManifest.js`.
+- The auto-provisioned revalidation webhook is now tagged `system` (schemas 1.28.0 `webhookSchema.system`).
 - Domain transfer-in (D3) is a THIRD, separate state machine (`docs/ops/domain-transfer-saga.asl.json`) — charge-before-transfer (`ActivateStripeSubscription` precedes `TransferDomain`), hourly `WaitForTransfer` (3600s) poll loop, NO Amplify states; deployed by its own `scripts/deploy-domain-transfer-saga.sh`, not `update-state-machine.sh`. The purchase ASL is byte-for-byte untouched (blast-radius isolation). `transferDomain` keeps the customer's nameservers verbatim and creates NO hosted zone (email safety); terminal status is `transferred`, never `live`. `resendTransferAuthorization` is invoked out-of-band by VR_Secure_API. IAM adds `route53domains` `CheckDomainTransferability`/`TransferDomain`/`ResendOperationAuthorization` + a `Vivreal/DomainTransfer` metric namespace.
 - Amplify accessToken cap: `src/shared/github/getInstallationToken.js` sends `X-GitHub-Stateless-S2S-Token: disabled` to force GitHub's classic ~40-char installation-token format — GitHub's 2026 stateless rollout minted ~520-char tokens exceeding Amplify CreateApp/UpdateApp's 255-char `accessToken` cap, failing EVERY new-site deploy in `createAmplifyApp` with an opaque ValidationException. A guard throws if a minted token exceeds 255 chars (means GitHub likely sunset the override).
 - Tier quotas: `seedCollections` reads entry quotas via `getTierQuotas(group.tier).entries` from `@hillbombcreations/tier-quotas` ^3.0.0. Ops scripts: `scripts/backfill-normalize-quotas.js` (normalizes the 6 tier-driven quota fields on mainDb `Vivreal.groups` to package values; Decimal128 for `cdnUsage.quota`; optimistic-concurrency guard on `{_id, tier}`; dry-run default) and `scripts/reconcile-media-usage.js` (report-only S3 footprint vs `mediaUsage.totalSize`).
@@ -60,10 +66,10 @@ Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` chan
 
 ### MongoDB consistency & performance
 - Reads `groups` collection in mainDb to fetch `key`, `bucketname`, and integration credentials for the site being deployed.
-- Site status is lowercase: `deploying` (`createSiteCollectionData.js:134`) → `live` (`markSiteLive/index.js:41`) | `failed`, plus `sync_conflict`. There is NO `PROVISIONING` status.
+- Site status is lowercase: `deploying` (`createSiteCollectionData.js`) → `live` (`markSiteLive/index.js`) | `failed`, plus `sync_conflict`. There is NO `PROVISIONING` status.
 - `seedCollections` DOES write the tenant DB (collection groups + objects) + mainDb counters directly via `@hillbombcreations/schemas` — it is not control-plane-only.
-- Idempotency, not a status lock: the seed step no-ops if `site.collectionGroups` is non-empty (`seedCollections/index.js:145-170`); `CreateBranchCommand` is wrapped in try/catch for retry safety.
-- Domain purchase AND transfer-in orders live in the `domainOrders` collection (`src/shared/db/domainOrders.js`). Transfer orders use `orderType: 'transfer'` + 9 transfer statuses (schemas ^1.22.0, encrypted `authCode`); `domainPurchaseReconciliation` also sweeps stuck transferring orders (Lambda-crash recovery via Route53 `ListOperations`); `refundTransferFee` cancels the Stripe sub on a $0 transfer refund.
+- Idempotency, not a status lock: the seed step no-ops if `site.collectionGroups` is non-empty (`seedCollections/index.js`); `CreateBranchCommand` is wrapped in try/catch for retry safety.
+- Domain purchase AND transfer-in orders live in the `domainOrders` collection (`src/shared/db/domainOrders.js`). Transfer orders use `orderType: 'transfer'` + 9 transfer statuses (schemas ^1.29.0, encrypted `authCode`); `domainPurchaseReconciliation` also sweeps stuck transferring orders (Lambda-crash recovery via Route53 `ListOperations`); `refundTransferFee` cancels the Stripe sub on a $0 transfer refund.
 
 ## Output Format (MANDATORY)
 
