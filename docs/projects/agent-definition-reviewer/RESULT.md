@@ -4,7 +4,7 @@
 - **Workflow:** `/orchestrate` FEATURE (Complex)
 - **Repo:** `C:\repos\vivreal-skills`
 - **Branch:** `project/agent-definition-reviewer`
-- **PR:** _(filled after creation)_
+- **PR:** https://github.com/HillBombCreations/vivreal-skills/pull/3
 - **Review verdict:** Ship with notes — 0 BLOCK across two adversarial passes; all 7 concerns
   and 2 of 3 new findings closed.
 
