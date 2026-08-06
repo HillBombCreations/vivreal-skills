@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling — installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.10.0"
+    "version": "1.11.0"
   },
   "plugins": [
     {
@@ -73,6 +73,11 @@
       "name": "vivreal-cms",
       "source": "./vivreal-cms",
       "description": "Skill for operating a Vivreal account via the Vivreal MCP server — content collections, channels, sites, Stripe billing, and the canonical set-active-group workflow."
+    },
+    {
+      "name": "vivreal-agent-review",
+      "source": "./vivreal-agent-review",
+      "description": "Read-only review of Claude Code definition files — the agent, skill, command, and plugin .md/.json files that configure Claude Code itself. The definition-reviewer agent and /definition-review command detect the target profile (packaged plugin vs bare .claude/), run claude plugin validate, apply the tagged rule set, resolve every directory-qualified cross-file reference, and check platform claims in agent prose against the live docs. Distinct from the code reviewers in vivreal-workflow and vivreal-principal, which review product-code diffs."
     }
   ]
 }

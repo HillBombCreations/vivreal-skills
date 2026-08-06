@@ -1,0 +1,11 @@
+{
+  "name": "vivreal-agent-review",
+  "version": "1.0.0",
+  "description": "Read-only reviewer for Claude Code definition files — agent, skill, command, and plugin manifests. Detects profile, resolves cross-file references, and checks platform claims against the live docs.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": ["claude-code", "agent", "skill", "command", "plugin", "validation", "review", "read-only", "definition", "frontmatter", "linter"]
+}
