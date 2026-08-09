@@ -36,6 +36,7 @@ const MANUAL = [
   'user/ssoLogin',
   'user/switch-profile',
   'user/update-default-profile',
+  'user/delete-account', // 409 body carries the deletion blockers — factory flattens non-2xx to a bare message
   'user/update-email',
   'user/verify-password',
 ];
