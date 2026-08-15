@@ -108,3 +108,17 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 - **VR_Client_API now has ESLint + a 100%-branch-coverage gate + husky pre-push** (measures `src/**`, not a hand-enumerated allowlist).
 - **VR_Client_Auth**: Mongo timeouts are now bounded throughout the authorizer, with a new test harness that closed 3 fail-closed defects; the deployed Lambda bundle now EXCLUDES non-runtime scripts/tests/docs (a seed script used to ship inside the authorizer zip).
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+
+## Deploy model — release train (2026-08-15) — VR_Client_API only, NOT VR_Client_Auth
+
+Merging VR_Client_API's `main` no longer deploys prod. Prod serves from the fixed `stable`
+branch. Friday 5pm PST `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday
+**15:45 UTC** `promote.yml` force-with-lease moves `stable` to the newest tag — Secure/CMS/Main
+promote first, then Client, then portal last (16:00). Hotfix = commit on `release/vX.Y`, push
+(husky gate runs), then dispatch `promote.yml` with `target=release/vX.Y` — tags `vX.Y.Z+1` and
+ships it. Rollback (`rollback.yml`, dispatch-only) moves `stable` back to a prior tag and yanks
+it — **but a force-push that REWINDS `stable` to an ancestor fires NO GitHub Actions push run**
+(forward re-points do fire), so rollback must ALSO manually dispatch
+`gh workflow run lambda_api.yml --ref stable` or the old build keeps serving. Full runbook:
+`VR_Client_API/docs/RELEASE.md`. **VR_Client_Auth is UNCHANGED** — it still deploys straight off
+a push to `main`, same as before.

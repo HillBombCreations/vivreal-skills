@@ -27,6 +27,19 @@ All routes are under `/tenant/`. **CMS reads the tenant DB key from `req.query.k
 
 **Step 7 is the most-missed — and it's a hard rule.** CMS API (like Secure + Client) wires **one explicit API Gateway event per route** — no catch-all `{proxy+}`. Missing event → the request never reaches Express → **403** (gateway IAM default, not your Cognito authorizer). **Never hand-edit `allRoutes.yaml`** — CI regenerates it via `scripts/merge-template.js`. Known live drift (2026-07-30): `POST /tenant/syncProductFilterField` still exists in Express with NO CFN event → 403 in deployed envs (`GET /tenant/accountInsights` got its event and is fixed). (Cross-repo rule: `vivreal-lambda` + `vivreal-auth-architecture`.)
 
+## Deploy model — release train (2026-08-15)
+
+Merging to `main` no longer deploys prod. Prod serves from the fixed `stable` branch. Friday
+5pm PST `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday **15:15 UTC**
+`promote.yml` force-with-lease moves `stable` to the newest tag — Secure promotes first (15:00),
+then CMS, then Main (15:30), Client (15:45), and portal (16:00). Hotfix = commit on
+`release/vX.Y`, push (husky gate runs), then dispatch `promote.yml` with
+`target=release/vX.Y` — tags `vX.Y.Z+1` and ships it. Rollback (`rollback.yml`, dispatch-only)
+moves `stable` back to a prior tag and yanks it — **but a force-push that REWINDS `stable` to an
+ancestor fires NO GitHub Actions push run** (forward re-points do fire), so rollback must ALSO
+manually dispatch `gh workflow run lambda_api.yml --ref stable` or the old build keeps serving.
+Full runbook: this repo's `docs/RELEASE.md`.
+
 ## Inbound webhook receivers (Square, Meta, Stripe, Shopify)
 
 All on the integrations Lambda, `Auth: NONE`, signature-verified: `POST /tenant/webhooks/square`, `GET+POST /tenant/webhooks/meta`, `POST /tenant/webhooks/stripe/{token}`, `POST /tenant/webhooks/shopify`. Shared 5-step receiver pattern: rawBody (createApp verify hook) → verify-first + **process-then-ack** → tenant-route by verified identifier with an **active-account** orphan guard → `deriveDbKey(group)` → per-tenant idempotency ledger (30d TTL: `square_webhook_events`, `metaWebhookEvents` twin, `shopifyWebhookEvents`). Ack ordering was INVERTED 2026-07: all three receivers (`squareWebhook.js`, `stripeWebhook.js`, `metaWebhook.js`) now process FIRST, then unconditional 200 — on @codegenie/serverless-express the execution environment freezes the moment the response is written, so post-ack work never ran.

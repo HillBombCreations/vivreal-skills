@@ -13,7 +13,7 @@ The packaging/build/deploy facet of `vivreal-lambda`. (Concurrency/scaling lives
 | VR_Client_Auth | **Serverless Framework** (`serverless.yml`) — the SAM outlier | — |
 | Vivreal_EventHandler | **Serverless Framework + esbuild** — SAM outlier | — (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
 
-**CI/CD = GitHub Actions → CloudFormation, auto-deploy on push to `main` (prod) or `dogfood` (DEV).** Workflow is typically `.github/workflows/lambda_api.yml`. No manual deploy needed for a normal change — push the branch.
+**CI/CD = GitHub Actions → CloudFormation.** Workflow is typically `.github/workflows/lambda_api.yml`. VR_Client_Auth and Vivreal_EventHandler still auto-deploy prod on push to `main` (`dogfood` → DEV where applicable) — no manual deploy needed, push the branch. **VR_CMS_API, VR_Secure_API, VR_Main_API, and VR_Client_API do NOT** — since 2026-08-15 those four ship via a release train: `lambda_api.yml`'s prod trigger is push to the `stable` branch, which only moves on a staggered Monday `promote.yml` cron or a manual hotfix dispatch (`target=release/vX.Y`). A push to `main` in those repos fires zero prod workflow runs; the stack names above still apply, just on the new trigger. Full runbook: each repo's `docs/RELEASE.md`.
 
 ## VR_Secure_API template generation (its quirk)
 
