@@ -48,7 +48,7 @@ The renderer is a published npm package; a publish reaches every deployed custom
 2. **Bump the version** (semver — patch/minor; major unused). Never republish a version (GitHub Packages rejects it).
 3. **Push to `master`** → `.github/workflows/publish.yml` runs `npm ci` + build + `npm publish` automatically. (Local `npm publish` is discouraged + 403s with the read-only hb-api-secrets token; CI uses its own write token.)
 4. **Bump consumers** — `Vivreal_Portal_Mobile` + `Vivreal_Templates` `package.json` → new version → clean lockfile regeneration → commit each separately.
-5. Deploy: portal on merge to main; Templates releases via the **promote-stable** workflow (main→stable FF) — merging Templates `main` alone releases nothing; the stable push rebuilds every site app. Expect a rollout wave after promote-stable.
+5. Deploy: portal now ships via its own release train, NOT a merge to `main` (2026-08-15 — `main` is an Amplify build canary; prod promotes from `stable` on a Monday 16:00 UTC cron, see `vivreal-portal-knowledge`); Templates releases via the **promote-stable** workflow (main→stable FF) — merging Templates `main` alone releases nothing; the stable push rebuilds every site app. Expect a rollout wave after promote-stable.
 
 Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older version as an emergency lock. **Dependency discipline**: this package must stay installable with a single GitHub Packages token — adding a second private `@hillbombcreations/*` dependency 401s customer Amplify builds (this killed 1.35.0; see the powered-by gate below).
 

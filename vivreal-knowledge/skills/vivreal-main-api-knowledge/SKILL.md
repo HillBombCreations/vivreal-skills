@@ -54,3 +54,16 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 - ESLint adopted + a husky pre-push gate with a coverage ratchet — no GitHub Actions test workflow exists here, so the hook is the only automated gate before merge.
 - ⚠️ **Tests can send REAL emails** — `queueEmail` is not stubbed in the test suite; never run the full suite against a prod `.env` (this has fired ~140 real sends before). Never copy a prod `.env` into a backend test worktree.
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+
+## Deploy model — release train (2026-08-15)
+
+Merging to `main` no longer deploys prod. Prod serves from the fixed `stable` branch. Friday
+5pm PST `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday **15:30 UTC**
+`promote.yml` force-with-lease moves `stable` to the newest tag — Secure (15:00) and CMS (15:15)
+promote first, then Main, then Client (15:45) and portal (16:00). Hotfix = commit on
+`release/vX.Y`, push (husky gate runs), then dispatch `promote.yml` with
+`target=release/vX.Y` — tags `vX.Y.Z+1` and ships it. Rollback (`rollback.yml`, dispatch-only)
+moves `stable` back to a prior tag and yanks it — **but a force-push that REWINDS `stable` to an
+ancestor fires NO GitHub Actions push run** (forward re-points do fire), so rollback must ALSO
+manually dispatch `gh workflow run lambda_api.yml --ref stable` or the old build keeps serving.
+Full runbook: this repo's `docs/RELEASE.md`.

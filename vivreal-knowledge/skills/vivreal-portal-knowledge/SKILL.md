@@ -74,3 +74,20 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix) �
 - The portal is **light-only** — there is no dark theme; a bare `dark:` utility is a bug (Tailwind v4 with no `@custom-variant dark` resolves it against the OS `prefers-color-scheme`, rendering dark styles on a permanently-light surface).
 - `src/proxy.ts` short-circuits ALL `/api/proxy/` matcher paths right after rate limiting — the proactive `active_ctx` refresh must never run on a proxy request, since rewriting `active_ctx` mid-flight desyncs the CSRF token (`HMAC(CTX_SECRET, 'csrf:' + active_ctx)`). Don't add a proxy POST path to the matcher expecting refresh behavior.
 - Manual proxy routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read — VR_Main_API sends bare-JSON-string error bodies, and that hand-rolled read is what silently killed the login error branches in prod.
+
+## Deploy model — release train (2026-08-15)
+
+Merging to `main` no longer deploys prod. `main` is now an Amplify build canary with NO
+production traffic. Prod is served via CloudFront distribution `E39DUKXYGXCX8Q`, whose origin is
+`stable.d2e6e3kdfrrxak.amplifyapp.com` (swapped from `main.` — the distro is NOT CFN-managed).
+Friday 5pm PST `release-cut.yml` cuts `release/vX.Y` from `main`, bumps `package.json`, tags
+`vX.Y.0`, and writes a served `public/release.json` marker — check the live deployed version via
+`curl https://vivreal.io/app/release.json`. Monday **16:00 UTC** `promote.yml` (last in the
+stagger, after all four backends: Secure 15:00, CMS 15:15, Main 15:30, Client 15:45)
+force-with-lease moves `stable` to the newest tag. Hotfix = commit on `release/vX.Y`, push (husky
+gate runs), then dispatch `promote.yml` with `target=release/vX.Y` — tags `vX.Y.Z+1` and ships
+it. Rollback (`rollback.yml`, dispatch-only) moves `stable` back to a prior tag and yanks it —
+**Amplify autobuild only fires for never-built commits**, so a rollback or a re-promote to an
+already-built commit repoints `stable` but triggers NO build; rollback must ALSO run
+`aws amplify start-job --app-id d2e6e3kdfrrxak --branch-name stable --job-type RELEASE`. Full
+runbook: this repo's `docs/RELEASE.md`.

@@ -16,7 +16,7 @@ Cross-cutting Lambda knowledge shared by all Vivreal backends. For repo-internal
 - **Node.js 20.x, arm64 (Graviton2)**, 1024 MB, 30s timeout, X-Ray on every function. (Exception: `VR_Client_Auth` is Node 18.x — see `vivreal-client-stack-knowledge`.)
 - **Pino structured logging + AWS X-Ray.** Use the two-arg pino form `logger.info(obj, 'event_name')` — single-arg drops the message body (also a Sentry-ingestion regression signal; see `sentry-tracer`).
 - **Secrets from AWS Secrets Manager `hb-api-secrets`** injected at deploy/runtime — see `vivreal-iam-secrets`.
-- **CI/CD = GitHub Actions → CloudFormation, auto-deploy on push to `main` (prod) or `dogfood` (DEV).** No manual deploy for a normal change — push the branch.
+- **CI/CD = GitHub Actions → CloudFormation.** VR_Outreach_API, VR_Client_Auth, and Vivreal_EventHandler still auto-deploy prod on push to `main` (`dogfood` → DEV where applicable) — no manual deploy for a normal change, push the branch. **VR_Secure_API, VR_CMS_API, VR_Main_API, and VR_Client_API do NOT** — since 2026-08-15 those four (plus the portal) ship via a release train: prod deploys only on push to the `stable` branch, moved there by a staggered Monday `promote.yml` cron (or a manual hotfix dispatch). Pushing `main` in those four repos triggers zero prod workflow runs. See `docs/RELEASE.md` in each of those repos, or the `shared-standards` skill's "Release trains" section for the full model.
 
 ## IaC tool per repo (know which one you're in)
 

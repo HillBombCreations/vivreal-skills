@@ -224,14 +224,52 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 ### Quick reference — function counts per API (verified 2026-08-15)
 | API | Prod Lambdas | Has WebSocket | Deploy Trigger |
 |---|---|---|---|
-| VR_Secure_API | 15 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + shopifyTokenRefresh + webhookDelivery + alarmVerifier + instantiateTemplateWorker [direct-invoke] + instantiateTemplateWorkerDlqConsumer; websocket stack is separate) | 4 of 15 | Push to main/dogfood |
-| VR_CMS_API | 5 | All 5 | Push to main/dogfood |
-| VR_Main_API | 4 (express + email consumer + notification consumer + lifecycle scan) | 1 of 4 | Push to main/dogfood |
+| VR_Secure_API | 15 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + shopifyTokenRefresh + webhookDelivery + alarmVerifier + instantiateTemplateWorker [direct-invoke] + instantiateTemplateWorkerDlqConsumer; websocket stack is separate) | 4 of 15 | Release train: push to `stable`; see repo `docs/RELEASE.md` |
+| VR_CMS_API | 5 | All 5 | Release train: push to `stable`; see repo `docs/RELEASE.md` |
+| VR_Main_API | 4 (express + email consumer + notification consumer + lifecycle scan) | 1 of 4 | Release train: push to `stable`; see repo `docs/RELEASE.md` |
 | VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
-| VR_Client_API | 1 (+ CloudFront edge distribution `client.vivreal.io` in the same SAM stack) | No | Push to main |
+| VR_Client_API | 1 (+ CloudFront edge distribution `client.vivreal.io` in the same SAM stack) | No | Release train: push to `stable`; see repo `docs/RELEASE.md` |
 | VR_Client_Auth | 1 (Node 18, Serverless Framework) | No | Push to main |
 | EventHandler | 27 (12 site-deploy incl. updateSiteEnvVars + subdomainCleanup + 9 domainPurchase incl. reconciliation cron + 6 domainTransfer — 3 state machines: deploy + purchase saga + transfer saga) | No | Push to main |
 | VR_Analytics_API | 2 (ingest [public Function URL] + rollupCron) — LIVE, stack `vr-analytics-api` | No | Push to main |
+
+### Release trains (2026-08-15)
+
+**"Merge to `main` = prod deploy" is DEAD in five repos: Vivreal_Portal_Mobile, VR_Secure_API,
+VR_CMS_API, VR_Main_API, VR_Client_API.** Production now deploys from the fixed `stable` branch
+via a release train. Merging `main` in those repos deploys NOTHING — portal's `main` is an
+Amplify build canary with no traffic; the four backends fire zero workflow runs on a `main`
+push. Still deploying on push to `main` (unchanged): VR_Outreach_API, VR_Client_Auth, and
+everything else.
+
+The train is the same shape in all five repos:
+- Friday 5pm PST cron (`0 1 * * 6` UTC) — `release-cut.yml` cuts `release/vX.Y` from `main`,
+  bumps `package.json` on the line only, and tags `vX.Y.0`. Portal's cut also writes a served
+  `public/release.json` marker.
+- Monday promote crons are STAGGERED, backends ahead of portal: Secure 15:00 UTC, CMS 15:15,
+  Main 15:30, Client 15:45, portal 16:00 (≈7–8am PST). `promote.yml` force-with-lease moves
+  `stable` to the newest TAGGED cut; an untagged tip fails the cron loudly.
+- Hotfix = commit/cherry-pick on `release/vX.Y`, push (husky gate runs), then dispatch
+  `promote.yml` with `target=release/vX.Y` — one dispatch tags `vX.Y.Z+1` and ships it.
+- `rollback.yml` (dispatch-only) moves `stable` back to a prior `v*` tag and yanks it
+  (`yanked-vX.Y.Z` tags block cron re-deploys of that version).
+- Deployed-version check: portal `curl https://vivreal.io/app/release.json`; backends
+  `git ls-remote origin refs/heads/stable` + the tag + the deploy run log.
+- Each repo's `docs/RELEASE.md` is the full runbook — read it before touching that repo's
+  deploy config.
+
+**Two platform gotchas proven in the live drills:**
+1. **Amplify autobuild fires only for never-built commits** (portal). A rollback, or a
+   re-promote to an already-built commit, repoints `stable` but triggers NO build — prod keeps
+   serving the old build. Mandatory after a portal rollback:
+   `aws amplify start-job --app-id d2e6e3kdfrrxak --branch-name stable --job-type RELEASE`.
+2. **GitHub Actions fires NO push run for a force-push that REWINDS a branch to an ancestor**
+   (Client drill) — which is every backend rollback (forward re-points, even of already-pushed
+   commits, DO fire). Mandatory after any backend rollback:
+   `gh workflow run lambda_api.yml --ref stable`.
+
+Portal's prod path: CloudFront distribution E39DUKXYGXCX8Q's origin is
+`stable.d2e6e3kdfrrxak.amplifyapp.com` (swapped from `main.` — the distro is NOT CFN-managed).
 
 ### Infrastructure stacks (workflow_dispatch — manual trigger from GitHub Actions)
 | Stack | Repo Location | Workflow |

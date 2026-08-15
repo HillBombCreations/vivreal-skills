@@ -15,7 +15,20 @@ The authenticated-ops backend: group/team mgmt, site creation+deploy+template in
 
 ## Cross-tenant IDOR fix pattern (E15) + prod-bug punch list
 
-A cross-tenant IDOR class was fixed: tenant-scoped `{_id, groupID}` filters at the **service** layer AND `req.validatedGroup` precedence at the **controller** layer (a query/body-supplied groupID could previously diverge from the membership-validated group). Any new mutation route must scope BOTH layers. `errorHandler` now forwards `err.code` as `errorCode` on non-5xx responses — the portal's CancelFlow retention-offer UI depends on reading it. Also shipped this window: a `featureFlags` route allowlist flip, a last-admin guard on role/removal ops, an idempotency-key allowlist fix, account self-serve deletion, and video-transcode bounding. **Test suite is now 100/100/100/100 coverage with a husky pre-push gate** — this repo has no GitHub Actions test workflow, so the pre-merge review + the local husky gate are the only checks before a merge (= prod deploy) ships. The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+A cross-tenant IDOR class was fixed: tenant-scoped `{_id, groupID}` filters at the **service** layer AND `req.validatedGroup` precedence at the **controller** layer (a query/body-supplied groupID could previously diverge from the membership-validated group). Any new mutation route must scope BOTH layers. `errorHandler` now forwards `err.code` as `errorCode` on non-5xx responses — the portal's CancelFlow retention-offer UI depends on reading it. Also shipped this window: a `featureFlags` route allowlist flip, a last-admin guard on role/removal ops, an idempotency-key allowlist fix, account self-serve deletion, and video-transcode bounding. **Test suite is now 100/100/100/100 coverage with a husky pre-push gate** — this repo has no GitHub Actions test workflow, so the pre-merge review + the local husky gate are the only checks before code lands on `main`. Merging to `main` is **not** a prod deploy (release train, see below) — it only ships once promoted to `stable`. The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+
+## Deploy model — release train (2026-08-15)
+
+Merging to `main` no longer deploys prod. Prod serves from the fixed `stable` branch. Friday
+5pm PST `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday **15:00 UTC**
+`promote.yml` force-with-lease moves `stable` to the newest tag — Secure promotes FIRST in the
+stagger, ahead of CMS (15:15), Main (15:30), Client (15:45), and portal (16:00). Hotfix = commit
+on `release/vX.Y`, push (husky gate runs), then dispatch `promote.yml` with
+`target=release/vX.Y` — tags `vX.Y.Z+1` and ships it. Rollback (`rollback.yml`, dispatch-only)
+moves `stable` back to a prior tag and yanks it — **but a force-push that REWINDS `stable` to an
+ancestor fires NO GitHub Actions push run** (forward re-points do fire), so rollback must ALSO
+manually dispatch `gh workflow run lambda_api.yml --ref stable` or the old build keeps serving.
+Full runbook: this repo's `docs/RELEASE.md`.
 
 ## Square P2 (token lifecycle + provider mutex)
 
