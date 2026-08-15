@@ -6,7 +6,7 @@ model: sonnet
 color: orange
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 ## Identity
 - Name: Event Handler Expert
@@ -55,6 +55,10 @@ Multi-step Step Functions site-deploy pipeline. Assigns the shared `stable` chan
 - Domain transfer-in (D3) is a THIRD, separate state machine (`docs/ops/domain-transfer-saga.asl.json`) — charge-before-transfer (`ActivateStripeSubscription` precedes `TransferDomain`), hourly `WaitForTransfer` (3600s) poll loop, NO Amplify states; deployed by its own `scripts/deploy-domain-transfer-saga.sh`, not `update-state-machine.sh`. The purchase ASL is byte-for-byte untouched (blast-radius isolation). `transferDomain` keeps the customer's nameservers verbatim and creates NO hosted zone (email safety); terminal status is `transferred`, never `live`. `resendTransferAuthorization` is invoked out-of-band by VR_Secure_API. IAM adds `route53domains` `CheckDomainTransferability`/`TransferDomain`/`ResendOperationAuthorization` + a `Vivreal/DomainTransfer` metric namespace.
 - Amplify accessToken cap: `src/shared/github/getInstallationToken.js` sends `X-GitHub-Stateless-S2S-Token: disabled` to force GitHub's classic ~40-char installation-token format — GitHub's 2026 stateless rollout minted ~520-char tokens exceeding Amplify CreateApp/UpdateApp's 255-char `accessToken` cap, failing EVERY new-site deploy in `createAmplifyApp` with an opaque ValidationException. A guard throws if a minted token exceeds 255 chars (means GitHub likely sunset the override).
 - Tier quotas: `seedCollections` reads entry quotas via `getTierQuotas(group.tier).entries` from `@hillbombcreations/tier-quotas` ^3.0.0. Ops scripts: `scripts/backfill-normalize-quotas.js` (normalizes the 6 tier-driven quota fields on mainDb `Vivreal.groups` to package values; Decimal128 for `cdnUsage.quota`; optimistic-concurrency guard on `{_id, tier}`; dry-run default) and `scripts/reconcile-media-usage.js` (report-only S3 footprint vs `mediaUsage.totalSize`).
+- **Site registration at creation time (analytics ingest phase 0)** — newly created sites now register at creation so enterprise tenants become visible to the analytics ingest pipeline; this is groundwork for VR_Analytics_API's `ANALYTICS_TENANT_DB_KEYS` gap (it only probes `general_shared`/`pro_plus` today; a dedicated enterprise-tenant DB not in that list silently drops beacons).
+- **`subdomainCleanup` Mongo pool-leak fix** — the daily cron no longer leaks Mongo connections per run (shares the cross-repo Atlas half-open-connection teardown fix).
+- **Sentry environment tagging** added — errors now carry an explicit `environment` tag.
+- **Repo gained a full test suite + ESLint + husky + 100%-coverage gate** as part of the cross-repo 2026-08-11→14 testing campaign.
 
 ### AWS Lambda best-practice alignment
 - Serverless Framework + esbuild — different deploy stack from the 3 Express APIs (which use SAM). Verify deploy commands and IAM separately.

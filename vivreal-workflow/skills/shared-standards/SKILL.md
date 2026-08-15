@@ -68,7 +68,7 @@ This file is read by every bug-fix subagent BEFORE doing any work. It encodes th
 
 ## Tech stack quick ref
 - Next.js 16 App Router, React 19, TypeScript 5 strict
-- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking — 55 of the 189 proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
+- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking — the `outreach/*` proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
 - Public content delivery: VR_Client_API (read-only, applies publishDate/archived filters)
 - All proxy routes at `src/app/api/proxy/*` run on edge runtime
 - MongoDB multi-tenant — each group has its own DB identified by `dbKey`
@@ -85,8 +85,9 @@ NEVER use native `fetch()` for proxy routes. Any 401/419 from a proxy route MUST
 Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/helpers` — extracts the backend's `error.response.data.error` before falling back.
 
 ## Proxy route factory
-- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/` — the **filesystem is the count reference** (CLAUDE.md's route table is a self-described "core snapshot — not exhaustive"). Classify factory-vs-manual by the `_helpers/createProxyHandler` **module path**, never a string grep — manual routes mention the factory in prose comments.
-- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling, **public no-`active_ctx` routes** (the factory 401s without `active_ctx` — `outreach/book/[slug]` ×3, `outreach/studio-demo/visit`, `marketing/sandbox-lead`, `claim/verify`, `claim/complete`), **raw-header/idempotency forwarding** (`sites/instantiateTemplate` — `ProxyContext` exposes no raw request), and **non-envelope responses** (`media/share-image` streams bytes; the factory always terminates in `apiSuccess()`)
+- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/` — the **filesystem is the count reference** (CLAUDE.md's route table is a self-described "core snapshot — not exhaustive"). Classify factory-vs-manual by the `_helpers/createProxyHandler` **module path**, never a string grep — manual routes may import a single helper (e.g. `extractUpstreamError`) from that same module path without using the `createProxyHandler()` factory itself.
+- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling, **public no-`active_ctx` routes** (the factory 401s without `active_ctx` — `outreach/book/[slug]` ×3, `outreach/studio-demo/visit`, `outreach/demo-link/[code]`, `marketing/sandbox-lead`, `claim/verify`, `claim/complete`), **raw-header/idempotency forwarding** (`sites/instantiateTemplate` — `ProxyContext` exposes no raw request), **body-preserving error responses** (`user/delete-account` — a 409's body carries the blocker list the UI renders, and the factory collapses any non-2xx into a bare `apiError(message, status)`, same reason `user/update-email` is manual), and **non-envelope responses** (`media/share-image` streams bytes; the factory always terminates in `apiSuccess()`)
+- Manual routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read — VR_Main_API sends bare-JSON-string error bodies, and a hand-rolled read against a string silently returns `undefined`. That was the exact bug that killed the login error branches in prod.
 - All authenticated proxy routes MUST verify `active_ctx` via `verifyCtxEdge()`
 - Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`. `injectCtxParams()` sets **`key`** (CMS convention) + `groupID`; Secure endpoints whose Joi validator names the tenant key `dbKey` reject `key` as unknown — set `dbKey`/`groupID` manually **instead** for those
 - New portal surfaces ship "live but dark" behind `group.featureFlags.<flag>`, written only by operators at `/admin/flags`; the only live flag is `aiActionsEnabled` (`templatePicker` + `squareStorefront` retired 2026-07-29, both GA). Gated entry points **hide, never disable** (`useAgentAccess()` is the single gate). Absence of AI in a group's UI is the expected default, not a bug
@@ -130,6 +131,7 @@ fallback        → group.database (legacy)
 - CSRF: double-submit cookie on all state-changing proxy routes (`src/lib/csrf/`)
 - Rate limiting: `src/proxy.ts` on auth endpoints (10 attempts / 15 min / IP) and the public demo-claim routes (`claim/verify` 30 / `claim/complete` 10 per 15 min per IP)
 - Visitor IP in public edge routes: read `CloudFront-Viewer-Address` (strip the trailing `:port`), fall back to `X-Forwarded-For` only when absent, **never** `x-real-ip` (CloudFront strips it) — see `api/proxy/claim/_shared.ts`, `outreach/book/_forward.ts`, `outreach/studio-demo/visit`
+- `src/proxy.ts` short-circuits ALL `/api/proxy/` matcher paths right after rate limiting — the proactive `active_ctx` refresh must never run on a proxy request, because rewriting `active_ctx` mid-flight desyncs the CSRF token (it's `HMAC(CTX_SECRET, 'csrf:' + active_ctx)`). Don't add a proxy POST path to the matcher expecting refresh behavior there — that's the csrf-desync class of bug.
 - HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy in `next.config.ts` — don't break them
 - Cookies: `secure: true` forced in production
 - Never log secrets. Never echo JWT contents in errors.
@@ -165,14 +167,19 @@ fallback        → group.database (legacy)
 
 ## Testing rules
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
+- **Logged-in specs authenticate with REAL signed ctx cookies** — `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses — `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
+- **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope — the proxy route applies the envelope on top, same as it does against the real backends.
 - Reuse the api-mock functions in `e2e/fixtures/api-mocks.ts` before adding (don't trust any hardcoded count — check the file).
 - React 19: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
-- `page.route()` does NOT intercept server-side fetches in Next.js server components. See `e2e/TESTING.md` "Critical Patterns & Gotchas".
+- **Coverage map**: `e2e/coverage-map.json` + `scripts/check-coverage-map.mjs --strict` (run in pre-push) is a mechanical route→spec evidence gate. A new or changed proxy route needs a coverage-map entry or the gate fails.
+- **`e2e/BASELINE.md` is the authoritative test inventory** — total/pass/annotated-skip counts, with each skip's reason. Re-measure before quoting a number; never trust a remembered one.
 - Sites/integrations pages serialized under parallel workers — don't break that.
 - Tests must FAIL on the unfixed code. Verify by reading test logic vs original buggy code.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent — NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
 - **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green — the reviewer treats that as test-tampering and FAILs the pass.
 - No `.only`, no `sleep()`, use `waitFor()`.
+- **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive) — don't widen that scope elsewhere.
+- **There is no CI.** Husky pre-commit (lint-staged + vitest + coverage-map) and pre-push (repo eslint 0/0 + both tsc configs + vitest + coverage-map --strict + e2e smoke) are the ONLY gates. Never bypass with `--no-verify`.
 
 ## Site media rule
 - Site media (logos, etc.) requires signed URLs via `GET /api/proxy/get-media`
@@ -183,15 +190,15 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 
 | Repo | Path | Purpose |
 |---|---|---|
-| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (189 proxy routes: 157 factory + 32 manual, as of 2026-07-30 — filesystem is the count reference) |
+| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (198 proxy routes: 167 factory + 31 manual, as of 2026-08-15 — filesystem is the count reference) |
 | VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 4 Lambdas — auth/signup, transactional + lifecycle + billing-rules email, web-push notification consumer, Meta callbacks |
-| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 13 Lambdas — group, billing, sites, profile, OAuth, Square refresh, AI agent, analytics, template-instantiate worker + its DLQ consumer |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 15 Lambdas — group, billing, sites, profile, OAuth, Square refresh, Shopify token refresh, AI agent, analytics, alarm verifier, template-instantiate worker + its DLQ consumer |
 | VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | 5 Lambdas — collections, integrations, media/derivatives, webhooks, audit, versioning |
 | VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` | Public content delivery + Stripe/Square checkout (publishDate filter) |
 | VR_Client_Auth | `${VIVREAL_REPOS}/VR_Client_Auth/CLAUDE.md` | TOKEN authorizer for VR_Client_API (Serverless Framework, not SAM) |
 | VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/README.md` | 4 Lambdas — sequences, contacts/companies, booking, SES send/replies (`/prospects` retired 2026-07-27; no CLAUDE.md on main — README + docs/ are truth) |
-| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — every site's Amplify app builds the shared **`stable`** channel branch (per-customer branches are DEAD, Phase 2 2026-07-15); releases via the promote-stable workflow (main→stable FF). CLAUDE.md stale at 2026-07-21 |
-| vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer` — publishing hits every live customer site |
+| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — every site's Amplify app builds the shared **`stable`** channel branch (per-customer branches are DEAD, Phase 2 2026-07-15); releases via the promote-stable workflow (main→stable FF). CLAUDE.md refreshed 2026-08-09 |
+| vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer` **1.50.0** — publishing hits every live customer site. CLAUDE.md stale at 2026-07-27 — trust `package.json` for the version |
 | VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with 69 CMS tools (TypeScript, OAuth 2.1; tier-gated via TOOL_MIN_TIER) |
 | VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (50 tools, 9 modules, 0 prompts — prospects tools retired 2026-07-27) |
 | VR_Analytics_API | `${VIVREAL_REPOS}/VR_Analytics_API/README.md` | First-party analytics ingest + rollup (no CLAUDE.md — README is truth) |
@@ -214,10 +221,10 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 
 **Full inventory:** `docs/ecosystem/aws-lambda-inventory.md` — READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
 
-### Quick reference — function counts per API (verified 2026-07-30)
+### Quick reference — function counts per API (verified 2026-08-15)
 | API | Prod Lambdas | Has WebSocket | Deploy Trigger |
 |---|---|---|---|
-| VR_Secure_API | 13 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + webhookDelivery + instantiateTemplateWorker [direct-invoke] + instantiateTemplateWorkerDlqConsumer; websocket stack is separate) | 4 of 13 | Push to main/dogfood |
+| VR_Secure_API | 15 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + shopifyTokenRefresh + webhookDelivery + alarmVerifier + instantiateTemplateWorker [direct-invoke] + instantiateTemplateWorkerDlqConsumer; websocket stack is separate) | 4 of 15 | Push to main/dogfood |
 | VR_CMS_API | 5 | All 5 | Push to main/dogfood |
 | VR_Main_API | 4 (express + email consumer + notification consumer + lifecycle scan) | 1 of 4 | Push to main/dogfood |
 | VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
@@ -346,16 +353,17 @@ When making a non-trivial decision, the architect/coder MUST cite the relevant s
 
 ## Backend testing conventions (different from frontend!)
 
-The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` or run `npx playwright test --list` for the current count). Backends are NOT Playwright. Don't confuse them.
+The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` or run `npx playwright test --list` for the current count) plus a Vitest unit layer. Backends are NOT Playwright. Don't confuse them. Every repo now carries ESLint + husky gates — none of this is CI-enforced (no GitHub Actions gate anywhere in this ecosystem); the local hooks are the only thing standing between a bad commit and `main`.
 
 | Layer | Framework | Pattern | Coverage gate |
 |---|---|---|---|
-| Portal frontend | Playwright | `e2e/**/*.spec.ts` via `e2e/fixtures` | none |
-| VR_Main_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | 100% on `npm test` |
-| VR_Secure_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | 100% on `npm test` |
-| VR_CMS_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | 100% on `npm test` |
-| VR_Client_API | Mocha + Chai + Sinon | `test/**/*.test.js` | (varies) |
-| VR_Client_Auth | Minimal / none | — | — |
+| Portal frontend | Playwright (619 tests / 96 specs per `e2e/BASELINE.md` — re-measure, don't trust this number) + Vitest unit (~257 files, `tests/unit/**`) | `e2e/**/*.spec.ts` via `e2e/fixtures`; `tests/unit/**` for pure logic | ESLint 0/0 + coverage-map --strict + husky pre-commit/pre-push, no CI |
+| VR_Main_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + coverage-ratchet gate. ⚠️ Tests can send REAL emails — never run the full suite with a prod `.env` |
+| VR_Secure_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + husky gate, 100%/100%/100%/100% coverage |
+| VR_CMS_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + husky gate, 100% coverage |
+| VR_Client_API | Mocha + Chai + Sinon | `test/**/*.test.js` | ESLint + husky pre-push, 100% branch coverage |
+| VR_Client_Auth | Mocha + Chai + Sinon (new test harness added 2026-08) | `test/**/*.test.js` | Test harness + husky gate |
+| VR_Outreach_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | Husky pre-push gate, 98% coverage |
 
 **Backend test conventions (read each repo's `test/CLAUDE.md` or `test/claude.md` first):**
 - Tests are unit-style with **heavy mocking** via `test/helpers/loadWithMocks.js`

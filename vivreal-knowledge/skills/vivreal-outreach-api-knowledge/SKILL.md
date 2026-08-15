@@ -5,7 +5,7 @@ description: Use when working in VR_Outreach_API — Vivreal's email-outreach ba
 
 # VR_Outreach_API — knowledge digest
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band — NOT in `template.yaml`). Express + serverless-express on Lambda (Node 20, AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Portal reaches it via `src/app/api/proxy/outreach/*`.
 
@@ -88,6 +88,14 @@ The **sender doc** (Outreach Senders) owns `fromAddress`/`fromName`/`replyToAddr
 - Tests in `tests/` (jest + mongodb-memory-server). The deploy workflow does NOT run them — run `npm test` before pushing.
 - Config module-cached (`utils/config.js`) from **per-service secrets** (`hb-api-secrets` retired, fetched in parallel): `vivreal/prod/outreach` (`MONGO_OUTREACH_URI`, `MONGO_TENANT_BASE_URI`, `GMAIL_SA_KEY_JSON`), `vivreal/prod/core` (`CTX_SECRET`), `vivreal/prod/vapid` (VAPID private key). Config-not-credential values resolve from SSM at deploy in `template.yaml`: `WS_ENDPOINT`/`WS_TABLE`, `ADMIN_EMAILS`, Cognito client ID, VAPID public key/subject under `/vivreal/prod/shared/*`; Sentry DSN from `/vivreal/prod/outreach/sentry-dsn`.
 - Sentry: `@sentry/aws-serverless` manual init; tenant tags per request. (See `sentry-tracer` / the `sentry` agent.)
+
+## Recent fixes (2026-08)
+
+- **Sender maps are now tenant-scoped per group** — cron + inbound-reply sender-resolution lookups previously spanned tenants (E9/F10); any new sender-resolution path must scope by `{groupID}`, not just `dbKey`.
+- **SNS replay guard** on the legacy inbound-forward path (F11) — a replayed SNS notification can no longer double-process an inbound reply.
+- CSV upload errors now classify as 400 (unparseable) vs 500 correctly; Sentry redacts `x-active-ctx`/`x-user-ctx` before events leave the process.
+- Coverage went 71%→98% with a husky pre-push gate (watch the husky `prepare` script — it previously broke production deploys until fixed).
+- The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
 
 ## Companions
 

@@ -5,7 +5,7 @@ description: Use when working in the Vivreal public content-delivery stack — V
 
 # VR_Client_API + VR_Client_Auth — knowledge digest
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth` — a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth — VR_Client_API's CLAUDE.md refreshed 2026-07-21 — current as of this sync (now documents both CloudFront distributions incl. client.vivreal.io).
 
@@ -103,3 +103,8 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 - The old `basic/` + `ecommerce/` alternate-deploy dirs are DELETED — one deploy config now.
 - arm64-only. Sentry 100% dev / 20% prod, filters `GET /health`. (`aws-xray-sdk` in package.json is vestigial — zero code refs.)
 - This is the **public unbounded service** — its connection-manager health is critical (gold-standard connection mgmt: dedupe + dead-socket invalidation + rethrow). Saturating Atlas conns here can 500 the whole platform — it's the one capped via reserved concurrency. See `vivreal-atlas-topology` + `vivreal-lambda`.
+- **Public content GET filter-drop fix (2026-08)**: `getCollectionObjects` was silently dropping requested filter keys when a collection had >50 items or a sparse field — sampling now falls back correctly. Filter fan-out is bounded server-side: validator caps `filters` at 12 keys, existence checks sliced to 5.
+- **Media-signing completeness sweep (2026-08)**: sites with no `mediaFields` registry now get page/hero/cta/chrome media signed too — closed gaps in the cta subtree (band-variant `art[]`), the two wordmark seats (`hero.wordmark.image`, `footer.wordmark.imageKey`), `hero.collage[]`/`hero.overlays[]`, and per-binding `sectionConfig` media.
+- **VR_Client_API now has ESLint + a 100%-branch-coverage gate + husky pre-push** (measures `src/**`, not a hand-enumerated allowlist).
+- **VR_Client_Auth**: Mongo timeouts are now bounded throughout the authorizer, with a new test harness that closed 3 fail-closed defects; the deployed Lambda bundle now EXCLUDES non-runtime scripts/tests/docs (a seed script used to ship inside the authorizer zip).
+- The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.

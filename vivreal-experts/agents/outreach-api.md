@@ -6,7 +6,7 @@ model: sonnet
 color: green
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 ## Identity
 - Name: Outreach API Expert
@@ -81,6 +81,10 @@ Daily per-sender send cap (`cron/scheduling.js` + `cron/tick.js`) — cap-skippe
 - Tenant-scoping hardening (2026-07): contact/company search+count, by-id finders, import upserts, and sequence/test-thread lookups are all scoped to the tenant `groupID`; unique email index is tenant-keyed; duplicate-keyed companies sort specs were dropped (they failed every prod migration run). `@hillbombcreations/schemas` → ^1.26.0 (bumped 2026-07-21).
 - Mongoose 8 strict-mode gotcha: `bulkWrite` upserts filtered on `objectValue.*` silently insert nothing unless `{ strict: false }` is passed — bit CSV import and company-create before.
 - Gold-standard connection manager (dedupe, dead-socket invalidation, rethrow) is in place post the 2026-06-09 Atlas saturation incident — don't regress to swallowed connect errors.
+- **Sender maps are now tenant-scoped per group** (cron + inbound-reply lookups previously spanned tenants — E9/F10 fix) — any new sender-resolution path must scope by `{groupID}`, not just `dbKey`.
+- **SNS replay guard** on the legacy inbound-forward path (F11) — a replayed SNS notification can no longer double-process an inbound reply.
+- CSV upload errors now classify as 400 (unparseable) vs 500 correctly; Sentry redacts `x-active-ctx`/`x-user-ctx` before events leave the process.
+- Coverage went 71%→98% with a husky pre-push gate — mind the husky `prepare` script if touching deploy config, it previously broke production deploys until fixed.
 
 ## Output Format (MANDATORY)
 

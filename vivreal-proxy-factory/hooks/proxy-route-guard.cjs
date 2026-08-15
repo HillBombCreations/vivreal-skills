@@ -5,8 +5,9 @@
 // instead of staying silent. Never blocks anything outside the proxy tree.
 const fs = require('fs');
 
-// Known manual routes (32 as of 2026-07-30) — path segment after src/app/api/proxy/,
-// without the trailing /route.ts. Prefix entries end with '/'.
+// Known manual routes (as of 2026-08-15 — see CLAUDE.md's proxy route table for the
+// authoritative count) — path segment after src/app/api/proxy/, without the trailing
+// /route.ts. Prefix entries end with '/'.
 const MANUAL = [
   'billing/upgrade',
   'calendar/bulk-update-publish-date',
@@ -26,11 +27,13 @@ const MANUAL = [
   'marketing/sandbox-lead',
   'media/share-image', // streams raw tenant media bytes — factory always ends in apiSuccess()
   'outreach/book/', // [slug] + /create + /slots — public, no active_ctx
+  'outreach/demo-link/[code]', // public studio-demo resolver — visitor is logged out, no active_ctx/token to verify, GET-only so no CSRF
   'outreach/studio-demo/visit',
   'sites/create',
   'sites/instantiateTemplate',
   'sites/update',
   'uploadFiles',
+  'user/delete-account', // 409 body carries the blocker list the UI renders; the factory collapses any non-2xx into apiError(message, status) and drops the body — same reason user/update-email is manual
   'user/login',
   'user/refresh',
   'user/ssoLogin',

@@ -6,7 +6,7 @@ model: sonnet
 color: blue
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 ## Identity
 - Name: Main API Expert
@@ -50,6 +50,10 @@ Monolithic Express + serverless-express Lambda (`ExpressLambdaFunction`) plus `E
 - **featureFlags now returned in the login group payload** — it was missing from `handleSettingUpGroups`' per-group whitelist, so `AuthContext.groups` arrived with `featureFlags` undefined on every login and every client-side gate evaluated false (`useAgentAccess` — the AI assistant was invisible to EVERY group, including Mongo-enabled ones; the Group-page toggle only appeared to work because it patched AuthContext in-session). Both projections fixed (`userLoginService` + `userLoginSSO`).
 - **Sticky dbKey:** `deriveDbKey` prefers the persisted `group.dbKey` (tier mapping is fallback); the login group projection AND the Meta deletion projection now carry `dbKey`. The copy is still VERBATIM from `VR_Secure_API/src/shared/deriveDbKey.js` — keep the two in sync.
 - Deps: `@hillbombcreations/schemas ^1.29.0` (tier-quotas correctly ^3.0.0).
+- **errorHandler forwards `err.code`** as `errorCode` on non-5xx errors — portal manual routes (e.g. `user/login`) must unwrap the bare-JSON-string error body via `extractUpstreamError()`/`extractUpstreamDetail()`, since VR_Main_API doesn't wrap errors in the standard envelope.
+- **Two auth bypasses closed this window**: quota seat gates now DENY on a 0-seat quota instead of admitting everyone (was fail-open), and the Meta callback auth gate's prototype-key bypass is closed (`provider='toString'` used to resolve to `Object.prototype.toString`, bypassing identity matching).
+- ESLint + a husky pre-push gate with a coverage ratchet are now in place — no GitHub Actions test workflow exists, so this hook is the only automated gate before merge.
+- ⚠️ **Tests can send REAL emails** — `queueEmail` is not stubbed in the test suite; never run the full suite against a prod `.env` (this has fired ~140 real sends before).
 
 ### AWS Lambda best-practice alignment
 - Reuse SDK clients across invocations (`aws-sdk` v3 clients should be top-level, not per-handler).

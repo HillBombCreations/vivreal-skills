@@ -5,7 +5,7 @@ description: Use when working in VR_Main_API — Vivreal's public/unauthenticate
 
 # VR_Main_API — knowledge digest
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 20, arm64), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `C:\repos\VR_Main_API\CLAUDE.md` for the full route list (CLAUDE.md refreshed 2026-07-21 — current as of this sync).
 
@@ -49,3 +49,8 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 - `helathCheckFns.js` (sic) — typo filename; don't rename without fixing imports.
 - arm64-only Lambda layers (x86_64 extension → `Extension.Crash`).
 - Coverage gate: 100% lines/statements/functions, 85% branches.
+- **errorHandler forwards `err.code`** as `errorCode` on non-5xx responses. Error bodies here are **bare JSON strings**, not the standard `{success,data}` envelope — the portal's manual `user/login` route now unwraps them via `extractUpstreamError()`/`extractUpstreamDetail()` (login error branches like badUsername/incorrectPassword were DEAD in prod before this).
+- **Two auth bypasses closed**: quota seat gates now DENY on a 0-seat quota instead of admitting everyone (was fail-open); the Meta callback auth gate's prototype-key bypass is closed (`provider='toString'` used to resolve to `Object.prototype.toString`).
+- ESLint adopted + a husky pre-push gate with a coverage ratchet — no GitHub Actions test workflow exists here, so the hook is the only automated gate before merge.
+- ⚠️ **Tests can send REAL emails** — `queueEmail` is not stubbed in the test suite; never run the full suite against a prod `.env` (this has fired ~140 real sends before). Never copy a prod `.env` into a backend test worktree.
+- The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.

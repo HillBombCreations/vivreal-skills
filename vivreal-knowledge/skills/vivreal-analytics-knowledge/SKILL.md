@@ -5,11 +5,13 @@ description: Use when working on Vivreal's first-party analytics — VR_Analytic
 
 # VR_Analytics_API — knowledge digest
 
-Last synced: 2026-07-21
+Last synced: 2026-08-15
 
 Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (this repo) is **collect → store → rollup only**; increment 2 (the read API + dashboard) lives in `VR_Secure_API` + the portal. Node 20, AWS SAM, webpack — same conventions as the other backends. **No CLAUDE.md**; `C:\repos\VR_Analytics_API\README.md` is the deepest reference but its status header is **stale** (still self-describes as DEPLOY-GATED, internally contradicting the repo's own CI workflow) — trust this digest + `template.yaml`. The full design is `Vivreal_Portal_Mobile/docs/projects/vivreal-first-party-analytics/design.md` + `cost-analysis.md`.
 
 **Status: LIVE (base pipeline).** `.github/workflows/lambda_api.yml` auto-deploys every push to `main` (and `workflow_dispatch`) via `aws cloudformation package`/`deploy` to stack `vr-analytics-api` (us-east-1). Secrets are per-service **`vivreal/prod/analytics`** resolved as CloudFormation dynamic references (`ORIGIN_VERIFY_SECRET`, `VISITOR_SALT_SECRET`, `CLUSTER_URL` — a missing key fails the deploy itself; no separate secrets preflight) plus SSM `/vivreal/prod/shared/*`. `@hillbombcreations/schemas` is pinned `^1.19.0` — published, the old `file:../Vivreal-Schemas` ref is gone — alongside `@aws-sdk/client-cloudwatch`. Deployed shape: 2 Lambdas, both nodejs20.x/arm64 — `IngestFunction` (`ingest.handler`, public Function URL `AuthType: NONE`, reserved-concurrency capped) + `RollupCronFunction` (`rollupCron.handler`, EventBridge `cron(0 6 * * ? *)`, reserved concurrency 1).
+
+**Observability + hardening (added this window):** Sentry DSN is now wired for both Lambdas, plus alarms for swallowed errors, missed rollup cron runs, and throttles. The repo also picked up Atlas connection/teardown hardening (part of the cross-repo half-open-connection fix) and joined the testing campaign — 100%-coverage test suite, ESLint, and a husky pre-push gate.
 
 **⚠ STILL GATED: the W4 CDN egress meter.** `src/rollupCron/cdnRollup.js` + `src/shared/cloudwatchClient.js` `$inc` `cdnUsage.totalBytes` per group from `AWS/AmplifyHosting` `BytesDownloaded` (guarded sibling call in `rollupCron/main.js`). It must **co-release with VR_Client_API's CDN-402 neutralization** — enabling it alone reactivates a site-down gate. Keep it off until that ships.
 
