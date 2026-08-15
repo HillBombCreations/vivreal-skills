@@ -5,9 +5,9 @@ description: Use when working in Vivreal_Templates — the Next.js 16 universal 
 
 # Vivreal_Templates — knowledge digest
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
-Next.js **16** (App Router, TS strict, Tailwind 4, Turbopack builds) **universal customer-site template**, v0.2.0. The repo has **only `main`, `stable`, and dev PR branches** (Phase 2, 2026-07-15): every customer site's Amplify app builds the shared **`stable`** branch. Merging `main` releases NOTHING — releases go out via the **promote-stable** workflow (see below), which rebuilds every site app including the cross-account Waves of Grain app. Fully data-driven from the Vivreal CMS via VR_Client_API. Read `C:\repos\Vivreal_Templates\CLAUDE.md` for depth — but it is STALE: last refreshed 2026-07-21, now 29 commits (PRs #74–#86) behind; truth = source + this digest. Its branch-model text (main+stable/promote-stable) is still correct. For the cross-repo site product/authoring model see `vivreal-sites`; for the AWS deploy pipeline see `vivreal-site-deploy-pipeline`; for site-visitor stats see `vivreal-analytics-knowledge`.
+Next.js **16.3.0** (App Router, TS strict, Tailwind 4, Turbopack builds) **universal customer-site template**, v0.2.0 — the Next.js bump (from the 16.2.x line) clears the libvips/sharp CVEs. The repo has **only `main`, `stable`, and dev PR branches** (Phase 2, 2026-07-15): every customer site's Amplify app builds the shared **`stable`** branch. Merging `main` releases NOTHING — releases go out via the **promote-stable** workflow (see below), which rebuilds every site app including the cross-account Waves of Grain app. Fully data-driven from the Vivreal CMS via VR_Client_API. Read `C:\repos\Vivreal_Templates\CLAUDE.md` for depth — but it is STALE: last refreshed 2026-07-21, now 29 commits (PRs #74–#86) behind; truth = source + this digest. Its branch-model text (main+stable/promote-stable) is still correct. For the cross-repo site product/authoring model see `vivreal-sites`; for the AWS deploy pipeline see `vivreal-site-deploy-pipeline`; for site-visitor stats see `vivreal-analytics-knowledge`.
 
 ## Data flow
 
@@ -75,7 +75,7 @@ CDN domain `media.vivreal.io` lives in `next.config.ts` `images.remotePatterns` 
 
 ## Updating @hillbombcreations/site-renderer
 
-Installed from **GitHub Packages** (`.npmrc`: `@hillbombcreations:registry=npm.pkg.github.com` + `NODE_AUTH_TOKEN`), currently ^1.42.0 on `main`. Note a clean regen floats OTHER carets too (the 1.38.0 bump rode next 16.2.11→16.2.12 + sentry 10.68 to the whole fleet) and can DROP optional transitives (the 1.40.1 sharp incident above) — treat the first post-merge `main` CI build as the canary before `promote-stable`. Bump the version, then clean-reinstall (delete `node_modules` + `package-lock.json` — Amplify runs `npm ci`; a stale or npm-pruned lock fails the fleet build). Local renderer dev: `npm run dev:linked` (runs `../vivreal-site-renderer/scripts/dev-sync.js`). The old `--install-links` git-dep dance is dead. Do NOT add other private `@hillbombcreations/*` deps — customer Amplify tokens can only read the renderer package.
+Installed from **GitHub Packages** (`.npmrc`: `@hillbombcreations:registry=npm.pkg.github.com` + `NODE_AUTH_TOKEN`), currently ^1.50.0 on `main` (renderer adoption tracked to 1.50.0; was ^1.42.0 at last sync). Note a clean regen floats OTHER carets too (the 1.38.0 bump rode next 16.2.11→16.2.12 + sentry 10.68 to the whole fleet) and can DROP optional transitives (the 1.40.1 sharp incident above) — treat the first post-merge `main` CI build as the canary before `promote-stable`. Bump the version, then clean-reinstall (delete `node_modules` + `package-lock.json` — Amplify runs `npm ci`; a stale or npm-pruned lock fails the fleet build). Local renderer dev: `npm run dev:linked` (runs `../vivreal-site-renderer/scripts/dev-sync.js`). The old `--install-links` git-dep dance is dead. Do NOT add other private `@hillbombcreations/*` deps — customer Amplify tokens can only read the renderer package.
 
 ## Gotchas
 

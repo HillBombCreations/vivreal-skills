@@ -6,7 +6,7 @@ model: sonnet
 color: blue
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 ## Identity
 - Name: CMS API Expert
@@ -52,6 +52,9 @@ The role agent will dispatch a sibling expert. Do NOT silently expand scope.
 - Audit logging is fire-and-forget — if audit write fails, the main op still succeeds.
 - Version pruning is fire-and-forget per `maxVersionsPerObject` tier quota — callers now thread `getTierQuotas(tier).maxVersionsPerObject` into `createVersion` (package-authoritative, not hardcoded).
 - Minor: empty-sortField guard in `getCollectionInfo/services/getCollectionObjects.js` (`??` → `||` so `''` falls back to createdAt); two sibling services still carry the unguarded pattern.
+- **New `GET /tenant/dashboardInsights` aggregate endpoint** (`getCollectionInfo/services/getDashboardInsights.js`) — stock thresholds, signup dedup, cadence windows (this-week), plus a supporting `integration_objects` cadence index; several correctness fixes landed on top (stock `$lte` not `$lt`, signups tautology removed, object-shaped display-name guard, excluded-variant stock flag, bounded finds).
+- **Atlas half-open connection teardown fix** — the connection close is no longer awaited synchronously, which was wedging the container on a half-open socket.
+- ESLint (correctness rules) + a 100%-coverage test suite + husky push gate are now in place (no GitHub Actions test workflow — the hook is the only automated gate before merge).
 
 ### Content go-live subsystem (how future-dated content now goes live)
 - Helper `src/createAndUpdateIntegrations/services/scheduler/contentGoliveSchedule.js` exports `reconcileContentGolive` / `cancelContentGolive` / `contentGoliveScheduleName`. Deterministic schedule name `content-golive-{dbKey}-{objectID}`; delete-then-maybe-create so one object never has two schedules; `MIN_LEAD_MS` 60s floor; never throws (the site's 24h TTL is the backstop) — but callers must AWAIT it or the Lambda freezes the in-flight Scheduler call.

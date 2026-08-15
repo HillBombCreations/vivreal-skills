@@ -5,6 +5,8 @@ description: Use when working in VR-MCP-Server — Vivreal's remote MCP server (
 
 # VR-MCP-Server — knowledge digest
 
+Last synced: 2026-08-15
+
 Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer token), deployed on Lambda (Node 20, arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. v1.0.0, deployed. Read `C:\repos\VR-MCP-Server\CLAUDE.md` for depth.
 
 ## Two MCP surfaces — don't confuse them
@@ -33,6 +35,9 @@ Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is
 - Calendar has 1 tool (`list-events` → `/tenant/events`); Vivreal has NO `event` entity — scheduling is a `publishDate` on content/channel objects.
 - Field types live in `src/constants/fieldTypes.ts`; CI parity test guards drift vs `VR_CMS_API/src/shared/validateObjectValue.js`.
 - Endpoint specifics: `/api/groupInfoV1` (groupID + email) vs `/api/groupInfo` (email only); `/tenant/presignedUploadUrl` (not `s3PutUrl`); `/tenant/dashboardInfo` (not `dashboard`).
+- **dbKey-routing/tier-gating fixes (this window)**: a bucket-slug routing bug and a Pro Plus tier misreport are both fixed — verify current behavior against source rather than assuming the old symptoms still apply.
+- **Docs module scope expanded** (help-center docs tools) — the tool COUNT is unchanged (still 69 across 11 modules); the Docs module's existing tools cover more help-center content.
+- Repo gained ESLint + a husky gate with a coverage baseline.
 
 ## Runtime
 

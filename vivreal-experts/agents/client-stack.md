@@ -6,7 +6,7 @@ model: opus
 color: cyan
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 ## Identity
 - Name: Client Stack Expert
@@ -61,6 +61,10 @@ VR_Client_API: single monolithic Lambda, Node 20, AWS SAM, reserved concurrency 
 - Route surface now includes `POST /tenant/validateCoupon` and the read-only Site MCP (7 tools, DynamoDB rate-limited) + `.ics` feed under `/sites/:siteId/*`. Per-route SAM `Events:` entries are REQUIRED — known drift (STILL live 2026-07-30): `validateCoupon` STILL has an Express route but no CFN event (403s at gateway). The orphaned `/tenant/collection` event and the dead keyless `ApiUsagePlan` throttle were removed.
 - VR_Client_API's CLAUDE.md refreshed 2026-07-21 — current as of this sync (now documents both CloudFront distributions incl. client.vivreal.io).
 - VR_Client_Auth: `@hillbombcreations/schemas` ^1.27.0, secrets moved to `vivreal/prod/client-auth`. NOT housekeeping-only — the authorizer now prefers the persisted `group.dbKey` (see DB routing above). Still Node 18 + Serverless Framework.
+- **Public content GET filter-drop fix**: the `getCollectionObjects` route was silently dropping requested filter keys when a collection had >50 items or a sparse field — it now falls back correctly instead of returning an incomplete result set. Filter fan-out is now bounded server-side: validator caps `filters` at 12 keys (`Joi.object().max(12)`), existence checks sliced to 5.
+- **Media-signing completeness sweep (2026-08)**: sites with no `mediaFields` registry now get page/hero/cta/chrome media signed too — closed gaps in the cta subtree (band-variant `art[]`), the two wordmark seats (`hero.wordmark.image`, `footer.wordmark.imageKey`), `hero.collage[]`/`hero.overlays[]`, and per-binding `sectionConfig` media.
+- **VR_Client_API now has ESLint + a 100%-branch-coverage gate + husky pre-push** (measures `src/**`, not a hand-enumerated allowlist).
+- **VR_Client_Auth**: Mongo timeouts are now bounded throughout the authorizer (`src/db` — new test harness closed 3 fail-closed defects); the deployed Lambda bundle now EXCLUDES non-runtime scripts/tests/docs (a seed script used to ship inside the authorizer zip).
 
 ### AWS Lambda best-practice alignment
 - Two Lambdas, two different deploy frameworks (SAM + Serverless). Verify each is deployed via its own pipeline.

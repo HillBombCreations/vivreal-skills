@@ -1,6 +1,6 @@
 {
   "name": "vivreal-proxy-factory",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Generate factory-based proxy routes and guard against manual route drift for the Vivreal portal",
   "author": {
     "name": "Vivreal",

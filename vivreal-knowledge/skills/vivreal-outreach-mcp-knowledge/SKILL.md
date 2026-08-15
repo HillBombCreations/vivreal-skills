@@ -5,7 +5,7 @@ description: Use when working in VR-Outreach-MCP-Server — the internal-only re
 
 # VR-Outreach-MCP-Server — knowledge digest
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 **Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions) — but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` for depth (updated 2026-07-27 — FRESH; header says "50 tools, 0 prompts").
 
@@ -48,6 +48,7 @@ Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SH
 - **No JWT authorizer at the MCP gateway** — auth is application-level; the `401 + WWW-Authenticate` challenge must reach clients.
 - **Audience prerequisite (C1 — RESOLVED):** this server's Cognito client `7efagcmhehkdlnkth5g7vhsd48` must be in **VR_Outreach_API's JWT authorizer audience list** (the HttpApi default authorizer in `VR_Outreach_API/template.yaml`) or every Outreach call 401s. If the client ID ever changes, re-add + redeploy VR_Outreach_API. VR_CMS_API/VR_Secure_API need no change.
 - Stacks: `VR-Outreach-MCP-Server` (prod, `main`) / `-DEV` (staging, `dogfood`); Sentry project `vivreal-outreach-mcp`. Secrets (secrets-audit Phase 2, config-only): `CTX_SECRET` + `ADMIN_EMAILS` read from `vivreal/prod/core` (`cloudformation/template.yaml`); Sentry DSN from SSM `/vivreal/prod/outreach-mcp/sentry-dsn`, environment from SSM `/vivreal/prod/shared/sentry-environment`. `hb-api-secrets` is retired here.
+- Repointed (single-commit window) to the shared cross-repo SNS alarm topic. Tool count is unchanged: still 50.
 
 ## Companions
 

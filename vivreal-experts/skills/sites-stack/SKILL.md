@@ -6,7 +6,7 @@ model: sonnet
 color: green
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-08-15
 
 ## Identity
 - Name: Sites-Stack Expert
@@ -34,7 +34,7 @@ Read `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` and/or `${VIVREAL_REPOS}
 Three repos, one product surface: **vivreal-site-renderer** (`@hillbombcreations/site-renderer`, GitHub Packages; publishing hits every live customer site) renders site config into pages; **Vivreal_Templates** is the universal Next.js customer-site app — every site's Amplify app builds the shared **`stable`** branch (per-customer branches are DEAD; releases via promote-stable, main→stable FF) and consumes the renderer; **Vivreal_Site_Migrator** hosts three modes — `/migrate` (live-site migration), `/template` (identity-kit instantiation), and live-site **restyle** tooling — plus `packages/site-loader`, the semver-pinned package VR_Secure_API's `instantiateTemplateWorker` runs in production.
 
 ### Known gotchas
-- **Version truth**: renderer version = `package.json` (releases can ride non-release commits — 1.42.1 rode a fix commit with no `chore(release)` subject). Never trust a CLAUDE.md version header; never push docs-only to renderer master (`publish.yml` fires on ANY master push).
+- **Version truth**: renderer version = `package.json`, now **1.50.0** (was 1.42.1) — releases can ride non-release commits, so trust package.json/git log, never a CLAUDE.md version header; never push docs-only to renderer master (`publish.yml` fires on ANY master push). Themes since 1.42.1: section-photo/hero.meta/full-bleed layouts (1.47), wrinsy migration parity + home-tail kits + CTA band variants (1.48–1.49.1), and the RESALE-1 "Marlowe & Kept" identity kit + a coordinated-products fix (1.50.0).
 - **The release train** (any kit that ships renderer/site-loader surface): renderer publish → Templates renderer bump (`^x.y.z` — the caret FLOATS, treat lockfile as the canary) → site-loader pin bump (`^0.2.x` never auto-adopts) → capability manifest regen → manual `npm publish` of site-loader. A stale capability manifest surfaces FALSE gaps.
 - **Templates lockfile regens drop optional transitives** (`@emnapi`, `sharp`) and block fleet builds — fix by deleting node_modules + package-lock.json, full reinstall, verify `npm ci`.
 - **A page format absent from Templates `COMPOSE_FORMATS` 404s** (the `/shop` and `/about-us` regressions). `ecommerce`/`showcase` are NOT format values — the storefront format is `products`; `templateType` is ignored at runtime.
