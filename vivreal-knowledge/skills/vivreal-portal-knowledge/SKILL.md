@@ -84,9 +84,13 @@ Friday 5pm PST `release-cut.yml` cuts `release/vX.Y` from `main`, bumps `package
 `vX.Y.0`, and writes a served `public/release.json` marker — check the live deployed version via
 `curl https://vivreal.io/app/release.json`. Monday **16:00 UTC** `promote.yml` (last in the
 stagger, after all four backends: Secure 15:00, CMS 15:15, Main 15:30, Client 15:45)
-force-with-lease moves `stable` to the newest tag. Hotfix = commit on `release/vX.Y`, push (husky
-gate runs), then dispatch `promote.yml` with `target=release/vX.Y` — tags `vX.Y.Z+1` and ships
-it. Rollback (`rollback.yml`, dispatch-only) moves `stable` back to a prior tag and yanks it —
+force-with-lease moves `stable` to the newest tag. Incremental
+release (2026-08-19): a backport mints a PATCH of the line's last tag, never a new minor.
+`backport.yml` cherry-picks main-merged commits onto the line — no tag, no bump, no deploy; ship
+now by dispatching `promote.yml` with `target=release/vX.Y` (tags `vX.Y.Z+1`), or do nothing and
+Monday's cron auto-mints the patch and ships it (the cron refuses only when the line's last tag
+is yanked). Never dispatch `release-cut.yml` for a backport — a cut forks a new minor off ALL of
+`main`. Rollback (`rollback.yml`, dispatch-only) moves `stable` back to a prior tag and yanks it —
 **Amplify autobuild only fires for never-built commits**, so a rollback or a re-promote to an
 already-built commit repoints `stable` but triggers NO build; rollback must ALSO run
 `aws amplify start-job --app-id d2e6e3kdfrrxak --branch-name stable --job-type RELEASE`. Full

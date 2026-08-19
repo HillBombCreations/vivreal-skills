@@ -248,9 +248,16 @@ The train is the same shape in all five repos:
   `public/release.json` marker.
 - Monday promote crons are STAGGERED, backends ahead of portal: Secure 15:00 UTC, CMS 15:15,
   Main 15:30, Client 15:45, portal 16:00 (≈7–8am PST). `promote.yml` force-with-lease moves
-  `stable` to the newest TAGGED cut; an untagged tip fails the cron loudly.
-- Hotfix = commit/cherry-pick on `release/vX.Y`, push (husky gate runs), then dispatch
-  `promote.yml` with `target=release/vX.Y` — one dispatch tags `vX.Y.Z+1` and ships it.
+  `stable` to the newest line's tip — a tagged cut ships as `vX.Y.0`; an untagged tip (backports
+  landed after the cut) auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19;
+  the cron refuses only when the line's last tag is yanked).
+- Incremental release / backport = PATCH, never a new minor (2026-08-19, all five repos).
+  `backport.yml` cherry-picks main-merged commits onto a line (`-m 1` for PR merges) and pushes
+  — no tag, no bump, no deploy. Ship now: dispatch `promote.yml` with `target=release/vX.Y`
+  (tags `vX.Y.Z+1`). Ride Monday: do nothing — the cron mints the patch. Hand-written fixes
+  still go local: commit on the line, push (husky gate runs), then dispatch the promote.
+  **NEVER dispatch `release-cut.yml` to ship a backport** — a cut forks a NEW minor line off
+  ALL of `main` (the 2026-08-19 v2.3.1→v2.4.0 mistake).
 - `rollback.yml` (dispatch-only) moves `stable` back to a prior `v*` tag and yanks it
   (`yanked-vX.Y.Z` tags block cron re-deploys of that version).
 - Deployed-version check: portal `curl https://vivreal.io/app/release.json`; backends
