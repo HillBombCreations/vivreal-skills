@@ -60,9 +60,13 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 Merging to `main` no longer deploys prod. Prod serves from the fixed `stable` branch. Friday
 5pm PST `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday **15:30 UTC**
 `promote.yml` force-with-lease moves `stable` to the newest tag — Secure (15:00) and CMS (15:15)
-promote first, then Main, then Client (15:45) and portal (16:00). Hotfix = commit on
-`release/vX.Y`, push (husky gate runs), then dispatch `promote.yml` with
-`target=release/vX.Y` — tags `vX.Y.Z+1` and ships it. Rollback (`rollback.yml`, dispatch-only)
+promote first, then Main, then Client (15:45) and portal (16:00). Incremental
+release (2026-08-19): a backport mints a PATCH of the line's last tag, never a new minor.
+`backport.yml` cherry-picks main-merged commits onto the line — no tag, no bump, no deploy; ship
+now by dispatching `promote.yml` with `target=release/vX.Y` (tags `vX.Y.Z+1`), or do nothing and
+Monday's cron auto-mints the patch and ships it (the cron refuses only when the line's last tag
+is yanked). Never dispatch `release-cut.yml` for a backport — a cut forks a new minor off ALL of
+`main`. Rollback (`rollback.yml`, dispatch-only)
 moves `stable` back to a prior tag and yanks it — **but a force-push that REWINDS `stable` to an
 ancestor fires NO GitHub Actions push run** (forward re-points do fire), so rollback must ALSO
 manually dispatch `gh workflow run lambda_api.yml --ref stable` or the old build keeps serving.

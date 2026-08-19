@@ -1,5 +1,8 @@
 # Sync facts: release trains (2026-08-15, evening — supplements the morning sync)
 
+> **Superseded in part (2026-08-19):** promote/backport semantics changed after this sheet was written — the Monday cron now auto-mints a PATCH for an untagged tip (refusing only when the line's last tag is yanked), and a new `backport.yml` in all five repos is the sanctioned incremental-release path (never `release-cut.yml`). The untagged-tip/hotfix claims below are historical; see the 2026-08-19 row in `docs/SYNC.md`.
+
+
 Everything below shipped and was LIVE-VERIFIED today. Sources of truth: each repo's
 `docs/RELEASE.md`, portal `docs/projects/{portal-release-train,backend-release-train}/`
 (plans, cutover logs, drill records).
