@@ -19,9 +19,10 @@ The binding constraint is **not** the 1000 Lambda limit. It's:
 concurrent-DB-executions × maxPoolSize  vs  Atlas connection cap
 ```
 
-- `maxPoolSize` is **3** (Client/Secure) or **5** (CMS/Outreach, kept higher for parallel bulk writes).
-- Atlas **shared tier cap = 500** connections (≈166 safe concurrent at pool 3). **M10 ≈ 1500** (≈500 safe concurrent).
-- So the lever that protects the cluster is **capping the one public runaway** (VR_Client_API), not capping internal functions. Example live value: Client API capped at **120** → 120 × 3 = 360 conns < 500 Atlas cap. M10 is what actually lifts the ceiling. See `vivreal-atlas-topology`.
+- `maxPoolSize` is **3** (Client/Secure) or **5** (CMS/Outreach, kept higher for parallel bulk writes), **but that is per POOL, and a warm container holds more than one.** A container caches its main pool plus one tenant pool per `dbKey` it has served. Real per-container footprint: Client **6 to 9**, CMS **10 to 15**, Outreach **11 to 16**, Secure **6 to 9**. Multiply by the pool COUNT, not by `maxPoolSize`.
+- Atlas **shared tier cap = 500** connections. **M10 ≈ 1500**.
+- **Do not use "cap ÷ maxPoolSize".** Measured 2026-08-31: **54** concurrent VR_Client_API containers saturated the 500-conn cluster (324 conns from this function alone, plus authorizer and fleet baseline). The old ≈166 figure was 3x optimistic. Full arithmetic in `vivreal-atlas-topology`.
+- **Capping the one public runaway is NOT sufficient and, before an M10, is actively risky.** VR_Client_API sits at `ReservedConcurrentExecutions: 150` and that ceiling has never bound; `Throttles` were 0 through the saturation event because the cluster died first. Meanwhile 553 unreserved slots stay reachable by CMS, Outreach, Secure, Main and EventHandler, which dominated every earlier episode. And a ceiling that DOES bind renders as silent empty sections on live customer sites, not a visible 5xx. **Upgrade the tier before capping.** See `vivreal-atlas-topology`.
 
 ## The "deploy decreases unreserved below 100" failure
 
