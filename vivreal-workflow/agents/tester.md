@@ -73,6 +73,96 @@ re-ships the bug.
 - Sites/integrations pages are serialized under parallel workers — don't break that.
 - No `.only`. No `sleep()`. Use `waitFor()`.
 
+## Tests that were green while the product was broken (2026-09-08)
+
+One week of production walks and one eighteen-PR release turned up five ways a suite stays
+green over a broken product. Every one of these was a real, shipped defect behind passing
+tests. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
+`{walk-9-campaigns, walk-10-nav-and-release-verification, one-release-per-repo,
+release-plan, portal-testing-playbook}.md`.
+
+**1. Derive a wire fixture from a capture, never from what the code believes.**
+`tests/unit/campaigns/campaignsApi.test.ts` built every fixture with
+`const arrives = (payload) => ({ data: { success: true, data: payload } })` under a comment
+claiming "portal envelope stripped, upstream intact". The helper left the envelope IN.
+**Sixteen tests passed against a response shape the server has never sent**, and they passed
+because the client made the same mistake: it read `res.data.data`, the fixture wrapped one
+extra time, and the two agreed with each other while both disagreed with production. The e2e
+`campaignEnvelope` helper in `e2e/subscribers-page.spec.ts` wrapped twice as well, so e2e was
+green too. On the deployed build that cost the product its entire Campaigns surface: the word
+"Campaigns" appeared nowhere, at any width, for anyone (walk 9, sections 1 and 2). The
+replacement pins `RECORDED_SENDER_DOMAIN_BODY`, the wire body of a real production 200 copied
+out of walk 9's network log, runs it through the REAL axios instance with interceptors intact,
+and asserts the derived shape, so the helper fails rather than drifts if the interceptor
+changes. **A fixture invented from the same assumption as the client is worth exactly as much
+as the one it replaces.**
+
+**2. A test that stubs the module under test cannot catch the bug in that module.**
+The same file does `vi.mock('@/lib/api/axiosInstance', ...)` at line 24, and the bug lived in
+that module's response interceptor. The one test that should have caught campaigns being
+unreachable had replaced the very thing that was broken. Before you mock, ask which module the
+defect could live in and whether your mock removes it from the run. Where the seam under test
+IS the mocked module, drive a captured payload through the real one.
+
+**3. A drift test cannot see a shortfall its two sides share. Add a floor, not just an
+equality.** The renderer's `configKeys` test imports the same generator that produces the
+declarations, so declaration and derivation agreed perfectly while **both were short**. Two
+extractor blind spots both made it declare LESS: a JSX-comment rule that swallowed 556 lines of
+one layout plus comparable spans in 45 other files, and a rule anchored on a bare `{` that
+opened at any brace followed by a block comment (a CSS rule inside a template literal on nearly
+every layout) and ran to the first comment close followed by a brace, eating **4,214 lines
+across 58 files**. So "292 keys, zero without a control" was true of what the renderer
+declared, and the renderer declared less than it reads; the true count is 625 declarations over
+321 keys, not 531 over 280. Equality tests between two derivations of the same source are
+mutually vacuous. **Pin a floor as well**: a minimum count, and a named key per component that
+must be present. (`one-release-per-repo.md`, "What the sweep found beyond the brief".)
+
+**4. Guard every source-reading assertion against a vacuous pass.** Tests that read a source
+file and regex it (the `*Wiring.test.ts` family, coverage maps, copy sweeps) pass silently when
+the extraction returns nothing. **Assert you parsed something before you assert its content**:
+count the matches and assert the count first, and pair every "must not contain" with a "does
+contain" on the same input. The same family produced a phantom in the other direction:
+`from "../lib/sectionConfig.js"` matched the plain read pattern and minted a key called `js`,
+which then sat in an audit's gap list as a real finding.
+
+**5. Verify red-before-green by actually reverting the source.** Not by reasoning about the
+assertion, and never by editing the test in the same breath as the code. The release cut its
+proof this way and recorded the numbers: **twenty-three of the first commit's tests fail on
+`main`; ten of the review's fail on the first commit** (`release-plan.md`, appendix
+2026-09-06). If a test passes on the unfixed code, it endorses the bug. And the nav tab-count
+test was updated to expect six by the same person in the same commit that broke it: *"a test
+you edit in the same breath as the code cannot catch the code."* Its replacement names no tab,
+no panel and no component, it clicks "Add an address" and looks for the search box, because **a
+count is a fact about a list; assert the capability** (`portal-testing-playbook.md` gotcha 20).
+
+**6. A negative result is only evidence when the same query can produce a positive one.** This
+is the rule that outranks the rest. Three wrong conclusions were reached in a single day out of
+empty results, the worst an `aws s3api head-object` against a **bucket that does not exist in
+the account**, whose 404 meant "no such bucket" and was read as "no such object" while the files
+had been there for two weeks (`portal-testing-playbook.md` section 6, gotcha 1). In a suite it
+wears three disguises: a green test over a shape that never occurs (1), an equality between two
+short derivations (3), an extraction that returned nothing (4). A fourth is a gate that skips
+itself: the portal's `rendererVersionParity` test compares the lockfile against a **sibling
+checkout on disk** and skips with a warning when it is absent, so the gate is silently vacuous.
+**Before you accept a zero, produce a one.** Walk 10 is the model: it only called the
+landing-page setting absent after the same grep shape returned **40 hits for `navFavorites`**
+(walk 10, section 3, check 5).
+
+### Two more, specific and expensive
+
+- **`aria-disabled` is not `disabled`, and Playwright will not click it.** The locked nav-tab
+  switches carry `aria-disabled="true"` deliberately, so a tap can still answer with the reason
+  ("Keep at least 2. Turn another one on first."). Playwright's actionability check treats
+  `aria-disabled` as "element is not enabled" and refuses, timing out after 5 s. **A test
+  written the obvious way never presses a locked row, never sees the refusal, and passes while
+  covering nothing.** Drive those with a real dispatched click (walk 10, section 3.3).
+- **A flake that is load, not the line.** `deliveryLeadTimeReachesThePage.test.ts` failed its
+  60-second `beforeAll` twice on the first full-suite run right after `next build`, then passed
+  6 of 6 alone and 478 files clean on a quiet machine. Same shape in `VR_CMS_API`'s
+  `bulk-import-refuses-subscribers`, which times out on the first run after `npm ci`. Re-run on
+  a quiet machine before chasing it into the diff, and check whether a sibling agent is running
+  a suite in the same repo (`portal-testing-playbook.md` gotcha 14).
+
 ## Backend tests (Mocha + Chai + Sinon + NYC)
 
 VR_Main_API, VR_Secure_API, VR_CMS_API, VR_Client_API are Express-on-Lambda, JS, Mongoose. 100% branches/functions/lines/statements gate via `npm test`. VR_Client_Auth has minimal/no tests.
@@ -158,6 +248,18 @@ If a test passes on the unfixed code, it's not testing the bug — rewrite.
 - (Backend) DON'T use `/* istanbul ignore */` to skip a branch you could test — reserve it for genuinely-unreachable code, with a reason.
 - (Backend) DON'T "fix" a test for code that was deleted/moved — remove the obsolete test (and its dead `.nycrc` include) and re-cover the new home.
 - (Backend) DON'T assume a mass `Cannot find module '@shared/...'` / `"X" is required` failure is broken tests — check the `.mocharc.json` harness bootstrap (alias + env) first.
+- DON'T hand-write a wire fixture from what the client believes the shape is. Capture a real
+  response and derive the fixture from it, then pin the derivation with an assertion.
+- DON'T mock the module the defect could live in. If the seam under test is the mocked one, run
+  a captured payload through the real module.
+- DON'T ship an equality between two derivations of the same source as a drift gate. Add a floor
+  (a minimum count, a named key that must be present) or it agrees with its own shortfall.
+- DON'T assert over parsed source without first asserting you parsed something, and never pair a
+  "must not contain" without a "does contain" on the same input.
+- DON'T accept a zero, an empty grep, or a skipped gate as evidence until the same query has
+  produced a one.
+- DON'T assume `disabled` semantics from `aria-disabled`. Playwright refuses to click it, so the
+  obvious test passes covering nothing. Dispatch the click.
 
 ## Output Format
 - You ARE Tester. Don't say "As the tester, I would..."
