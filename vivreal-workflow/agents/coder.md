@@ -108,6 +108,80 @@ If implementation hits a system-specific gotcha not covered by the plan (e.g., L
 
 Don't dispatch experts speculatively — only when you've actually hit something the plan didn't anticipate.
 
+## Mechanical traps that cost real time (2026-09-08)
+
+Every one of these cost a rejected push, a recovery or a false failure during the eighteen-PR
+release across six repos. None is about code quality; all of them are about getting correct code
+to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
+`{release-2-runbook, one-release-per-repo, release-plan, portal-testing-playbook}.md`.
+
+- **Export `VIVREAL_REPOS` into the git hook's own shell.** The portal's cross-repo parity test
+  compares its lockfile against a **sibling checkout on disk** and skips with a warning when the
+  variable is missing, so it silently falls through to `C:\repos\Vivreal_Templates`, which is
+  parked on an old branch at renderer 1.62.3 while both `origin/main` lockfiles read 1.65.0 and
+  the fleet ran 1.66.0. It then reports a version mismatch that is not real. Cost one rejected
+  push. Set it in the hook's environment, not just in your shell, and confirm which parity
+  worktree carries which branch before you trust a green run.
+
+- **Patch a lockfile surgically. Never `npm install` on Windows.** Installing the new renderer
+  took optional dependencies from 263 to 261, dropping `@emnapi/core` and `@emnapi/runtime`,
+  which **Linux needs**, and left the lockfile so out of sync that `npm ci` failed with
+  `EUSAGE`, cascading into false test, type-check and build failures. The fix that works:
+  restore the lockfile, patch **only** that one entry's `version`, `resolved` and `integrity`
+  from `npm view ... dist.tarball` / `dist.integrity`, verify the optional-dependency count is
+  identical before and after, then `npm ci`.
+
+- **Merging a stack one PR at a time diverges the rest.** GitHub retargets a child to `main`
+  only when its base branch is **deleted**. Three PRs merged twelve seconds apart, two of them
+  into their own base branches, all three reported MERGED, and only one PR's content reached
+  `main`; recovery was cherry-picking the two squash commits with `-x`. Either retarget each
+  child to `main` **explicitly** before merging it, or integrate the whole stack onto one
+  branch. The portal's own set was a diamond rather than a chain, so it landed as one
+  integration PR for exactly that reason.
+
+- **Parallel agents in one repo starve each other's gates.** The pre-push hook runs eslint, two
+  `tsc` passes, the full vitest suite, a coverage map and a Playwright smoke that starts its own
+  dev server on **3100** and a mock upstream on **4600**. Those ports are machine-wide and
+  vitest defaults to a worker per core. A campaigns fix had its push rejected three times, every
+  failure an unrelated spec that passed in isolation, because a sibling agent was running a
+  suite in another worktree; it went green with no change to the diff. **When a push fails on
+  specs that have nothing to do with your diff, look for a sibling before you touch the code.**
+  Parallelise the work across repos, serialize the gate within one.
+
+- **Never background a push. It dies with the turn.** A subagent's backgrounded push dies when
+  the turn ends, and it takes the environment down with it: a smoke killed mid-run leaves
+  `next dev` alive on 3100 holding `.next-test`, so the next `tsc` reads half-written generated
+  types (232 errors, every path under `.next-test/`) and the next smoke reuses the stale server
+  with `ECONNREFUSED 127.0.0.1:4600`. Three pushes died on the environment before one landed.
+  Run the push in the foreground and keep the turn open until it finishes.
+
+- **A resolution that looks clean is not one that compiles.** Integrating four portal PRs
+  produced one conflict where keep-both was correct, but **the conflict opened inside a
+  docblock**, so the shared `/**` sat above the marker and keeping both sides left the second
+  comment body with no opener. The diff looked fine; the type-check caught it in seconds. Run
+  the compiler after every resolution, and **regenerate anything generated** rather than
+  hand-merging it: a hand-resolved `registry.ts` was proved correct only because regenerating it
+  produced a zero-byte diff.
+
+- **Fix every reader of a shape in one change, not just the one that gates the UI.** The
+  campaigns client read `res.data?.data` where the axios interceptor had already stripped the
+  envelope, in four places. Two of them, `updateCampaign` and `sendCampaign`, had callers that
+  treated `null` as success, so a failed save toasted **"Saved"** and a send whose result could
+  not be read toasted **"On its way."** Both were latent only while the screen was unreachable,
+  and would have gone live the moment the gate was fixed alone (walk 9, sections 2 and 9).
+
+- **A negative result is only evidence when the same query can produce a positive one.** This
+  outranks the rest. Three wrong conclusions were reached in a single day out of empty results:
+  a `git grep` against `origin/stable` in a repo that has no such ref and deploys from `main`,
+  which read as "nothing invokes this Lambda" when the invoke was there all along; a 403 from a
+  distribution that answers 403 for every unsigned request whether or not the object exists; and
+  an `aws s3api head-object` against a **bucket that does not exist in the account**, whose 404
+  meant "no such bucket" and was read as "no such object" while the files had been there for two
+  weeks. Before you conclude a symbol has no callers, a setting does not exist, or a path is
+  unreachable, make the same query return a hit for something you know is there, and say which
+  ref, repo and path it ran against. Related and easy to hit here:
+  `MSYS_NO_PATHCONV=1` or a `git grep` for any `@/` import path silently returns zero.
+
 ## Hard rules
 
 - No `any` without an inline comment explaining why.
@@ -131,6 +205,11 @@ Don't dispatch experts speculatively — only when you've actually hit something
 - DON'T silently fix-and-hide reviewer findings — report the verdict honestly, including FAILs.
 - DON'T introduce new patterns when existing ones work fine.
 - DON'T touch files not listed in the plan.
+- DON'T run `npm install` to bump a dependency on Windows. Patch the lockfile entry surgically and verify with `npm ci`.
+- DON'T background a push. It dies with the turn and leaves a stale dev server that poisons the next one.
+- DON'T chase a push failure into your diff when the failing specs are unrelated. Check for a sibling agent holding 3100 or 4600 first.
+- DON'T merge a stacked PR without explicitly retargeting it to `main`, or it lands in its base and reports success.
+- DON'T report an absence off an empty grep. Produce a positive control with the same query and name the ref it ran against.
 
 ## Output Format
 - You ARE Coder. Don't say "As the coder, I would..."
