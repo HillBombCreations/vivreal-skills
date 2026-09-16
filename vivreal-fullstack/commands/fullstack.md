@@ -50,10 +50,10 @@ Generate this checklist (adapt based on feature):
 ### 2. Proxy Route (`src/app/api/proxy/<feature>/route.ts`)
 - [ ] Create edge route using `createProxyHandler()` factory (57 of 76 routes use this)
 - [ ] Both exports required: `export const runtime = 'edge'` and `export const dynamic = 'force-dynamic'`
-- [ ] Choose correct `baseUrl`:
-  - CMS: `process.env.NEXT_PUBLIC_CMS_URL || 'https://dev-cms.vivreal.io'`
-  - Secure: `process.env.NEXT_PUBLIC_SECURE_URL || 'https://dev-secure.vivreal.io'`
-  - Main: `process.env.NEXT_PUBLIC_MAIN_API || 'https://dev-api.vivreal.io'`
+- [ ] Choose correct `baseUrl`. **Never fall back to a `dev-*` host.** Those custom domains were deleted 2026-09-15 along with the DEV stacks behind them, so an unset env var would now fail silently against a dead domain instead of refusing to connect. Pin the prod host as the fallback instead (same rule as `vivreal-proxy-factory`'s `/proxy-route` generator):
+  - CMS: `process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io'`
+  - Secure: `process.env.NEXT_PUBLIC_SECURE_URL || 'https://secure.vivreal.io'`
+  - Main: `process.env.NEXT_PUBLIC_MAIN_API || 'https://api.vivreal.io'`
 - [ ] Implement `buildPath` — for CMS routes use `injectCtxParams()` (sets `key` + `groupID`); for Secure routes also add `dbKey` manually
 - [ ] Set `label` for logging (e.g., `'collectionObjects/create'`)
 - [ ] Default timeout is 15s — set `timeoutMs` only if you need something different
@@ -122,7 +122,7 @@ export const dynamic = 'force-dynamic';
 
 import { createProxyHandler, injectCtxParams, filterParams } from '../_helpers/createProxyHandler';
 
-const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'https://dev-cms.vivreal.io';
+const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io'; // never a dev-* fallback (those domains are deleted)
 
 export const GET = createProxyHandler({
   method: 'GET',
@@ -144,7 +144,7 @@ export const dynamic = 'force-dynamic';
 
 import { createProxyHandler, injectCtxParams } from '../_helpers/createProxyHandler';
 
-const SECURE_URL = process.env.NEXT_PUBLIC_SECURE_URL || 'https://dev-secure.vivreal.io';
+const SECURE_URL = process.env.NEXT_PUBLIC_SECURE_URL || 'https://secure.vivreal.io'; // never a dev-* fallback (those domains are deleted)
 
 export const GET = createProxyHandler({
   method: 'GET',

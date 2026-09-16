@@ -44,7 +44,7 @@ verdict if the metric is hot. (Metrics are `vivreal-ops`'s job to pull — read-
 |---|---|---|---|
 | Portal `upstream.status:502/504`, **no matching backend event** for the `request_id` | Lambda never produced a response — cold-start/init timeout, throttle, or API GW integration timeout | Lambda `Throttles` (Sum), `ConcurrentExecutions` (Max) vs reserved, `Duration` p99 vs configured timeout, `Errors`; `aws lambda get-function-concurrency` + account settings | Throttles>0 or ConcurrentExecutions at the reserved ceiling → concurrency floor too low. Duration≈timeout → init/handler too slow. |
 | Sentry **timeout warning** issue, or a trace that just *stops* mid-handler with no error | Lambda hit its configured timeout (the silent-timeout class) | Lambda `Duration` p99/Max vs `Timeout` config; `Errors` vs invocations | Duration pinned at the timeout value → bump timeout or fix the hang. This is the class the timeout-flush guard was built to surface. |
-| Backend error after a **long Mongoose span**, `MongoServerSelectionError` / connection timeout, or a burst of DB errors across tenants | Atlas connection pool exhausted — `poolSize × Lambda concurrency` exceeded the cluster cap | Lambda `ConcurrentExecutions` (Max) × per-Lambda pool size vs Atlas cap (**shared-tier 500**, M10 1500, M20+ higher); Atlas SSL-alert / connection count where readable | Concurrency × pool ≥ cap → connection saturation. Shared-tier hides `$currentOp`/`serverStatus`; infer from concurrency math + per-project Sentry error spread (see `vivreal-atlas-topology`). |
+| Backend error after a **long Mongoose span**, `MongoServerSelectionError` / connection timeout, or a burst of DB errors across tenants | Atlas connection pool exhausted, OR orphaned clients accumulated over time (not necessarily a concurrency spike, see `vivreal-atlas-topology`) | `db.adminCommand({ serverStatus: 1 })` for `connections.current`/`available` (permitted on the shared tier, no Atlas Admin API key needed); Lambda `ConcurrentExecutions` (Max) as a secondary signal; Atlas SSL-alert-80 in logs | `connections.current` near 500 (shared tier) means saturation, regardless of what concurrency math predicts (the 2026-09-15 incident held 441 connections at 12 concurrent). Per-service attribution is still impossible (`$currentOp`/`hostInfo` are blocked, and the fleet shares one `appName`); infer THAT from per-project Sentry error spread (see `vivreal-atlas-topology`). |
 | Throttle/429 surfaced from a backend, or `Rate Exceeded` | Reserved concurrency floor too low, or account unreserved pool starved (<100) | Lambda `Throttles` (Sum), `ConcurrentExecutions` (Max), `aws lambda get-account-settings` | Throttles correlate with traffic peaks → raise reserved concurrency (it's floor AND ceiling — see `vivreal-lambda`). |
 | `Runtime exited … signal: killed` / OOM-shaped crash | Lambda memory ceiling | CloudWatch Logs `Max Memory Used` vs `MemorySize`, `Duration` | Max Memory ≈ MemorySize → raise memory (also speeds CPU-bound handlers). |
 | `site-deployment` project error, or a deploy stuck "pending" | Step Functions state stalled/failed | `aws stepfunctions describe-execution` + `get-execution-history` for the `vh_site_deployment_*` machine; Amplify build outcome | Identify the failing/stuck state; the state machine is NOT in IaC (`vivreal-site-deploy-pipeline`). |
@@ -76,9 +76,12 @@ command, and recommends the fix (which lands via `coder`/`principal-coder`, neve
   timestamps, and Sentry ingestion lags ~30 s. Widen the ops window or you'll miss the spike.
 - **Reserved concurrency is a floor AND a ceiling** (`vivreal-lambda`) — "at the ceiling" can mean
   *correctly capped*, not *starved*. Check account unreserved headroom too.
-- **Shared-tier Atlas is partly blind** (`vivreal-atlas-topology`): `$currentOp`/`serverStatus` are
-  blocked, so connection saturation is *inferred* from Lambda concurrency × pool size and the spread
-  of DB errors across projects — not read directly.
+- **Shared-tier Atlas is only partly blind** (`vivreal-atlas-topology`): `serverStatus` IS permitted
+  and reads `connections.current`/`available` directly. That's the fastest saturation check, and no
+  Atlas Admin API key is needed (none exists). Only `$currentOp {allUsers:true}` and `hostInfo` are
+  blocked, which is why WHICH SERVICE caused a saturation event still has to be *inferred*, from
+  Lambda concurrency, the spread of DB errors across Sentry projects, or orphaned-client accumulation
+  (a service can hold connections without any concurrency spike), not from a direct per-connection read.
 - **The 2026-05-16 → 2026-05-18 log gap:** for issues in that window, Express Lambda logs were
   silently dropped (SDK-version skew) — fall back to CloudWatch Logs, not Sentry logs.
 - **Running config ≠ IaC:** a CLI-set timeout/concurrency can differ from the template and will
