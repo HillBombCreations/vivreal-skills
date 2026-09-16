@@ -3,7 +3,7 @@ name: vivreal-db
 description: Use when querying or exploring Vivreal's MongoDB — including any time you are about to use the mcp__mongodb__* MCP tools — choosing which database, which collection, how to scope a query to a tenant, how to LINK collections together (collection_group ↔ collection_objects ↔ integration_objects, groups ↔ everything, sites ↔ versions/media), or debugging "content created in the portal but missing on the site". Teaches the safe multi-tenant query rules, the dbKey vs group.key vs bucketname distinctions, and the string-ref ↔ ObjectId cross-collection join rule that are the #1 source of bugs. Triggers on: mcp__mongodb, query mongo via MCP, mongodb find/aggregate/count, $lookup, join collections, link collection group to objects, list collections, collection schema, which database, which collection, group/tenant data, publishDate, dbKey, groupID.
 ---
 
-Last synced: 2026-07-13
+Last synced: 2026-09-15 (connection-sourcing section only, per `atlas-connection-fixes-2026-09-15`; the topology/linking/query sections below are still the 2026-06-19 verification)
 
 # Vivreal Multi-Tenant MongoDB — Safe Query & Linking Rules
 
@@ -17,11 +17,15 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
 
 **Where the connection string lives** (priority order):
 
-1. **AWS Secrets Manager** — secret `hb-api-secrets`, key `CLUSTER_URL`. Every backend
-   Lambda resolves it via `{{resolve:secretsmanager:hb-api-secrets:SecretString:CLUSTER_URL}}`.
-   Retrieve it (requires AWS credentials for the account):
+1. **AWS Secrets Manager**: each backend has its own `vivreal/prod/<service>` secret
+   (e.g. `vivreal/prod/cms-api`, `vivreal/prod/main-api`), key `CLUSTER_URL`, no path and
+   no query string. **There is no single shared secret anymore.** The old `hb-api-secrets`
+   store is fully deleted (2026-09-15, no recovery window). Do not read or resolve it.
+   `vivreal-db-explorer`'s launcher (below) reads `vivreal/prod/main-api`, which is a live
+   writable services-user secret; retrieve it the same way if you need it directly
+   (requires AWS credentials for the account):
    ```bash
-   aws secretsmanager get-secret-value --secret-id hb-api-secrets \
+   aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api \
      --query SecretString --output text \
      | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
    ```
@@ -30,25 +34,38 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
 
 **Then connect:** the `vivreal-db-explorer` plugin registers a **read-only** MongoDB
 MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`, `MDB_MCP_READ_ONLY=true`).
-It reads `MDB_MCP_CONNECTION_STRING` from the environment — export it before launching:
+Its launcher (`scripts/launch-mongo-mcp.cjs`) sources `vivreal/prod/main-api` itself when
+`MDB_MCP_CONNECTION_STRING` isn't already exported, and appends
+`maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer` to whichever string it
+resolves. Match that if you export the variable by hand:
 
 ```bash
-export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id hb-api-secrets \
+export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api \
   --query SecretString --output text \
-  | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)')"
+  | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)')?maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer"
 ```
 
 The server loads at session start (approve it on first use). If it isn't registered or
 no connection is live, the `mcp__mongodb__*` tools won't exist — stop and report that;
 never fabricate results. No MCP? You can still connect read-only via a backend repo's
 driver: `NODE_PATH=${VIVREAL_REPOS}/VR_CMS_API/node_modules node <script using MongoClient>`.
+Set `maxPoolSize: 1`, an `appName: 'script:<what>'`, and close the client in `finally`
+(the same policy every non-Lambda connector follows; see `vivreal-atlas-topology`).
+
+**Known gap:** `vivreal/prod/main-api`'s user can write. A dedicated read-only
+`dev-tools-ro` user is proposed for MCP/CLI use but does not exist yet. Treat this
+connection as read-only by convention (`MDB_MCP_READ_ONLY=true` and the query-safety rules
+below), not by database-level enforcement, until that user lands.
 
 **Security — the connection string IS a secret:**
 - It embeds the Atlas username + password. NEVER echo it, write it to a file, paste it into
   a doc/PR/commit, or log it. It goes ONLY into the connect call.
-- Use a **read-only** Atlas database user — that DB-level restriction, not the
+- **Prefer a read-only Atlas database user.** That DB-level restriction, not the
   `MDB_MCP_READ_ONLY` flag, is the real security boundary (the flag is defense-in-depth).
   A read-only user also protects `groups.apiKey`, `webhooks.secret`, `groups.integrations`.
+  Today's default path (`vivreal/prod/main-api`) does **not** have one (see "Known gap"
+  above), so until `dev-tools-ro` exists, `MDB_MCP_READ_ONLY` plus the query-safety rules
+  below are the only boundary in practice. Treat that as a real gap, not a technicality.
 
 ## Database topology (5 databases — verified live)
 

@@ -6,14 +6,16 @@ The packaging/build/deploy facet of `vivreal-lambda`. (Concurrency/scaling lives
 
 | Repo | IaC | Stack name (main / dogfood) |
 |---|---|---|
-| VR_CMS_API | AWS SAM | `VR-CMS-API` / `VR-CMS-API-DEV` |
-| VR_Secure_API | AWS SAM (fragments → generated template) | `VR-Secure-API` / `VR-Secure-API-DEV` |
-| VR_Main_API | AWS SAM | `VR-Main-API` / `VR-Main-API-DEV` |
-| VR_Client_API | AWS SAM (`sam-template.yaml`; `basic/` + `ecommerce/` are alternate stacks sharing `src/`) | per-template stack names |
-| VR_Client_Auth | **Serverless Framework** (`serverless.yml`) — the SAM outlier | — |
-| Vivreal_EventHandler | **Serverless Framework + esbuild** — SAM outlier | — (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
+| VR_CMS_API | AWS SAM | `VR-CMS-API` / `VR-CMS-API-DEV` (**deleted 2026-09-15**, so a `dogfood` push would try to rebuild it from scratch, not redeploy it) |
+| VR_Secure_API | AWS SAM (fragments → generated template) | `VR-Secure-API` / `VR-Secure-API-DEV` (**deleted 2026-09-15**, same caveat) |
+| VR_Main_API | AWS SAM | `VR-Main-API` / `VR-Main-API-DEV` (**kept for now**, it owns the production email queue with no `DeletionPolicy`; deletion is pending a queue-rescue PR, spec `atlas-connection-fixes-2026-09-15` section 13.3) |
+| VR_Client_API | AWS SAM (`sam-template.yaml`; `basic/` + `ecommerce/` are alternate stacks sharing `src/`) | per-template stack names; its own `-DEV` stack was also **deleted 2026-09-15** |
+| VR_Client_Auth | **Serverless Framework** (`serverless.yml`) — the SAM outlier | No separate DEV stack. `serverless deploy` with no `--stage` landed on stage `dev`, which IS the production authorizer (`VRClientAuthorizer-dev-function1`). A `dogfood` push here redeploys PRODUCTION, not a sandbox. |
+| Vivreal_EventHandler | **Serverless Framework + esbuild** — SAM outlier | (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
 
-**CI/CD = GitHub Actions → CloudFormation.** Workflow is typically `.github/workflows/lambda_api.yml`. VR_Client_Auth and Vivreal_EventHandler still auto-deploy prod on push to `main` (`dogfood` → DEV where applicable) — no manual deploy needed, push the branch. **VR_CMS_API, VR_Secure_API, VR_Main_API, and VR_Client_API do NOT** — since 2026-08-15 those four ship via a release train: `lambda_api.yml`'s prod trigger is push to the `stable` branch, which only moves on a staggered Monday `promote.yml` cron or a manual promote dispatch (`target=release/vX.Y`) — since 2026-08-19 the cron auto-mints a patch tag when backports landed on the line, and backports reach a line via each repo's `backport.yml` (PATCH semantics; never a new cut). A push to `main` in those repos fires zero prod workflow runs; the stack names above still apply, just on the new trigger. Full runbook: each repo's `docs/RELEASE.md`.
+**None of the `dogfood` triggers above are removed yet.** That's a separate, still-pending PR per repo (spec `atlas-connection-fixes-2026-09-15` section 13.4, covering CMS, Client API, Secure, Main, Outreach, Client Auth and both MCP server repos). Until each lands, don't push to `dogfood` in any of these repos: for CMS/Secure/Client API it tries to rebuild a deleted stack, and for Client Auth it redeploys production from whatever the stale `dogfood` branch (`c81686c`, 2026-03-12) contains.
+
+**CI/CD = GitHub Actions → CloudFormation.** Workflow is typically `.github/workflows/lambda_api.yml`. VR_Client_Auth and Vivreal_EventHandler still auto-deploy prod on push to `main`, no manual deploy needed, push the branch. **VR_CMS_API, VR_Secure_API, VR_Main_API, and VR_Client_API do NOT**, since 2026-08-15 those four ship via a release train: `lambda_api.yml`'s prod trigger is push to the `stable` branch, which only moves on a staggered Monday `promote.yml` cron or a manual promote dispatch (`target=release/vX.Y`), and since 2026-08-19 the cron auto-mints a patch tag when backports landed on the line, reaching a line via each repo's `backport.yml` (PATCH semantics; never a new cut). A push to `main` in those repos fires zero prod workflow runs; the stack names above still apply, just on the new trigger. Full runbook: each repo's `docs/RELEASE.md`.
 
 ## VR_Secure_API template generation (its quirk)
 

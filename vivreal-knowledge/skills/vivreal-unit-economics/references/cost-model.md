@@ -22,14 +22,14 @@ AWS infra is a fixed ~$35/mo. The Atlas upgrade does not change this line.
 
 | Tier | ~Monthly | Connections | ~Concurrent users* | Vector search? |
 |---|---|---|---|---|
-| M0 free / M2 / M5 shared | $0 / ~$9 / ~$25 | **500** | ~150 | No |
-| **M10 (recommended)** | **~$60** | **1,500** | ~500 | Yes |
+| **M0 free / M2 / M5 shared (current tier; owner decision 2026-09-15: staying here)** | **$0 / ~$9 / ~$25** | **500** | ~150 | No |
+| M10 (modelled upgrade only, not the plan) | ~$60 | 1,500 | ~500 | Yes |
 | M20 | ~$150 | 3,000 | ~1,000 | Yes |
 | M30 | ~$400+ | higher | higher | Yes |
 
-\* Rule of thumb: each warm Lambda container holds ~3-15 Mongo connections; ~3-per-container is a reasonable casual-load average, 15 is the pathological worst case. Cap ÷ per-container = the concurrency ceiling. **This is why DB tier tracks PEAK CONCURRENCY, not signups** — a ~105-concurrency spike (observed daily, from the public Client API) already blows the 500 shared cap even though total volume is light (~4,700 invocations/day).
+\* Each warm Lambda container's per-client cost is 3 monitor sockets (one per replica-set member) plus up to `maxPoolSize` pooled sockets, so a cap-divided-by-maxPoolSize estimate omits the monitor sockets and understates it; per-container totals run ~3 to 15 depending on service (see `vivreal-atlas-topology` for the per-service table). **This is why DB tier tracks PEAK CONCURRENCY, not signups.** Measured 2026-08-31: the 500-connection shared cap was saturated by **~54 concurrent VR_Client_API containers**, about one episode every 5 days, not daily, even though total volume is light (~4,700 invocations/day).
 
-One M10 cluster holds all tenant DBs (`general_shared`, `pro_plus`, etc.) — no per-database charge. Budget ~$60/mo all-in (backup + transfer negligible at current size).
+Current spend is the shared tier (owner decision, 2026-09-15: stay here rather than take M10). If M10 is taken later, one M10 cluster would hold all tenant DBs (`general_shared`, `pro_plus`, etc.), no per-database charge; budget ~$60/mo all-in then (backup + transfer negligible at current size).
 
 ## Anthropic / AI agent cost mechanics
 

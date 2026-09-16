@@ -21,11 +21,33 @@
  * stderr — and it hands stdio straight through to the child server. The resolved
  * connection string is a SECRET: it is only ever placed in the child's env, never
  * logged, echoed, or written to stdout/stderr.
+ *
+ * CONNECTION FOOTPRINT: per the fleet-wide connection policy
+ * (vivreal-hq/docs/projects/atlas-connection-fixes-2026-09-15/spec.md section 11 and 7.3),
+ * every non-Lambda connector bounds its pool and identifies itself. `withMcpOptions` below
+ * appends `maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer` to whichever
+ * connection string this launcher resolves, whether that came from the environment or from
+ * Secrets Manager.
+ *
+ * FOLLOW-UP (not done here): `vivreal/prod/main-api`'s user can write. Spec section 14
+ * proposes a dedicated read-only `dev-tools-ro` user for MCP/CLI use; that user and its
+ * secret do not exist yet, so this launcher still points at the writable service secret.
+ * Repoint it once that read-only user exists. Do not invent a secret id ahead of that work.
  */
 const { spawnSync, spawn } = require('child_process');
 
 const log = (msg) => process.stderr.write(`[vivreal-db-explorer] ${msg}\n`);
 const onWindows = process.platform === 'win32';
+
+// Bounds this session to the same footprint every script, CI job and MCP server must carry:
+// a small pool, a bounded idle time, and an appName so the connection is attributable instead
+// of landing under the shared "hillbomb_api" name every backend Lambda still reports today.
+const MCP_CONNECTION_OPTIONS = 'maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer';
+
+function withMcpOptions(uri) {
+  const separator = uri.includes('?') ? '&' : '?';
+  return `${uri}${separator}${MCP_CONNECTION_OPTIONS}`;
+}
 
 function resolveConnectionString() {
   if (process.env.MDB_MCP_CONNECTION_STRING) {
@@ -69,7 +91,7 @@ const connectionString = resolveConnectionString();
 
 // Read-only is enforced here so it can never be dropped by a missing env block.
 const env = { ...process.env, MDB_MCP_READ_ONLY: 'true' };
-if (connectionString) env.MDB_MCP_CONNECTION_STRING = connectionString;
+if (connectionString) env.MDB_MCP_CONNECTION_STRING = withMcpOptions(connectionString);
 
 const child = spawn(
   'npx',

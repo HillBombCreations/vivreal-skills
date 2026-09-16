@@ -44,7 +44,7 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 ## Gotchas
 
 - **CORS is wide open** (`callback(null, true)`) — intentional for the public API.
-- `maxPoolSize=10` here vs 3 in Secure/CMS — should be reduced to match.
+- `maxPoolSize=10` here vs **3 in Secure, 5 in CMS today** (`createMainDb.js:50`). Main's 10 is the outlier and should come down. Don't round CMS down to 3 by memory: it's 5 on every CMS function today, and only its two bulk writers (CreateAndUpdateColObjects, CreateAndUpdateIntegrations) stay at 5 once the `@hillbombcreations/mongo-connection` migration ships (spec `atlas-connection-fixes-2026-09-15`); Main's own target under that spec is also 3. See `vivreal-atlas-topology`.
 - **Secrets Phase 2 is done**: all four Lambdas resolve config via CloudFormation dynamic references from `vivreal/prod/main-api` + `vivreal/prod/stripe` + `vivreal/prod/social-oauth` (Secrets Manager) and SSM `/vivreal/prod/*` — **any `hb-api-secrets` reference is now wrong**. The old hardcoded Stripe live key (`createUserService.js`/`checkUserExistsEmail.js`) and repo-root `googleAppJSON.json` are gone.
 - `helathCheckFns.js` (sic) — typo filename; don't rename without fixing imports.
 - arm64-only Lambda layers (x86_64 extension → `Extension.Crash`).
