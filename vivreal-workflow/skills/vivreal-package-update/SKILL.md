@@ -1,6 +1,6 @@
 ---
 name: vivreal-package-update
-description: Use to bump a shared dependency across ALL Vivreal repos that consume it — especially the private @hillbombcreations/* GitHub Packages (schemas, site-renderer, tier-quotas). Discovers consumers, detects version skew, bumps each repo, deletes node_modules + package-lock.json, reinstalls against GitHub Packages, builds/tests, and opens PRs. Triggers on: bump package, update dependency across repos, upgrade @hillbombcreations/schemas, version skew, coordinated dependency update, update shared package everywhere, package-lock reinstall.
+description: 'Use to bump a shared dependency across ALL Vivreal repos that consume it — especially the private @hillbombcreations/* GitHub Packages (schemas, site-renderer, tier-quotas). Discovers consumers, detects version skew, bumps each repo, deletes node_modules + package-lock.json, reinstalls against GitHub Packages, builds/tests, and opens PRs. Triggers on: bump package, update dependency across repos, upgrade @hillbombcreations/schemas, version skew, coordinated dependency update, update shared package everywhere, package-lock reinstall.'
 ---
 
 # Vivreal Cross-Repo Package Update

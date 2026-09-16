@@ -1,6 +1,6 @@
 ---
 name: vivreal-mcp-server-knowledge
-description: Use when working in VR-MCP-Server — Vivreal's remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing 69 CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules and per-tier tool gating, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, TOOL_MIN_TIER, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.
+description: 'Use when working in VR-MCP-Server — Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing 69 CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules and per-tier tool gating, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, TOOL_MIN_TIER, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.'
 ---
 
 # VR-MCP-Server — knowledge digest

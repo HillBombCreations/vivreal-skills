@@ -1,6 +1,6 @@
 ---
 name: vivreal-deploy-tracker
-description: Use to actively CHECK the live deploy status of a customer site — is it pending/deploying/live/failed, which Step Functions state is it stuck or failing in, and what does Amplify say. Drives AWS (Step Functions + Amplify) and the sites.deployment doc to pinpoint a hung or failed deploy. For how the pipeline WORKS (the design), see vivreal-site-deploy-pipeline; this skill is the active runbook for tracking a specific deploy. Triggers on: deploy status, is the site live, site stuck pending, why did the deploy fail, track deployment, check amplify build, step functions execution for site, deployment status of <site>, createAmplifyApp ValidationException.
+description: 'Use to actively CHECK the live deploy status of a customer site — is it pending/deploying/live/failed, which Step Functions state is it stuck or failing in, and what does Amplify say. Drives AWS (Step Functions + Amplify) and the sites.deployment doc to pinpoint a hung or failed deploy. For how the pipeline WORKS (the design), see vivreal-site-deploy-pipeline; this skill is the active runbook for tracking a specific deploy. Triggers on: deploy status, is the site live, site stuck pending, why did the deploy fail, track deployment, check amplify build, step functions execution for site, deployment status of <site>, createAmplifyApp ValidationException.'
 ---
 
 # Vivreal Deploy Tracker — active site-deploy status check
