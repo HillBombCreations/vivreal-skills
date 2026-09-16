@@ -1,6 +1,6 @@
 ---
 name: vivreal-subagent-driven
-description: Use when executing an approved Vivreal plan.md/design.md task-by-task in the current session. Vivreal-owned fork of the subagent-driven-development discipline; dispatches a fresh coder agent per task, a reviewer pass (spec + quality) after each, and a final whole-branch reviewer pass at the end. Drives the vivreal-workflow agents (coder, reviewer, tester) as the subagents. Triggers on: execute the plan, run the plan, implement task-by-task, subagent-driven, build out the plan.
+description: 'Use when executing an approved Vivreal plan.md/design.md task-by-task in the current session. Vivreal-owned fork of the subagent-driven-development discipline; dispatches a fresh coder agent per task, a reviewer pass (spec + quality) after each, and a final whole-branch reviewer pass at the end. Drives the vivreal-workflow agents (coder, reviewer, tester) as the subagents. Triggers on: execute the plan, run the plan, implement task-by-task, subagent-driven, build out the plan.'
 ---
 
 # Vivreal Subagent-Driven Development

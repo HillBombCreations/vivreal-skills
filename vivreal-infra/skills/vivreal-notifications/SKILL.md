@@ -1,6 +1,6 @@
 ---
 name: vivreal-notifications
-description: Use when working on Vivreal's cross-repo push-notification pipeline — the vivreal-notification-queue SQS queue, VR_Main_API's NotificationConsumerFunction (web-push/VAPID), its producers (EventHandler markSiteLive site-live push, VR_Secure_API deploy-status pushes), and the pushsubscriptions/pushpreferences collections. Triggers on: push notification, web push, notification queue, vivreal-notification-queue, NotificationConsumerFunction, pushsubscriptions, pushpreferences, VAPID, site-live notification, deploy push, "user didn't get the notification". Distinct from the WebSocket realtime channel (vivreal-websocket-realtime) and from email (main-api knowledge).
+description: 'Use when working on Vivreal''s cross-repo push-notification pipeline — the vivreal-notification-queue SQS queue, VR_Main_API''s NotificationConsumerFunction (web-push/VAPID), its producers (EventHandler markSiteLive site-live push, VR_Secure_API deploy-status pushes), and the pushsubscriptions/pushpreferences collections. Triggers on: push notification, web push, notification queue, vivreal-notification-queue, NotificationConsumerFunction, pushsubscriptions, pushpreferences, VAPID, site-live notification, deploy push, "user didn''t get the notification". Distinct from the WebSocket realtime channel (vivreal-websocket-realtime) and from email (main-api knowledge).'
 ---
 
 # Vivreal push-notification pipeline — knowledge digest
