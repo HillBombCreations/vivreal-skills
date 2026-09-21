@@ -97,30 +97,26 @@ Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/h
 - `active_ctx` JWT contains: `groupID`, `dbKey`, `bucketname`, `exp`
 - mainDb queries: ALWAYS use `{ _id: groupID }`. NEVER `groupName`.
 - Tenant DB queries: scoped via `dbKey`, served from `general_shared` (free/basic/pro) or `pro_plus`
-- Tier → DB routing handled by VR_Client_Auth authorizer for client API; portal proxy uses `dbKey` from active_ctx directly
+- **Nothing maps a tier to a database.** `dbKey` is a field stored on the group document, set once at creation and read back, never computed from `group.tier`. `VR_Client_Auth`'s authorizer and the portal proxy both resolve it the same way (see below), neither derives it.
 
 ### The three key fields — DO NOT CONFUSE (common source of bugs)
 
 | Field | Source | Value example | Used for |
 |---|---|---|---|
-| `dbKey` | `deriveDbKey(group)` in `contextCookieFns.js` | `general_shared`, `pro_plus`, or slugified groupName (enterprise) | **Database routing** — `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
+| `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-placement`, which returns the stored `group.dbKey` | `general_shared`, `pro_plus`, or a per-pod placement name | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
 | `group.key` | Stored on the group document in mainDb | `thecomedycollective` | **S3 bucket naming** — bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
 | `bucketname` | `${group.type}-${group.key}` | `collection-thecomedycollective` | **S3 object path prefix** — used in media upload/retrieval paths. |
 
-**`deriveDbKey()` logic** (defined in `VR_Secure_API/src/userAndAuth/services/contextCookieFns.js`):
-```
-free/basic/pro  → 'general_shared'
-proplus         → 'pro_plus'
-enterprise      → slugify(group.groupName)
-fallback        → group.database (legacy)
+**There is no `deriveDbKey()` any more.** A function by that name used to live separately in six repos (`VR_Secure_API`, `VR_CMS_API`, `VR_Main_API`, `Vivreal_EventHandler`, `VR_Client_Auth`, plus a `databaseDict[group.tier]` variant in `oauthCallback.js`), and four of the six copies had drifted from each other, misrouting real tenant writes. All six are deleted. The only way to get a tenant database name now is:
+
+```js
+const { resolvePlacement } = require('@hillbombcreations/tenant-placement');
+const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.dbKey is absent or unroutable
 ```
 
-**Where `dbKey` is set in `active_ctx`:**
-- `profileSwitch.js` — `const dbKey = deriveDbKey(foundGroup)`
-- `updateDefaultProfile.js` — same
-- `createGroup.js` / `joinGroup.js` — same mapping inline
+`resolvePlacement` cannot be given a tier and has no fallback. A group projection that drops `dbKey` makes it throw, not silently reroute to a guessed value. If you see `databaseDict[group.tier]`, `deriveDbKey(group)`, or an inline tier-to-database ladder anywhere, that IS the bug (report it, do not treat it as the correct pattern).
 
-**The `databaseDict` pattern you'll see in backend code** (e.g., `oauthCallback.js`) is the SAME tier→DB mapping as `deriveDbKey()`. When you see `databaseDict[group.tier]`, that IS the correct `dbKey` — do NOT "fix" it to `group.key`.
+**Where `dbKey` is read in `active_ctx`:** `profileSwitch.js` and `updateDefaultProfile.js` (`VR_Secure_API/src/userAndAuth/services/`) both call `resolvePlacement(foundGroup)`. New groups get a placement chosen once, by measurement, via `choosePlacementForNewGroup()` (same package) in `createGroup.js`, never a tier lookup.
 
 ### MCP skill usage for database queries
 - **`vivreal-db-explorer:db-schema`** — Use to inspect Mongoose schema, indexes, and sample docs for any collection. Invoke during research before reasoning about data shape.
