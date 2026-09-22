@@ -75,17 +75,40 @@ own leftovers first.
 
 **Sweep for orphans, and do it routinely rather than once.** Long agent runs
 leave things behind: dev servers on the fixed ports, browser processes with no
-driver, test runners whose parent is gone, and directory walks that outlived the
-question they were answering. Each one costs processor and memory for nothing,
-and a dev server left on a fixed port is worse than idle, because the next agent
-will reuse it and test the wrong tree.
+driver, test runners whose parent is gone, and **recursive directory walks that
+outlived the question they were answering**. That last one costs out of all
+proportion here, because a recursive search crosses every worktree and every
+`node_modules` inside each, and there are many. Two such leftovers were once the
+top consumers on this machine while a spot reading was being blamed on something
+else.
 
-Before dispatching a batch, and again between phases:
+A dev server left on a fixed port is worse than idle: the next agent reuses it
+and tests the wrong tree.
 
-- list what is listening on the fixed ports and confirm each one belongs to a run
-  you can name,
-- look for runner and browser processes whose parent has exited,
-- kill what nobody owns, then verify it is gone rather than assuming.
+`scripts/sweep-orphans.ps1` does this. It reports by default and kills only with
+`-Kill`. Run it before dispatching a batch and again between phases, and pass
+`-Protect` the worktree path of any run legitimately in flight.
+
+**The rule that makes a sweep safe, and it is not optional.** "Its parent has
+exited" is **not a signal by itself on Windows**. `csrss`, `wininit`, `winlogon`,
+the service hosts and most vendor background agents all have exited parents by
+design. A first version of that script duly listed `csrss.exe` as a kill
+candidate, and killing it bluescreens the machine instantly.
+
+So orphanhood is only ever considered **inside a candidate set** of things an
+agent run actually spawns, with a second independent denylist refusing system
+processes whatever the signals say. A browser counts only when something is
+driving it, which a person's own browser never is. If you write your own sweep,
+build both guards before you build the detector.
+
+Three signals, none sufficient alone: orphaned within the candidate set, busy
+measured as a **delta over an interval**, and walking a path recursively. **Age is
+not a signal.** An editor open for three days is fine.
+
+Kill, then **verify it is gone**. A kill that silently failed reads as a clean
+sweep. And anything killed mid-run leaves residue that poisons the next run: a
+killed smoke leaves a server on its port and a test build directory behind, so
+remove both.
 
 Anything killed mid-run leaves residue that poisons the next run: a killed smoke
 leaves a server on its port and a test build directory behind, so remove both.
