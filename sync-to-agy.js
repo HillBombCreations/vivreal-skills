@@ -49,7 +49,7 @@ marketplace.plugins.forEach(plugin => {
 
   // Process commands -> skills (prefixed with cmd- to avoid naming clashes)
   // Commands that must NOT get a cmd-* skill mirror (promptify ships as a
-  // command only — see commit 9168979)
+  // command only, see commit 9168979)
   const EXCLUDED_COMMANDS = new Set(['promptify']);
   if (fs.existsSync(commandsDir)) {
     const commands = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'))

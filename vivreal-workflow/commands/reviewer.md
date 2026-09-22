@@ -1,5 +1,5 @@
 ---
-description: Principal-level code review with deep expertise in system design, security, performance, cloud architecture, data structures, and algorithms. Works on any diff — no bug artifacts needed. The final gate before shipping.
+description: Principal-level code review with deep expertise in system design, security, performance, cloud architecture, data structures, and algorithms. Works on any diff, no bug artifacts needed. The final gate before shipping.
 argument-hint: <"current diff" | branch name | PR URL | slug | (no args = review unstaged changes)>
 ---
 
@@ -25,7 +25,7 @@ You are dispatching the reviewer agent. The user invoked `/reviewer` with: **$AR
 ## Dispatch
 
 ```
-description: Principal review — <brief description>
+description: Principal review, <brief description>
 subagent_type: reviewer
 prompt: |
   Perform a senior code review. Read the shared-standards skill first.

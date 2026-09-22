@@ -8,7 +8,7 @@ You are dispatching the tester agent directly. The user invoked `/test` with: **
 ## Setup
 
 1. Extract the slug from `$ARGUMENTS`
-2. Verify `docs/bugs/<slug>/plan.md` exists — if not, tell the user: "No plan found for `<slug>`. Run `/architect <slug>` first."
+2. Verify `docs/bugs/<slug>/plan.md` exists, if not, tell the user: "No plan found for `<slug>`. Run `/architect <slug>` first."
 3. Tell the user: "Dispatching tester for `<slug>`."
 
 ## Dispatch
@@ -23,7 +23,7 @@ prompt: Write tests for the fix to bug <slug>. Read the shared-standards skill, 
 
 1. Append metrics to `docs/bugs/<slug>/metrics.md`:
    ```markdown
-   ### Testing — tester
+   ### Testing: tester
    | Metric | Value |
    |---|---|
    | total_tokens | <from agent result> |

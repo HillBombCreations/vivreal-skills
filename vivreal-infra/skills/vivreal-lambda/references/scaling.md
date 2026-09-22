@@ -2,14 +2,14 @@
 
 The concurrency/scaling/capacity facet of `vivreal-lambda`. (Packaging/deploy lives in `references/deploy.md`.) Pairs with `vivreal-atlas-topology` (the Mongo side).
 
-## Mental model — reserved concurrency is a floor AND a ceiling
+## Mental model: reserved concurrency is a floor AND a ceiling
 
 - AWS account concurrency limit is **1000** total.
 - `ReservedConcurrentExecutions` on a function **carves out** that many slots: it guarantees the function can scale to that number AND **caps it there**. Reserved slots are subtracted from the shared `UnreservedConcurrentExecutions` pool.
 - AWS enforces a **hard floor of 100** unreserved. If total reservations would drop unreserved below 100, the change/deploy is **rejected**.
 - Functions WITHOUT a reservation share the unreserved pool and burst into it.
 
-Throughput ≈ concurrency ÷ avg-duration (Little's Law). To raise throughput, lower duration or raise concurrency — but only up to the real ceiling below.
+Throughput ≈ concurrency ÷ avg-duration (Little's Law). To raise throughput, lower duration or raise concurrency, but only up to the real ceiling below.
 
 ## The real ceiling is Mongo connections, NOT Lambda
 
@@ -39,15 +39,15 @@ Fix: free reservations that aren't needed (DEV functions you don't hit) with `aw
 
 ## Right-sizing principle
 
-Most internal functions peak ≤6 concurrent over 14 days yet were reserved 20–100. Pattern: **unreserve low-volume internal functions** (let them burst into the big shared pool), keep a small guard on the hottest internal path (e.g. GetGroupInfo at 20), and **cap only the public unbounded spiker** (Client API) to bound Mongo. Current allocation after reallocation: ~151 reserved / ~849 unreserved.
+Most internal functions peak ≤6 concurrent over 14 days yet were reserved 20 to 100. Pattern: **unreserve low-volume internal functions** (let them burst into the big shared pool), keep a small guard on the hottest internal path (e.g. GetGroupInfo at 20), and **cap only the public unbounded spiker** (Client API) to bound Mongo. Current allocation after reallocation: ~151 reserved / ~849 unreserved.
 
-## DURABILITY GOTCHA — CLI changes revert on next deploy
+## DURABILITY GOTCHA: CLI changes revert on next deploy
 
 `ReservedConcurrentExecutions` is **template-defined**. Any `put-function-concurrency` / `delete-function-concurrency` you run via CLI is **silently overwritten by the next CloudFormation deploy** of that stack. To make concurrency changes durable you MUST edit the IaC:
 
 - VR_Secure_API: edit `cloudformation/*.yaml` fragments, then regenerate `cloudYamls/allRoutes.yaml` via `node scripts/merge-template.js` (CI runs this pre-deploy; the generated file is committed).
 - VR_Main_API: edit `sam-template.yaml`.
-- VR_CMS_API: templates currently set NO reservations (so nothing to revert there — but adding one means adding it to the fragment).
+- VR_CMS_API: templates currently set NO reservations (so nothing to revert there, but adding one means adding it to the fragment).
 - VR_Client_API: the cap rides in the SAM template / `--parameter-overrides` in the workflow.
 
 If concurrency "mysteriously reset," it's almost always a deploy clobbering a CLI change.

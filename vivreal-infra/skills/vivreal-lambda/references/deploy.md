@@ -10,8 +10,8 @@ The packaging/build/deploy facet of `vivreal-lambda`. (Concurrency/scaling lives
 | VR_Secure_API | AWS SAM (fragments → generated template) | `VR-Secure-API` / `VR-Secure-API-DEV` (**deleted 2026-09-15**, same caveat) |
 | VR_Main_API | AWS SAM | `VR-Main-API` / `VR-Main-API-DEV` (**kept for now**, it owns the production email queue with no `DeletionPolicy`; deletion is pending a queue-rescue PR, spec `atlas-connection-fixes-2026-09-15` section 13.3) |
 | VR_Client_API | AWS SAM (`sam-template.yaml`; `basic/` + `ecommerce/` are alternate stacks sharing `src/`) | per-template stack names; its own `-DEV` stack was also **deleted 2026-09-15** |
-| VR_Client_Auth | **Serverless Framework** (`serverless.yml`) — the SAM outlier | No separate DEV stack. `serverless deploy` with no `--stage` landed on stage `dev`, which IS the production authorizer (`VRClientAuthorizer-dev-function1`). A `dogfood` push here redeploys PRODUCTION, not a sandbox. |
-| Vivreal_EventHandler | **Serverless Framework + esbuild** — SAM outlier | (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
+| VR_Client_Auth | **Serverless Framework** (`serverless.yml`), the SAM outlier | No separate DEV stack. `serverless deploy` with no `--stage` landed on stage `dev`, which IS the production authorizer (`VRClientAuthorizer-dev-function1`). A `dogfood` push here redeploys PRODUCTION, not a sandbox. |
+| Vivreal_EventHandler | **Serverless Framework + esbuild**, SAM outlier | (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
 
 **None of the `dogfood` triggers above are removed yet.** That's a separate, still-pending PR per repo (spec `atlas-connection-fixes-2026-09-15` section 13.4, covering CMS, Client API, Secure, Main, Outreach, Client Auth and both MCP server repos). Until each lands, don't push to `dogfood` in any of these repos: for CMS/Secure/Client API it tries to rebuild a deleted stack, and for Client Auth it redeploys production from whatever the stale `dogfood` branch (`c81686c`, 2026-03-12) contains.
 
@@ -19,7 +19,7 @@ The packaging/build/deploy facet of `vivreal-lambda`. (Concurrency/scaling lives
 
 ## VR_Secure_API template generation (its quirk)
 
-SAM source lives in `cloudformation/` **fragments**; the deployed template `cloudYamls/allRoutes.yaml` is **generated** by `node scripts/merge-template.js` (run by `npm run build` and by CI before deploy). **Never hand-edit `allRoutes.yaml`** — edit the fragment and re-merge. `allRoutes.yaml` IS committed/tracked (CI relies on it).
+SAM source lives in `cloudformation/` **fragments**; the deployed template `cloudYamls/allRoutes.yaml` is **generated** by `node scripts/merge-template.js` (run by `npm run build` and by CI before deploy). **Never hand-edit `allRoutes.yaml`**, edit the fragment and re-merge. `allRoutes.yaml` IS committed/tracked (CI relies on it).
 
 ## Build → package → deploy (SAM repos)
 
@@ -33,13 +33,13 @@ aws cloudformation deploy ...
 
 1. **250 MB unzipped Lambda limit.** Bundling **dev-dependencies** into the package blew this on VR_Outreach_API (deploy broke ~2 weeks). Fix: a `build:deploy` step that prunes dev-deps before packaging (`npm prune --production` or equivalent). If a deploy suddenly fails on size after adding tooling, suspect dev-deps in the artifact.
 2. **51,200-byte inline CloudFormation template limit.** Once a template grows past this, an inline `aws cloudformation deploy` fails. Fix: stage the template through S3 with **`--s3-bucket <bucket>`** on `aws cloudformation package` (the standard path for the larger backends; hit during the admin-analytics deploy).
-3. **arm64 Lambda layers only.** All functions are arm64 — **layers must be arm64-compatible.** An x86_64 **extension** layer (e.g. the old OTEL collector) crashes at init with `Extension.Crash` / `exec format error`. The **FFmpeg layer** (`FFMPEG_ARN` in Secrets Manager) installs no extension so it won't crash at init, but fails at runtime if the arch mismatches. Orphaned OTEL refs (`AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument`) in any fragment should be removed — they cause `Extension.Crash` on deploy.
+3. **arm64 Lambda layers only.** All functions are arm64, **layers must be arm64-compatible.** An x86_64 **extension** layer (e.g. the old OTEL collector) crashes at init with `Extension.Crash` / `exec format error`. The **FFmpeg layer** (`FFMPEG_ARN` in Secrets Manager) installs no extension so it won't crash at init, but fails at runtime if the arch mismatches. Orphaned OTEL refs (`AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument`) in any fragment should be removed, they cause `Extension.Crash` on deploy.
 
 ## Other deploy traps seen in prod
 
-- **A new Express route fails post-deploy if you forgot its API Gateway event.** CMS, Secure, and Client API all wire **one explicit per-route event — there is no catch-all `{proxy+}` integration** — so an Express route with no matching event in the SAM fragment is unreachable at the gateway and falls through to the default IAM-protected resource. Symptom varies by repo: **CMS → 403** (SigV4/IAM; the Cognito authorizer never fires), **Secure → 502**, **Client → edge reject**. Add the event in the `cloudformation/` fragment (Client: `sam-template.yaml`); never hand-edit the generated `allRoutes.yaml`. ***Main API is exempt*** — its routes are public flows with no gateway authorizer, so there's no auth gate to fall through to. This is a *deploy-config* miss, not a code bug — see the CMS/Secure/Client per-repo skills' "add a route" checklists. (Auth angle: `vivreal-auth-architecture`.)
+- **A new Express route fails post-deploy if you forgot its API Gateway event.** CMS, Secure, and Client API all wire **one explicit per-route event, there is no catch-all `{proxy+}` integration**, so an Express route with no matching event in the SAM fragment is unreachable at the gateway and falls through to the default IAM-protected resource. Symptom varies by repo: **CMS → 403** (SigV4/IAM; the Cognito authorizer never fires), **Secure → 502**, **Client → edge reject**. Add the event in the `cloudformation/` fragment (Client: `sam-template.yaml`); never hand-edit the generated `allRoutes.yaml`. ***Main API is exempt***, its routes are public flows with no gateway authorizer, so there's no auth gate to fall through to. This is a *deploy-config* miss, not a code bug, see the CMS/Secure/Client per-repo skills' "add a route" checklists. (Auth angle: `vivreal-auth-architecture`.)
 - **Deploy-role IAM scoping** can block a new resource type (the deploy role's EventBridge policy was `vh-*`-only and blocked an EventBridge rule on another stack). See `vivreal-iam-secrets`.
-- **Reserved-concurrency in templates** silently reverts CLI tuning on the next deploy — see `references/scaling.md`.
+- **Reserved-concurrency in templates** silently reverts CLI tuning on the next deploy, see `references/scaling.md`.
 
 ## Sources of truth
 

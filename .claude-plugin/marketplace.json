@@ -5,8 +5,8 @@
     "email": "justin@vivreal.io"
   },
   "metadata": {
-    "description": "Vivreal Claude Code agents, workflows, skills, and tooling — installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.12.5"
+    "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
+    "version": "1.13.0"
   },
   "plugins": [
     {
@@ -22,17 +22,17 @@
     {
       "name": "vivreal-workflow",
       "source": "./vivreal-workflow",
-      "description": "The Vivreal bug/feature workflow: coordinator + research/architect/coder/tester/reviewer/documenter/vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix), /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill."
+      "description": "The Vivreal bug/feature workflow: coordinator + research/architect/coder/tester/reviewer/documenter/vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix), /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill, and the verification-discipline skill: the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, and why a gate can be enabled and still incapable of failing."
     },
     {
       "name": "vivreal-knowledge",
       "source": "./vivreal-knowledge",
-      "description": "Auto-invoked knowledge skills: safe multi-tenant MongoDB query rules (vivreal-db), cross-stack Sentry tracing (sentry-tracer), the site product/authoring model (vivreal-sites), the portal design system (vivreal-design-system), the cost/margin model (vivreal-unit-economics), the brand voice (vivreal-brand-voice), the cross-repo AI assistant surface (vivreal-agent-knowledge), and a per-repo knowledge digest for each Vivreal repo (portal, CMS/Secure/Main APIs, the public Client stack, EventHandler, Templates, site-renderer, MCP server, and the Outreach API). Skills load passively from intent — install everywhere you touch Vivreal code or data."
+      "description": "Auto-invoked knowledge skills: safe multi-tenant MongoDB query rules (vivreal-db), cross-stack Sentry tracing (sentry-tracer), the site product/authoring model (vivreal-sites), the portal design system (vivreal-design-system), the cost/margin model (vivreal-unit-economics), the brand voice (vivreal-brand-voice), the cross-repo AI assistant surface (vivreal-agent-knowledge), and a per-repo knowledge digest for each Vivreal repo (portal, CMS/Secure/Main APIs, the public Client stack, EventHandler, Templates, site-renderer, MCP server, and the Outreach API). Skills load passively from intent, install everywhere you touch Vivreal code or data."
     },
     {
       "name": "vivreal-infra",
       "source": "./vivreal-infra",
-      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service vivreal/prod/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Distinct from vivreal-knowledge's per-repo digests — this is the plumbing that crosses repos. Skills load passively from intent."
+      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service vivreal/prod/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Distinct from vivreal-knowledge's per-repo digests, this is the plumbing that crosses repos. Skills load passively from intent."
     },
     {
       "name": "vivreal-sentry",
@@ -42,17 +42,17 @@
     {
       "name": "vivreal-ops",
       "source": "./vivreal-ops",
-      "description": "The vivreal-ops agent — a READ-ONLY investigator of RUNNING Vivreal infrastructure (live AWS Lambda config/concurrency, Step Functions execution history, API Gateway, IAM, Secrets Manager, MongoDB Atlas state). Investigates the deployed reality and recommends; fixes route to principal-coder/coder. Grounded in the vivreal-infra + vivreal-db skills. Distinct from principal-architect (design) and the sentry agent (Sentry telemetry)."
+      "description": "The vivreal-ops agent, a READ-ONLY investigator of RUNNING Vivreal infrastructure (live AWS Lambda config/concurrency, Step Functions execution history, API Gateway, IAM, Secrets Manager, MongoDB Atlas state). Investigates the deployed reality and recommends; fixes route to principal-coder/coder. Grounded in the vivreal-infra + vivreal-db skills. Distinct from principal-architect (design) and the sentry agent (Sentry telemetry)."
     },
     {
       "name": "vivreal-product",
       "source": "./vivreal-product",
-      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), and ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough). All advisory — they evaluate and recommend; fixes route to principal-coder/coder, content-creator/content-planner, or designer/principal-designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agents (which design+build)."
+      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), and ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough). All advisory, they evaluate and recommend; fixes route to principal-coder/coder, content-creator/content-planner, or designer/principal-designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agents (which design+build)."
     },
     {
       "name": "vivreal-fullstack",
       "source": "./vivreal-fullstack",
-      "description": "Cross-repo context loading, end-to-end feature scaffolding, and full-stack request tracing — the fullstack-tracer agent, the fullstack-context auto-loader skill, and the /fullstack scaffold command."
+      "description": "Cross-repo context loading, end-to-end feature scaffolding, and full-stack request tracing, the fullstack-tracer agent, the fullstack-context auto-loader skill, and the /fullstack scaffold command."
     },
     {
       "name": "vivreal-proxy-factory",
@@ -62,22 +62,22 @@
     {
       "name": "vivreal-db-explorer",
       "source": "./vivreal-db-explorer",
-      "description": "Safe multi-tenant MongoDB querying and schema exploration via the /db-query and /db-schema commands — dbKey routing, archived/tenant safety guards, credential redaction, and the collection map."
+      "description": "Safe multi-tenant MongoDB querying and schema exploration via the /db-query and /db-schema commands, dbKey routing, archived/tenant safety guards, credential redaction, and the collection map."
     },
     {
       "name": "vivreal-growth-analytics",
       "source": "./vivreal-growth-analytics",
-      "description": "Growth analytics and funnel analysis — the growth-advisor agent + growth-context skill + /growth-report and /funnel-analysis commands, unifying GA4, PostHog, and MongoDB user data."
+      "description": "Growth analytics and funnel analysis, the growth-advisor agent + growth-context skill + /growth-report and /funnel-analysis commands, unifying GA4, PostHog, and MongoDB user data."
     },
     {
       "name": "vivreal-cms",
       "source": "./vivreal-cms",
-      "description": "Skill for operating a Vivreal account via the Vivreal MCP server — content collections, channels, sites, Stripe billing, and the canonical set-active-group workflow."
+      "description": "Skill for operating a Vivreal account via the Vivreal MCP server, content collections, channels, sites, Stripe billing, and the canonical set-active-group workflow."
     },
     {
       "name": "vivreal-agent-review",
       "source": "./vivreal-agent-review",
-      "description": "Read-only review of Claude Code definition files — the agent, skill, command, and plugin .md/.json files that configure Claude Code itself. The definition-reviewer agent and /definition-review command detect the target profile (packaged plugin vs bare .claude/), run claude plugin validate, apply the tagged rule set, resolve every directory-qualified cross-file reference, and check platform claims in agent prose against the live docs. Distinct from the code reviewers in vivreal-workflow and vivreal-principal, which review product-code diffs."
+      "description": "Read-only review of Claude Code definition files, the agent, skill, command, and plugin .md/.json files that configure Claude Code itself. The definition-reviewer agent and /definition-review command detect the target profile (packaged plugin vs bare .claude/), run claude plugin validate, apply the tagged rule set, resolve every directory-qualified cross-file reference, and check platform claims in agent prose against the live docs. Distinct from the code reviewers in vivreal-workflow and vivreal-principal, which review product-code diffs."
     }
   ]
 }

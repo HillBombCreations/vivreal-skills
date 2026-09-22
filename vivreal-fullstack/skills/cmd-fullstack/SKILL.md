@@ -1,11 +1,11 @@
 ---
 name: fullstack
-description: Scaffold an end-to-end feature checklist across the Vivreal stack — proxy route, backend service, frontend component, types, and E2E test
+description: Scaffold an end-to-end feature checklist across the Vivreal stack, proxy route, backend service, frontend component, types, and E2E test
 allowed-tools: Read, Glob, Grep, Write, Edit, Agent
 user-invocable: true
 ---
 
-# /fullstack — End-to-End Feature Scaffold
+# /fullstack: End-to-End Feature Scaffold
 
 The user wants to scaffold a new feature that spans the Vivreal stack. Generate a structured implementation checklist and optionally scaffold the files.
 
@@ -13,7 +13,7 @@ The user wants to scaffold a new feature that spans the Vivreal stack. Generate 
 
 `/fullstack <feature-name> [--upstream=cms|secure|main] [--method=GET|POST|PUT|DELETE] [--scaffold]`
 
-- `<feature-name>`: Short kebab-case name for the feature (e.g., `content-approvals`, `bulk-publish`)
+- `<feature-name>`: Short kebab-case name for the feature (e.g. `content-approvals`, `bulk-publish`)
 - `--upstream`: Which backend API this targets (default: `cms`)
 - `--method`: HTTP method (default: `GET`)
 - `--scaffold`: If present, create skeleton files. Otherwise, just output the checklist.
@@ -30,14 +30,14 @@ The user wants to scaffold a new feature that spans the Vivreal stack. Generate 
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Architecture | 5 Lambdas | 15 Lambdas | 4 Lambdas |
+| Architecture | several Lambdas | several Lambdas | several Lambdas |
 | Route handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey query param | `key` | `dbKey` | N/A (no tenant routing) |
 | Auth at API Gateway | Cognito authorizer | Cognito authorizer | None (unauthenticated) |
 | Response pattern | `req.resData = { status, response }` | `req.resData = { status, response }` | `req.resData = { status, response }` |
 | Shared schemas | `@hillbombcreations/schemas` | Inline models | Inline models |
 
-**Critical**: CMS API expects the query param `key` for dbKey. Secure API expects `dbKey`. The portal's `injectCtxParams()` helper sets `key` and `groupID` — Secure API routes must also manually add `dbKey` if the upstream reads it that way.
+**Critical**: CMS API expects the query param `key` for dbKey. Secure API expects `dbKey`. The portal's `injectCtxParams()` helper sets `key` and `groupID`, Secure API routes must also manually add `dbKey` if the upstream reads it that way.
 
 ## Checklist Template
 
@@ -54,9 +54,9 @@ Generate this checklist (adapt based on feature):
   - CMS: `process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io'`
   - Secure: `process.env.NEXT_PUBLIC_SECURE_URL || 'https://secure.vivreal.io'`
   - Main: `process.env.NEXT_PUBLIC_MAIN_API || 'https://api.vivreal.io'`
-- [ ] Implement `buildPath` — for CMS routes use `injectCtxParams()` (sets `key` + `groupID`); for Secure routes also add `dbKey` manually
-- [ ] Set `label` for logging (e.g., `'collectionObjects/create'`)
-- [ ] Default timeout is 15s — set `timeoutMs` only if you need something different
+- [ ] Implement `buildPath`, for CMS routes use `injectCtxParams()` (sets `key` + `groupID`); for Secure routes also add `dbKey` manually
+- [ ] Set `label` for logging (e.g. `'collectionObjects/create'`)
+- [ ] Default timeout is 15s, set `timeoutMs` only if you need something different
 - [ ] Add `validateBody` for input validation (return error string or null)
 - [ ] Add `transformBody` to reshape/filter the request body before forwarding
 - [ ] Add `transformResponse` to reshape upstream data before wrapping in envelope
@@ -81,28 +81,28 @@ Generate this checklist (adapt based on feature):
 - [ ] Implement business logic in `services/` directory
 - [ ] Use tenant DB via dbKey routing (`dynamicDb.connect(dbKey)`)
 - [ ] Use shared Mongoose schemas from `@hillbombcreations/schemas` (CMS) or inline models (Secure)
-- [ ] Add audit logging via `emitAuditLog(tenantDb, entry)` if write operation — fire-and-forget, never blocks the request
-- [ ] Add content versioning via `createVersion(tenantDb, opts)` if updating collection objects — also fire-and-forget
+- [ ] Add audit logging via `emitAuditLog(tenantDb, entry)` if write operation, fire-and-forget, never blocks the request
+- [ ] Add content versioning via `createVersion(tenantDb, opts)` if updating collection objects, also fire-and-forget
 - [ ] For CMS: if adding a new route, update the CloudFormation YAML fragment in `cloudformation/<lambda>.yaml` or the route returns 403
 
 ### 5. Frontend Component (`src/components/<Feature>/`)
-- [ ] `Client.tsx` — interactive `'use client'` component (this is the convention, not a strict requirement)
-- [ ] `Loader.tsx` — skeleton loader for Suspense boundaries
-- [ ] `Dialog.tsx` — CRUD modal (only if the feature has create/edit dialogs — not all features do)
+- [ ] `Client.tsx`, interactive `'use client'` component (this is the convention, not a strict requirement)
+- [ ] `Loader.tsx`, skeleton loader for Suspense boundaries
+- [ ] `Dialog.tsx`, CRUD modal (only if the feature has create/edit dialogs, not all features do)
 - [ ] API calls: use `createAuthAxios()` (creates axios instance with baseURL `/app/api/proxy`, auto CSRF header, 401→logout redirect, envelope unwrap)
 - [ ] For components making multiple API calls, memoize: `useMemo(() => createAuthAxios(), [])`
 - [ ] Error handling: `try/catch` + `getApiError(err, 'fallback message')` from `@/lib/api/auth/helpers` + toast/snackbar
 - [ ] Optimistic updates: update local state immediately, restore on error
 
 ### 6. Page Route (`src/app/(app)/<feature>/`)
-- [ ] `page.tsx` — server component with `export const dynamic = 'force-dynamic'`
+- [ ] `page.tsx`, server component with `export const dynamic = 'force-dynamic'`
   - Uses `serverFetchDirect()` for data fetching (auto-injects `key`/`groupID` from `active_ctx` cookie)
   - Pattern: `<Suspense key={activeCtx} fallback={<Loader />}><Resolved activeCtx={activeCtx} /></Suspense>`
-- [ ] `loading.tsx` — re-exports the Loader component: `export { default } from '@/components/<Feature>/Loader'`
-- [ ] `error.tsx` — `'use client'` component using `PageErrorBoundary` from `@/components/Universal/PageErrorBoundary`
+- [ ] `loading.tsx`, re-exports the Loader component: `export { default } from '@/components/<Feature>/Loader'`
+- [ ] `error.tsx`, `'use client'` component using `PageErrorBoundary` from `@/components/Universal/PageErrorBoundary`
 
 ### 7. E2E Test (`e2e/<feature>.spec.ts`)
-- [ ] Import from `e2e/fixtures/auth-setup` (protected pages) or `e2e/fixtures/global-setup` (public pages) — **never import from `@playwright/test` directly**
+- [ ] Import from `e2e/fixtures/auth-setup` (protected pages) or `e2e/fixtures/global-setup` (public pages), **never import from `@playwright/test` directly**
 - [ ] Mock APIs with `page.route()` for browser-side requests (server-side fetches in server components CANNOT be mocked this way)
 - [ ] Add reusable mock functions in `e2e/fixtures/api-mocks.ts` (49 existing mocks)
 - [ ] Add test data in `e2e/fixtures/test-data.ts` (24 existing exports)
@@ -125,14 +125,14 @@ import { createProxyHandler, injectCtxParams, filterParams } from '../_helpers/c
 const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io'; // never a dev-* fallback (those domains are deleted)
 
 export const GET = createProxyHandler({
-  method: 'GET',
-  baseUrl: CMS_URL,
-  label: '<feature-name>',
+  method: 'GET'
+  baseUrl: CMS_URL
+  label: '<feature-name>'
   buildPath: ({ ctx, params }) => {
     filterParams(params, new Set(['page', 'limit']));
     injectCtxParams(params, ctx);
     return `/tenant/<endpoint>?${params.toString()}`;
-  },
+  }
 });
 ```
 
@@ -147,14 +147,14 @@ import { createProxyHandler, injectCtxParams } from '../_helpers/createProxyHand
 const SECURE_URL = process.env.NEXT_PUBLIC_SECURE_URL || 'https://secure.vivreal.io'; // never a dev-* fallback (those domains are deleted)
 
 export const GET = createProxyHandler({
-  method: 'GET',
-  baseUrl: SECURE_URL,
-  label: '<feature-name>',
+  method: 'GET'
+  baseUrl: SECURE_URL
+  label: '<feature-name>'
   buildPath: ({ ctx }) => {
     const p = injectCtxParams(new URLSearchParams(), ctx);
     p.set('dbKey', ctx.dbKey);  // Secure API reads dbKey, not key
     return `/api/<endpoint>?${p.toString()}`;
-  },
+  }
 });
 ```
 
@@ -189,6 +189,6 @@ The portal proxy wraps all responses in a standard envelope via `apiSuccess()`/`
 { success: false, data: null, error: "<message>", detail?: "<optional>" }
 ```
 
-The `createAuthAxios()` response interceptor automatically unwraps this — client components receive `res.data` as the inner `data` field directly.
+The `createAuthAxios()` response interceptor automatically unwraps this, client components receive `res.data` as the inner `data` field directly.
 
-Backend APIs (CMS/Secure/Main) do NOT use this envelope — they return raw `response` via `req.resData = { status, response }`. The portal proxy factory wraps the raw upstream response in the envelope before returning to the browser.
+Backend APIs (CMS/Secure/Main) do NOT use this envelope, they return raw `response` via `req.resData = { status, response }`. The portal proxy factory wraps the raw upstream response in the envelope before returning to the browser.

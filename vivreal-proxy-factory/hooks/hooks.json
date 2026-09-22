@@ -1,5 +1,5 @@
 {
-  "description": "Guards proxy routes to ensure they use the createProxyHandler() factory pattern (deterministic path check — never fires outside src/app/api/proxy/**/route.ts)",
+  "description": "Guards proxy routes to ensure they use the createProxyHandler() factory pattern (deterministic path check, never fires outside src/app/api/proxy/**/route.ts)",
   "hooks": {
     "PreToolUse": [
       {

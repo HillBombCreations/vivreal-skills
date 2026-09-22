@@ -14,18 +14,18 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 | Repo | Path | CLAUDE.md | Purpose |
 |---|---|---|---|
-| Vivreal Portal (frontend) | `C:\repos\Vivreal_Portal_Mobile` | `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` | Next.js 16 portal — proxy routes, components, auth |
+| Vivreal Portal (frontend) | `C:\repos\Vivreal_Portal_Mobile` | `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` | Next.js 16 portal, proxy routes, components, auth |
 | VR_Main_API | `C:\repos\VR_Main_API` | `C:\repos\VR_Main_API\CLAUDE.md` | Auth, signup, email, Slack/Discord, Stripe products |
 | VR_Secure_API | `C:\repos\VR_Secure_API` | `C:\repos\VR_Secure_API\CLAUDE.md` | Group mgmt, site creation, billing, profile switching |
 | VR_CMS_API | `C:\repos\VR_CMS_API` | `C:\repos\VR_CMS_API\CLAUDE.md` | Collections, objects, integrations, media, audit, versioning |
 | VR_Client_API | `C:\repos\VR_Client_API` | `C:\repos\VR_Client_API\CLAUDE.md` | Public content delivery API for end-user sites |
 | VR_Client_Auth | `C:\repos\VR_Client_Auth` | `C:\repos\VR_Client_Auth\CLAUDE.md` | Lambda authorizer for Client API |
-| VR_Outreach_API | `C:\repos\VR_Outreach_API` | `C:\repos\VR_Outreach_API\CLAUDE.md` | Email outreach — sequences, contacts/companies, booking, SES |
+| VR_Outreach_API | `C:\repos\VR_Outreach_API` | `C:\repos\VR_Outreach_API\CLAUDE.md` | Email outreach, sequences, contacts/companies, booking, SES |
 | VR_Analytics_API | `C:\repos\VR_Analytics_API` | N/A (README.md) | First-party analytics ingest + rollup pipeline |
 | Vivreal_EventHandler | `C:\repos\Vivreal_EventHandler` | `C:\repos\Vivreal_EventHandler\CLAUDE.md` | Step Functions site deployment pipeline |
 | Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Universal site template (`main` = the single template; other branches = per-customer sites) |
 | vivreal-site-renderer | `C:\repos\vivreal-site-renderer` | `C:\repos\vivreal-site-renderer\CLAUDE.md` | `@hillbombcreations/site-renderer` rendering engine |
-| VR-MCP-Server | `C:\repos\VR-MCP-Server` | `C:\repos\VR-MCP-Server\CLAUDE.md` | OAuth 2.1 MCP server (~72 CMS tools) |
+| VR-MCP-Server | `C:\repos\VR-MCP-Server` | `C:\repos\VR-MCP-Server\CLAUDE.md` | OAuth 2.1 MCP server (~the CMS tool roster) |
 | VR-Outreach-MCP-Server | `C:\repos\VR-Outreach-MCP-Server` | `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` | Internal outreach MCP server (50 tools) |
 | Vivreal-Schemas | `C:\repos\Vivreal-Schemas` | N/A | Shared Mongoose schemas (npm package `@hillbombcreations/schemas`) |
 
@@ -40,11 +40,11 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 ## Portal Proxy Layer (165 routes total, as of 2026-07-13)
 
-- **137 factory routes** use `createProxyHandler()` — handles auth, CSRF, body parsing, upstream fetch, response envelope
-- **28 manual routes** — cookie-setting routes, complex transforms, custom validation, third-party upstreams, public no-`active_ctx` exceptions
+- **137 factory routes** use `createProxyHandler()`, handles auth, CSRF, body parsing, upstream fetch, response envelope
+- **28 manual routes**, cookie-setting routes, complex transforms, custom validation, third-party upstreams, public no-`active_ctx` exceptions
 - All routes: `export const runtime = 'edge'` + `export const dynamic = 'force-dynamic'`
 - Response envelope: `{ success: true, data, error: null }` or `{ success: false, data: null, error: "msg" }`
-- `createAuthAxios()` on the client automatically unwraps this envelope — components receive `res.data` = inner `data`
+- `createAuthAxios()` on the client automatically unwraps this envelope, components receive `res.data` = inner `data`
 - `injectCtxParams(params, ctx)` sets `key` and `groupID` on query params (designed for CMS API)
 - For Secure API routes, also manually add `p.set('dbKey', ctx.dbKey)` since Secure reads `dbKey` not `key`
 
@@ -62,16 +62,16 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 ## MongoDB Architecture
 
-- **`Vivreal`** (mainDb) — control plane: `groups`, `checkoutsessions`
-- **`general_shared`** — tenant data for free/basic/pro tier groups
-- **`pro_plus`** — tenant data for pro_plus tier groups
-- **No per-group database** — tenants share a DB, isolated by `groupID` field on every document
-- Tier determines which tenant DB: look up `groups.tier` in mainDb → route to `general_shared` or `pro_plus`
+- **`Vivreal`** (mainDb), control plane: `groups`, `checkoutsessions`
+- **`general_shared`**, tenant data for free/basic/pro tier groups
+- **`pro_plus`**, another tenant content database. **A database name, not a plan name**, and it holds real data
+- **No per-group database**, tenants share a DB, isolated by `groupID` field on every document
+- **The tier does NOT determine the tenant database.** Look up the group in mainDb and read `groups.dbKey`: that field IS the database. The ladder that derived one from a tier is deleted from every repository, and it re-pointed a live group whenever its tier changed
 - The `key` field on groups is for S3 bucket naming, NOT database routing
 
 ## Activation Procedure
 
-1. **Read the CLAUDE.md** of every repo the user's question touches. Use the Read tool — don't guess from memory.
+1. **Read the CLAUDE.md** of every repo the user's question touches. Use the Read tool, don't guess from memory.
 2. **Identify the request path**: frontend component → proxy route → backend controller → service → MongoDB collection
 3. **Load the specific files** at each layer before proposing changes
 4. If the change spans repos, list ALL files that need modification across ALL repos
@@ -79,13 +79,13 @@ When this skill activates, you have context about a cross-repo concern. Before a
 ## Cross-Repo Conventions
 
 - All backend APIs are **Express.js + serverless-express**, AWS Lambda, **JavaScript** (not TypeScript)
-- Shared schemas in `@hillbombcreations/schemas` (npm, v1.29.0): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `siteVersionSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`, `domainOrderSchema` (orderType `purchase`|`transfer`, encrypted `authCode`, `bundleApplied`), `siteTrafficDailySchema`, `siteTemplatesSchema` (new `site_templates` collection — portal template-picker registry), plus the `domainOrderStatuses` constants export (13 purchase + 9 transfer statuses). Version history since 1.25.0: **1.26.0** added 7 Studio-editable site-chrome fields to `siteSchema` (`footerNewsletter`, `motionPreset`, `announcement`, `utilityStrip`, `fulfillmentStrip`, `floatingCta`, `favicon` — all Mixed with `default: undefined` so absence stays meaningful; `demoRibbon` deliberately NOT declared — ops-only); **1.27.0** declared the phantom Stripe billing block on `groupSchema` (`dbKey`, `stripeSubscriptionID`, `subscriptionStatus`, `subscriptionCadence`, `currentPeriodEnd`, `overageBilling`, `scheduledTierChange`, `cancellation`, `pauseCollection`, `retentionDiscount`) — killed the silently-stripped class of bug; **1.28.0** added `system` to `webhookSchema`; **1.29.0** declared `featureFlags` on `groupSchema` as a strict:false sub-schema (only `aiActionsEnabled` declared, so an undeclared future flag persists instead of vanishing)
+- Shared schemas in `@hillbombcreations/schemas` (read the version from its `package.json`, and each consumer pin from the consumer): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `siteVersionSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`, `domainOrderSchema` (orderType `purchase`|`transfer`, encrypted `authCode`, `bundleApplied`), `siteTrafficDailySchema`, `siteTemplatesSchema` (new `site_templates` collection, portal template-picker registry), plus the `domainOrderStatuses` constants export (13 purchase + 9 transfer statuses). Version history since 1.25.0: **1.26.0** added 7 Studio-editable site-chrome fields to `siteSchema` (`footerNewsletter`, `motionPreset`, `announcement`, `utilityStrip`, `fulfillmentStrip`, `floatingCta`, `favicon`, all Mixed with `default: undefined` so absence stays meaningful; `demoRibbon` deliberately NOT declared, ops-only); **1.27.0** declared the phantom Stripe billing block on `groupSchema` (`dbKey`, `stripeSubscriptionID`, `subscriptionStatus`, `subscriptionCadence`, `currentPeriodEnd`, `overageBilling`, `scheduledTierChange`, `cancellation`, `pauseCollection`, `retentionDiscount`), killed the silently-stripped class of bug; **1.28.0** added `system` to `webhookSchema`; **1.29.0** declared `featureFlags` on `groupSchema` as a strict:false sub-schema (only `aiActionsEnabled` declared, so an undeclared future flag persists instead of vanishing)
 - Auth flow: Cognito JWT (`token` cookie) + signed context JWT (`active_ctx` cookie)
-- The `active_ctx` contains: `groupID`, `dbKey`, `bucketname`, `exp` — NOT `groupName`
-- **Never use `groupName` for mainDb queries** — always `{ key: dbKey }` or `{ _id: groupID }`
-- Portal proxy routes run on **edge runtime** — no Node.js APIs available
+- The `active_ctx` contains: `groupID`, `dbKey`, `bucketname`, `exp`, NOT `groupName`
+- **Never use `groupName` for mainDb queries**, always `{ key: dbKey }` or `{ _id: groupID }`
+- Portal proxy routes run on **edge runtime**, no Node.js APIs available
 - Cognito claims available in backend via `req.apiGateway.event.requestContext.authorizer.claims` (email, given_name, family_name, sub)
-- Audit logging and content versioning are fire-and-forget — if they fail, the main operation still succeeds
+- Audit logging and content versioning are fire-and-forget, if they fail, the main operation still succeeds
 
 ## When You Need to Trace a Feature
 

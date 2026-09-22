@@ -5,8 +5,8 @@
  * WHY THIS EXISTS: agents kept asking the user to paste an Atlas connection
  * string because the bare `mongodb-mcp-server` starts UNCONNECTED whenever
  * MDB_MCP_CONNECTION_STRING isn't exported in the launching shell. This wrapper
- * sources the string the same way every backend Lambda does — from AWS Secrets
- * Manager (secret `vivreal/prod/main-api`, key `CLUSTER_URL`) — so the server is already
+ * sources the string the same way every backend Lambda does, from AWS Secrets
+ * Manager (secret `vivreal/prod/main-api`, key `CLUSTER_URL`), so the server is already
  * connected before any agent runs a query. The agent never has to ask.
  *
  * Resolution order:
@@ -17,8 +17,8 @@
  *      source the string + call mcp__mongodb__connect, still never asking the user.
  *
  * PROTOCOL SAFETY: this process speaks JSON-RPC over stdio. It MUST NOT write
- * anything to stdout (that would corrupt the MCP stream) — all diagnostics go to
- * stderr — and it hands stdio straight through to the child server. The resolved
+ * anything to stdout (that would corrupt the MCP stream), all diagnostics go to
+ * stderr, and it hands stdio straight through to the child server. The resolved
  * connection string is a SECRET: it is only ever placed in the child's env, never
  * logged, echoed, or written to stdout/stderr.
  *
@@ -55,7 +55,7 @@ function resolveConnectionString() {
     return process.env.MDB_MCP_CONNECTION_STRING;
   }
 
-  log('No MDB_MCP_CONNECTION_STRING in env — sourcing CLUSTER_URL from Secrets Manager (vivreal/prod/main-api)…');
+  log('No MDB_MCP_CONNECTION_STRING in env, sourcing CLUSTER_URL from Secrets Manager (vivreal/prod/main-api)…');
   const res = spawnSync(
     'aws',
     ['secretsmanager', 'get-secret-value',
@@ -68,7 +68,7 @@ function resolveConnectionString() {
   if (res.status !== 0 || !res.stdout) {
     const why = res.error ? res.error.message : (res.stderr || '').trim();
     log(`Could not read vivreal/prod/main-api (aws CLI exit ${res.status}). ${why}`);
-    log('Starting UNCONNECTED. The agent must source the string and call connect — see the');
+    log('Starting UNCONNECTED. The agent must source the string and call connect, see the');
     log('"Connecting" section of /db-query (sources CLUSTER_URL itself; never asks the user).');
     return null;
   }
@@ -79,7 +79,7 @@ function resolveConnectionString() {
       log('vivreal/prod/main-api resolved but has no CLUSTER_URL key. Starting unconnected.');
       return null;
     }
-    log('Resolved CLUSTER_URL from Secrets Manager — server will start connected (read-only).');
+    log('Resolved CLUSTER_URL from Secrets Manager, server will start connected (read-only).');
     return secret.CLUSTER_URL;
   } catch (e) {
     log(`Failed to parse vivreal/prod/main-api JSON: ${e.message}. Starting unconnected.`);

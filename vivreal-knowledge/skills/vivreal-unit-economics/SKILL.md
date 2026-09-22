@@ -1,48 +1,66 @@
 ---
 name: vivreal-unit-economics
-description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS — gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), overage revenue, infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches the real numbers: pricing $19/$59/$119 (annual $16/$49/$99; ~$45 blended), gross margin ~84-90%, AWS ~$35/mo flat, Atlas tiers ($0 free → ~$60 M10 → ~$150 M20 → ~$400+ M30), Anthropic ~$4/customer blended WITH prompt caching, AI quotas (Pro Plus 500 actions) + v3.1.0 overage rates/spending caps + AI capability flags (aiSiteEditing/aiComponentGen), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin — for GTM/funnel/retention economics use the growth agents instead.'
+description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS, gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), overage revenue, infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches the real numbers: pricing $19/$59/$119 (annual $16/$49/$99; ~$45 blended), gross margin ~84-90%, AWS ~$35/mo flat, Atlas tiers ($0 free → ~$60 M10 → ~$150 M20 → ~$400+ M30), Anthropic ~$4/customer blended WITH prompt caching, AI quotas (read the values from the tier-quotas package) plus overage rates and spending caps + AI capability flags (aiSiteEditing/aiComponentGen), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin, for GTM/funnel/retention economics use the growth agents instead.'
 ---
 
 Last synced: 2026-07-30
 
-# Vivreal Unit Economics — cost, margin & pricing model
+# Vivreal Unit Economics: cost, margin & pricing model
 
 The internal cost/margin/profitability model for Vivreal. This is the source-of-truth digest for any margin or pricing reasoning, and the grounding for the **`finance-auditor`** agent. Lean body; the scale ladder + AI-optimization detail live in `references/cost-model.md`.
 
-> **Sources of truth (read for the live numbers):** `C:\repos\Vivreal_Portal_Mobile\docs\proposals\2026-06-mongo-tier-and-ai-actions.md` and `docs\proposals\vivreal-status-briefing-2026-06-16.html`. Pricing/quota constants: `@hillbombcreations/tier-quotas`. These figures are 2026-06; re-verify against the docs before quoting hard numbers in a decision.
+> **Sources of truth, and the order to trust them in.** Pricing and quota constants:
+> `@hillbombcreations/tier-quotas` `src/tierQuotas.ts`, which is authoritative and which also
+> holds the Stripe price ids. Live customer mix and counts: query `Vivreal.groups`. Live Atlas
+> headroom: `db.adminCommand({serverStatus: 1})`, which is permitted on the shared tier and
+> returns `connections.current` and `connections.available` directly. Infrastructure spend: the
+> AWS bill and the MongoDB invoice, which are two separate bills. **Everything below is
+> reasoning and magnitude. Where a number is pinnable, this file points at the pin rather than
+> copying it, because a copy is wrong in two places at once the moment it moves.**
 
 ## Pricing & blended revenue
 
-| Tier | Price (annual) | Rough mix | Monthly AI action quota |
-|---|---|---|---|
-| Basic | **$19/mo** ($16/mo annual) | ~50% | 50 |
-| Pro | **$59/mo** ($49/mo annual) | ~35% | 500 |
-| Pro Plus | **$119/mo** ($99/mo annual) | ~15% | **500** (cut from 5,000 in tier-quotas v2.3.0, retained through v3.1.0 — the old per-group `agentUsage.quota` override is GONE; past-quota use is metered overage under a spending cap) |
+**Prices, tier names and AI allowances are NOT written down here, deliberately.** They live in
+`TIER_DISPLAY` and `TIER_QUOTAS` in `Vivreal-Tier-Quotas` `src/tierQuotas.ts`, which is the
+pricing-constant source of truth including the Stripe price ids. Read them there before quoting
+a single figure to anyone, internally or in copy.
 
-- Blended ≈ **~$45/customer/mo** at the ~50/35/15 mix (monthly prices). Annual plans (~16% discount) now exist as real Stripe prices in tier-quotas `TIER_DISPLAY` (since v3.0.0; current package v3.1.0), which is the pricing-constant source of truth (incl. Stripe price IDs).
-- **AI capability flags (tier-quotas v3.1.0)** — AI is now gated in TWO dimensions: the metered `agentActions` quota AND binary capability flags. `TIER_FLAGS` in `src/tierQuotas.ts` adds `aiSiteEditing` + `aiComponentGen`: free/basic false; **pro gains `aiSiteEditing` only; proplus + enterprise gain both**. Helpers mirror `canHidePoweredBy`, plus `lowestTierWithFlag()` so consumers derive the required tier; `ENFORCEMENT_MANIFEST` entries are mandatory (total Record over TierFlags — omitting one fails build+test). So "proplus 500 — Pro and Pro Plus share the same cap" is no longer the whole Pro→Pro Plus AI differentiator: `aiComponentGen` is Pro Plus+ only. Quota VALUES and overage rates are unchanged in v3.1.0 — the margin math stands; the change is additive capability flags. First consumer: VR_Secure_API's agent `tools/policy.js` (per-tool `requiredTier` derived from `TIER_FLAGS`).
-- **Gross margin ~84-90%** today and it *improves with scale* — fixed infra is tiny and amortizes; the dominant cost is per-customer payment + AI, both small.
+Three specific traps this table used to walk into:
+
+1. **A tier has been retired and folded into another.** Reasoning about margin per tier from a
+   remembered ladder now models a plan nobody can buy.
+2. **The AI action allowance moved by an order of magnitude, and then again.** The historical
+   tail risk this file existed to track was a maxed-out AI quota on the top plan. That specific
+   exposure was closed by cutting the quota and by shipping prompt caching. Re-read the current
+   numbers before re-opening or re-closing that argument.
+3. **A price in a doc and a price in Stripe are two different facts.** The package holds the
+   Stripe price ids; the live prices are what those ids resolve to. A pricing page that
+   disagrees with either is a third, separately wrong, copy.
+
+- The blended figure and the tier mix are estimates that move with the customer base. **Recompute the mix from `Vivreal.groups` before using it in an argument**, and take the prices from the package. Annual plans exist as real Stripe prices in `TIER_DISPLAY`.
+- **AI capability flags.** AI is gated in TWO dimensions: the metered `agentActions` quota AND binary capability flags. `TIER_FLAGS` in `src/tierQuotas.ts` carries `aiSiteEditing` and `aiComponentGen`. **Read which tier gets which from the file.** Helpers mirror `canHidePoweredBy`, plus `lowestTierWithFlag()` so consumers derive the required tier rather than hardcoding one. `ENFORCEMENT_MANIFEST` entries are mandatory: it is a total Record over the flags, so omitting one fails the build and the tests. **A manifest row is only true if the path the product actually calls runs the gate**, so check the caller before believing a row.
+- **Gross margin ~84-90%** today and it *improves with scale*, fixed infra is tiny and amortizes; the dominant cost is per-customer payment + AI, both small.
 
 ## The cost stack (three bills, two off the AWS invoice)
 
 1. **AWS ≈ $35/mo, essentially FLAT** at current scale (WorkMail + Amplify + Route53 dominate; Lambda is $0 free-tier-absorbed). Customer count barely moves this line. The M10 Mongo upgrade does NOT change it.
-2. **MongoDB Atlas — billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). $0 free → **~$60 M10** → **~$150 M20** → **~$400+ M30**. One cluster holds all tenant DBs — you don't pay per database.
-3. **Anthropic — the AI agent calls the Claude API directly (not Bedrock), billed directly.** ≈ **~$4/customer blended WITH prompt caching** (caching cuts ~45%, and a leaner model for routine actions cuts more). The old tail risk (a maxed Pro Plus at 5,000 actions costing ~$50-80/mo optimized against a $119 plan) was **closed in July 2026 by cutting the Pro Plus quota to 500** — and v3.0.0 removed the free per-group override entirely: past-quota agent use is now **billed overage at $0.05/action** (~breakeven vs token cost) and hard-stops at the spending cap, so the worst case is bounded AND paid for.
+2. **MongoDB Atlas, billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). $0 free → **~$60 M10** → **~$150 M20** → **~$400+ M30**. One cluster holds all tenant DBs, you don't pay per database.
+3. **Anthropic: the AI agent calls the Claude API directly, not Bedrock, and it is billed directly.** Roughly a few dollars per customer blended WITH prompt caching, which cuts the bill substantially, and a leaner model for routine actions cuts it further. The historical tail risk was a top-plan AI quota large enough to go margin negative at full use. That was closed two ways: the quota was cut hard, and the free per-group override was removed so past-quota use is billed overage and hard-stops at the spending cap. **Read the current allowance from the package before re-opening that argument**, because the number has moved twice and the tier it applied to has since been retired.
 
-### Overage billing (introduced tier-quotas v3.0.0, July 2026; rates unchanged in v3.1.0) — priced quota headroom
+### Overage billing: priced quota headroom
 
-- Rates: **CDN $0.50/GB, API $0.005/call, agent actions $0.05/action** — CDN/API rates are strongly margin-positive; agent overage ~breaks even on uncached token cost, better with caching. Eligible tiers: basic/pro/proplus only.
-- New paid subs **auto-enroll** with the tier default spending cap (≈2× base price): Basic $20/bucket, $39 total; Pro $60/$119; Pro Plus $120/$239; free/enterprise disabled. Pro Plus's cap bounds agent overage at ~2,400 extra actions.
-- **Open design call** (flagged in the package docstring): defaults enable per-bucket AND total caps — the owner must pick one primary before prod.
-- **W9 domain bundle** (a small COST item, not revenue): free first-year domain on ANNUAL Pro/Pro Plus, catalog price capped at $25, once per group — a bounded ≤$25 acquisition cost against a $588/$1,188 annual contract.
+- **Read the rates from `OVERAGE_PRICING` in the tier-quotas package.** The shape that matters: CDN and API overage are strongly margin positive, and agent overage roughly breaks even against uncached token cost and is positive with caching. The eligible-tier list is in the package too, and it changed when a tier was retired.
+- New paid subs **auto-enroll** with the tier default spending cap, which is set at roughly twice the base price. Free and the top plan are excluded. **Read `DEFAULT_SPENDING_CAP` for the numbers.** The cap is what bounds worst-case AI cost, so it is the lever, not the quota.
+- **Open design call** (flagged in the package docstring): defaults enable per-bucket AND total caps, the owner must pick one primary before prod.
+- **The free first-year domain bundle is a COST item, not revenue**: a bounded, capped acquisition cost on an annual contract, once per group. Read the cap and the eligible plans from the package.
 
 ## The non-obvious rule: DB tier tracks PEAK CONCURRENCY, not signups
 
 The Atlas cost lever is driven by **simultaneous in-flight backend requests**, not how many customers exist. Each warm Lambda container holds ~6-15 Mongo connections, so the connection cap converts into a ceiling on concurrent requests:
 
-- **Free/shared cap = 500 connections → ~150 concurrent casual users** before saturation (×3-per-container rule of thumb).
-- **M10 = 1,500 connections → ~500 concurrent.** M20 = 3,000. M30 higher.
-- Today's spikes (~105 concurrent, daily, from the public Client API) already blow the 500 cap — which is *why* M10 is recommended despite light total volume (~4,700 invocations/day).
+- **The shared tier has a hard connection cap, and a production walk has hit it.** Read the live headroom with `serverStatus` before reasoning about it; do not quote a remembered ceiling. The conversion that matters: each warm Lambda container holds a handful of Mongo connections, so the cap becomes a ceiling on concurrent in-flight requests, and a rule of thumb of about three connections per concurrent user is close enough for planning.
+- **Each Atlas tier step raises the cap by roughly a factor of three.** Read the current tier and its cap from the Atlas console or `serverStatus`, and price the step from the MongoDB invoice, which does not appear on the AWS bill.
+- Daily spikes from the public Client API already push against the shared cap, which is why an upgrade is on the table despite light total volume. **Re-measure before citing a spike figure**: this one has been quoted three-times wrong in this repo before.
 - **Implication for forecasting:** model the DB-tier step from a peak-concurrency projection, not a signup count. A traffic burst forces the upgrade long before raw customer count would.
 
 ## The scale ladder (revenue at the ~$45 blended)
@@ -54,14 +72,14 @@ The Atlas cost lever is driven by **simultaneous in-flight backend requests**, n
 | 1,000 | **~$45k/mo** | M20 |
 | 5,000 | **~$225k/mo** | M20→M30 |
 
-Fixed infra (~$105-110/mo all-in: AWS ~$35 + Atlas M10 ~$60 + WorkMail ~$8-16) is covered by **~2 Pro or ~6 Basic customers**. Everything above that is gross profit — which is why margin *improves* with scale.
+Fixed infra (~$105-110/mo all-in: AWS ~$35 + Atlas M10 ~$60 + WorkMail ~$8-16) is covered by **~2 Pro or ~6 Basic customers**. Everything above that is gross profit, which is why margin *improves* with scale.
 
 ## Margin levers (when margin is under pressure, reach for these)
 
-1. **Edge / API-Gateway caching** — cuts Client-API request volume → fewer Lambda containers → lower peak concurrency → defers the next Atlas tier step (the single biggest infra lever).
-2. **Annual plans** — improve cash collection + reduce per-transaction Stripe fees + reduce churn. Now live at $16/$49/$99 (`TIER_DISPLAY`, since v3.0.0); the W9 domain bundle (≤$25 once) is the sweetener cost.
-3. **Tier/cap review** — the Pro Plus AI quota is right-sized (500) and spending caps are default-on since v3.0.0 (unchanged in v3.1.0); the remaining lever is cap tuning (and resolving the per-bucket-vs-total-cap design call) so worst-case AI cost stays bounded and paid.
-4. **Agent prompt-caching: SHIPPED (July 2026, VR_Secure_API PR #77)** — the ~40-70% AI-cost cut is banked; keep the cache-hit rate honest as tool schemas + tenant context grow.
+1. **Edge / API-Gateway caching**, cuts Client-API request volume → fewer Lambda containers → lower peak concurrency → defers the next Atlas tier step (the single biggest infra lever).
+2. **Annual plans** improve cash collection, reduce per-transaction Stripe fees and reduce churn. They are live as real Stripe prices in `TIER_DISPLAY`; read the prices there. The free-domain bundle is the sweetener cost.
+3. **Tier and cap review.** The AI quota has already been right-sized once and spending caps are default on. The remaining lever is cap tuning, plus settling the per-bucket versus total cap design call, so worst-case AI cost stays bounded and paid for. **Re-read the current quota before proposing a change to it.**
+4. **Agent prompt caching is shipped.** The large AI-cost cut is banked. Keep the cache-hit rate honest as tool schemas and tenant context grow, because that is the thing that quietly erodes it.
 
 ## Read the reference for
 
@@ -70,4 +88,4 @@ Fixed infra (~$105-110/mo all-in: AWS ~$35 + Atlas M10 ~$60 + WorkMail ~$8-16) i
 
 ## Boundary (do not confuse with growth)
 
-This skill is **internal cost / margin / profitability**. It is NOT go-to-market. For funnel/conversion economics, churn (NRR/GRR), CAC, positioning, and retention, use the `growth` / `principal-growth-auditor` / `growth-advisor` agents — they own the revenue-side levers; this skill owns the cost-side levers. Companions: `vivreal-atlas-topology` (the connection-cap mechanics behind the Atlas tier lever), `vivreal-lambda` (reserved-concurrency, which bounds the peak-concurrency cost driver).
+This skill is **internal cost / margin / profitability**. It is NOT go-to-market. For funnel/conversion economics, churn (NRR/GRR), CAC, positioning, and retention, use the `growth` / `principal-growth-auditor` / `growth-advisor` agents, they own the revenue-side levers; this skill owns the cost-side levers. Companions: `vivreal-atlas-topology` (the connection-cap mechanics behind the Atlas tier lever), `vivreal-lambda` (reserved-concurrency, which bounds the peak-concurrency cost driver).

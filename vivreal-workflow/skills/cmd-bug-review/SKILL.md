@@ -32,7 +32,7 @@ prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-
 1. Read the verdict from `docs/bugs/<slug>/review-<N>.md`
 2. Append metrics to `docs/bugs/<slug>/metrics.md`:
    ```markdown
-   ### Review pass <N> — reviewer
+   ### Review pass <N>: reviewer
    | Metric | Value |
    |---|---|
    | total_tokens | <from agent result> |

@@ -1,6 +1,6 @@
 ---
 name: shared-standards
-description: Vivreal Portal shared engineering standards — the non-negotiable conventions every Vivreal bug/feature workflow agent reads before working. Use when an agent or command says to consult "shared-standards" or "_shared-standards", or when a task touches Vivreal proxy routes, multi-tenancy (active_ctx/dbKey/groupID), CSRF, hydration/SSR, Lambda infra, MongoDB queries, or testing rules. Carries the ${VIVREAL_REPOS} path-resolution preamble and the lazy-reading trigger map.
+description: Vivreal Portal shared engineering standards, the non-negotiable conventions every Vivreal bug/feature workflow agent reads before working. Use when an agent or command says to consult "shared-standards" or "_shared-standards", or when a task touches Vivreal proxy routes, multi-tenancy (active_ctx/dbKey/groupID), CSRF, hydration/SSR, Lambda infra, MongoDB queries, or testing rules. Carries the ${VIVREAL_REPOS} path-resolution preamble and the lazy-reading trigger map.
 ---
 
 > NOTE: This skill is the relocated form of the portal's `.claude/agents/_shared-standards.md`.
@@ -9,9 +9,9 @@ description: Vivreal Portal shared engineering standards — the non-negotiable 
 
 ## Path resolution (read FIRST)
 
-This workflow uses two placeholder env vars that every agent must resolve before reading cross-repo or ecosystem files. They are NOT shell expansions you literally execute — they are placeholders this section tells you how to resolve.
+This workflow uses two placeholder env vars that every agent must resolve before reading cross-repo or ecosystem files. They are NOT shell expansions you literally execute, they are placeholders this section tells you how to resolve.
 
-### `${VIVREAL_REPOS}` — root containing all Vivreal repos
+### `${VIVREAL_REPOS}`: root containing all Vivreal repos
 **Default convention:** all Vivreal repos are sibling directories under one parent. From the project root (where this repo lives), the parent is `..`.
 
 **Resolution rule:**
@@ -25,20 +25,50 @@ VIVREAL_REPOS="${VIVREAL_REPOS:-$(cd .. && pwd)}"
 cat "$VIVREAL_REPOS/VR_CMS_API/CLAUDE.md"
 ```
 
-### Ecosystem docs — `docs/ecosystem/`
+### Ecosystem docs: `docs/ecosystem/`
 Cross-repo ecosystem docs (architecture, debugging guides, Lambda inventory, etc.) live in the portal repo at `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/docs/ecosystem/`. They're version-controlled and always available.
 
 ### When you see `${VIVREAL_REPOS}/...` in this doc or any agent prompt
-Resolve it before reading. Never paste the literal placeholder into a Read or Bash command — substitute the actual path. Ecosystem docs are at `docs/ecosystem/` (no resolution needed).
+Resolve it before reading. Never paste the literal placeholder into a Read or Bash command, substitute the actual path. Ecosystem docs are at `docs/ecosystem/` (no resolution needed).
 
 ### Cross-platform note
-- **Windows:** use Git Bash or WSL — backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
+- **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
 - **macOS / Linux:** native bash works as-is
 - **Setting env vars:** add to `~/.bashrc`, `~/.zshrc`, or your shell profile. Example: `export VIVREAL_REPOS="$HOME/repos"`
 
 ---
 
-## Lazy standards reading — trigger map
+## Two rules that outrank every fact below
+
+**1. Read the deployed line, not a working tree.** Most checkouts on this machine sit on a
+feature branch, and a stale one will have you describing code no customer has ever run.
+`git fetch origin --prune` first, then quote a ref. Release-train repos deploy from
+`origin/stable`; merge-to-deploy repos from `origin/main`; **two repos have no `main` at all**
+and answer to `origin/master`. Ask, do not assume: `git ls-remote --symref origin HEAD`.
+For the portal in production, read its release JSON endpoint more than once, because one read
+can be served stale from an edge POP.
+
+**2. A negative result is not a finding until a positive control returns non-empty in the same
+run, using the same tool, the same pattern style and the same path shape.** This file used to
+carry counts and versions precisely because nobody re-measured them. The `verification-discipline`
+skill carries the mechanisms: `git grep` defaults to basic regex so escaped parens match
+nothing, a bracketed path is a glob, and `git show <ref>:<path>` on a missing path exits 0 with
+empty output even through a Python argument list. Use `git cat-file -e` for existence.
+
+**A corollary this file now obeys: no mechanical value is written down here.** Counts,
+versions, quotas and rosters are stated as the command that produces them. If you find a bare
+number below that a command could have produced, that is a defect in this file. Report it.
+
+**Where the system is described in depth:** `vivreal-hq/docs/dev-docs/INDEX.md` indexes a
+reference set (architecture, operations, AWS estate, decision records) and a numbered set of
+use-case walkthroughs, each ending in "how this breaks, and the first thing to check".
+Navigate it by filename from the index. Do not keyword-search it; the index exists because
+three searches returned three different incomplete answers.
+
+
+---
+
+## Lazy standards reading: trigger map
 
 **Role agents (coordinator, researcher, architect, coder, tester, reviewer, documenter, designer, vuln, growth, sentry):** do NOT eager-read this file. The path-resolution preamble above is the only mandatory read. Read sections of this file ONLY when your task touches one of the trigger areas below.
 
@@ -49,11 +79,11 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 | `src/app/api/proxy/*` (any portal proxy route) | "The three-tier API rule" + "Proxy route factory" |
 | `active_ctx`, `dbKey`, `groupID`, multi-tenant routing | "Auth & multi-tenancy" |
 | MongoDB queries, indexes, write concerns | "Optimization principles" + read `docs/ecosystem/mongo_queries.md` |
-| About to use the `mcp__mongodb__*` tools (query Mongo via MCP) | Read the `vivreal-db` skill first — it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
+| About to use the `mcp__mongodb__*` tools (query Mongo via MCP) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
 | `useAuth()` in app layout, hydration, SSR | "Hydration & SSR rules" |
 | Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + read `docs/ecosystem/aws-lambda-inventory.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
-| Any test files — e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
+| Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
 | Integration manifests (`src/data/manifests/`) | "Conventions you'll see" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
@@ -62,16 +92,16 @@ If a task obviously spans multiple trigger areas, read each relevant section onc
 
 ---
 
-# Vivreal Portal — Shared Engineering Standards
+# Vivreal Portal: Shared Engineering Standards
 
 This file is read by every bug-fix subagent BEFORE doing any work. It encodes the non-negotiable rules. If anything here conflicts with the project CLAUDE.md, CLAUDE.md wins.
 
 ## Tech stack quick ref
 - Next.js 16 App Router, React 19, TypeScript 5 strict
-- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking — the `outreach/*` proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
+- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking, the `outreach/*` proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
 - Public content delivery: VR_Client_API (read-only, applies publishDate/archived filters)
 - All proxy routes at `src/app/api/proxy/*` run on edge runtime
-- MongoDB multi-tenant — each group has its own DB identified by `dbKey`
+- MongoDB multi-tenant, each group has its own DB identified by `dbKey`
 
 ## The three-tier API rule (NEVER VIOLATE)
 | Context | Tool |
@@ -80,32 +110,32 @@ This file is read by every bug-fix subagent BEFORE doing any work. It encodes th
 | Public main API (`NEXT_PUBLIC_MAIN_API`) | `publicAxios` from `@/lib/api/axiosInstance` |
 | S3 presigned, service worker, AuthContext login | Native `fetch()` |
 
-NEVER use native `fetch()` for proxy routes. Any 401/419 from a proxy route MUST redirect to login — only `createAuthAxios` does this automatically.
+NEVER use native `fetch()` for proxy routes. Any 401/419 from a proxy route MUST redirect to login, only `createAuthAxios` does this automatically.
 
-Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/helpers` — extracts the backend's `error.response.data.error` before falling back.
+Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/helpers`, extracts the backend's `error.response.data.error` before falling back.
 
 ## Proxy route factory
-- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/` — the **filesystem is the count reference** (CLAUDE.md's route table is a self-described "core snapshot — not exhaustive"). Classify factory-vs-manual by the `_helpers/createProxyHandler` **module path**, never a string grep — manual routes may import a single helper (e.g. `extractUpstreamError`) from that same module path without using the `createProxyHandler()` factory itself.
-- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling, **public no-`active_ctx` routes** (the factory 401s without `active_ctx` — `outreach/book/[slug]` ×3, `outreach/studio-demo/visit`, `outreach/demo-link/[code]`, `marketing/sandbox-lead`, `claim/verify`, `claim/complete`), **raw-header/idempotency forwarding** (`sites/instantiateTemplate` — `ProxyContext` exposes no raw request), **body-preserving error responses** (`user/delete-account` — a 409's body carries the blocker list the UI renders, and the factory collapses any non-2xx into a bare `apiError(message, status)`, same reason `user/update-email` is manual), and **non-envelope responses** (`media/share-image` streams bytes; the factory always terminates in `apiSuccess()`)
-- Manual routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read — VR_Main_API sends bare-JSON-string error bodies, and a hand-rolled read against a string silently returns `undefined`. That was the exact bug that killed the login error branches in prod.
+- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/`, the **filesystem is the count reference** (CLAUDE.md's route table is a self-described "core snapshot, not exhaustive"). Classify factory-vs-manual by the `_helpers/createProxyHandler` **module path**, never a string grep, manual routes may import a single helper (e.g. `extractUpstreamError`) from that same module path without using the `createProxyHandler()` factory itself.
+- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling, **public no-`active_ctx` routes** (the factory 401s without `active_ctx`, `outreach/book/[slug]` ×3, `outreach/studio-demo/visit`, `outreach/demo-link/[code]`, `marketing/sandbox-lead`, `claim/verify`, `claim/complete`), **raw-header/idempotency forwarding** (`sites/instantiateTemplate`, `ProxyContext` exposes no raw request), **body-preserving error responses** (`user/delete-account`, a 409's body carries the blocker list the UI renders, and the factory collapses any non-2xx into a bare `apiError(message, status)`, same reason `user/update-email` is manual), and **non-envelope responses** (`media/share-image` streams bytes; the factory always terminates in `apiSuccess()`)
+- Manual routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read, VR_Main_API sends bare-JSON-string error bodies, and a hand-rolled read against a string silently returns `undefined`. That was the exact bug that killed the login error branches in prod.
 - All authenticated proxy routes MUST verify `active_ctx` via `verifyCtxEdge()`
-- Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`. `injectCtxParams()` sets **`key`** (CMS convention) + `groupID`; Secure endpoints whose Joi validator names the tenant key `dbKey` reject `key` as unknown — set `dbKey`/`groupID` manually **instead** for those
+- Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`. `injectCtxParams()` sets **`key`** (CMS convention) + `groupID`; Secure endpoints whose Joi validator names the tenant key `dbKey` reject `key` as unknown, set `dbKey`/`groupID` manually **instead** for those
 - New portal surfaces ship "live but dark" behind `group.featureFlags.<flag>`, written only by operators at `/admin/flags`; the only live flag is `aiActionsEnabled` (`templatePicker` + `squareStorefront` retired 2026-07-29, both GA). Gated entry points **hide, never disable** (`useAgentAccess()` is the single gate). Absence of AI in a group's UI is the expected default, not a bug
-- The portal is **light-only** — a bare `dark:` Tailwind utility is a regression (no `@custom-variant dark`; it resolves against the OS scheme)
+- The portal is **light-only**, a bare `dark:` Tailwind utility is a regression (no `@custom-variant dark`; it resolves against the OS scheme)
 
 ## Auth & multi-tenancy (CRITICAL)
 - `active_ctx` JWT contains: `groupID`, `dbKey`, `bucketname`, `exp`
 - mainDb queries: ALWAYS use `{ _id: groupID }`. NEVER `groupName`.
-- Tenant DB queries: scoped via `dbKey`, served from `general_shared` (free/basic/pro) or `pro_plus`
+- Tenant DB queries: scoped via `dbKey`. `general_shared` and `pro_plus` are both live placement names. **`pro_plus` is a DATABASE name, not a tier**, and it holds real tenant data. Nothing maps a tier to a database
 - **Nothing maps a tier to a database.** `dbKey` is a field stored on the group document, set once at creation and read back, never computed from `group.tier`. `VR_Client_Auth`'s authorizer and the portal proxy both resolve it the same way (see below), neither derives it.
 
-### The three key fields — DO NOT CONFUSE (common source of bugs)
+### The three key fields: DO NOT CONFUSE (common source of bugs)
 
 | Field | Source | Value example | Used for |
 |---|---|---|---|
 | `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-placement`, which returns the stored `group.dbKey` | `general_shared`, `pro_plus`, or a per-pod placement name | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
-| `group.key` | Stored on the group document in mainDb | `thecomedycollective` | **S3 bucket naming** — bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
-| `bucketname` | `${group.type}-${group.key}` | `collection-thecomedycollective` | **S3 object path prefix** — used in media upload/retrieval paths. |
+| `group.key` | Stored on the group document in mainDb | `thecomedycollective` | **S3 bucket naming**, bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
+| `bucketname` | `${group.type}-${group.key}` | `collection-thecomedycollective` | **S3 object path prefix**, used in media upload/retrieval paths. |
 
 **There is no `deriveDbKey()` any more.** A function by that name used to live separately in six repos (`VR_Secure_API`, `VR_CMS_API`, `VR_Main_API`, `Vivreal_EventHandler`, `VR_Client_Auth`, plus a `databaseDict[group.tier]` variant in `oauthCallback.js`), and four of the six copies had drifted from each other, misrouting real tenant writes. All six are deleted. The only way to get a tenant database name now is:
 
@@ -119,21 +149,46 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 **Where `dbKey` is read in `active_ctx`:** `profileSwitch.js` and `updateDefaultProfile.js` (`VR_Secure_API/src/userAndAuth/services/`) both call `resolvePlacement(foundGroup)`. New groups get a placement chosen once, by measurement, via `choosePlacementForNewGroup()` (same package) in `createGroup.js`, never a tier lookup.
 
 ### MCP skill usage for database queries
-- **`vivreal-db-explorer:db-schema`** — Use to inspect Mongoose schema, indexes, and sample docs for any collection. Invoke during research before reasoning about data shape.
-- **`vivreal-db-explorer:db-query`** — Safe MongoDB queries with built-in dbKey routing and multi-tenant safety guards. ALWAYS prefer this over raw `mcp__mongodb__find`. It handles `general_shared`/`pro_plus` routing automatically.
+- **`vivreal-db-explorer:db-schema`**, Use to inspect Mongoose schema, indexes, and sample docs for any collection. Invoke during research before reasoning about data shape.
+- **`vivreal-db-explorer:db-query`**, Safe MongoDB queries with built-in dbKey routing and multi-tenant safety guards. ALWAYS prefer this over raw `mcp__mongodb__find`. It handles `general_shared`/`pro_plus` routing automatically.
 - When querying via MCP tools directly, remember: `_id` fields require `{"$oid": "..."}` syntax, `groupID` on tenant objects is a string (not ObjectId), `collectionObj.refID` is a string.
 
 ## Security non-negotiables (OWASP-aware)
 - CSRF: double-submit cookie on all state-changing proxy routes (`src/lib/csrf/`)
 - Rate limiting: `src/proxy.ts` on auth endpoints (10 attempts / 15 min / IP) and the public demo-claim routes (`claim/verify` 30 / `claim/complete` 10 per 15 min per IP)
-- Visitor IP in public edge routes: read `CloudFront-Viewer-Address` (strip the trailing `:port`), fall back to `X-Forwarded-For` only when absent, **never** `x-real-ip` (CloudFront strips it) — see `api/proxy/claim/_shared.ts`, `outreach/book/_forward.ts`, `outreach/studio-demo/visit`
-- `src/proxy.ts` short-circuits ALL `/api/proxy/` matcher paths right after rate limiting — the proactive `active_ctx` refresh must never run on a proxy request, because rewriting `active_ctx` mid-flight desyncs the CSRF token (it's `HMAC(CTX_SECRET, 'csrf:' + active_ctx)`). Don't add a proxy POST path to the matcher expecting refresh behavior there — that's the csrf-desync class of bug.
-- HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy in `next.config.ts` — don't break them
+- Visitor IP in public edge routes: read `CloudFront-Viewer-Address` (strip the trailing `:port`), fall back to `X-Forwarded-For` only when absent, **never** `x-real-ip` (CloudFront strips it), see `api/proxy/claim/_shared.ts`, `outreach/book/_forward.ts`, `outreach/studio-demo/visit`
+- `src/proxy.ts` short-circuits ALL `/api/proxy/` matcher paths right after rate limiting, the proactive `active_ctx` refresh must never run on a proxy request, because rewriting `active_ctx` mid-flight desyncs the CSRF token (it's `HMAC(CTX_SECRET, 'csrf:' + active_ctx)`). Don't add a proxy POST path to the matcher expecting refresh behavior there, that's the csrf-desync class of bug.
+- HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy in `next.config.ts`, don't break them
 - Cookies: `secure: true` forced in production
 - Never log secrets. Never echo JWT contents in errors.
 - Validate redirect URLs against an allowlist (open redirect prevention)
-- Output escape user data — never `dangerouslySetInnerHTML` user content
+- Output escape user data, never `dangerouslySetInnerHTML` user content
 - Mongo injection: never pass raw user input as query operator keys
+- **A verified signature proves ORIGIN. It says nothing about WHICH CUSTOMER.** This is the
+  most expensive shape in a multi-tenant webhook receiver, and it looks completely secure.
+  The pattern: one app secret is shared across every installed merchant, the HMAC covers the
+  request BODY, and the receiver picks the tenant from a HEADER that sits outside the signed
+  material. The signature check passes, and the routing decision it appears to have
+  authorised was never signed by anything.
+
+  Ask two separate questions of every signed inbound request:
+
+  1. **Is this really from the provider?** That is what the signature answers.
+  2. **Which of our customers is it about, and is THAT field inside the signed bytes?**
+     If the tenant selector is a header, a query parameter, or anything the signature does
+     not cover, then a (body, signature) pair that is legitimately valid can be replayed
+     against a DIFFERENT tenant by changing the selector, and it will verify.
+
+  What makes it worse rather than better: a per-tenant idempotency ledger. If the replay
+  ledger is keyed inside the tenant database, the same delivery id re-pointed at another
+  tenant finds a fresh ledger and is NOT deduplicated, so the one control that looks like it
+  would stop a replay is scoped so that it cannot.
+
+  Prefer, in order: derive the tenant from SIGNED content; or hold a per-tenant secret so
+  the signature itself is tenant-specific; or key the idempotency ledger globally so a
+  delivery id can be consumed exactly once across the whole fleet. Failing all three, say
+  in the file that tenant selection is unauthenticated, so the next reader does not assume
+  the signature covered it.
 
 ## Code quality non-negotiables
 - No `any` (use `unknown` and narrow)
@@ -151,9 +206,9 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - No unbounded loops on the request path
 - Big-O justified for any new loop/sort over user-controlled input
 - Heavy libs (recharts, codemirror) lazy-loaded
-- React Query usage minimal — prefer existing axios patterns
+- React Query usage minimal, prefer existing axios patterns
 - No re-render thrash: `useMemo`/`useCallback` only when there's a measurable problem
-- Edge runtime is constrained — no Node-only APIs in proxy routes
+- Edge runtime is constrained, no Node-only APIs in proxy routes
 
 ## Hydration & SSR rules
 - Any `useAuth()` in app layout MUST use `useHydrated()` guard
@@ -163,19 +218,25 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 
 ## Testing rules
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
-- **Logged-in specs authenticate with REAL signed ctx cookies** — `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses — `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
-- **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope — the proxy route applies the envelope on top, same as it does against the real backends.
-- Reuse the api-mock functions in `e2e/fixtures/api-mocks.ts` before adding (don't trust any hardcoded count — check the file).
+- **Logged-in specs authenticate with REAL signed ctx cookies**, `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses, `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
+- **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope, the proxy route applies the envelope on top, same as it does against the real backends.
+- Reuse the api-mock functions in `e2e/fixtures/api-mocks.ts` before adding (don't trust any hardcoded count, check the file).
 - React 19: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
 - **Coverage map**: `e2e/coverage-map.json` + `scripts/check-coverage-map.mjs --strict` (run in pre-push) is a mechanical route→spec evidence gate. A new or changed proxy route needs a coverage-map entry or the gate fails.
-- **`e2e/BASELINE.md` is the authoritative test inventory** — total/pass/annotated-skip counts, with each skip's reason. Re-measure before quoting a number; never trust a remembered one.
-- Sites/integrations pages serialized under parallel workers — don't break that.
+- **A gate being enabled does not make it capable of failing.** Before you trust any gate in
+  this fleet, make it fail once on purpose. Live examples from this codebase: a coverage
+  script that ran with checking disabled, a lint rule whose options exempted the exact
+  character it existed to catch, a test that fed a value in and read it back, and a full
+  branch-coverage number produced by executing a stub because the real module was never
+  loaded. See the `verification-discipline` skill.
+- **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
+- Sites/integrations pages serialized under parallel workers, don't break that.
 - Tests must FAIL on the unfixed code. Verify by reading test logic vs original buggy code.
-- **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent — NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
-- **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green — the reviewer treats that as test-tampering and FAILs the pass.
+- **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
+- **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.
 - No `.only`, no `sleep()`, use `waitFor()`.
-- **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive) — don't widen that scope elsewhere.
-- **There is no CI.** Husky pre-commit (lint-staged + vitest + coverage-map) and pre-push (repo eslint 0/0 + both tsc configs + vitest + coverage-map --strict + e2e smoke) are the ONLY gates. Never bypass with `--no-verify`.
+- **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
+- **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
 
 ## Site media rule
 - Site media (logos, etc.) requires signed URLs via `GET /api/proxy/get-media`
@@ -186,109 +247,113 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 
 | Repo | Path | Purpose |
 |---|---|---|
-| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | Frontend Next.js portal (198 proxy routes: 167 factory + 31 manual, as of 2026-08-15 — filesystem is the count reference) |
-| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | 4 Lambdas — auth/signup, transactional + lifecycle + billing-rules email, web-push notification consumer, Meta callbacks |
-| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | 15 Lambdas — group, billing, sites, profile, OAuth, Square refresh, Shopify token refresh, AI agent, analytics, alarm verifier, template-instantiate worker + its DLQ consumer |
-| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | 5 Lambdas — collections, integrations, media/derivatives, webhooks, audit, versioning |
+| Portal (this repo) | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` | The Next.js portal. **The filesystem is the route count**, always: `route.ts` files under `src/app/api/proxy/` on the DEPLOYED line. CLAUDE.md calls its own route table a partial snapshot, and every count written down here has been wrong within weeks |
+| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` | Auth and signup, transactional plus lifecycle plus billing-rules email, the web-push notification consumer, Meta callbacks. Function roster: read the SAM template on the deployed line |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` | Group, billing, sites, profile, OAuth, Square refresh, Shopify token refresh, AI agent, analytics, alarm verifier, the template-instantiate worker and its DLQ consumer. Function roster: count `AWS::Serverless::Function` in `cloudYamls/allRoutes.yaml` on the deployed line, never the `.packaged.yaml`, and never the separate websocket stack |
+| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md` | Collections, integrations, media and derivatives, webhooks, audit, versioning. Function roster: count `AWS::Serverless::Function` in `cloudformation/` on the deployed line |
 | VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` | Public content delivery + Stripe/Square checkout (publishDate filter) |
 | VR_Client_Auth | `${VIVREAL_REPOS}/VR_Client_Auth/CLAUDE.md` | TOKEN authorizer for VR_Client_API (Serverless Framework, not SAM) |
-| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/README.md` | 4 Lambdas — sequences, contacts/companies, booking, SES send/replies (`/prospects` retired 2026-07-27; no CLAUDE.md on main — README + docs/ are truth) |
-| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template — every site's Amplify app builds the shared **`stable`** channel branch (per-customer branches are DEAD, Phase 2 2026-07-15); releases via the promote-stable workflow (main→stable FF). CLAUDE.md refreshed 2026-08-09 |
-| vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer` **1.50.0** — publishing hits every live customer site. CLAUDE.md stale at 2026-07-27 — trust `package.json` for the version |
-| VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | MCP server with 69 CMS tools (TypeScript, OAuth 2.1; tier-gated via TOOL_MIN_TIER) |
-| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server (50 tools, 9 modules, 0 prompts — prospects tools retired 2026-07-27) |
-| VR_Analytics_API | `${VIVREAL_REPOS}/VR_Analytics_API/README.md` | First-party analytics ingest + rollup (no CLAUDE.md — README is truth) |
+| VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API/README.md` | Sequences, contacts and companies, booking, SES send and replies. Function roster: `template.yaml` on the deployed line. No CLAUDE.md on main, so README plus `docs/` are truth |
+| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md` | Universal site template, every site's Amplify app builds the shared **`stable`** channel branch (per-customer branches are DEAD, Phase 2 2026-07-15); releases via the promote-stable workflow (main→stable FF). CLAUDE.md refreshed 2026-08-09 |
+| vivreal-site-renderer | `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` | `@hillbombcreations/site-renderer`. Publishing hits every live customer site, so the version matters and moves weekly. **This repo has no `main`: its line is `origin/master`.** Read the version from `package.json` there, and read what each consumer actually pins from the consumer lockfile. The CLAUDE.md version header lags on purpose |
+| VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server/CLAUDE.md` | Public CMS MCP server (TypeScript, OAuth 2.1). Tool roster and tier gates: read `src/tools/catalog.ts` on the deployed line. Its own CLAUDE.md has been wrong about the tool and module count, so count, do not quote |
+| VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` | Internal outreach MCP server. Tool roster: read `src/tools/` on the deployed line |
+| VR_Analytics_API | `${VIVREAL_REPOS}/VR_Analytics_API/README.md` | First-party analytics ingest + rollup (no CLAUDE.md, README is truth) |
 | VR_OnCall_Agent | `${VIVREAL_REPOS}/VR_OnCall_Agent/CLAUDE.md` | On-call agent (auto-investigates Sentry incidents via GitHub Actions) |
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
-| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md — `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
-| vivreal-content | `${VIVREAL_REPOS}/vivreal-content/knowledge/README.md` (+ `content/README.md`; repo-root CLAUDE.md lags at 2026-06-25) | Content studio — voice/strategy knowledge base + social **video production pipeline** (footage library → edit brief → draft render; 6 agents, 5 slash commands). Canonical brand voice = `knowledge/01-voice-and-rules.md` |
+| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md, `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
+| vivreal-content | `${VIVREAL_REPOS}/vivreal-content/knowledge/README.md` (+ `content/README.md`; repo-root CLAUDE.md lags at 2026-06-25) | Content studio, voice/strategy knowledge base + social **video production pipeline** (footage library → edit brief → draft render; 6 agents, 5 slash commands). Canonical brand voice = `knowledge/01-voice-and-rules.md` |
 | Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `E39DUKXYGXCX8Q`, whose default origin is the Vivreal_Templates Amplify app `vivreal` (`d1gukor54gwnrj`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
 | Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | **DEAD SOURCE.** `help.vivreal.io` is the Vivreal_Templates app `vivreal-help` (`d3j2nl4ojlmhy7`) rendering the Vivreal group's CMS; `vivreal.io/help*` and `/docs*` answer 301 to it, and the old Docs Amplify origin (`dy2e1mdkduwx7`) no longer exists (2026-09-16). |
-| Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas\` | Shared Mongoose schemas package — **v1.29.0** (1.26 site-chrome fields, 1.27 Stripe billing block + dbKey, 1.28 webhook `system`, 1.29 `featureFlags`); consumers on ^1.29.0 except VR_Client_Auth at ^1.27.0 |
-| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas\` | Shared `@hillbombcreations/tier-quotas` package v3.1.0 (owns all tier quotas; sentinel scheme: -1 unlimited, 0 no access; 3.1.0 adds `aiSiteEditing`/`aiComponentGen` capability flags) |
+| Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas` | Shared Mongoose schemas, `@hillbombcreations/schemas`. Read the published version from its `package.json` and each consumer pin from the consumer `package.json`. Consumers do not all sit on the same major, and that disagreement is the interesting fact, not the numbers |
+| Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas` | Shared `@hillbombcreations/tier-quotas`. Owns every tier quota. Sentinel scheme: `-1` unlimited, `0` no access, `>0` a cap. **Read `src/tierQuotas.ts` for the current ladder before asserting any tier name or any quota value.** The ladder has lost a tier and the package has dropped its alias table, so a remembered tier name now normalises to `free` rather than erroring |
 
-All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino, AWS SAM (except VR_Client_Auth + Vivreal_EventHandler = Serverless Framework). X-Ray is retired where touched recently (Client/Secure) — Sentry is the telemetry layer.
+All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino, AWS SAM (except VR_Client_Auth + Vivreal_EventHandler = Serverless Framework). X-Ray is retired where touched recently (Client/Secure), Sentry is the telemetry layer.
 
-**Citation rule for docs in this plugin repo:** cite function/route/file names, not line numbers — `src/foo.js:123` rots in weeks. Stamp `Last synced: YYYY-MM-DD` when syncing a doc to source (log in vivreal-skills `docs/SYNC.md`).
+**Citation rule for docs in this plugin repo:** cite function/route/file names, not line numbers, `src/foo.js:123` rots in weeks. Stamp `Last synced: YYYY-MM-DD` when syncing a doc to source (log in vivreal-skills `docs/SYNC.md`).
 
 ## AWS Lambda & Infrastructure Reference
 
-**Full inventory:** `docs/ecosystem/aws-lambda-inventory.md` — READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
+**Full inventory:** `docs/ecosystem/aws-lambda-inventory.md`, READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
 
-### Quick reference — function counts per API (verified 2026-08-15)
-| API | Prod Lambdas | Has WebSocket | Deploy Trigger |
+### Function rosters: count them, do not quote them
+Do not quote a function count from this file or from any CLAUDE.md. Both go stale between
+one release and the next, and a stale roster reads exactly like a current one. Produce the
+number when you need it, from the deployed line:
+
+| API | Where the roster lives | Has WebSocket | Deploy trigger |
 |---|---|---|---|
-| VR_Secure_API | 15 (7 request + analyticsSnapshot + squareTokenRefresh + squareRefreshOne + shopifyTokenRefresh + webhookDelivery + alarmVerifier + instantiateTemplateWorker [direct-invoke] + instantiateTemplateWorkerDlqConsumer; websocket stack is separate) | 4 of 15 | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_CMS_API | 5 | All 5 | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_Main_API | 4 (express + email consumer + notification consumer + lifecycle scan) | 1 of 4 | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_Outreach_API | 4 (apiHandler + cronTick + processBounce + processInboundReply) | No | Push to main/dogfood |
-| VR_Client_API | 1 (+ CloudFront edge distribution `client.vivreal.io` in the same SAM stack) | No | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_Client_Auth | 1 (Node 18, Serverless Framework) | No | Push to main |
-| EventHandler | 27 (12 site-deploy incl. updateSiteEnvVars + subdomainCleanup + 9 domainPurchase incl. reconciliation cron + 6 domainTransfer — 3 state machines: deploy + purchase saga + transfer saga) | No | Push to main |
-| VR_Analytics_API | 2 (ingest [public Function URL] + rollupCron) — LIVE, stack `vr-analytics-api` | No | Push to main |
+| VR_Secure_API | `cloudYamls/allRoutes.yaml` (NOT `allRoutes.packaged.yaml`; the websocket stack is separate and is not part of this count) | Some of them | Release train: push to `stable`; see repo `docs/RELEASE.md` |
+| VR_CMS_API | `cloudformation/` | All of them | Release train: push to `stable`; see repo `docs/RELEASE.md` |
+| VR_Main_API | `sam-template.yaml` | One of them | Release train: push to `stable`; see repo `docs/RELEASE.md` |
+| VR_Outreach_API | `template.yaml` | No | Push to `main`, which IS the deploy for this repo, by design |
+| VR_Client_API | `sam-template.yaml`, which also holds the CloudFront edge distribution in front of the API | No | Release train: push to `stable`; see repo `docs/RELEASE.md` |
+| VR_Client_Auth | `serverless.yml` (Serverless Framework, not SAM) | No | Push to `main` |
+| EventHandler | `serverless.yml`, count `handler:` keys. Three state machines: deploy, purchase saga, transfer saga | No | Push to `main` |
+| VR_Analytics_API | `template.yaml`, stack `vr-analytics-api` | No | Push to `main` |
 
 ### Release trains (2026-08-15)
 
-**"Merge to `main` = prod deploy" is DEAD in five repos: Vivreal_Portal_Mobile, VR_Secure_API,
+**"Merge to `main` = prod deploy" is DEAD in five repos: Vivreal_Portal_Mobile, VR_Secure_API
 VR_CMS_API, VR_Main_API, VR_Client_API.** Production now deploys from the fixed `stable` branch
-via a release train. Merging `main` in those repos deploys NOTHING — portal's `main` is an
+via a release train. Merging `main` in those repos deploys NOTHING, portal's `main` is an
 Amplify build canary with no traffic; the four backends fire zero workflow runs on a `main`
 push. Still deploying on push to `main` (unchanged): VR_Outreach_API, VR_Client_Auth, and
 everything else.
 
 The train is the same shape in all five repos:
-- Friday 5pm PST cron (`0 1 * * 6` UTC) — `release-cut.yml` cuts `release/vX.Y` from `main`,
+- Friday 5pm PST cron (`0 1 * * 6` UTC), `release-cut.yml` cuts `release/vX.Y` from `main`,
   bumps `package.json` on the line only, and tags `vX.Y.0`. Portal's cut also writes a served
   `public/release.json` marker.
-- Monday promote crons are STAGGERED, backends ahead of portal: Secure 15:00 UTC, CMS 15:15,
-  Main 15:30, Client 15:45, portal 16:00 (≈7–8am PST). `promote.yml` force-with-lease moves
-  `stable` to the newest line's tip — a tagged cut ships as `vX.Y.0`; an untagged tip (backports
+- Monday promote crons are STAGGERED, backends ahead of portal: Secure 15:00 UTC, CMS 15:15
+  Main 15:30, Client 15:45, portal 16:00 (≈7 to 8am PST). `promote.yml` force-with-lease moves
+  `stable` to the newest line's tip, a tagged cut ships as `vX.Y.0`; an untagged tip (backports
   landed after the cut) auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19;
   the cron refuses only when the line's last tag is yanked).
 - Incremental release / backport = PATCH, never a new minor (2026-08-19, all five repos).
   `backport.yml` cherry-picks main-merged commits onto a line (`-m 1` for PR merges) and pushes
-  — no tag, no bump, no deploy. Ship now: dispatch `promote.yml` with `target=release/vX.Y`
-  (tags `vX.Y.Z+1`). Ride Monday: do nothing — the cron mints the patch. Hand-written fixes
+  - no tag, no bump, no deploy. Ship now: dispatch `promote.yml` with `target=release/vX.Y`
+  (tags `vX.Y.Z+1`). Ride Monday: do nothing, the cron mints the patch. Hand-written fixes
   still go local: commit on the line, push (husky gate runs), then dispatch the promote.
-  **NEVER dispatch `release-cut.yml` to ship a backport** — a cut forks a NEW minor line off
+  **NEVER dispatch `release-cut.yml` to ship a backport**, a cut forks a NEW minor line off
   ALL of `main` (the 2026-08-19 v2.3.1→v2.4.0 mistake).
 - `rollback.yml` (dispatch-only) moves `stable` back to a prior `v*` tag and yanks it
   (`yanked-vX.Y.Z` tags block cron re-deploys of that version).
 - Deployed-version check: portal `curl https://vivreal.io/app/release.json`; backends
   `git ls-remote origin refs/heads/stable` + the tag + the deploy run log.
-- Each repo's `docs/RELEASE.md` is the full runbook — read it before touching that repo's
+- Each repo's `docs/RELEASE.md` is the full runbook, read it before touching that repo's
   deploy config.
 
 **Two platform gotchas proven in the live drills:**
 1. **Amplify autobuild fires only for never-built commits** (portal). A rollback, or a
-   re-promote to an already-built commit, repoints `stable` but triggers NO build — prod keeps
+   re-promote to an already-built commit, repoints `stable` but triggers NO build, prod keeps
    serving the old build. Mandatory after a portal rollback:
    `aws amplify start-job --app-id d2e6e3kdfrrxak --branch-name stable --job-type RELEASE`.
 2. **GitHub Actions fires NO push run for a force-push that REWINDS a branch to an ancestor**
-   (Client drill) — which is every backend rollback (forward re-points, even of already-pushed
+   (Client drill), which is every backend rollback (forward re-points, even of already-pushed
    commits, DO fire). Mandatory after any backend rollback:
    `gh workflow run lambda_api.yml --ref stable`.
 
 Portal's prod path: CloudFront distribution E39DUKXYGXCX8Q's origin is
-`stable.d2e6e3kdfrrxak.amplifyapp.com` (swapped from `main.` — the distro is NOT CFN-managed).
+`stable.d2e6e3kdfrrxak.amplifyapp.com` (swapped from `main.`, the distro is NOT CFN-managed).
 
-### Infrastructure stacks (workflow_dispatch — manual trigger from GitHub Actions)
+### Infrastructure stacks (workflow_dispatch: manual trigger from GitHub Actions)
 | Stack | Repo Location | Workflow |
 |---|---|---|
 | `vivreal-websocket` | `VR_Secure_API/websocket/` | `.github/workflows/websocket.yml` |
 | `Vivreal-Media-CDN` | `VR_Secure_API/cloudformation/media-cdn.yaml` | `.github/workflows/media-cdn.yml` |
 
-### Secrets Manager (per-service `vivreal/prod/*` — secrets-audit Phase 2, 2026-07)
-The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`vivreal/prod/secure-api`, `vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/client-auth`, `vivreal/prod/main-api`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `/vivreal/prod/*` params. Values were copied verbatim — env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
+### Secrets Manager (per-service `vivreal/prod/*`: secrets-audit Phase 2, 2026-07)
+The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`vivreal/prod/secure-api`, `vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/client-auth`, `vivreal/prod/main-api`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `/vivreal/prod/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
 
 ### When to consult the Lambda inventory
-- **Env var mismatch bugs** — check which functions have which vars, verify against CloudFormation fragment
-- **"Function not found" errors** — get the exact function name (they have random suffixes)
-- **Cross-function invokes** — `CREATE_UPDATE_COL_GROUPS_FUNCTION_NAME`, `GET_COLLECTION_INFO_FUNCTION_NAME`, `UPDATE_SITE_ENV_VARS_LAMBDA` are env vars pointing to other Lambdas
-- **WebSocket issues** — 10 functions across 3 APIs have `WS_ENDPOINT` + `WS_TABLE`
-- **Deployment failures** — check which stack owns the function and how it deploys
+- **Env var mismatch bugs**, check which functions have which vars, verify against CloudFormation fragment
+- **"Function not found" errors**, get the exact function name (they have random suffixes)
+- **Cross-function invokes**, `CREATE_UPDATE_COL_GROUPS_FUNCTION_NAME`, `GET_COLLECTION_INFO_FUNCTION_NAME`, `UPDATE_SITE_ENV_VARS_LAMBDA` are env vars pointing to other Lambdas
+- **WebSocket issues**, 10 functions across 3 APIs have `WS_ENDPOINT` + `WS_TABLE`
+- **Deployment failures**, check which stack owns the function and how it deploys
 
 ## Ecosystem documentation (`docs/ecosystem/`)
 Cross-repo ecosystem docs checked into this repo. Richer than per-repo CLAUDE.md files for ecosystem-wide questions. ALWAYS check the relevant ones during research before grepping blindly.
@@ -306,11 +371,11 @@ Cross-repo ecosystem docs checked into this repo. Richer than per-repo CLAUDE.md
 | `docs/ecosystem/SITE_CREATION_PIPELINE.md` | EventHandler Step Functions flow |
 | `docs/ecosystem/PRICING_AND_COSTS.md` | Tier quotas, pricing, overage rates |
 | `docs/ecosystem/aws-ses-email-guide.md` | SES email integration |
-| `docs/ecosystem/aws-lambda-inventory.md` | **Full Lambda inventory** — function names, env vars, stacks, CloudFormation fragments, Secrets Manager keys, WebSocket config |
+| `docs/ecosystem/aws-lambda-inventory.md` | **Full Lambda inventory**, function names, env vars, stacks, CloudFormation fragments, Secrets Manager keys, WebSocket config |
 | `docs/ecosystem/insights_architecture.md` | Cross-cutting architecture insights |
 | `docs/ecosystem/multi-agent-workflow.md` | CloudWatch log group inventory by Lambda |
 
-**Updating ecosystem docs:** If during a bug fix you discover ecosystem knowledge that is wrong or missing, the documenter is authorized to propose an update via Edit. Cite the bug slug so the change is traceable. Never wholesale rewrite — make targeted edits.
+**Updating ecosystem docs:** If during a bug fix you discover ecosystem knowledge that is wrong or missing, the documenter is authorized to propose an update via Edit. Cite the bug slug so the change is traceable. Never wholesale rewrite, make targeted edits.
 
 ## Industry standards we follow
 When justifying technical decisions, reference these public standards. The reviewer will demand evidence-based justification, and "industry best practice" without a citation does not count.
@@ -321,16 +386,16 @@ When justifying technical decisions, reference these public standards. The revie
 - OWASP API Security Top 10: https://owasp.org/API-Security/
 
 **AWS**
-- AWS Well-Architected Framework — Security, Reliability, Performance, Cost, Operational Excellence, Sustainability pillars
+- AWS Well-Architected Framework, Security, Reliability, Performance, Cost, Operational Excellence, Sustainability pillars
 - AWS Lambda best practices: https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html
 - API Gateway WebSocket: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-websocket-api.html
 - Cognito best practices: https://docs.aws.amazon.com/cognito/latest/developerguide/security-best-practices.html
 - Use the AWS docs MCP server (`mcp__awslabs_aws-documentation-mcp-server__*`) to fetch up-to-date docs
 
 **Web platform**
-- MDN Web Docs (https://developer.mozilla.org) — authoritative source for web platform APIs
-- Web.dev (https://web.dev) — Google's perf, PWA, a11y, security guides
-- WCAG 2.2 AA — accessibility standard for all UI work
+- MDN Web Docs (https://developer.mozilla.org), authoritative source for web platform APIs
+- Web.dev (https://web.dev), Google's perf, PWA, a11y, security guides
+- WCAG 2.2 AA, accessibility standard for all UI work
 - Web Content Accessibility Guidelines: https://www.w3.org/WAI/standards-guidelines/wcag/
 
 **Frameworks**
@@ -354,17 +419,17 @@ When justifying technical decisions, reference these public standards. The revie
 **OAuth and identity**
 - OAuth 2.0 RFC 6749 + 6750
 - OAuth 2.1 draft (recommended baseline for new flows)
-- Each provider's OAuth docs (Meta, X, LinkedIn, TikTok, Mailchimp, Shopify) — use Context7 MCP
+- Each provider's OAuth docs (Meta, X, LinkedIn, TikTok, Mailchimp, Shopify), use Context7 MCP
 
 When making a non-trivial decision, the architect/coder MUST cite the relevant standard. The reviewer MUST verify citations exist for non-obvious choices.
 
 ## Conventions you'll see and must respect
 - Component pattern per feature: `Client.tsx` (interactive) / `Loader.tsx` (skeleton) / `Dialog.tsx` (modals)
 - Route groups: `(app)` protected, `(public)` unauthenticated
-- Base path `/app` set in `next.config.ts` — affects links and API routes
+- Base path `/app` set in `next.config.ts`, affects links and API routes
 - Theme CSS vars injected at runtime in `Providers/index.tsx` `useEffect` from `siteData`
 - Onboarding state in cookies (`src/lib/cookies/onboarding.ts`)
-- Integration manifests in `src/data/manifests/` drive the integration UI — never hardcode integration logic
+- Integration manifests in `src/data/manifests/` drive the integration UI, never hardcode integration logic
 
 ## Bug-fix workflow rules (binding for all phases)
 1. Research before planning. Plan before coding. Approve before implementing. Always.
@@ -373,7 +438,7 @@ When making a non-trivial decision, the architect/coder MUST cite the relevant s
 4. Tests must FAIL on the unfixed code (verifiable, not asserted).
 5. Reviewer is adversarial by design. Accept that. Disagreement is escalated to the user, not negotiated away.
 6. Every claim about code behavior cites `file:line`.
-7. Documentation outlives the fix — write it for the engineer who finds this in 2027.
+7. Documentation outlives the fix, write it for the engineer who finds this in 2027.
 
 ## Optimization principles (apply to every change)
 - **Time complexity:** Big-O for loops over user-controlled input must be O(n log n) or better unless justified. Document the bound.
@@ -381,30 +446,30 @@ When making a non-trivial decision, the architect/coder MUST cite the relevant s
 - **Network:** Minimize round trips. Batch where the API supports it (`$in`, bulk operations).
 - **Bundle size:** Lazy-load heavy libs (recharts, codemirror, tiptap). Use dynamic imports.
 - **Render perf:** Avoid layout thrash. Reserve heights for async content. Memoize only when measured.
-- **Edge runtime:** Cold starts matter — keep edge handler dependencies minimal.
+- **Edge runtime:** Cold starts matter, keep edge handler dependencies minimal.
 - **Caching:** Respect `force-dynamic` where set. Add cache only with explicit reason.
 - **Database:** Index any new query path. Verify with `explain()`. Avoid full collection scans.
 - **Lambda:** Stateless. No warm-instance assumptions. Reuse SDK clients across invocations.
 - **Reliability:** Retries with exponential backoff for external calls. Idempotency keys for state-changing ops.
 - **Security-by-default:** Validate input at every boundary. Escape output. Allowlist over blocklist.
 
-## Workflow rules — additions to the original 7
+## Workflow rules: additions to the original 7
 8. Read `docs/ecosystem/` docs and the relevant repo CLAUDE.md before forming hypotheses. They contain knowledge that grep cannot surface.
 9. Cite an industry standard (OWASP, AWS Well-Architected, Web.dev, MDN, RFC, Google Eng Practices) for any non-obvious technical decision. "Best practice" without a citation is not a justification.
 
 ## Backend testing conventions (different from frontend!)
 
-The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` or run `npx playwright test --list` for the current count) plus a Vitest unit layer. Backends are NOT Playwright. Don't confuse them. Every repo now carries ESLint + husky gates — none of this is CI-enforced (no GitHub Actions gate anywhere in this ecosystem); the local hooks are the only thing standing between a bad commit and `main`.
+The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` or run `npx playwright test --list` for the current count) plus a Vitest unit layer. Backends are NOT Playwright. Don't confuse them. Every repo now carries ESLint + husky gates, none of this is CI-enforced (no GitHub Actions gate anywhere in this ecosystem); the local hooks are the only thing standing between a bad commit and `main`.
 
 | Layer | Framework | Pattern | Coverage gate |
 |---|---|---|---|
-| Portal frontend | Playwright (619 tests / 96 specs per `e2e/BASELINE.md` — re-measure, don't trust this number) + Vitest unit (~257 files, `tests/unit/**`) | `e2e/**/*.spec.ts` via `e2e/fixtures`; `tests/unit/**` for pure logic | ESLint 0/0 + coverage-map --strict + husky pre-commit/pre-push, no CI |
-| VR_Main_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + coverage-ratchet gate. ⚠️ Tests can send REAL emails — never run the full suite with a prod `.env` |
-| VR_Secure_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + husky gate, 100%/100%/100%/100% coverage |
-| VR_CMS_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + husky gate, 100% coverage |
-| VR_Client_API | Mocha + Chai + Sinon | `test/**/*.test.js` | ESLint + husky pre-push, 100% branch coverage |
+| Portal frontend | Playwright plus a Vitest unit layer. **Counts belong to `e2e/BASELINE.md` and the filesystem, not to this file.** `npx playwright test --list` is the count; `ls e2e/*.spec.ts` is the spec count | `e2e/**/*.spec.ts` via `e2e/fixtures`; `tests/unit/**` for pure logic | ESLint 0 errors 0 warnings, coverage-map `--strict`, husky pre-commit and pre-push. No PR gate |
+| VR_Main_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint + coverage-ratchet gate. ⚠️ Tests can send REAL emails, never run the full suite with a prod `.env` |
+| VR_Secure_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint plus a husky gate with a full-coverage threshold. **Read `.nycrc.json` for the actual thresholds and for whether checking is enabled**, because a coverage script can run with checking switched off |
+| VR_CMS_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | ESLint plus a husky gate. **Read `.nycrc.json` and the `test:coverage` script**: this repo has shipped a coverage command that passed `--check-coverage=false` |
+| VR_Client_API | Mocha + Chai + Sinon | `test/**/*.test.js` | ESLint plus a husky pre-push with a branch-coverage threshold. Read `.nycrc.json` for the number |
 | VR_Client_Auth | Mocha + Chai + Sinon (new test harness added 2026-08) | `test/**/*.test.js` | Test harness + husky gate |
-| VR_Outreach_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | Husky pre-push gate, 98% coverage |
+| VR_Outreach_API | Mocha + Chai + Sinon + NYC | `test/**/*.test.js` | Husky pre-push gate with a coverage threshold. Read `.nycrc.json` for the number |
 
 **Backend test conventions (read each repo's `test/CLAUDE.md` or `test/claude.md` first):**
 - Tests are unit-style with **heavy mocking** via `test/helpers/loadWithMocks.js`
@@ -412,7 +477,7 @@ The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` 
 - Endpoint-focused: cover route wiring, handlers, controllers, validators, services
 - Branch coverage required: success path, validation failure, empty response, error branches
 - Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate)
-- `test/test.js` is legacy and NOT in the active glob — don't add tests there
+- `test/test.js` is legacy and NOT in the active glob, don't add tests there
 
 **Backend test commands quick ref:**
 ```bash
@@ -435,14 +500,14 @@ These skills are available via the Skill tool and SHOULD be invoked when relevan
 | `vivreal-proxy-factory:proxy-route` | Generate a new factory-based proxy route. Use when adding a new proxy route is part of the fix. |
 | `superpowers:systematic-debugging` | Use when the bug's root cause is unclear after initial research. |
 | `superpowers:test-driven-development` | Use when writing the test FIRST is the right move (e.g. fix has multiple possible implementations and the test pins behavior). |
-| `code-review:code-review` | Optional secondary review pass — coordinator may use this in addition to reviewer if a fix is high-risk. |
+| `code-review:code-review` | Optional secondary review pass, coordinator may use this in addition to reviewer if a fix is high-risk. |
 
 ## Cross-stack removal ordering (consumer → producer)
 <!-- learned from bug: remove-social-tier-tracking on 2026-04-10 -->
 
 When a fix REMOVES code that crosses repos (shared package + backend + frontend), plan the work in the REVERSE of addition order. New features ship producer → consumer (shared package first so downstream can import); removals ship consumer → producer (frontend/backend stop importing, THEN the shared package deletes the symbols). Any other order leaves an intermediate commit where a live consumer still imports a deleted symbol, breaking downstream builds.
 
-Researcher and architect default to the addition order out of habit — flag the inversion explicitly when the bug is a removal, not an addition.
+Researcher and architect default to the addition order out of habit, flag the inversion explicitly when the bug is a removal, not an addition.
 
 ## Default-renderer fallbacks for shared UI components
 <!-- learned from bug: collection-object-initial-view-polish on 2026-04-10 -->
@@ -461,11 +526,11 @@ The architect should flag any review that introduces an `Optional` render-prop w
 <!-- learned from observability-logging-audit on 2026-04-14 -->
 
 ### Proxy-route guard hook (deterministic)
-The old prompt-based PreToolUse Write hook (which sometimes mis-fired on non-proxy files) was replaced by the deterministic `vivreal-proxy-factory/hooks/proxy-route-guard.cjs` — it exits 0 immediately for any path outside `src/app/api/proxy/**/route.ts` and never interferes with other writes. If it blocks a legitimate manual proxy route, add the route to its allowlist; do NOT route around the Write tool with heredocs or temp scripts.
+The old prompt-based PreToolUse Write hook (which sometimes mis-fired on non-proxy files) was replaced by the deterministic `vivreal-proxy-factory/hooks/proxy-route-guard.cjs`, it exits 0 immediately for any path outside `src/app/api/proxy/**/route.ts` and never interferes with other writes. If it blocks a legitimate manual proxy route, add the route to its allowlist; do NOT route around the Write tool with heredocs or temp scripts.
 
 ### Bash heredoc quoting failures on Windows Git Bash
 Bash heredocs (`<< 'EOF'`) break when the content contains:
-- **Unmatched single quotes** (e.g., contractions like "doesn't", possessives, or code with apostrophes)
+- **Unmatched single quotes** (e.g. contractions like "doesn't", possessives, or code with apostrophes)
 - **Triple-quoted strings** (Python `"""..."""` inside a heredoc)
 - The shell tries to match quotes across the entire heredoc, causing `unexpected EOF` errors
 

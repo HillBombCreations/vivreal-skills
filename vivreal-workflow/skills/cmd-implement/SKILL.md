@@ -16,7 +16,7 @@ You are dispatching the coder agent. The user invoked `/implement` with: **$ARGU
 ## Dispatch
 
 ```
-description: Implement — <brief description>
+description: Implement, <brief description>
 subagent_type: coder
 prompt: |
   Implement: $ARGUMENTS
@@ -28,7 +28,7 @@ prompt: |
 
   Write production-grade code. Run lint and type-check when done.
   Report all files modified and any decisions you made.
-  SKIP your auto-review — this command runs the review gate in Post-Dispatch.
+  SKIP your auto-review, this command runs the review gate in Post-Dispatch.
 ```
 
 ## Post-Dispatch

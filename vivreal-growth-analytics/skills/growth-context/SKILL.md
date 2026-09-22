@@ -30,22 +30,22 @@ This skill activates when the user mentions any of:
 - Use for: product usage questions, funnel completion, feature adoption
 - Tools: Analytics queries, feature flag status, error tracking
 
-### 3. MongoDB MCP (`mongodb`) — already configured
+### 3. MongoDB MCP (`mongodb`): already configured
 - Business objects: groups, users, sites, collections
 - Use for: hard business metrics (signups, groups created, tier distribution, sites deployed)
 - Database: `vivreal` (mainDb) for cross-tenant data
 
-### 4. Sentry MCP (`sentry`) — already configured
+### 4. Sentry MCP (`sentry`): already configured
 - Error rates, crash-free session rate, performance data
 - Use for: correlating error spikes with drop-offs
 
 ## Activation Procedure
 
-1. **Identify what metric the user is asking about** — map their question to a specific data source
-2. **Pull real data first** — query the relevant MCP before answering
-3. **Cross-reference when possible** — e.g., GA4 traffic + MongoDB signups = signup conversion rate
-4. **Provide context** — compare to previous period, note trends
-5. **Be honest about gaps** — if an MCP server isn't configured, say so and suggest setup
+1. **Identify what metric the user is asking about**, map their question to a specific data source
+2. **Pull real data first**, query the relevant MCP before answering
+3. **Cross-reference when possible**, e.g. GA4 traffic + MongoDB signups = signup conversion rate
+4. **Provide context**, compare to previous period, note trends
+5. **Be honest about gaps**, if an MCP server isn't configured, say so and suggest setup
 
 ## Key Vivreal Metrics & Where They Live
 
@@ -76,7 +76,7 @@ This skill activates when the user mentions any of:
 
 ## Rules
 
-- **Never guess metrics** — always query real data. If data isn't available, say "I'd need GA4/PostHog connected to answer that accurately."
-- **Always include time context** — "signups are at X" is useless without "up Y% from last week"
-- **Recommend the right command** — if the user's question would be better answered by `/growth-report` or `/funnel-analysis`, suggest that instead of doing ad-hoc queries
-- **Respect MongoDB safety rules** — read-only, no groupName queries, redact credentials
+- **Never guess metrics**, always query real data. If data isn't available, say "I'd need GA4/PostHog connected to answer that accurately."
+- **Always include time context**, "signups are at X" is useless without "up Y% from last week"
+- **Recommend the right command**, if the user's question would be better answered by `/growth-report` or `/funnel-analysis`, suggest that instead of doing ad-hoc queries
+- **Respect MongoDB safety rules**, read-only, no groupName queries, redact credentials

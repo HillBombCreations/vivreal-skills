@@ -5,7 +5,7 @@ allowed-tools: mcp__google-analytics__*, mcp__posthog__*, mcp__mongodb__connect,
 user-invocable: true
 ---
 
-# /growth-report — Unified Growth Dashboard
+# /growth-report: Unified Growth Dashboard
 
 Pull a comprehensive growth report by combining data from Google Analytics 4, PostHog, and Vivreal's MongoDB.
 
@@ -14,53 +14,53 @@ Pull a comprehensive growth report by combining data from Google Analytics 4, Po
 `/growth-report [period] [--compare] [--focus=area]`
 
 - `[period]`: Time range for the report. Default: `7d` (last 7 days)
-  - `1d` — today
-  - `7d` — last 7 days (default)
-  - `30d` — last 30 days
-  - `mtd` — month to date
-  - `custom:2026-03-01:2026-03-15` — custom date range
+  - `1d`, today
+  - `7d`, last 7 days (default)
+  - `30d`, last 30 days
+  - `mtd`, month to date
+  - `custom:2026-03-01:2026-03-15`, custom date range
 - `--compare`: Include week-over-week or period-over-period comparison (default: on)
 - `--focus`: Focus on a specific area instead of the full report
-  - `traffic` — GA4 traffic sources and page views only
-  - `funnel` — PostHog funnel completion rates only
-  - `signups` — MongoDB user/group creation data only
-  - `engagement` — session duration, pages/session, return visits
+  - `traffic`, GA4 traffic sources and page views only
+  - `funnel`, PostHog funnel completion rates only
+  - `signups`, MongoDB user/group creation data only
+  - `engagement`, session duration, pages/session, return visits
 
 ## Data Sources
 
 ### 1. Google Analytics 4 (Traffic & Acquisition)
 Query GA4 for:
-- **Sessions & users** — total, new vs returning
-- **Traffic sources** — organic, direct, social, referral, paid (by source/medium)
-- **Top landing pages** — which pages drive the most traffic
-- **Geography** — top countries/cities
-- **Device breakdown** — desktop vs mobile vs tablet
+- **Sessions & users**, total, new vs returning
+- **Traffic sources**, organic, direct, social, referral, paid (by source/medium)
+- **Top landing pages**, which pages drive the most traffic
+- **Geography**, top countries/cities
+- **Device breakdown**, desktop vs mobile vs tablet
 - **Bounce rate & avg session duration**
 
 ### 2. PostHog (Product Analytics & Funnels)
 Query PostHog for:
-- **Key events** — pageview, signup_started, signup_completed, group_created, collection_created, site_deployed, upgrade_initiated
-- **Funnel completion rates** — signup → first group → first collection → first site
-- **Feature adoption** — which features are being used (integrations, calendar, audit log)
-- **Session recordings count** — how many error sessions were captured
-- **Active users** — DAU, WAU, MAU
+- **Key events**, pageview, signup_started, signup_completed, group_created, collection_created, site_deployed, upgrade_initiated
+- **Funnel completion rates**, signup → first group → first collection → first site
+- **Feature adoption**, which features are being used (integrations, calendar, audit log)
+- **Session recordings count**, how many error sessions were captured
+- **Active users**, DAU, WAU, MAU
 
 ### 3. MongoDB (Business Metrics)
 Connect to Vivreal's mainDb and query:
-- **New groups created** — `db.groups.count({ createdAt: { $gte: <period_start> } })`
-- **New users registered** — `db.users.count({ createdAt: { $gte: <period_start> } })`
-- **Tier distribution** — `db.groups.aggregate([{ $group: { _id: "$tier", count: { $sum: 1 } } }])`
-- **Sites deployed** — `db.sites.count({ createdAt: { $gte: <period_start> } })`
-- **Groups by frozen status** — how many active vs frozen
+- **New groups created**, `db.groups.count({ createdAt: { $gte: <period_start> } })`
+- **New users registered**, `db.users.count({ createdAt: { $gte: <period_start> } })`
+- **Tier distribution**, `db.groups.aggregate([{ $group: { _id: "$tier", count: { $sum: 1 } } }])`
+- **Sites deployed**, `db.sites.count({ createdAt: { $gte: <period_start> } })`
+- **Groups by frozen status**, how many active vs frozen
 
 ## Report Procedure
 
-1. **Determine period** — parse the time range argument, calculate start/end dates and comparison period
-2. **Query GA4** — use GA4 MCP tools for traffic metrics with the specified date range
-3. **Query PostHog** — use PostHog MCP tools for product events and funnels
-4. **Query MongoDB** — connect to mainDb, run aggregate queries for business metrics
-5. **Calculate deltas** — compare current period to previous period (e.g., this week vs last week)
-6. **Format report** — output in the structured format below
+1. **Determine period**, parse the time range argument, calculate start/end dates and comparison period
+2. **Query GA4**, use GA4 MCP tools for traffic metrics with the specified date range
+3. **Query PostHog**, use PostHog MCP tools for product events and funnels
+4. **Query MongoDB**, connect to mainDb, run aggregate queries for business metrics
+5. **Calculate deltas**, compare current period to previous period (e.g. this week vs last week)
+6. **Format report**, output in the structured format below
 
 ## Output Format
 
@@ -90,7 +90,7 @@ Generated: <timestamp>
 ### Funnel Performance (PostHog)
 | Step | Users | Conversion | Drop-off |
 |---|---|---|---|
-| Landing page visit | X | 100% | — |
+| Landing page visit | X | 100% | |
 | Signup started | X | Y% | Z% |
 | Signup completed | X | Y% | Z% |
 | First group created | X | Y% | Z% |
@@ -103,7 +103,7 @@ Generated: <timestamp>
 | Free | X | Y% | Z |
 | Basic | X | Y% | Z |
 | Pro | X | Y% | Z |
-| Pro Plus | X | Y% | Z |
+| ...one row per tier in the CURRENT ladder, plus one row for any raw stored value that is not in it | X | Y% | Z |
 
 ### Top Insights
 1. <Actionable insight based on the data>
@@ -117,17 +117,17 @@ Generated: <timestamp>
 
 ## Error Handling
 
-- If GA4 MCP is not connected, skip traffic section and note: "GA4 data unavailable — configure google-analytics MCP server"
-- If PostHog MCP is not connected, skip funnel section and note: "PostHog data unavailable — configure posthog MCP server"
+- If GA4 MCP is not connected, skip traffic section and note: "GA4 data unavailable, configure google-analytics MCP server"
+- If PostHog MCP is not connected, skip funnel section and note: "PostHog data unavailable, configure posthog MCP server"
 - MongoDB should always be available (existing MCP). If connection fails, report the error.
-- Always produce whatever sections ARE available — never fail entirely because one source is down
+- Always produce whatever sections ARE available, never fail entirely because one source is down
 
 ## MongoDB Safety Rules
 
 Follow the same safety rules as `/db-query`:
-- READ-ONLY — only `find`, `aggregate`, `count`
+- READ-ONLY, only `find`, `aggregate`, `count`
 - Connect to `vivreal` mainDb for cross-tenant metrics
-- Never query by `groupName` — always `{ key: dbKey }` or `{ _id: groupID }`
+- Never query by `groupName`, always `{ key: dbKey }` or `{ _id: groupID }`
 - Limit results to 50 max
 - Redact any sensitive fields (credentials, apiKeys)
 
