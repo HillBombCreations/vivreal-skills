@@ -1,7 +1,7 @@
-# Vivreal Skills — Prompt Playbook
+# Vivreal Skills: Prompt Playbook
 
 Reusable, fill-in-the-bracket prompt templates for invoking the `vivreal-skills` ecosystem with
-optimal routing — 13 scenario templates, a trigger cheat-sheet (which words route to which agent),
+optimal routing, 13 scenario templates, a trigger cheat-sheet (which words route to which agent),
 and a slash-command quick reference.
 
 ## Where it lives
@@ -11,7 +11,7 @@ read it at runtime, even when the plugin is installed in another repo:
 
 > **[`vivreal-workflow/references/prompt-playbook.md`](../vivreal-workflow/references/prompt-playbook.md)**
 
-Read that file for the full templates. Edit it there too — it's the single source of truth (this
+Read that file for the full templates. Edit it there too, it's the single source of truth (this
 pointer exists only so the playbook is discoverable from `docs/`).
 
 ## The faster way to use it

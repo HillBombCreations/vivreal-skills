@@ -1,4 +1,4 @@
-# Workflow Self-Sufficiency, Auto-Review & Mongo Validation — Implementation Plan
+# Workflow Self-Sufficiency: Auto-Review & Mongo Validation: Implementation Plan
 
 > **For agentic workers:** Implement task-by-task. Steps use checkbox (`- [ ]`) syntax. Each task ends with a concrete verification (these deliverables are markdown skill/agent/command files, so the "test" is a grep/load/chain check, not a unit test).
 
@@ -10,10 +10,10 @@
 
 ## Global Constraints
 
-- New skills live in `vivreal-workflow/skills/<name>/SKILL.md` — auto-discovered, no `plugin.json` edit needed.
+- New skills live in `vivreal-workflow/skills/<name>/SKILL.md`, auto-discovered, no `plugin.json` edit needed.
 - Artifact paths follow the existing convention: `docs/projects/<slug>/` (spec.md, plan.md, design.md, research.md, review-N.md). NOT `docs/superpowers/`.
 - The forks must contain **no** `superpowers:` references.
-- Keep `superpowers:systematic-debugging` and `superpowers:test-driven-development` references in `shared-standards` intact — only brainstorming + writing-plans are forked.
+- Keep `superpowers:systematic-debugging` and `superpowers:test-driven-development` references in `shared-standards` intact, only brainstorming + writing-plans are forked.
 - Mongo work is **read-only** (`find`/`aggregate`/`count`/`list-*`/`collection-schema`), scoped + limited, secrets redacted, per the skill's own safety rules.
 - Branch: `workflow-self-sufficiency` (already created; spec already committed there).
 - Commit per task. Conventional commit messages.
@@ -33,10 +33,10 @@
 ```markdown
 ---
 name: vivreal-brainstorming
-description: Use before any creative or design work in the Vivreal workflow — a new feature, component, refactor, migration, or behavior change — to turn an idea into an approved design before any code is written. Vivreal-owned fork of the brainstorming discipline; saves specs to docs/projects/<slug>/spec.md and hands off to vivreal-writing-plans. Triggers on: design X, build X, add a feature, how should we, plan the migration, brainstorm, new component.
+description: Use before any creative or design work in the Vivreal workflow, a new feature, component, refactor, migration, or behavior change, to turn an idea into an approved design before any code is written. Vivreal-owned fork of the brainstorming discipline; saves specs to docs/projects/<slug>/spec.md and hands off to vivreal-writing-plans. Triggers on: design X, build X, add a feature, how should we, plan the migration, brainstorm, new component.
 ---
 
-# Vivreal Brainstorming — Ideas Into Approved Designs
+# Vivreal Brainstorming: Ideas Into Approved Designs
 
 Vivreal-owned brainstorming discipline. Turns an idea into a validated design
 spec through collaborative dialogue, then hands off to `vivreal-writing-plans`.
@@ -46,19 +46,19 @@ No dependency on the upstream superpowers skills.
 Do NOT write code, scaffold a project, or invoke any implementation skill/agent
 until you have presented a design AND the user has approved it. This applies to
 every task regardless of perceived simplicity. The design can be short for
-simple work — but you MUST present it and get approval.
+simple work, but you MUST present it and get approval.
 </HARD-GATE>
 
 ## Checklist (create one task per item, complete in order)
 
-1. Explore project context — files, the relevant repo `CLAUDE.md`, recent commits, the `shared-standards` trigger map.
-2. Ask clarifying questions — one at a time; purpose, constraints, success criteria. Multiple-choice preferred.
-3. Propose 2-3 approaches — tradeoffs + your recommendation first.
+1. Explore project context, files, the relevant repo `CLAUDE.md`, recent commits, the `shared-standards` trigger map.
+2. Ask clarifying questions, one at a time; purpose, constraints, success criteria. Multiple-choice preferred.
+3. Propose 2-3 approaches, tradeoffs + your recommendation first.
 4. Present the design in sections scaled to complexity; get approval after each section.
 5. Write the spec to `docs/projects/<slug>/spec.md` and commit it.
-6. Spec self-review — placeholder scan, internal consistency, scope, ambiguity. Fix inline.
+6. Spec self-review, placeholder scan, internal consistency, scope, ambiguity. Fix inline.
 7. User reviews the written spec.
-8. Hand off — invoke the `vivreal-writing-plans` skill to create the implementation plan.
+8. Hand off, invoke the `vivreal-writing-plans` skill to create the implementation plan.
 
 ## Process
 
@@ -67,10 +67,10 @@ simple work — but you MUST present it and get approval.
   subsystems, flag it and decompose into sub-projects first. Each sub-project gets
   its own spec → plan → implement cycle. Brainstorm the first one through the
   normal flow.
-- Ask questions one at a time. Prefer multiple-choice. Focus on purpose,
+- Ask questions one at a time. Prefer multiple-choice. Focus on purpose
   constraints, success criteria.
 - Propose 2-3 approaches with tradeoffs; lead with your recommendation and why.
-- Present the design once you understand what you are building. Cover architecture,
+- Present the design once you understand what you are building. Cover architecture
   components, data flow, error handling, testing. Ask after each section whether it
   looks right.
 - Design for isolation: break the system into small units with one clear
@@ -85,7 +85,7 @@ simple work — but you MUST present it and get approval.
 
 - One question at a time. Multiple-choice preferred. YAGNI ruthlessly.
 - Always explore 2-3 alternatives before settling.
-- Incremental validation — present, get approval, move on. Be flexible; go back
+- Incremental validation, present, get approval, move on. Be flexible; go back
   when something doesn't fit.
 
 ## After the design
@@ -99,13 +99,13 @@ simple work — but you MUST present it and get approval.
   > want changes before we write the implementation plan."
   Wait for approval. If changes are requested, make them and re-run the self-review.
 - Terminal state: invoke the `vivreal-writing-plans` skill. Do NOT invoke any
-  other skill — `vivreal-writing-plans` is the only next step.
+  other skill, `vivreal-writing-plans` is the only next step.
 ```
 
 - [ ] **Step 2: Verify it loads and is clean**
 
 Run: `grep -rn "superpowers" vivreal-workflow/skills/vivreal-brainstorming/SKILL.md`
-Expected: no output (exit 1 — no matches).
+Expected: no output (exit 1, no matches).
 
 Run: `grep -n "name: vivreal-brainstorming" vivreal-workflow/skills/vivreal-brainstorming/SKILL.md`
 Expected: matches line 2.
@@ -180,7 +180,7 @@ Every plan MUST start with:
 **Tech Stack:** [key technologies]
 
 ## Global Constraints
-[project-wide requirements copied verbatim from the spec — one line each]
+[project-wide requirements copied verbatim from the spec, one line each]
 
 ---
 ​```
@@ -189,14 +189,14 @@ Every plan MUST start with:
 
 - Each task: **Files** (exact create/modify/test paths), **Interfaces**
   (Consumes/Produces with exact signatures), then numbered checkbox steps with
-  complete content — real code/content in every step, exact commands, expected
+  complete content, real code/content in every step, exact commands, expected
   output.
 - No placeholders: never "TBD", "add error handling", "similar to Task N", or
   steps that say what without showing how.
-- Self-review after writing: spec coverage (every requirement maps to a task),
+- Self-review after writing: spec coverage (every requirement maps to a task)
   placeholder scan, type/name consistency across tasks. Fix inline.
 
-## Auto-review (terminal — REQUIRED)
+## Auto-review (terminal: REQUIRED)
 
 After saving the plan and running the inline self-review, dispatch the reviewer
 agent in **artifact mode** on the plan:
@@ -220,13 +220,13 @@ prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
 ## Execution handoff
 
 After the plan PASSes review, offer:
-1. **Coder-driven (recommended)** — dispatch the `coder` agent per task via
+1. **Coder-driven (recommended)**, dispatch the `coder` agent per task via
    `/implement` (solo) or `/coordinator` (full gated workflow).
-2. **Inline** — implement tasks in this session with checkpoints.
+2. **Inline**, implement tasks in this session with checkpoints.
 ```
 
 > Note to implementer: in the file above, the three `​```` fences shown with a
-> zero-width marker are nested code blocks — write them as normal triple-backtick
+> zero-width marker are nested code blocks, write them as normal triple-backtick
 > fences. The outer block delimiter for this task is the surrounding fence.
 
 - [ ] **Step 2: Verify clean + auto-review wired**
@@ -263,7 +263,7 @@ Expected: matches ONLY in `docs/projects/workflow-self-sufficiency/spec.md` (pro
 - [ ] **Step 2: Wire the architect to the fork.** In `vivreal-workflow/agents/architect.md`, in its standards/skill section, add a line instructing it to use `vivreal-writing-plans` when producing a multi-step plan (read the file first; insert near where it describes writing plan.md/design.md). Exact insertion:
 
 ```markdown
-- When producing a multi-step implementation plan, use the `vivreal-writing-plans` skill (the Vivreal fork — not the upstream superpowers version). It saves to `docs/projects/<slug>/plan.md` and auto-dispatches the reviewer on the finished plan.
+- When producing a multi-step implementation plan, use the `vivreal-writing-plans` skill (the Vivreal fork, not the upstream superpowers version). It saves to `docs/projects/<slug>/plan.md` and auto-dispatches the reviewer on the finished plan.
 ```
 
 - [ ] **Step 3: Verify**
@@ -307,18 +307,18 @@ Pick the mode from what you are pointed at. If both a diff and an artifact are i
 Walk every item. Mark PASS / FAIL / N-A with a one-sentence justification and a
 section citation. Overall PASS only if every item is PASS.
 
-1. **Completeness vs source** — every requirement in the spec/research maps to a task or section in the plan. Cite any gap.
-2. **Scope correctness** — no scope creep (tasks the spec didn't ask for) and nothing missing. Cross-reference the spec's success criteria.
-3. **Risk & blast radius** — high-risk changes (auth, billing, multi-tenant routing, public read path, deploy pipeline, shared schemas) are called out with mitigations.
-4. **Convention fit** — the plan respects the three-tier API rule, proxy factory, multi-tenancy scoping, hydration/SSR rules where relevant (consult shared-standards if a trigger area is touched).
-5. **Edge cases / failure modes** — the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
-6. **Testability** — each task ends with a concrete, checkable verification; no "looks done" steps.
-7. **No placeholders** — no TBD/TODO, no "similar to Task N", no steps that say what without how.
+1. **Completeness vs source**, every requirement in the spec/research maps to a task or section in the plan. Cite any gap.
+2. **Scope correctness**, no scope creep (tasks the spec didn't ask for) and nothing missing. Cross-reference the spec's success criteria.
+3. **Risk & blast radius**, high-risk changes (auth, billing, multi-tenant routing, public read path, deploy pipeline, shared schemas) are called out with mitigations.
+4. **Convention fit**, the plan respects the three-tier API rule, proxy factory, multi-tenancy scoping, hydration/SSR rules where relevant (consult shared-standards if a trigger area is touched).
+5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
+6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
+7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
 
-Final verdict line: "Verdict: PASS" or "Verdict: FAIL — N items to fix."
+Final verdict line: "Verdict: PASS" or "Verdict: FAIL, N items to fix."
 ```
 
-- [ ] **Step 3: Update Output Format** — append to the existing `## Output Format` block:
+- [ ] **Step 3: Update Output Format**, append to the existing `## Output Format` block:
 
 ```markdown
 - In artifact mode, write to `docs/projects/<slug>/plan-review-N.md` (or `<artifact>-review-N.md`) and run the Artifact rubric instead of the 12-point checklist.
@@ -350,16 +350,16 @@ git commit -m "feat(workflow): add artifact-review mode to reviewer (plan/design
 - [ ] **Step 1: Edit `coder.md`.** Replace the line:
 
 ```
-- DON'T review your own code — that's the reviewer's job.
+- DON'T review your own code, that's the reviewer's job.
 ```
 
 with:
 
 ```
-- DON'T silently fix-and-hide reviewer findings — report the verdict honestly, including FAILs.
+- DON'T silently fix-and-hide reviewer findings, report the verdict honestly, including FAILs.
 ```
 
-- [ ] **Step 2: Edit `coder.md`** — update the Boundaries line. Replace:
+- [ ] **Step 2: Edit `coder.md`**, update the Boundaries line. Replace:
 
 ```
 - I defer to: architect (design changes), tester (writes tests), reviewer (code review).
@@ -371,13 +371,13 @@ with:
 - I defer to: architect (design changes), tester (writes tests). I auto-dispatch the reviewer on my own diff before reporting done (see Auto-review).
 ```
 
-- [ ] **Step 3: Edit `coder.md`** — add a new section after `## Implementation Protocol`:
+- [ ] **Step 3: Edit `coder.md`**, add a new section after `## Implementation Protocol`:
 
 ```markdown
 ## Auto-review (before reporting done)
 
 After lint + type-check pass, dispatch the reviewer on my own diff and report its
-verdict inline. On solo runs (via `/implement`), this review IS the review — there
+verdict inline. On solo runs (via `/implement`), this review IS the review, there
 is no separate gated phase.
 
 ​```
@@ -391,12 +391,12 @@ prompt: Review my diff (git diff against the base) in diff mode. Cite file:line
 - Do not claim "done" until the reviewer returns PASS or the user accepts the
   remaining notes.
 - Inside `/coordinator`'s full gated workflow, the coordinator still runs the
-  heavyweight multi-pass review separately — this auto-review is the solo-path gate.
+  heavyweight multi-pass review separately, this auto-review is the solo-path gate.
 ```
 
-> Implementer note: the inner `​```` fences are nested triple-backtick blocks — write as normal backticks.
+> Implementer note: the inner `​```` fences are nested triple-backtick blocks, write as normal backticks.
 
-- [ ] **Step 4: Edit `implement.md`** — replace the entire `## Post-Dispatch` section:
+- [ ] **Step 4: Edit `implement.md`**, replace the entire `## Post-Dispatch` section:
 
 ```markdown
 ## Post-Dispatch
@@ -448,20 +448,20 @@ git commit -m "feat(workflow): coder + /implement auto-dispatch reviewer (auto-r
 
 ```markdown
 ---
-description: Plan a multi-step Vivreal task end to end — research, then write the implementation plan, then auto-review the plan. Produces docs/projects/<slug>/{research,plan}.md plus a review verdict.
+description: Plan a multi-step Vivreal task end to end, research, then write the implementation plan, then auto-review the plan. Produces docs/projects/<slug>/{research,plan}.md plus a review verdict.
 argument-hint: <"add webhook retry logic" | "migrate X to Y" | description of the work>
 ---
 
 You are running the Vivreal planning chain. The user invoked `/plan` with: **$ARGUMENTS**
 
-## Phase 0 — Setup
+## Phase 0: Setup
 
 1. Generate a slug from the first ~6 meaningful words of $ARGUMENTS.
 2. `mkdir -p docs/projects/<slug>/`
 3. Write `docs/projects/<slug>/brief.md` with the verbatim task and today's date.
 4. Tell the user: "Slug: `<slug>`. Researching, then planning, then auto-reviewing."
 
-## Phase 1 — Research
+## Phase 1: Research
 
 Dispatch the researcher:
 
@@ -470,16 +470,16 @@ subagent_type: researcher
 prompt: Research the task at docs/projects/<slug>/brief.md. Slug is <slug>. Read
   the shared-standards skill first. Trace the relevant code paths and cite
   file:line for every claim. Write findings to docs/projects/<slug>/research.md.
-  Do not propose a full plan — surface constraints, reuse, and risks.
+  Do not propose a full plan, surface constraints, reuse, and risks.
 ​```
 
-## Phase 2 — Plan
+## Phase 2: Plan
 
 Invoke the `vivreal-writing-plans` skill to turn research.md into
 `docs/projects/<slug>/plan.md`. The skill's terminal step auto-dispatches the
-reviewer in artifact mode — let it run.
+reviewer in artifact mode, let it run.
 
-## Phase 3 — Report
+## Phase 3: Report
 
 1. Verify `docs/projects/<slug>/research.md` and `plan.md` exist and a
    `plan-review-*.md` verdict was written.
@@ -521,7 +521,7 @@ git commit -m "feat(workflow): add /plan command (research -> plan -> auto-revie
 - [ ] **Step 1: Connect and confirm databases.**
 
 Run (via MCP): `mcp__mongodb__list-databases`
-Expected: includes `Vivreal`, `general_shared`, `pro_plus`. Record any additional DBs. If connection fails, STOP and tell the user the Mongo MCP isn't connected (they may need to run the connect step / provide a connection string) — do not fabricate schema confirmation.
+Expected: includes `Vivreal`, `general_shared`, `pro_plus`. Record any additional DBs. If connection fails, STOP and tell the user the Mongo MCP isn't connected (they may need to run the connect step / provide a connection string), do not fabricate schema confirmation.
 
 - [ ] **Step 2: Confirm collection inventory** for each of the three DBs.
 
@@ -538,7 +538,7 @@ Then `mcp__mongodb__find` one sample doc each (limit 1, redact secrets) to confi
 - `groups.tier` ∈ {free, basic, pro, proplus}; `groups.key` present.
 Record any mismatch against the documented schemas.
 
-- [ ] **Step 4: Reconcile drift.** Apply targeted edits to `vivreal-db/SKILL.md` and `db-query.md` for every confirmed discrepancy from Steps 2-3 (added/renamed collections, changed field types, new/removed indexes). If everything matches, add a one-line provenance note to `vivreal-db/SKILL.md` under the title: `> Schema verified against live Mongo on 2026-06-19.` Do NOT invent changes — only edit what the live data contradicts.
+- [ ] **Step 4: Reconcile drift.** Apply targeted edits to `vivreal-db/SKILL.md` and `db-query.md` for every confirmed discrepancy from Steps 2-3 (added/renamed collections, changed field types, new/removed indexes). If everything matches, add a one-line provenance note to `vivreal-db/SKILL.md` under the title: `> Schema verified against live Mongo on 2026-06-19.` Do NOT invent changes, only edit what the live data contradicts.
 
 - [ ] **Step 5: Tighten activation.** In `vivreal-db/SKILL.md`, extend the `description:` frontmatter so it explicitly fires on MCP usage. Ensure the description contains: `Triggers on: mcp__mongodb, query mongo via MCP, find/aggregate/count, list collections, collection schema, dbKey, groupID, publishDate.` (merge with existing trigger list, don't duplicate phrases).
 
