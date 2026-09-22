@@ -150,7 +150,7 @@ Eight workflow prompts ship with the server. Use them for multi-step tasks inste
 
 ## Gotchas
 
-- **`dbKey` is not `group.key`.** `dbKey` is the tier-mapped MongoDB database name (e.g. `general_shared`, `pro_plus`). `group.key` is the group's URL slug used for S3 paths. They look similar but are different values. The MCP tools handle this internally, just don't confuse them when reading raw API responses.
+- **`dbKey` is not `group.key`.** `dbKey` is the MongoDB database name STORED on the group document (e.g. `general_shared`, `pro_plus`). It is not derived from the plan, and no database name tells you a plan. `group.key` is the group's URL slug used for S3 paths. They look similar but are different values. The MCP tools handle this internally, just don't confuse them when reading raw API responses.
 - **`set-active-group` is sticky for the session.** Once set, subsequent tool calls use it implicitly. If a user switches context mid-conversation, call `refresh-session-context` to re-sync.
 - **Failed channel posts are async.** `create-channel-post` returns success when the post is *queued*, not when the platform accepts it. Use `diagnose-failed-post` to investigate later failures.
 - **Site deployments take 3 to 5 minutes.** Don't expect `create-site` to return a live URL, poll `get-site-deployment-status` (statuses: `pending`, `deploying`, `live`, `failed`).

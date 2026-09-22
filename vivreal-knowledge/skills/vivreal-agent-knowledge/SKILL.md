@@ -34,7 +34,7 @@ The AI assistant is ONE feature spanning two repos: the **portal** owns every en
 - **`transcript.js`**, `normalizeHistory` (shifts leading assistant entries, merges same-role runs, drops trailing user) + `composeTurnMessages`. `<group_context>` stays in the **USER** role with its `cache_control`, moving it to system would break the audited C4 injection control.
 - **`tools/policy.js`**, capability per tool via tier-quotas `TIER_FLAGS`, checked at definition time AND in `executeTool`; `v1Disabled` on `writeSiteFile` ONLY (`triggerSiteDeploy` stays live).
 - **`siteComposeTools.js`**, reuse-first `matchCatalogComponents` (deterministic total ordering over the REQUEST-supplied catalog), `getDraftOutline`, `proposeSiteEdits`. Zero matches → logs `{event:'agent.catalogGap'}` + graceful decline. **No codegen path in v1.**
-- **`getAgentContext`** uses intent-scoped query projections, and **every group projection carries `dbKey`** (sticky-routing rule, a projection without it silently falls back to the tier mapping).
+- **`getAgentContext`** uses intent-scoped query projections, and **every group projection carries `dbKey`** (a projection without `dbKey` makes `resolvePlacement` THROW, which is the point: it fails loudly rather than rerouting the tenant).
 
 ## Cost / quota framing
 

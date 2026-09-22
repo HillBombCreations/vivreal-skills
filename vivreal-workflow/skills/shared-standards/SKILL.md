@@ -164,6 +164,31 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - Validate redirect URLs against an allowlist (open redirect prevention)
 - Output escape user data, never `dangerouslySetInnerHTML` user content
 - Mongo injection: never pass raw user input as query operator keys
+- **A verified signature proves ORIGIN. It says nothing about WHICH CUSTOMER.** This is the
+  most expensive shape in a multi-tenant webhook receiver, and it looks completely secure.
+  The pattern: one app secret is shared across every installed merchant, the HMAC covers the
+  request BODY, and the receiver picks the tenant from a HEADER that sits outside the signed
+  material. The signature check passes, and the routing decision it appears to have
+  authorised was never signed by anything.
+
+  Ask two separate questions of every signed inbound request:
+
+  1. **Is this really from the provider?** That is what the signature answers.
+  2. **Which of our customers is it about, and is THAT field inside the signed bytes?**
+     If the tenant selector is a header, a query parameter, or anything the signature does
+     not cover, then a (body, signature) pair that is legitimately valid can be replayed
+     against a DIFFERENT tenant by changing the selector, and it will verify.
+
+  What makes it worse rather than better: a per-tenant idempotency ledger. If the replay
+  ledger is keyed inside the tenant database, the same delivery id re-pointed at another
+  tenant finds a fresh ledger and is NOT deduplicated, so the one control that looks like it
+  would stop a replay is scoped so that it cannot.
+
+  Prefer, in order: derive the tenant from SIGNED content; or hold a per-tenant secret so
+  the signature itself is tenant-specific; or key the idempotency ledger globally so a
+  delivery id can be consumed exactly once across the whole fleet. Failing all three, say
+  in the file that tenant selection is unauthenticated, so the next reader does not assume
+  the signature covered it.
 
 ## Code quality non-negotiables
 - No `any` (use `unknown` and narrow)

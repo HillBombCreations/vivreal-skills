@@ -1,7 +1,7 @@
 ---
 name: growth-advisor
 description: |
-  NO WRITE AND NO EDIT TOOL: it answers in its reply and cannot create a file, so dispatch it for an answer and write any document yourself.
+  NO WRITE AND NO EDIT TOOL, it answers in its reply and cannot create a file, so dispatch it for an answer and write any document yourself.
   Pulls analytics from GA4, PostHog, and MongoDB, cross-references data sources, and produces actionable growth recommendations with specific metrics and trends.
   Quantitative analytics reporting from live data sources, for GTM/messaging/copy audits use the growth agent instead.
   <example>What's driving our signup drop this week?</example>

@@ -1,6 +1,6 @@
 ---
 description: Orchestrate the full bug fix workflow, research, plan, user approval, implement, strict review (max 3 passes), document, PR.
-argument-hint: <bug description, slug, or "inbox #N">
+argument-hint: '<bug description, slug, or "inbox #N">'
 ---
 
 ## Identity

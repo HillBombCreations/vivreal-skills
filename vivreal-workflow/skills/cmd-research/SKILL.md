@@ -1,6 +1,6 @@
 ---
 description: Research a bug end-to-end across the Vivreal stack. Creates bug directory, dispatches the researcher agent, and records metrics. Output is compatible with /coordinator (it will skip Phase 1 if research.md exists).
-argument-hint: <inbox #N | "description of the bug" | gh:owner/repo#N | sentry URL>
+argument-hint: '<inbox #N | "description of the bug" | gh:owner/repo#N | sentry URL>'
 ---
 
 You are dispatching the researcher agent directly. The user invoked `/research` with: **$ARGUMENTS**

@@ -7,27 +7,44 @@
  *
  * It fails on:
  *   1. A definition file that does not parse or load (JSON, or YAML frontmatter).
- *   2. A marketplace manifest that disagrees with the directories on disk, or with
+ *   2. The two YAML shapes that do not announce themselves:
+ *        - a plain scalar containing ": ", which makes the frontmatter unparseable.
+ *          The file STILL LOADS, with its name taken from the filename and every
+ *          other field silently dropped, `tools` included. An agent deliberately
+ *          built without Write comes back with the default tool set.
+ *        - a plain scalar containing " #", which starts a YAML comment and discards
+ *          the rest of the value. Nothing reports this at all. One skill here was
+ *          losing 277 characters that way, including its entire "Triggers on:" list,
+ *          which is the whole of how a skill gets chosen.
+ *   3. A marketplace manifest that disagrees with the directories on disk, or with
  *      the README table.
- *   3. An agent whose description disagrees with its tool list. Eleven agents here
+ *   4. An agent whose description disagrees with its tool list. Eleven agents here
  *      hold no Write and no Edit tool; six of them were once dispatched to author
  *      documents, which is a wasted dispatch every time. The description is how a
  *      dispatcher chooses, so the description has to say so.
- *   4. A copied mechanical value in a plugin tree: a package version, a Lambda
+ *   5. A copied mechanical value in a plugin tree: a package version, a Lambda
  *      count, a proxy-route count, a tool count, an Amplify job number. A number a
  *      command could have produced is wrong in two places at once the moment it
  *      moves, and it reads exactly the same whether it is current or two months
  *      stale. It is a defect even when it is correct today.
- *   5. An em dash, an en dash or any of their relatives, anywhere.
- *   6. A reference to behaviour that has been deleted from the product.
+ *   6. A cross-reference to a skill that does not exist.
+ *   7. An em dash, an en dash or any of their relatives, anywhere.
+ *   8. A reference to behaviour that has been deleted from the product.
  *
  * Run:  node scripts/check-definitions.mjs
  * Self-test (the must-pass control):  node scripts/check-definitions.mjs --self-test
  *
+ * This is NOT a substitute for `claude plugin validate`, which checks things this
+ * cannot. Run both. The platform validator is what caught the colon shape here, and
+ * this script is what caught the hash shape, which the platform validator does not
+ * look for in a skill.
+ *
  * The self-test matters. A checker that cannot fail reports a clean run on a broken
  * repo, and this whole file exists because that has happened here. --self-test writes
- * one deliberately bad fixture per rule into a temp directory, runs the rules against
- * it, and fails if any rule stays green. It removes the fixtures afterwards.
+ * one deliberately bad fixture per check into the repo, runs the REAL rule set over
+ * the REAL walk, and fails if any check stays green on its own poison. It then
+ * requires the repo to come back clean once the poison is removed, because a rule set
+ * that is red no matter what is as useless as one that is green no matter what.
  */
 
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
@@ -158,6 +175,46 @@ function ruleParse(files) {
     }
     if (keys.name && !/^[a-z0-9-]{1,64}$/.test(keys.name.trim().replace(/^["']|["']$/g, ''))) {
       fail('parse', rel, `name "${keys.name.trim()}" is not lowercase kebab-case within 64 characters`);
+    }
+    // A PLAIN (unquoted) YAML scalar cannot contain a colon followed by a space: the
+    // colon terminates the key. This is the single nastiest failure shape in this
+    // repo, because it does NOT stop the file loading. `claude plugin validate` says
+    // it exactly: "At runtime this agent loads with its name taken from the filename
+    // and every other frontmatter field silently dropped." Every other field includes
+    // `tools`, so an agent deliberately built WITHOUT Write comes back with the
+    // default tool set, and its description is gone so nothing dispatches it on
+    // purpose either. A whole marketplace can be broken this way and still start.
+    for (const [k, raw] of Object.entries(keys)) {
+      if (raw === undefined || raw === null) continue;
+      const v = String(raw);
+      const first = v.trimStart()[0];
+      const quoted = first === '"' || first === "'";
+      const block = first === '|' || first === '>';
+      if (quoted || block || v.trim() === '') continue;
+      if (/:\s/.test(v)) {
+        fail(
+          'parse',
+          rel,
+          `frontmatter key "${k}" is a plain YAML scalar containing a colon followed by a space, ` +
+            'so the YAML does not parse. The file still LOADS, with every field except the name ' +
+            'silently dropped, including `tools`. Use a comma, or quote the whole value.',
+        );
+      }
+      // The quieter sibling, and the worse one, because nothing complains at all:
+      // a space followed by `#` starts a comment inside a plain scalar, so the rest
+      // of the value is discarded. The file parses, `claude plugin validate` passes,
+      // the skill loads, and the description the model receives is a fragment. One
+      // skill in this repo was losing 277 characters that way, including the entire
+      // "Triggers on:" list, which is the whole of how a skill gets chosen.
+      if (/\s#/.test(v)) {
+        fail(
+          'parse',
+          rel,
+          `frontmatter key "${k}" is a plain YAML scalar containing a space followed by "#", which ` +
+            'starts a YAML comment. Everything after it is silently discarded and nothing reports it. ' +
+            'Quote the whole value.',
+        );
+      }
     }
   }
 }
@@ -411,18 +468,32 @@ function ruleDashes(files) {
 }
 
 // --------------------------------------------- rule 6: deleted product behaviour
+// The first version of these rules matched `deriveDbKey(` and `databaseDict[`, and
+// fourteen surviving references wrote `deriveDbKey.js`, `deriveDbKey ` or just "the
+// tier mapping", so the rules never saw them. One of those was the worst shape in the
+// repo: a removed bug class taught as the correct pattern, with an explicit
+// instruction not to fix it. Match the NAME and the CONCEPT, not one call syntax.
+const REMOVAL_VOCABULARY =
+  /deleted|removed|is the bug|do not restore|do not treat|never computed|no longer|gone|throws|comment record|moved into|there are no tier/i;
+
 const DELETED_BEHAVIOUR = [
   {
     id: 'derive-dbkey',
-    rx: /\bderiveDbKey\s*\(/,
-    why: 'deriveDbKey() is deleted from every repository. A tenant database is a stored placement, read by resolvePlacement(group).',
-    allowLine: /deleted|removed|is the bug|do not|never|gone/i,
+    rx: /\bderiveDbKey\b/,
+    why: 'deriveDbKey is deleted from every repository. A tenant database is a stored placement, read back by resolvePlacement(group), which throws rather than guessing.',
+    allowLine: REMOVAL_VOCABULARY,
   },
   {
     id: 'tier-to-database',
-    rx: /databaseDict\s*\[/,
-    why: 'the databaseDict[tier] ladder is deleted. It re-pointed a live group at a different database on a tier change.',
-    allowLine: /deleted|removed|is the bug|do not|never|gone/i,
+    rx: /\bdatabaseDict\b/,
+    why: 'the databaseDict[tier] ladder is deleted. It silently re-pointed a live group at a different database whenever its tier changed.',
+    allowLine: REMOVAL_VOCABULARY,
+  },
+  {
+    id: 'tier-mapping',
+    rx: /tier[- ]mapp(ing|ed)|tier branches (are|is) fallback/i,
+    why: 'a tier does not map to a database and has not for some time. Say that the placement is STORED on the group and read back.',
+    allowLine: REMOVAL_VOCABULARY,
   },
 ];
 
@@ -470,6 +541,7 @@ function selfTest() {
   const cases = [
     {
       rule: 'dash',
+      label: 'dash: an em dash anywhere',
       path: join(tmp, 'skills', 'poison', 'SKILL.md'),
       body:
         '---\nname: poison\ndescription: fixture\n---\n\ncontrol ' +
@@ -478,34 +550,75 @@ function selfTest() {
     },
     {
       rule: 'copied-value',
+      label: 'copied-value: a Lambda count',
       path: join(tmp, 'skills', 'copied', 'SKILL.md'),
       body: '---\nname: copied\ndescription: fixture\n---\n\nRuns 15 Lambdas today.\n',
     },
     {
       rule: 'agent-tools',
+      label: 'agent-tools: no Write, and silent about it',
       path: join(tmp, 'agents', 'mute.md'),
       body: '---\nname: mute\ndescription: a consultant that reports findings\ntools: Read, Grep\n---\n\nbody\n',
     },
     {
       rule: 'parse',
+      label: 'parse: no frontmatter at all',
       path: join(tmp, 'agents', 'broken.md'),
       body: 'no frontmatter at all\n',
     },
     {
       rule: 'deleted-behaviour',
+      label: 'deleted-behaviour: deriveDbKey',
       path: join(tmp, 'skills', 'ladder', 'SKILL.md'),
       body: '---\nname: ladder\ndescription: fixture\n---\n\nResolve it with deriveDbKey(group).\n',
     },
     {
       rule: 'manifest',
+      label: 'manifest: a plugin the marketplace omits',
       path: join(tmp, '.claude-plugin', 'plugin.json'),
       body: JSON.stringify({ name: FIXTURE_PLUGIN, description: 'fixture' }, null, 2) + '\n',
     },
     {
       rule: 'cross-reference',
+      label: 'cross-reference: a skill that does not exist',
       path: join(tmp, 'skills', 'refs', 'SKILL.md'),
       body:
         '---\nname: refs\ndescription: fixture\n---\n\nInvoke `vivreal-workflow:no-such-skill` first.\n',
+    },
+    {
+      // The shape that broke eleven agents during the work this file came out of, and
+      // that the in-house parser happily accepted until `claude plugin validate` said
+      // otherwise. It must never pass again.
+      rule: 'parse',
+      label: 'yaml: a colon that drops every field',
+      path: join(tmp, 'agents', 'plain-scalar-colon.md'),
+      body:
+        '---\nname: plain-scalar-colon\ndescription: READ ONLY: it cannot write a file\ntools: Read, Grep\n---\n\nbody\n',
+    },
+    {
+      // The shape fourteen surviving references actually used. The first version of
+      // the rule matched only `deriveDbKey(` and saw none of them.
+      rule: 'deleted-behaviour',
+      label: 'deleted-behaviour: the tier mapping',
+      path: join(tmp, 'skills', 'tier-mapping', 'SKILL.md'),
+      body: [
+        '---',
+        'name: tier-mapping',
+        'description: fixture',
+        '---',
+        '',
+        'The persisted dbKey wins and the tier mapping is the fallback.',
+        '',
+      ].join('\n'),
+    },
+    {
+      // The silent one. Five values in this repo were being truncated this way and
+      // nothing anywhere reported it.
+      rule: 'parse',
+      label: 'yaml: a hash that truncates in silence',
+      path: join(tmp, 'skills', 'hash-truncation', 'SKILL.md'),
+      body:
+        '---\nname: hash-truncation\ndescription: the #1 source of bugs, and everything after this is discarded\n---\n\nbody\n',
     },
   ];
 
@@ -523,8 +636,8 @@ function selfTest() {
 
       const tripped = failures.some((f) => f.rule === c.rule);
       console.log(
-        `  ${tripped ? 'RED   ' : 'GREEN '} rule "${c.rule}" on its own poison ` +
-          (tripped ? '(correct)' : '(THIS RULE CANNOT FAIL)'),
+        `  ${tripped ? 'RED   ' : 'GREEN '} ${(c.label || c.rule).padEnd(34)} ` +
+          (tripped ? '(correct)' : '(THIS CHECK CANNOT FAIL)'),
       );
       if (!tripped) allCanFail = false;
       rmSync(c.path, { force: true });

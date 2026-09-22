@@ -143,6 +143,35 @@ where nothing ran.
 
 ## A pipeline exit status is the last command's exit status
 
+Its close relative, and the one that hides longer, is a step written to tolerate ONE
+expected failure with a bare `||`:
+
+```bash
+npm publish || echo "Version already published, skipping"
+```
+
+That was written for a duplicate version, which is genuinely the expected outcome when a
+merge changes no published code. It swallows **every other failure identically**: a bad or
+expired token, a build that produced nothing, a registry outage, a permissions change. The
+package silently stops publishing, the job stays green, and the first symptom is a consumer
+installing a version that was never pushed, weeks later.
+
+**Tolerate the expected failure BY NAME, and fail on everything else:**
+
+```bash
+set -o pipefail
+if npm publish 2>&1 | tee publish.log; then exit 0; fi
+grep -qiE 'E409|EPUBLISHCONFLICT|cannot publish over|already exists' publish.log || exit 1
+echo "that version is already published, nothing to do"
+```
+
+The general rule: **a bare `||` on a command whose failure you have reasoned about turns
+every OTHER failure of that command into success.** Whenever you write one, name the
+condition you meant to tolerate and re-raise the rest.
+
+And the corollary for anyone reading a build: **a green publish job is not a publish.**
+Confirm on the registry (`npm view <package> version`) before letting a consumer bump.
+
 ```bash
 some_check | tr -d '\r'
 rc=$?          # this is tr's status. It is 0. It is always 0.
@@ -186,6 +215,18 @@ sequence, not the character. The detector was right; the poison was never there.
   it.
 - The same reasoning applies to any content detector: a secret scanner, an encoding check, a
   forbidden-import rule. Poison it, in its own language, on both sides of the measurement.
+
+## Strip comments before you sweep config
+
+A sweep for a bad pattern matches the COMMENT that documents its removal, so a fixed file
+reports as broken. This happened while checking the publish step above: five repositories
+all matched `npm publish ||`, and in two of them the only match was the comment explaining
+why the swallow had been replaced. The same shape hides the opposite error, a deleted
+function whose name survives in the comment recording the deletion, which reads as though
+the function is still there.
+
+Parse the key, or strip comment lines, then sweep. And give the stripper its own control:
+feed it one commented occurrence and one live occurrence, and require exactly one survivor.
 
 ---
 

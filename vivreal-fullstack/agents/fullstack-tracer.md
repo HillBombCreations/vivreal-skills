@@ -1,6 +1,6 @@
 ---
 name: fullstack-tracer
-description: "NO WRITE AND NO EDIT TOOL: it answers in its reply and cannot create a file, so dispatch it for an answer and write any document yourself. Traces the full request path of a Vivreal feature across repos: frontend component → proxy route → backend controller → service → MongoDB. Use when you need to understand how a feature works end-to-end, debug a cross-repo issue, or audit a data flow. Static code-path tracing only (no telemetry, no DB queries), for runtime telemetry use the sentry agent; for open-ended investigation use the researcher agent."
+description: "NO WRITE AND NO EDIT TOOL, it answers in its reply and cannot create a file, so dispatch it for an answer and write any document yourself. Traces the full request path of a Vivreal feature across repos: frontend component → proxy route → backend controller → service → MongoDB. Use when you need to understand how a feature works end-to-end, debug a cross-repo issue, or audit a data flow. Static code-path tracing only (no telemetry, no DB queries), for runtime telemetry use the sentry agent; for open-ended investigation use the researcher agent."
 model: sonnet
 color: cyan
 tools: Read, Grep, Glob, Bash

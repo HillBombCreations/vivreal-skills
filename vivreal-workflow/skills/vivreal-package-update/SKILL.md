@@ -62,6 +62,14 @@ merge together (shared-schema changes are only safe when every consumer ships th
 **Ask before opening PRs**, don't auto-PR.
 
 ## Ordering & safety
+
+- **A green publish workflow is not a publish, and this fleet has proved it.** A step of the
+  form `npm publish || echo "already published"` reports success for a bad token, a broken
+  build and a registry outage alike. **Before bumping any consumer, confirm the version
+  exists on the registry**: `npm view @hillbombcreations/<pkg> version`. Reading the
+  workflow run is not evidence; reading the registry is.
+- When you touch a package publish workflow, tolerate the duplicate-version case BY NAME and
+  fail on everything else. See the `verification-discipline` skill.
 - **Producer first:** if you're also publishing a new version of the shared package, publish it to
   GitHub Packages BEFORE bumping consumers (else `npm install` can't find the version).
 - **Additive vs breaking:** purely additive `strict:false` schema changes are safe to skew (a consumer

@@ -37,16 +37,16 @@ A tiny, focused **custom Lambda authorizer** in front of VR_Client_API. Its only
 - **Logic:** no token → Deny. Else connect to mainDb `Vivreal`, `groups.findOne({ apiKey: token })`. Found → Allow + context. Not found / any exception → **Deny (fail closed)**.
 - **Allow context injected** downstream into VR_Client_API (read via `req.apiGateway.event.requestContext.authorizer`): `{ database, bucketName, groupID, groupName, frozen }`.
 
-### Database routing (the decision: made at the edge: sticky dbKey Phase 5)
+### Database routing: the decision is made at the edge, from the STORED placement
 
-The authorizer now does `let database = foundGroup.dbKey || null`, the **persisted `group.dbKey` wins**; the tier branches are fallback for un-backfilled docs:
+The authorizer calls `resolvePlacement(foundGroup)` and **fails closed** when the group carries no routable placement. There are no tier branches and no fallback: a missing placement is a denial, not a guess.
 
-| Tier (fallback only) | `database` injected |
+| What the authorizer reads | What it injects as `database` |
 |---|---|
 | any tier | **the STORED `group.dbKey`** |
 | there is no second row | The authorizer calls `resolvePlacement(foundGroup)` and **fails closed** when the group carries no routable placement. It does not map a tier to a database. The ladder it replaced was dangerous rather than untidy: a tier change silently re-pointed a live group at a different database, and it carried a casing defect on an unconstrained `tier` string |
 
-This retired the latent divergence where the enterprise branch returned the literal `'enterprise'` while every other `deriveDbKey` returns `slugify(groupName)`. It matters more than it looks: **VR_Client_API derives nothing** (`src/scripts/tenantDb.js` takes the key as a parameter), this authorizer IS the whole public read path. Same `dbKey` routing as the rest of the stack (see `vivreal-db`).
+The ladder that preceded it had a divergence between its own branches, which is the argument for having exactly one implementation rather than a tidier ladder. **VR_Client_API derives nothing** and takes the database it is handed, so a wrong value upstream becomes a wrong tenant downstream with nothing in between to catch it.
 
 ### Authorizer oddities / gotchas
 

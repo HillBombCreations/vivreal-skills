@@ -19,7 +19,7 @@ Per-Lambda layout: `lambda.js` → `app.js` → `api/{index,handlers,controllers
 
 All routes are under `/tenant/`. **CMS reads the tenant DB key from `req.query.key`** (Secure API uses `dbKey`, don't confuse). `await dynamicDb.connect(dbKey)` selects the group's database. Always pass it.
 
-**mainDb lookups: never `{ groupName }`.** `active_ctx` has only `groupID` + `dbKey`. Use `{ _id: groupID }` or `{ key: dbKey }` (here `dbKey === group.key`). **Webhook paths have no `key` param**, they tenant-route by verified identifier (e.g. `merchant_id`) and derive the db via `deriveDbKey(group)`, never `group.key`.
+**mainDb lookups: never `{ groupName }`.** `active_ctx` has only `groupID` + `dbKey`. Use `{ _id: groupID }` or `{ key: dbKey }` (here `dbKey === group.key`). **Webhook paths have no `key` param**, they tenant-route by a provider identifier and then read the STORED placement with `resolvePlacement(group)`, never `group.key`. **Check whether that identifier is inside the signature before calling it verified**: on the Shopify receiver it is a header, and the HMAC covers only the body.
 
 ## Adding a route: 8 steps (step 7 = the 403 trap)
 
@@ -46,7 +46,30 @@ Full runbook: this repo's `docs/RELEASE.md`.
 
 ## Inbound webhook receivers (Square, Meta, Stripe, Shopify)
 
-All on the integrations Lambda, `Auth: NONE`, signature-verified: `POST /tenant/webhooks/square`, `GET+POST /tenant/webhooks/meta`, `POST /tenant/webhooks/stripe/{token}`, `POST /tenant/webhooks/shopify`. Shared 5-step receiver pattern: rawBody (createApp verify hook) → verify-first + **process-then-ack** → tenant-route by verified identifier with an **active-account** orphan guard → `deriveDbKey(group)` → per-tenant idempotency ledger (30d TTL: `square_webhook_events`, `metaWebhookEvents` twin, `shopifyWebhookEvents`). Ack ordering was INVERTED 2026-07: all three receivers (`squareWebhook.js`, `stripeWebhook.js`, `metaWebhook.js`) now process FIRST, then unconditional 200, on @codegenie/serverless-express the execution environment freezes the moment the response is written, so post-ack work never ran.
+**Read this before changing any of them: a verified signature proves ORIGIN and does not
+bind a TENANT.** The Shopify receiver is the clearest case. The HMAC is
+`base64(HMAC-SHA256(SHOPIFY_CLIENT_SECRET, rawBody))`, and that secret is ONE app secret
+shared by every merchant who has installed the app. The signature therefore covers the body
+and only the body. The tenant is then selected from the `x-shopify-shop-domain` HEADER,
+which is outside the signed material, by matching it against the `shopDomain` stored on an
+active integration. So the check that passed authenticated the payload, not the choice of
+customer, and a legitimately signed (body, signature) pair re-sent with a different shop
+domain header still verifies.
+
+The idempotency ledger does not close it either, because it is per tenant: the delivery id
+is inserted into `dynamicDb[dbKey].shopifyWebhookEvents`, so the same id aimed at a second
+tenant meets an empty ledger and is not a duplicate. **When you audit a receiver here, state
+explicitly which fields are inside the signature and which are not**, and treat every field
+outside it as caller-controlled, including the one that picks the customer.
+
+Two related things the code already gets right, worth not undoing. The domain normaliser
+strips only a trailing `.myshopify.com` rather than taking the first label, deliberately, so
+a custom-domain header cannot be truncated into another tenant name. And the product
+upsert and delete filters both pin `groupID`, because a shared tenant database holds many
+groups and a provider product id is unique only per shop, so two groups can legitimately
+hold the same id.
+
+All on the integrations Lambda, `Auth: NONE`, signature-verified: `POST /tenant/webhooks/square`, `GET+POST /tenant/webhooks/meta`, `POST /tenant/webhooks/stripe/{token}`, `POST /tenant/webhooks/shopify`. Shared 5-step receiver pattern: rawBody (createApp verify hook) → verify-first + **process-then-ack** → tenant-route by a provider identifier with an **active-account** orphan guard, then `resolvePlacement(group)`, then a per-tenant idempotency ledger (30d TTL: `square_webhook_events`, `metaWebhookEvents` twin, `shopifyWebhookEvents`). Ack ordering was INVERTED 2026-07: all three receivers (`squareWebhook.js`, `stripeWebhook.js`, `metaWebhook.js`) now process FIRST, then unconditional 200, on @codegenie/serverless-express the execution environment freezes the moment the response is written, so post-ack work never ran.
 
 - **Square P2**: `squareWebhook.js` → RetrieveOrder → `normalizeCompletionEvent.js` (pure mapper) → oversell-safe stock decrement (`$gte` guard, `inventory.oversell` Sentry flag, never auto-refunds). Fulfillment: `services/square/updateFulfillSquareOrder.js` + `PUT /tenant/updateFulfillSquareOrder`. `square_webhook_merchant_lookup` index + backstop script. Stage-suffixed `SQUARE_*`/`META_WEBHOOK_VERIFY_TOKEN` env, deploy FAILS if unprovisioned.
 - **Instagram DMs & comments (A0 to A3)**: comments read LIVE from Graph API; DMs are DB-backed (`instagram_comments`/`instagram_conversations`/`instagram_messages` tenant collections; webhook/send/sync writers). Messaging-window states incl. `HUMAN_AGENT` (7 days). 8 authenticated `/tenant/instagram/*` routes + 2 `/tenant/tiktok/*` routes.
@@ -79,7 +102,7 @@ Helper `src/createAndUpdateIntegrations/services/scheduler/contentGoliveSchedule
 - **publishDate on synced objects**: `services/core/syncIntegrationData.js` stamps `$setOnInsert.publishDate` at both bulkWrite sites (Client API's storefront query gates on `publishDate <= now`, synced products were invisible). Insert-only, skipped when the adapter maps its own. The same commit added `groupID` to the upsert filters (cross-tenant collision).
 - **Server-side Stripe price reconciliation**: `services/stripe/updateStripeIntegrationObject.js`, the client-supplied `priceChange` hint is GONE (stripped); `reconcileStripePrices` diffs incoming vs stored server-side and enforces shape invariants (scalar price ⇒ string price id; variant map ⇒ name→id map, the old unguarded Object.keys on scalar "25" minted $2.00/$5.00 prices from character indices); the no-op path retrieves the Stripe price and verifies `unit_amount`/`active` so drifted docs self-heal.
 - **Stripe credential handling**: `src/shared/stripeAuthError.js`, `isStripeAuthError` normalizes 401/api_key_expired/invalid_api_key to `StripeKeyExpired` 409 (a raw 401 made the portal's axios interceptor force /app/logout mid-edit); `isStripeScopeError` treats StripePermissionError/403 as a reconnect signal. Wired into errorHandler + handleTenantRoutes; the integrations Lambda's errorHandler wraps rather than re-exports and flags `integrations.$.needsReconnect` without flipping `active`.
-- **Persisted-dbKey preference (billing Phase 5)**: `src/shared/deriveDbKey.js`, a persisted `group.dbKey` wins over the tier mapping. EVERY projection feeding `deriveDbKey` must include `dbKey` (a projected doc without it silently falls through to the tier mapping, live prod bug in `squareWebhook.js`).
+- **Tenant placement is STORED, never computed.** Tenant placement is STORED, never computed: `resolvePlacement(group)` from `@hillbombcreations/tenant-placement` reads `group.dbKey` back and THROWS when it is absent or unroutable. There is no tier mapping and no fallback anywhere in the fleet. A projection that drops `dbKey` now fails loudly instead of silently rerouting a tenant. `src/shared/deriveDbKey.js` is deleted; if a grep finds the name, check whether the hit is a comment recording the removal before concluding the ladder survives.
 - **`POST /tenant/integrationObjects/batch`** (`services/core/createIntegrationObjectsBatch.js`): up to 4 cross-platform social posts (TikTok never batched, per `validators.js`). Idempotent via a lease (`reserveIdempotencyLease`/`completeIdempotencyLease`/`releaseIdempotencyLease`), batchKey namespaced server-side to `${groupID}:integrationObjectsBatch:${batchKey}` (general_shared is ONE DB shared by every free/basic/pro group). N-aware quota + frozen/paused pre-check; batch-scope media promotion so a shared `preupload-*` key isn't promoted-and-deleted by item 1. Always HTTP 200 with structured `{ok:false, reason}`.
 - **`GET /tenant/announcements`** on getCollectionInfo (`services/getAnnouncements.js`), the one deliberately cross-tenant read: takes NO groupID, connects to the announcements DB from server-side config (a caller lying about `key` still reads the same collection); the validator rejects `groupID`/`collectionID`. This fixed the cross-tenant announcements read bug.
 - **LinkedIn author resolution**: `services/social/linkedInClient.js` resolves the personal-post author URN three ways, stored `context.platformUserId` (from `buildPlatformContext.js`, zero extra calls) → OIDC `/v2/userinfo` → legacy `/v2/me`. As of 2026-07-28 `w_organization_social` + Community Management API are requested again, so `/v2/me` is the live path and userinfo is the dead one for post-revert tokens. Org-requested-but-broken-handle now THROWS before any network call instead of silently posting as the member.
