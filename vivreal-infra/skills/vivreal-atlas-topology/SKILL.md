@@ -5,15 +5,15 @@ description: 'Use when reasoning about Vivreal''s MongoDB Atlas at the OPS/INFRA
 
 # Vivreal MongoDB / Atlas Topology & Ops
 
-The infrastructure/ops view of the database. For **how to write safe queries** (which DB, groupID scoping, publishDate gate, redaction) use the **`vivreal-db`** skill — that's the query-rules companion to this topology/ops skill.
+The infrastructure/ops view of the database. For **how to write safe queries** (which DB, groupID scoping, publishDate gate, redaction) use the **`vivreal-db`** skill, that's the query-rules companion to this topology/ops skill.
 
-## Topology — multi-tenant, three databases on ONE cluster
+## Topology: multi-tenant: three databases on ONE cluster
 
 - **One Atlas cluster** (`vivreal.dmrw1.mongodb.net`), shared tier, hard cap 500 connections. `CLUSTER_URL` lives in each backend's own `vivreal/prod/<service>` secret (no path, no query string), **not** in `hb-api-secrets`. That secret is fully **deleted** as of 2026-09-15 (it was briefly recreated with placeholder-only values to satisfy a few DEV CloudFormation templates mid-teardown, then deleted again with no recovery window, see "The DEV environment is gone" below). All nine production service secrets, plus Outreach's second URI, still share **one Atlas services user** today (domain-search has its own read-only user, and the portal's `.mcp.json` holds a third, undocumented one). Per-service users are an approved-but-unstarted owner decision (spec section 14, below).
 - **Three databases, NOT one-per-group:** `Vivreal` (mainDb control plane: `groups`, `checkoutsessions`, `leads`), `general_shared` (free/basic/pro tenant content), `pro_plus` (proplus tenant content). Tenants in a tier **share** a DB; isolation is the `groupID` field on every doc.
-- **`dynamicDb[dbKey]` routing:** `dbKey` (`general_shared`/`pro_plus`) is derived from tier (`deriveDbKey()`) and selects the database connection. `dbKey` is the **database name** — not `group.key` (the S3 slug). (Full key disambiguation lives in `vivreal-db`.)
+- **`dynamicDb[dbKey]` routing:** `dbKey` is the tenant database name, **read from the group document**, never derived from the tier. `resolvePlacement(group)` is the only way to get one and it throws rather than guessing. `dbKey` is not `group.key`, which is the S3 slug. (Full key disambiguation lives in `vivreal-db`.) Two traps that follow from the routing shape: the module-level map is re-read across async gaps by most callers, so a socket event landing between the connect and the read can change what they get, and a grep for one spelling of the map access under-reports the surface badly because several spellings are in use.
 
-## Connection capacity — the real scaling ceiling
+## Connection capacity: the real scaling ceiling
 
 - **Shared tier cap = 500 connections.** Measured live 2026-08-31: `serverStatus.connections` returned `current 63, available 437`, later `current 144, available 356`. Both sum to exactly 500.
 - **NEVER compute "safe concurrent" as cap ÷ maxPoolSize.** That's wrong twice over. First, it divides by ONE pool, and a warm Client/Secure/CMS/Outreach/Analytics container holds **at least two**: the main pool, PLUS one tenant pool **per `dbKey` it has served**, cached for the life of the container (`tenantDb.js:82` keeps `connObj` keyed per tenant DB). Second, and just as large, it ignores that **every `MongoClient` keeps 3 monitor sockets** (one per replica-set member) **regardless of pool traffic**: a client sitting completely idle still holds 3 sockets, not zero. The real per-client cost is `3 + k`, where `k` is 0 to `maxPoolSize` pooled sockets. Today's per-container footprint, read from source (before any backend's connection-fix PR ships, see the package section below):
@@ -35,14 +35,14 @@ The infrastructure/ops view of the database. For **how to write safe queries** (
 
 ## SSL alert number 80 = the cluster is at its connection cap
 
-**`SSL routines:ssl3_read_bytes:tlsv1 alert internal error ... SSL alert number 80` from Mongo across MULTIPLE backends at once = the cluster is REJECTING new TLS handshakes**, almost always because it hit its connection cap. It is a **server-sent** TLS alert (Atlas aborting the handshake) — NOT a client cert/config problem and NOT a code regression. Crossing the cap makes every service fail simultaneously, surfacing as `MongooseServerSelectionError` / `MongoNetworkError` / `MongoPoolClearedError`, and as portal `serverFetchDirect upstream 500` + SSO login 500.
+**`SSL routines:ssl3_read_bytes:tlsv1 alert internal error ... SSL alert number 80` from Mongo across MULTIPLE backends at once = the cluster is REJECTING new TLS handshakes**, almost always because it hit its connection cap. It is a **server-sent** TLS alert (Atlas aborting the handshake), NOT a client cert/config problem and NOT a code regression. Crossing the cap makes every service fail simultaneously, surfacing as `MongooseServerSelectionError` / `MongoNetworkError` / `MongoPoolClearedError`, and as portal `serverFetchDirect upstream 500` + SSO login 500.
 
-**Confirm:** Atlas → Metrics → **Connections** (vs limit) + Opcounters `command` line (a `command` spike tracking the connection climb = churn — every new conn burns hello/saslStart/ping = the serverless no-reuse signature).
+**Confirm:** Atlas → Metrics → **Connections** (vs limit) + Opcounters `command` line (a `command` spike tracking the connection climb = churn, every new conn burns hello/saslStart/ping = the serverless no-reuse signature).
 
 ### Shared-tier diagnostic blind spots (CORRECTED 2026-08-31)
 **`db.serverStatus()` IS permitted on this cluster** and returns live connection counters, so **cluster headroom is directly readable without an Atlas Admin API key**. Measured against `atlas-c92xhg-shard-0`, MongoDB 8.0.30 enterprise. An earlier revision of this skill said not to attempt it, which cost an investigation its fastest diagnostic. What IS blocked: `$currentOp {allUsers: true}` and `hostInfo`. Still unavailable on shared tier: downloadable logs and the RTPP (both M10+).
 
-**Per-connection attribution remains impossible, and M10 alone will NOT fix it.** Two separate causes: `$currentOp` is blocked, AND every service reads `NAME=hillbomb_api` from SSM `/vivreal/prod/shared/name`, so the whole fleet reports one `appName`. Until per-service `appName` lands, M10's RTPP shows 1,500 connections belonging to a single name. **So there's no per-appName connection attribution on shared tier** — infer the culprit from **Sentry error distribution by project** (`message:"SSL alert number 80"` grouped by project + first-seen timing). In the 2026-06-09 outage that pointed at `vr-client-api` (172/193 errors, failing ~8h before the others). M10 would attribute it in minutes.
+**Per-connection attribution remains impossible, and M10 alone will NOT fix it.** Two separate causes: `$currentOp` is blocked, AND every service reads `NAME=hillbomb_api` from SSM `/vivreal/prod/shared/name`, so the whole fleet reports one `appName`. Until per-service `appName` lands, M10's RTPP shows 1,500 connections belonging to a single name. **So there's no per-appName connection attribution on shared tier**, infer the culprit from **Sentry error distribution by project** (`message:"SSL alert number 80"` grouped by project + first-seen timing). In the 2026-06-09 outage that pointed at `vr-client-api` (172/193 errors, failing ~8h before the others). M10 would attribute it in minutes.
 
 ## Why containers accumulate connections, not just concurrency
 

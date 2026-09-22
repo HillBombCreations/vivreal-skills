@@ -21,7 +21,7 @@ You are dispatching the documenter agent directly. The user invoked `/document` 
 ```
 description: Document <slug>
 subagent_type: documenter
-prompt: Document the fix for bug <slug>. Read docs/bugs/<slug>/issue.md, research.md (if exists), plan.md (if exists), and the latest review-N.md (if exists). Run git log to get commit SHAs. Write docs/bugs/<slug>/RESOLUTION.md (playbook entry) and docs/bugs/<slug>/pr-description.md (for GitHub PR). Be honest about severity. "How we'd catch this earlier" must be specific — no vague platitudes.
+prompt: Document the fix for bug <slug>. Read docs/bugs/<slug>/issue.md, research.md (if exists), plan.md (if exists), and the latest review-N.md (if exists). Run git log to get commit SHAs. Write docs/bugs/<slug>/RESOLUTION.md (playbook entry) and docs/bugs/<slug>/pr-description.md (for GitHub PR). Be honest about severity. "How we'd catch this earlier" must be specific, no vague platitudes.
 ```
 
 ## Post-Dispatch
@@ -29,7 +29,7 @@ prompt: Document the fix for bug <slug>. Read docs/bugs/<slug>/issue.md, researc
 1. Verify both `RESOLUTION.md` and `pr-description.md` exist
 2. Append metrics to `docs/bugs/<slug>/metrics.md`:
    ```markdown
-   ### Documentation — documenter
+   ### Documentation: documenter
    | Metric | Value |
    |---|---|
    | total_tokens | <from agent result> |

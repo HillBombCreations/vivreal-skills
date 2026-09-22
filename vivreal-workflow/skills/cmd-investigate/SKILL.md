@@ -15,7 +15,7 @@ You are dispatching the researcher agent. The user invoked `/investigate` with: 
 ## Dispatch
 
 ```
-description: Investigate — <brief description>
+description: Investigate, <brief description>
 subagent_type: researcher
 prompt: |
   Investigate: $ARGUMENTS
@@ -37,7 +37,7 @@ prompt: |
 1. Verify `docs/investigations/<slug>/findings.md` exists
 2. Append metrics to `docs/investigations/<slug>/metrics.md`:
    ```markdown
-   ### Investigation — researcher
+   ### Investigation: researcher
    | Metric | Value |
    |---|---|
    | total_tokens | <from agent result> |

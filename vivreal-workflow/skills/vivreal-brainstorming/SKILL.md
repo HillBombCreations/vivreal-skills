@@ -1,33 +1,33 @@
 ---
 name: vivreal-brainstorming
-description: 'Use before any creative or design work in the Vivreal workflow — a new feature, component, refactor, migration, or behavior change — to turn an idea into an approved design before any code is written. Vivreal-owned fork of the brainstorming discipline; saves specs to docs/projects/<slug>/spec.md and hands off to vivreal-workflow:vivreal-writing-plans. Triggers on: design X, build X, add a feature, how should we, plan the migration, brainstorm, new component.'
+description: 'Use before any creative or design work in the Vivreal workflow, a new feature, component, refactor, migration, or behavior change, to turn an idea into an approved design before any code is written. Vivreal-owned fork of the brainstorming discipline; saves specs to docs/projects/<slug>/spec.md and hands off to vivreal-workflow:vivreal-writing-plans. Triggers on: design X, build X, add a feature, how should we, plan the migration, brainstorm, new component.'
 ---
 
-# Vivreal Brainstorming — Ideas Into Approved Designs
+# Vivreal Brainstorming: Ideas Into Approved Designs
 
 Vivreal-owned brainstorming discipline. Turns an idea into a validated design
 spec through collaborative dialogue, then hands off to `vivreal-workflow:vivreal-writing-plans`.
 No dependency on the upstream superpowers skills. (Always invoke sibling skills
-by their full plugin-qualified name — bare names like `vivreal-writing-plans` do
+by their full plugin-qualified name, bare names like `vivreal-writing-plans` do
 NOT resolve.)
 
 <HARD-GATE>
 Do NOT write code, scaffold a project, or invoke any implementation skill/agent
 until you have presented a design AND the user has approved it. This applies to
 every task regardless of perceived simplicity. The design can be short for
-simple work — but you MUST present it and get approval.
+simple work, but you MUST present it and get approval.
 </HARD-GATE>
 
 ## Checklist (create one task per item, complete in order)
 
-1. Explore project context — files, the relevant repo `CLAUDE.md`, recent commits, the `shared-standards` trigger map.
-2. Ask clarifying questions — one at a time; purpose, constraints, success criteria. Multiple-choice preferred.
-3. Propose 2-3 approaches — tradeoffs + your recommendation first.
+1. Explore project context, files, the relevant repo `CLAUDE.md`, recent commits, the `shared-standards` trigger map.
+2. Ask clarifying questions, one at a time; purpose, constraints, success criteria. Multiple-choice preferred.
+3. Propose 2-3 approaches, tradeoffs + your recommendation first.
 4. Present the design in sections scaled to complexity; get approval after each section.
 5. Write the spec to `docs/projects/<slug>/spec.md` and commit it.
-6. Spec self-review — placeholder scan, internal consistency, scope, ambiguity. Fix inline.
+6. Spec self-review, placeholder scan, internal consistency, scope, ambiguity. Fix inline.
 7. User reviews the written spec.
-8. Hand off — invoke the `vivreal-workflow:vivreal-writing-plans` skill to create the implementation plan.
+8. Hand off, invoke the `vivreal-workflow:vivreal-writing-plans` skill to create the implementation plan.
 
 ## Process
 
@@ -36,10 +36,10 @@ simple work — but you MUST present it and get approval.
   subsystems, flag it and decompose into sub-projects first. Each sub-project gets
   its own spec → plan → implement cycle. Brainstorm the first one through the
   normal flow.
-- Ask questions one at a time. Prefer multiple-choice. Focus on purpose,
+- Ask questions one at a time. Prefer multiple-choice. Focus on purpose
   constraints, success criteria.
 - Propose 2-3 approaches with tradeoffs; lead with your recommendation and why.
-- Present the design once you understand what you are building. Cover architecture,
+- Present the design once you understand what you are building. Cover architecture
   components, data flow, error handling, testing. Ask after each section whether it
   looks right.
 - Design for isolation: break the system into small units with one clear
@@ -54,7 +54,7 @@ simple work — but you MUST present it and get approval.
 
 - One question at a time. Multiple-choice preferred. YAGNI ruthlessly.
 - Always explore 2-3 alternatives before settling.
-- Incremental validation — present, get approval, move on. Be flexible; go back
+- Incremental validation, present, get approval, move on. Be flexible; go back
   when something doesn't fit.
 
 ## After the design
@@ -68,5 +68,5 @@ simple work — but you MUST present it and get approval.
   > want changes before we write the implementation plan."
   Wait for approval. If changes are requested, make them and re-run the self-review.
 - Terminal state: invoke the `vivreal-workflow:vivreal-writing-plans` skill (the
-  full plugin-qualified name — the bare name does not resolve). Do NOT invoke any
-  other skill — `vivreal-workflow:vivreal-writing-plans` is the only next step.
+  full plugin-qualified name, the bare name does not resolve). Do NOT invoke any
+  other skill, `vivreal-workflow:vivreal-writing-plans` is the only next step.

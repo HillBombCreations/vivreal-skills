@@ -31,7 +31,7 @@ Dispatch the `sentry` agent (by name, via the Agent tool) with the user query. T
    -> Dispatch the `sentry` agent with Playbook 6 (tenant-scoped triage). Always filtered to `environment:production` unless explicitly told staging.
 
 8. **Request ID fallback** -- user pastes a request_id (UUID-shaped) from the portal toast / Network tab
-   -> Dispatch the `sentry` agent with Playbook 7 (request_id correlation). Use when trace IDs don't stitch — historical events, manual proxy routes, or third-party hops that strip headers.
+   -> Dispatch the `sentry` agent with Playbook 7 (request_id correlation). Use when trace IDs don't stitch, historical events, manual proxy routes, or third-party hops that strip headers.
 
 9. **Breadcrumb deep-dive** -- "what was the controller doing when it threw", "inspect breadcrumbs on issue X"
    -> Dispatch the `sentry` agent with Playbook 8 (service breadcrumb inspection)

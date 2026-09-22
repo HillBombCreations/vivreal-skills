@@ -41,7 +41,7 @@ Every plan MUST start with this header:
 
 > **For agentic workers:** Execute task-by-task with the
 > `vivreal-workflow:vivreal-subagent-driven` skill (invoke with that full
-> plugin-qualified name — recommended: fresh `coder` per task + `reviewer` gate
+> plugin-qualified name, recommended: fresh `coder` per task + `reviewer` gate
 > between tasks), or the `coder` agent via `/implement` / `/coordinator`. Steps
 > use checkbox (`- [ ]`) syntax.
 
@@ -50,7 +50,7 @@ Every plan MUST start with this header:
 **Tech Stack:** [key technologies]
 
 ## Global Constraints
-[project-wide requirements copied verbatim from the spec — one line each]
+[project-wide requirements copied verbatim from the spec, one line each]
 
 ---
 ````
@@ -59,14 +59,14 @@ Every plan MUST start with this header:
 
 - Each task: **Files** (exact create/modify/test paths), **Interfaces**
   (Consumes/Produces with exact signatures), then numbered checkbox steps with
-  complete content — real code/content in every step, exact commands, expected
+  complete content, real code/content in every step, exact commands, expected
   output.
 - No placeholders: never "TBD", "add error handling", "similar to Task N", or
   steps that say what without showing how.
-- Self-review after writing: spec coverage (every requirement maps to a task),
+- Self-review after writing: spec coverage (every requirement maps to a task)
   placeholder scan, type/name consistency across tasks. Fix inline.
 
-## Auto-review (terminal — REQUIRED)
+## Auto-review (terminal: REQUIRED)
 
 After saving the plan and running the inline self-review, dispatch the reviewer
 agent in **artifact mode** on the plan:
@@ -90,11 +90,10 @@ prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
 ## Execution handoff
 
 After the plan PASSes review, offer:
-1. **Subagent-driven (recommended)** — invoke the
-   `vivreal-workflow:vivreal-subagent-driven` skill (full plugin-qualified name —
-   the bare name does not resolve) to execute the plan in this session: a fresh
+1. **Subagent-driven (recommended)**, invoke the
+   `vivreal-workflow:vivreal-subagent-driven` skill (full plugin-qualified name, the bare name does not resolve) to execute the plan in this session: a fresh
    `coder` per task, a `reviewer` gate (spec + quality) after each, and a final
    whole-branch `reviewer` pass.
-2. **Coordinator-driven** — `/implement` (solo coder) or `/coordinator` (full
+2. **Coordinator-driven**, `/implement` (solo coder) or `/coordinator` (full
    gated bug/feature workflow).
-3. **Inline** — implement tasks in this session with checkpoints.
+3. **Inline**, implement tasks in this session with checkpoints.

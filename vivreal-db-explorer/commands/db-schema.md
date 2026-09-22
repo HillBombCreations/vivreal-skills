@@ -5,16 +5,16 @@ allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__co
 user-invocable: true
 ---
 
-# /db-schema — Collection Schema Explorer
+# /db-schema: Collection Schema Explorer
 
 Shows the full picture of a MongoDB collection: Mongoose schema definition (from source code), actual indexes, and a sample document.
 
-## Connecting (self-service — NEVER ask the user for the connection string)
+## Connecting (self-service: NEVER ask the user for the connection string)
 
-The MCP server is normally **already connected** — the `vivreal-db-explorer` plugin launches it via
+The MCP server is normally **already connected**, the `vivreal-db-explorer` plugin launches it via
 `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets Manager
-(`vivreal/prod/main-api`) at startup. Try your first MCP call directly. If it returns "not connected",
-source the string yourself and call `mcp__mongodb__connect` — do **NOT** ask the user to paste one:
+(`vivreal/prod/main-api`) at startup. Try your first MCP call directly. If it returns "not connected"
+source the string yourself and call `mcp__mongodb__connect`, do **NOT** ask the user to paste one:
 
 ```bash
 aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text \
@@ -23,13 +23,13 @@ aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query Se
 
 It is a secret (embeds the Atlas user + password): pass it only into the connect call, never log or
 persist it. Only ask the user as a true last resort, and only if Secrets Manager is genuinely
-unreachable — say which step failed first. See the `vivreal-db` skill for the full detail.
+unreachable, say which step failed first. See the `vivreal-db` skill for the full detail.
 
 ## Arguments
 
 `/db-schema <database> <collection> [--source] [--indexes] [--sample] [--stats]`
 
-- `<database>`: Database name — `Vivreal` (mainDb), `general_shared`, or `pro_plus`. If a group name is given, look up its tier to route to the correct tenant DB.
+- `<database>`: Database name, `Vivreal` (mainDb), `general_shared`, or `pro_plus`. If a group name is given, look up its tier to route to the correct tenant DB.
 - `<collection>`: Collection name
 - `--source`: Show the Mongoose schema definition from source code (searches backend repos)
 - `--indexes`: Show all indexes on the collection
@@ -66,7 +66,7 @@ Compare with schema-defined indexes and note any discrepancies.
 
 Use `mcp__mongodb__find` with `limit: 1` to fetch one document.
 
-**Redaction rules** — replace these field values with `[REDACTED]`:
+**Redaction rules**, replace these field values with `[REDACTED]`:
 - `credentials`, `apiKey`, `secretKey`, `accessToken`, `refreshToken`
 - Any field containing `password`, `secret`, `token` (case-insensitive)
 - `stripeKey`, `integrationKey`
@@ -114,15 +114,15 @@ For quick reference, the user might use informal names. Map these:
 
 | User says | Actual collection | Database |
 |---|---|---|
-| collections, collection groups | `collection_groups` | `general_shared` / `pro_plus` |
-| objects, items, content | `collection_objects` | `general_shared` / `pro_plus` |
-| integration items, products, posts | `integration_objects` | `general_shared` / `pro_plus` |
-| sites | `sites` | `general_shared` / `pro_plus` |
-| media, files | `mediafiles` | `general_shared` / `pro_plus` |
-| audit, logs | `auditlogs` | `general_shared` / `pro_plus` |
-| versions | `contentversions` | `general_shared` / `pro_plus` |
-| webhooks | `webhooks` | `general_shared` / `pro_plus` |
-| usage tracking | `usagetrackings` | `general_shared` / `pro_plus` |
+| collections, collection groups | `collection_groups` | the group's stored `dbKey` database |
+| objects, items, content | `collection_objects` | the group's stored `dbKey` database |
+| integration items, products, posts | `integration_objects` | the group's stored `dbKey` database |
+| sites | `sites` | the group's stored `dbKey` database |
+| media, files | `mediafiles` | the group's stored `dbKey` database |
+| audit, logs | `auditlogs` | the group's stored `dbKey` database |
+| versions | `contentversions` | the group's stored `dbKey` database |
+| webhooks | `webhooks` | the group's stored `dbKey` database |
+| usage tracking | `usagetrackings` | the group's stored `dbKey` database |
 | groups, orgs, tenants | `groups` | `Vivreal` (mainDb) |
 | checkout sessions | `checkoutsessions` | `Vivreal` (mainDb) |
 
@@ -131,5 +131,5 @@ For quick reference, the user might use informal names. Map these:
 Same rules as `/db-query`:
 - `main` or `Vivreal` → `Vivreal` (control-plane DB with groups, users, checkout sessions)
 - `general_shared` → tenant data for free / basic / pro groups
-- `pro_plus` → tenant data for pro_plus groups
+- `pro_plus` → another tenant content database. **A database name, not a plan name.** Which groups live in it is a property of their stored `dbKey`, nothing else
 - If user gives a group name → look up in `Vivreal.groups`, read `tier`, route to correct tenant DB

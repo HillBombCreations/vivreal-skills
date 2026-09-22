@@ -7,7 +7,7 @@ source, and the date it was verified. This is what lets the `claim-false` check 
 **Every finding derived from this ledger must print the ledger's verified date**, so
 staleness shows up in the output instead of silently rotting.
 
-**Ledger verified: 2026-08-06.** Claude Code 2.1.223.
+**Ledger verified: 2026-08-06.** the Claude Code version recorded in the ledger header.
 
 **Do not link onward from this file.** It sits one level below the agent body, and a
 second hop gets partially read. The rule table is linked from the body separately.
@@ -30,7 +30,7 @@ second hop gets partially read. The rule table is linked from the body separatel
 
 ## How to read a row
 
-Each entry gives the **claim**, a **verbatim quote** from the docs, its **source**,
+Each entry gives the **claim**, a **verbatim quote** from the docs, its **source**
 and any **version caveat**. A claim is settled only if it appears here with a quote.
 Anything not in this ledger and not fetched live is UNVERIFIED, and a finding built
 on it must say so.
@@ -50,7 +50,7 @@ is false, and it is the single highest-value false claim to catch.
 
 Source: sub-agents, *Let subagents spawn their own subagents*. Verified 2026-08-06.
 
-**Version caveat — do not assert the integer.** The depth is a configurable default,
+**Version caveat, do not assert the integer.** The depth is a configurable default,
 not a constant:
 
 > "To change the limit, set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to the number of
@@ -61,7 +61,7 @@ not a constant:
 > defaulted to one, so a subagent couldn't spawn its own unless you raised it;
 > v2.1.219 raised the default to three."
 
-**Therefore:** assert the *behavior* — subagents CAN nest — and never a literal
+**Therefore:** assert the *behavior*, subagents CAN nest, and never a literal
 depth number. A finding or eval that hard-codes `3` is a dated assertion.
 
 ---
@@ -76,23 +76,23 @@ depth number. A finding or eval that hard-codes `3` is a dated assertion.
 > that run in the background, which is the default. Forks skip both filters and
 > receive the main conversation's exact tool pool."
 
-**Filter one — removed from every subagent, even when listed in `tools`:**
+**Filter one, removed from every subagent, even when listed in `tools`:**
 
 > "`Agent`, when the subagent is at the depth limit; in a fork the tool stays listed
 > but returns an error instead of spawning · `AskUserQuestion` · `EndConversation` ·
 > `EnterPlanMode` · `ExitPlanMode`, unless the subagent's `permissionMode` is `plan`
 > · `ScheduleWakeup` · `TaskOutput` · `WaitForMcpServers` · `Workflow`"
 
-The **unconditional** subset is seven tools: `AskUserQuestion`, `EndConversation`,
+The **unconditional** subset is seven tools: `AskUserQuestion`, `EndConversation`
 `EnterPlanMode`, `ScheduleWakeup`, `TaskOutput`, `WaitForMcpServers`, `Workflow`.
 `Agent` and `ExitPlanMode` are conditional. **The fork carve-out means "removed
-unconditionally" is an overbroad claim** — a common drift.
+unconditionally" is an overbroad claim**, a common drift.
 
-**Filter two — the background set (19 built-ins plus every MCP tool):**
+**Filter two, the background set (19 built-ins plus every MCP tool):**
 
 > "a background subagent keeps every MCP tool but only these built-in tools:
-> `Read`, `Grep`, `Glob`, `Bash`, `PowerShell`, `Edit`, `Write`, `NotebookEdit`,
-> `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`, `ToolSearch`, `EnterWorktree`,
+> `Read`, `Grep`, `Glob`, `Bash`, `PowerShell`, `Edit`, `Write`, `NotebookEdit`
+> `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`, `ToolSearch`, `EnterWorktree`
 > `ExitWorktree`, `Monitor`, `TaskStop`, `SendMessage`, and `Artifact`."
 
 **Background is the default:**
@@ -116,8 +116,8 @@ Source: sub-agents, *Available tools*. Verified 2026-08-06.
 > "The following fields can be used in the YAML frontmatter. Only `name` and
 > `description` are required."
 
-Documented set, in doc order: `name`, `description`, `tools`, `disallowedTools`,
-`model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`,
+Documented set, in doc order: `name`, `description`, `tools`, `disallowedTools`
+`model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`
 `background`, `effort`, `isolation`, `color`, `initialPrompt`.
 
 **Claim: a `:` in `name` is the only documented agent load failure.**
@@ -126,7 +126,7 @@ Documented set, in doc order: `name`, `description`, `tools`, `disallowedTools`,
 > `my-plugin:reviewer`. Claude Code doesn't load a file whose name contains one and
 > logs an error to the debug log. Before v2.1.218, such names were accepted"
 
-**Name charset — narrower than commonly stated.** The doc says *"Unique identifier
+**Name charset, narrower than commonly stated.** The doc says *"Unique identifier
 using lowercase letters and hyphens."* It does **not** sanction digits. That
 phrasing is descriptive rather than an explicit charset rule, so a digit is a
 quality warning, never an error.
@@ -147,9 +147,9 @@ launch failure is slightly stronger than the docs support.
 
 **Plugin-shipped agents support a narrower set:**
 
-> "Plugin agents support `name`, `description`, `model`, `effort`, `maxTurns`,
+> "Plugin agents support `name`, `description`, `model`, `effort`, `maxTurns`
 > `tools`, `disallowedTools`, `skills`, `memory`, and `isolation` frontmatter
-> fields. The only valid `isolation` value is `"worktree"`. For security reasons,
+> fields. The only valid `isolation` value is `"worktree"`. For security reasons
 > `hooks`, `mcpServers`, and `permissionMode` are not supported for plugin-shipped
 > agents."
 
@@ -179,7 +179,7 @@ Source: sub-agents; plugins-reference. Verified 2026-08-06.
 **Duplicate names resolve nondeterministically:**
 
 > "Keep `name` values unique across the whole tree: if two files under the same
-> `.claude/agents/` directory, including its subfolders, declare the same name,
+> `.claude/agents/` directory, including its subfolders, declare the same name
 > Claude Code loads only one of them, chosen by filesystem read order rather than a
 > documented precedence. The `/doctor` setup checkup reports files in the same
 > directory that share a name"
@@ -195,10 +195,10 @@ Source: sub-agents. Verified 2026-08-06.
 
 > "If you include a manifest, `name` is the only required field."
 
-**The 24 documented top-level keys:** `$schema`, `name`, `displayName`, `version`,
-`description`, `author`, `homepage`, `repository`, `license`, `keywords`,
-`metadata`, `defaultEnabled`, `skills`, `commands`, `agents`, `workflows`, `hooks`,
-`mcpServers`, `outputStyles`, `lspServers`, `experimental`, `userConfig`,
+**The 24 documented top-level keys:** `$schema`, `name`, `displayName`, `version`
+`description`, `author`, `homepage`, `repository`, `license`, `keywords`
+`metadata`, `defaultEnabled`, `skills`, `commands`, `agents`, `workflows`, `hooks`
+`mcpServers`, `outputStyles`, `lspServers`, `experimental`, `userConfig`
 `channels`, `dependencies`.
 
 **Unrecognized fields and type errors:**
@@ -212,7 +212,7 @@ Source: sub-agents. Verified 2026-08-06.
 > string instead of an array is a load error. `experimental` and `metadata`: Claude
 > Code ignores a non-object value, and `claude plugin validate` reports a warning."
 
-**Marketplace naming — why `manifest-name-match` cannot be an ERROR:**
+**Marketplace naming, why `manifest-name-match` cannot be an ERROR:**
 
 > "`name` | string | Unique identifier (kebab-case, no spaces). When a
 > [marketplace entry](/docs/en/plugin-marketplaces#plugin-entries) lists the plugin
@@ -226,13 +226,13 @@ ERROR would block it, which is why that rule is a WARNING.
 **Directory layout:**
 
 > "The `.claude-plugin/` directory contains the `plugin.json` file. All other
-> directories (commands/, agents/, skills/, workflows/, output-styles/, themes/,
+> directories (commands/, agents/, skills/, workflows/, output-styles/, themes/
 > monitors/, hooks/) must be at the plugin root, not inside `.claude-plugin/`."
 
 **`--strict`:**
 
 > "Pass `--strict` to treat warnings as errors. Use it in CI to catch a misspelled
-> field name or a field left over from another tool's manifest before publishing,
+> field name or a field left over from another tool's manifest before publishing
 > even though the plugin would load at runtime."
 
 **Validation scope:**
@@ -254,13 +254,13 @@ Source: plugins-reference. Verified 2026-08-06.
 > create `/deploy` and work the same way. Your existing `.claude/commands/` files
 > keep working."
 
-**The 20 documented keys:** `name`, `description`, **`when_to_use`**,
-`argument-hint`, `arguments`, `disable-model-invocation`, `user-invocable`,
-`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`, `agent`,
+**The 20 documented keys:** `name`, `description`, **`when_to_use`**
+`argument-hint`, `arguments`, `disable-model-invocation`, `user-invocable`
+`allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`, `agent`
 `background`, `hooks`, `paths`, `shell`, `metadata`, `license`, `compatibility`.
 
 `when_to_use` is documented and encouraged. **Omitting it from an allowlist WARNs on
-correct files** — the single most consequential drift to guard against.
+correct files**, the single most consequential drift to guard against.
 
 > "All fields are optional. Only `description` is recommended so Claude knows when
 > to use the skill."
@@ -272,13 +272,13 @@ Source: skills. Verified 2026-08-06.
 ## G. Skill hard limits
 
 > "`name`: Maximum 64 characters · Must contain only lowercase letters, numbers, and
-> hyphens · Cannot contain XML tags · Cannot contain reserved words: "anthropic",
+> hyphens · Cannot contain XML tags · Cannot contain reserved words: "anthropic"
 > "claude"
 > `description`: Must be non-empty · Maximum 1,024 characters · Cannot contain XML
 > tags"
 
 > "Keep SKILL.md body under 500 lines for optimal performance."
-> "Always write in third person. The description is injected into the system prompt,
+> "Always write in third person. The description is injected into the system prompt
 > and inconsistent point-of-view can cause discovery problems."
 > "Keep references one level deep from SKILL.md."
 > "For reference files longer than 100 lines, include a table of contents at the top."
@@ -321,15 +321,15 @@ back them.
 
 | Claim | Status | What may be said |
 |---|---|---|
-| A frontmatter-less `.md` in an agents tree "is scanned, fails to load, and logs an error" | Docs are **silent**. The only documented agent load failure is a `:` in `name`. | Report as hygiene. In Profile A, `claude plugin validate` does emit `No frontmatter block found` on such a file — cite that as observed first-party behavior, not as documentation. |
+| A frontmatter-less `.md` in an agents tree "is scanned, fails to load, and logs an error" | Docs are **silent**. The only documented agent load failure is a `:` in `name`. | Report as hygiene. In Profile A, `claude plugin validate` does emit `No frontmatter block found` on such a file, cite that as observed first-party behavior, not as documentation. |
 | `claude plugin validate` emits a specific, stable output shape | The plugins CLI reference has **no `plugin validate` section**, no options table, and no example output. Every mention is incidental prose. | Run it, report the exit code and the lines it printed. **Never parse or assert its format.** |
 | The agent `tools` field accepts comma separation | Shown by **example only**; the separators are never specified. By contrast the skills doc explicitly states that `allowed-tools` accepts a space- or comma-separated string or a YAML list. | Follow the example, but do not assert a documented separator rule. |
 
 Measured, not documented, and worth recording because it changes how much the agent
-can lean on Stage 0: on Claude Code 2.1.223, `claude plugin validate` **does** cover
+can lean on Stage 0: on the Claude Code version recorded in the ledger header, `claude plugin validate` **does** cover
 agent files (its output lines read `Validating agent:`), but on an agent it checks
 only that frontmatter **parses** and is **present**. It does not check `name`
-charset (a `:` in an agent `name` passes validation silently), `model`, `color`,
+charset (a `:` in an agent `name` passes validation silently), `model`, `color`
 unknown fields, or tool availability. Every field-level agent rule is therefore
 gated by Stage 1 alone, in both profiles.
 
@@ -345,5 +345,5 @@ gated by Stage 1 alone, in both profiles.
 | 4 | `https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices` | 2026-08-06 | G |
 
 All four returned 200 with no redirect on 2026-08-06. When a claim is not in this
-ledger, fetch the one relevant URL above — never all four — and if the fetch fails,
+ledger, fetch the one relevant URL above, never all four, and if the fetch fails,
 downgrade to UNVERIFIED rather than asserting anything.

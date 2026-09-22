@@ -1,25 +1,25 @@
 ---
-description: Write comprehensive e2e tests for a feature, component, or page. Applies the Vivreal test quality standard — edge cases, error states, numeric safety, accessibility, breakpoints, and interaction coverage.
+description: Write comprehensive e2e tests for a feature, component, or page. Applies the Vivreal test quality standard, edge cases, error states, numeric safety, accessibility, breakpoints, and interaction coverage.
 argument-hint: <feature-name or component-path>
 ---
 
 You are writing Playwright e2e tests for the Vivreal Portal. The user invoked `/write-tests` with: **$ARGUMENTS**
 
-## Step 1 — Understand the target
+## Step 1: Understand the target
 
 Read the following before writing any tests:
-1. `e2e/TESTING.md` — fixtures, patterns, critical gotchas (especially SSR/hydration)
-2. the `shared-standards` skill — project-wide quality rules
-3. The component/page identified by `$ARGUMENTS` — read every file that renders the UI being tested
-4. Any existing spec file for this feature — don't duplicate, gap-fill
+1. `e2e/TESTING.md`, fixtures, patterns, critical gotchas (especially SSR/hydration)
+2. the `shared-standards` skill, project-wide quality rules
+3. The component/page identified by `$ARGUMENTS`, read every file that renders the UI being tested
+4. Any existing spec file for this feature, don't duplicate, gap-fill
 
 Identify:
 - Which fixture to use (`global-setup` for public pages, `auth-setup` for authenticated)
 - Which API endpoints the component calls (browser-side calls can be mocked via `page.route()`)
 - Which `data-testid` attributes exist (add them to the component if missing)
-- Whether the page is SSR-rendered (server fetches bypass `page.route()` — document workaround)
+- Whether the page is SSR-rendered (server fetches bypass `page.route()`, document workaround)
 
-## Step 2 — Apply the test quality checklist
+## Step 2: Apply the test quality checklist
 
 For every component/feature, work through each category and write at least one test per applicable item. Skip items with a comment explaining why they don't apply.
 
@@ -58,20 +58,20 @@ For every component/feature, work through each category and write at least one t
 Follow [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/) for all role/property expectations.
 
 **Interactive element names**
-- [ ] All buttons, links, and inputs have an accessible name — test with `getByRole('button', { name: /…/ })` or assert `aria-label` attribute
-- [ ] Icon-only buttons have an explicit `aria-label` (e.g., close, delete, toggle icons)
-- [ ] Links have descriptive text — avoid "click here" or "read more" without context
+- [ ] All buttons, links, and inputs have an accessible name, test with `getByRole('button', { name: /…/ })` or assert `aria-label` attribute
+- [ ] Icon-only buttons have an explicit `aria-label` (e.g. close, delete, toggle icons)
+- [ ] Links have descriptive text, avoid "click here" or "read more" without context
 
 **Landmark roles and structure**
 - [ ] Page has a primary landmark (`<main>` or `role="main"`)
 - [ ] Heading hierarchy is logical (h1 → h2 → h3); no skipped levels on a single page
-- [ ] Navigation regions use `<nav>` with a distinct `aria-label` (e.g., `aria-label="Primary"`)
+- [ ] Navigation regions use `<nav>` with a distinct `aria-label` (e.g. `aria-label="Primary"`)
 
 **Form accessibility**
 - [ ] Every form input is associated with a `<label>` via `for`/`id` or `aria-label`
 - [ ] Required fields use `aria-required="true"` or the `required` attribute
 - [ ] Validation error messages are linked to their input via `aria-describedby`
-- [ ] Submit buttons are not disabled via CSS alone — use the `disabled` attribute
+- [ ] Submit buttons are not disabled via CSS alone, use the `disabled` attribute
 
 **Widget roles and states (ARIA patterns)**
 - [ ] Progress bars: `role="progressbar"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
@@ -118,7 +118,7 @@ await expect(page.locator('[aria-live]')).toBeAttached();
 
 ### F. Responsive / breakpoint behavior
 - [ ] At mobile width (375px): no horizontally overflowing content, all controls reachable
-- [ ] At tablet width (768px): layout switches correctly (e.g., side-by-side vs stacked)
+- [ ] At tablet width (768px): layout switches correctly (e.g. side-by-side vs stacked)
 - [ ] At desktop width (1280px): full layout renders without collapsed/hidden primary content
 - [ ] Tab-only UI elements (hidden mobile / hidden desktop): test via URL deep-link, not click
 
@@ -132,7 +132,7 @@ await expect(page.locator('[aria-live]')).toBeAttached();
 - [ ] Injected item appears in the list without page reload
 - [ ] Injected item with edge-case data (missing fields) renders without crash
 
-## Step 3 — Write the spec file
+## Step 3: Write the spec file
 
 Follow these conventions from `e2e/TESTING.md`:
 
@@ -142,8 +142,8 @@ import { test, expect } from './fixtures/auth-setup'; // or global-setup for pub
 
 test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
-// Group tests logically — one describe per state/view
-test.describe('Feature — state/scenario', () => {
+// Group tests logically, one describe per state/view
+test.describe('Feature, state/scenario', () => {
   test('description of the specific assertion', async ({ page }) => {
     // Setup: mock APIs before navigation
     // Action: navigate, wait for element, interact
@@ -160,12 +160,11 @@ await page.waitForFunction(
   () => {
     const el = document.querySelector('[data-testid="my-element"]');
     return !!el && Object.keys(el).some((k) => k.startsWith('__reactProps'));
-  },
-  { timeout: 10_000 },
-);
+  }
+  { timeout: 10_000 });
 ```
 
-**postDataJSON (synchronous — use try/catch, not .catch()):**
+**postDataJSON (synchronous, use try/catch, not .catch()):**
 ```typescript
 let body: Record<string, unknown> | null = null;
 try { body = route.request().postDataJSON() as Record<string, unknown>; } catch { /* no body */ }
@@ -175,7 +174,7 @@ try { body = route.request().postDataJSON() as Record<string, unknown>; } catch 
 ```typescript
 const hasMockedData = await page.locator('text=Expected Value').first().isVisible().catch(() => false);
 if (!hasMockedData) {
-  // SSR timing limitation — assert NaN guard still holds
+  // SSR timing limitation, assert NaN guard still holds
   const text = await page.locator('[data-testid="my-panel"]').first().textContent();
   expect(text).not.toContain('NaN');
   return;
@@ -185,7 +184,7 @@ if (!hasMockedData) {
 
 **NaN/exception guard test:**
 ```typescript
-// Use innerText() not textContent() — textContent() includes Next.js inline <script>
+// Use innerText() not textContent(), textContent() includes Next.js inline <script>
 // serialization which contains the literal word "undefined", causing false positives.
 const panelText = await page.locator('[data-testid="my-panel"]').first().innerText();
 expect(panelText).not.toContain('NaN');
@@ -201,7 +200,7 @@ await page.setViewportSize({ width: 1280, height: 720 }); // desktop
 // ... assert layout
 ```
 
-## Step 4 — Run and verify
+## Step 4: Run and verify
 
 ```bash
 PLAYWRIGHT_EXTERNAL_WEBSERVER=1 npx playwright test --project=chromium e2e/your-feature.spec.ts
@@ -212,7 +211,7 @@ Tests MUST:
 - PASS on the fixed/current code
 - NOT use `waitForTimeout` except as a last resort (prefer `waitFor`, `toBeVisible`, `waitForFunction`)
 
-## Step 5 — Update test infrastructure if needed
+## Step 5: Update test infrastructure if needed
 
 If new mock functions are needed, add them to `e2e/fixtures/api-mocks.ts`.
 If new test data is needed, add exports to `e2e/fixtures/test-data.ts`.

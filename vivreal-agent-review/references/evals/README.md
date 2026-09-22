@@ -1,4 +1,4 @@
-# Eval corpus — definition-reviewer
+# Eval corpus: definition-reviewer
 
 Six regression cases drawn from a real repository, four positive and two negative.
 They exist because a reviewer that cannot be tested is a reviewer nobody can trust.
@@ -36,7 +36,7 @@ against the citing file's directory, the target root, the git toplevel, and then
 bounded suffix fallback over the repository. These agents cite paths relative to
 their own monorepo package, so a `.claude`-only archive deletes the corpus the
 fallback searches and turns roughly fifty correct citations into confident, wrong
-ERRORs — **112** of them at `HEAD`, against a true count of **2** ERRORs and 2
+ERRORs, **112** of them at `HEAD`, against a true count of **2** ERRORs and 2
 output-path NOTEs. Note also that `git archive` omits git-ignored files, and one
 citation in the corpus points at one; `expected/head.md` says which. The
 reviewer still resolves the profile at the `.claude` subdirectory either way.
@@ -46,7 +46,7 @@ Both resolve as **Profile B**, rooted at the `.claude` directory. Compare the ou
 against `expected/29b9404.md` and `expected/head.md`.
 
 For the lexical subset only, the kit's Stage 1 script can corroborate. It cannot
-perform `ref-unresolved` or `claim-false`, so it is silent on case 1 — which is the
+perform `ref-unresolved` or `claim-false`, so it is silent on case 1, which is the
 single most important thing this corpus demonstrates.
 
 ## Form: assertions, not snapshots
@@ -59,7 +59,7 @@ defects" a casual description would suggest, because four agent files there have
 `:` in their `name` and never load at all. An eval asserting exact equality fails on
 correct behavior. **Extra findings are allowed, and are listed rather than failed.**
 
-Expected values come from the platform docs and from the intent of each file — never
+Expected values come from the platform docs and from the intent of each file, never
 from pasting whatever the reviewer currently emits. Snapshotting output would freeze
 today's bugs in as requirements.
 

@@ -5,7 +5,7 @@ argument-hint: <inbox #N | "description of the bug" | gh:owner/repo#N | sentry U
 
 You are dispatching the researcher agent directly. The user invoked `/research` with: **$ARGUMENTS**
 
-## Phase 0 — Setup
+## Phase 0: Setup
 
 Parse the input using the same detection as /coordinator:
 
@@ -30,7 +30,7 @@ Then:
 ```
 description: Research <slug>
 subagent_type: researcher
-prompt: Research the bug at docs/bugs/<slug>/issue.md. Slug is <slug>. Read the shared-standards skill first. Trace the full path from UI to DB. Cite file:line for every claim. Check Sentry MCP for any reported errors. Write your findings to docs/bugs/<slug>/research.md. Do not propose fixes — that's the architect's job.
+prompt: Research the bug at docs/bugs/<slug>/issue.md. Slug is <slug>. Read the shared-standards skill first. Trace the full path from UI to DB. Cite file:line for every claim. Check Sentry MCP for any reported errors. Write your findings to docs/bugs/<slug>/research.md. Do not propose fixes, that's the architect's job.
 ```
 
 Include relevant ecosystem docs based on the bug area (same routing table as coordinator):
@@ -46,7 +46,7 @@ Also include relevant backend CLAUDE.md paths if backend repos are involved.
 1. Verify `docs/bugs/<slug>/research.md` exists
 2. Append metrics to `docs/bugs/<slug>/metrics.md`:
    ```markdown
-   ### Research — researcher
+   ### Research: researcher
    | Metric | Value |
    |---|---|
    | total_tokens | <from agent result> |

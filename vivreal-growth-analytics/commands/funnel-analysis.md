@@ -5,7 +5,7 @@ allowed-tools: mcp__google-analytics__*, mcp__posthog__*, mcp__mongodb__connect,
 user-invocable: true
 ---
 
-# /funnel-analysis — User Journey Funnel Deep-Dive
+# /funnel-analysis: User Journey Funnel Deep-Dive
 
 Trace the complete user journey through Vivreal's activation funnel, identify drop-off points, and recommend fixes.
 
@@ -16,14 +16,14 @@ Trace the complete user journey through Vivreal's activation funnel, identify dr
 - `[period]`: Time range. Default: `30d`
   - Same options as `/growth-report`: `1d`, `7d`, `30d`, `mtd`, `custom:start:end`
 - `--segment`: Segment users for comparison
-  - `tier` — break down by Free / Basic / Pro / Pro Plus
-  - `source` — break down by acquisition source (organic, paid, social, referral)
-  - `device` — break down by desktop vs mobile
+  - `tier`, break down by tier. **Read the ladder from `@hillbombcreations/tier-quotas` rather than hardcoding one**, and report the raw stored values alongside it: a retired tier id still sitting on a group normalises to free, so a breakdown built only from the current ladder hides it
+  - `source`, break down by acquisition source (organic, paid, social, referral)
+  - `device`, break down by desktop vs mobile
 - `--stage`: Focus on a specific funnel stage for drill-down
-  - `signup` — zoom into signup flow only
-  - `activation` — first group + first collection
-  - `deployment` — first site deployment
-  - `upgrade` — free-to-paid conversion
+  - `signup`, zoom into signup flow only
+  - `activation`, first group + first collection
+  - `deployment`, first site deployment
+  - `upgrade`, free-to-paid conversion
 
 ## The Vivreal Activation Funnel
 
@@ -86,9 +86,9 @@ For the worst stage, investigate:
 ### Step 4: Generate Recommendations
 
 Based on the analysis, provide:
-1. **Quick wins** — changes that could improve the worst stage in < 1 week
-2. **Medium-term** — features or UX improvements for the next sprint
-3. **Experiments** — A/B test ideas to validate hypotheses
+1. **Quick wins**, changes that could improve the worst stage in < 1 week
+2. **Medium-term**, features or UX improvements for the next sprint
+3. **Experiments**, A/B test ideas to validate hypotheses
 
 ## Output Format
 
@@ -99,7 +99,7 @@ Generated: <timestamp>
 ### Funnel Overview
 | Stage | Users | Conversion | Drop-off | vs Previous |
 |---|---|---|---|---|
-| Landing page | X | — | — | +Y% |
+| Landing page | X | | | +Y% |
 | Signup started | X | Y% | Z% | +/-delta |
 | Signup completed | X | Y% | Z% | +/-delta |
 | First group | X | Y% | Z% | +/-delta |
@@ -158,14 +158,14 @@ db.groups.countDocuments({ createdAt: { $gte: ISODate("<start>") } })
 ### Groups that created a collection within 24h of group creation
 ```javascript
 // Requires cross-DB query: for each new group, check its tenant DB for collectiongroups
-// This is approximate — use MongoDB aggregate on mainDb groups, then spot-check tenant DBs
+// This is approximate, use MongoDB aggregate on mainDb groups, then spot-check tenant DBs
 ```
 
 ### Tier distribution of new groups
 ```javascript
 db.groups.aggregate([
-  { $match: { createdAt: { $gte: ISODate("<start>") } } },
-  { $group: { _id: "$tier", count: { $sum: 1 } } },
+  { $match: { createdAt: { $gte: ISODate("<start>") } } }
+  { $group: { _id: "$tier", count: { $sum: 1 } } }
   { $sort: { count: -1 } }
 ])
 ```
@@ -196,5 +196,5 @@ db.sites.countDocuments({ createdAt: { $gte: ISODate("<start>") }, status: "live
 → Deep-dive into signup step only: form abandonment, error rates, device differences
 
 /funnel-analysis mtd --segment=tier
-→ Month-to-date funnel by tier — do paid users activate faster?
+→ Month-to-date funnel by tier, do paid users activate faster?
 ```

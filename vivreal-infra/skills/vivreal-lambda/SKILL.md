@@ -1,20 +1,20 @@
 ---
 name: vivreal-lambda
-description: 'Use for anything about the Vivreal backend Lambdas at the AWS level — packaging/building/deploying them (failed deploy, package/template too large, adding a layer, arm64-layer crash, CI/CD) OR concurrency/scaling/capacity (throttling/429s, "decreases unreserved below 100", reserved-concurrency values, "can we handle N users", the Mongo-connection ceiling). Routes you to references/deploy.md for packaging+deploy and references/scaling.md for concurrency+capacity. Covers all backends — SAM (VR_CMS_API/VR_Secure_API/VR_Main_API/VR_Client_API/VR_Outreach_API) and the Serverless-Framework outliers (VR_Client_Auth, Vivreal_EventHandler). Triggers on: deploy lambda, build:deploy, package too large, template too large, lambda layer, arm64 layer crash, Extension.Crash, FFmpeg layer, serverless-express, SAM deploy, GitHub Actions deploy, dogfood, reserved concurrency, ReservedConcurrentExecutions, lambda throttling, 429, concurrency limit, scaling ceiling, put-function-concurrency, Little''s Law.'
+description: 'Use for anything about the Vivreal backend Lambdas at the AWS level, packaging/building/deploying them (failed deploy, package/template too large, adding a layer, arm64-layer crash, CI/CD) OR concurrency/scaling/capacity (throttling/429s, "decreases unreserved below 100", reserved-concurrency values, "can we handle N users", the Mongo-connection ceiling). Routes you to references/deploy.md for packaging+deploy and references/scaling.md for concurrency+capacity. Covers all backends, SAM (VR_CMS_API/VR_Secure_API/VR_Main_API/VR_Client_API/VR_Outreach_API) and the Serverless-Framework outliers (VR_Client_Auth, Vivreal_EventHandler). Triggers on: deploy lambda, build:deploy, package too large, template too large, lambda layer, arm64 layer crash, Extension.Crash, FFmpeg layer, serverless-express, SAM deploy, GitHub Actions deploy, dogfood, reserved concurrency, ReservedConcurrentExecutions, lambda throttling, 429, concurrency limit, scaling ceiling, put-function-concurrency, Little''s Law.'
 ---
 
-# Vivreal Backend Lambdas — Deploy & Scaling
+# Vivreal Backend Lambdas: Deploy & Scaling
 
-Cross-cutting Lambda knowledge shared by all Vivreal backends. For repo-internal route/service details, see the per-repo `*-knowledge` skills (`vivreal-knowledge` plugin). This skill is the AWS plumbing those repos share. It has two facets — read the one your task needs:
+Cross-cutting Lambda knowledge shared by all Vivreal backends. For repo-internal route/service details, see the per-repo `*-knowledge` skills (`vivreal-knowledge` plugin). This skill is the AWS plumbing those repos share. It has two facets, read the one your task needs:
 
 - **Packaging, building, deploying** (deploy failures, layers, CI/CD, the runtime conventions) → read **`references/deploy.md`**.
 - **Concurrency, scaling, throttling, capacity planning** (reserved concurrency, the "below 100" failure, the real ceiling) → read **`references/scaling.md`**.
 
-## The shared shape (all backends) — quick facts
+## The shared shape (all backends): quick facts
 
 - **Express.js wrapped in `@codegenie/serverless-express`** (older docs say `serverless-express`), deployed as AWS Lambda behind API Gateway.
-- **Node.js 20.x, arm64 (Graviton2)**, 1024 MB, 30s timeout, X-Ray on every function. (Exception: `VR_Client_Auth` is Node 18.x — see `vivreal-client-stack-knowledge`.)
-- **Pino structured logging + AWS X-Ray.** Use the two-arg pino form `logger.info(obj, 'event_name')` — single-arg drops the message body (also a Sentry-ingestion regression signal; see `sentry-tracer`).
+- **Node.js 20.x, arm64 (Graviton2)**, 1024 MB, 30s timeout, X-Ray on every function. (Exception: `VR_Client_Auth` is Node 18.x, see `vivreal-client-stack-knowledge`.)
+- **Pino structured logging + AWS X-Ray.** Use the two-arg pino form `logger.info(obj, 'event_name')`, single-arg drops the message body (also a Sentry-ingestion regression signal; see `sentry-tracer`).
 - **Secrets from per-service AWS Secrets Manager entries** (`vivreal/prod/<service>` plus shared `vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) injected at deploy/runtime. The old single `hb-api-secrets` store is retired AND now fully deleted (2026-09-15); see `vivreal-iam-secrets`.
 - **CI/CD = GitHub Actions → CloudFormation.** VR_Outreach_API, VR_Client_Auth, and Vivreal_EventHandler still auto-deploy prod on push to `main`, no manual deploy for a normal change, push the branch. **A `dogfood` push still fires a deploy too, but the DEV stacks it used to build no longer exist for CMS/Client API/Secure (deleted 2026-09-15) and the trigger removal itself hasn't shipped yet** (spec `atlas-connection-fixes-2026-09-15` section 13.4). For VR_Client_Auth specifically, `dogfood`'s default stage IS the production authorizer (`VRClientAuthorizer-dev-function1`), so pushing that repo's stale `dogfood` branch redeploys production. Don't push `dogfood` anywhere until that PR lands; see `vivreal-atlas-topology`. **VR_Secure_API, VR_CMS_API, VR_Main_API, and VR_Client_API do NOT**, since 2026-08-15 those four (plus the portal) ship via a release train: prod deploys only on push to the `stable` branch, moved there by a staggered Monday `promote.yml` cron or a manual promote dispatch (since 2026-08-19 the cron auto-mints a patch tag, `vX.Y.Z+1`, when backports landed on the line), and backports reach a line via each repo's `backport.yml` (PATCH semantics; never a new cut). Pushing `main` in those four repos triggers zero prod workflow runs. See `docs/RELEASE.md` in each of those repos, or the `shared-standards` skill's "Release trains" section for the full model.
 
@@ -25,7 +25,7 @@ Cross-cutting Lambda knowledge shared by all Vivreal backends. For repo-internal
 | VR_CMS_API, VR_Main_API, VR_Client_API | AWS SAM |
 | VR_Secure_API | AWS SAM (fragments → generated `cloudYamls/allRoutes.yaml`) |
 | VR_Client_Auth | **Serverless Framework** (`serverless.yml`) |
-| Vivreal_EventHandler | **Serverless Framework + esbuild** (state machine pushed separately — see `vivreal-site-deploy-pipeline`) |
+| Vivreal_EventHandler | **Serverless Framework + esbuild** (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
 
 ## Companions
 

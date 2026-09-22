@@ -15,7 +15,7 @@ You are dispatching the architect agent. The user invoked `/design` with: **$ARG
 ## Dispatch
 
 ```
-description: Design — <brief description>
+description: Design, <brief description>
 subagent_type: architect
 prompt: |
   Design: $ARGUMENTS
@@ -38,7 +38,7 @@ prompt: |
 1. Verify `docs/designs/<slug>/design.md` exists
 2. Append metrics to `docs/designs/<slug>/metrics.md`:
    ```markdown
-   ### Design — architect
+   ### Design: architect
    | Metric | Value |
    |---|---|
    | total_tokens | <from agent result> |
