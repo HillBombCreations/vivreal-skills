@@ -1,6 +1,6 @@
 ---
 name: vivreal-mcp-server-knowledge
-description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing 69 CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules and per-tier tool gating, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, TOOL_MIN_TIER, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.'
+description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules and per-tier tool gating, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, TOOL_MIN_TIER, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.'
 ---
 
 # VR-MCP-Server: knowledge digest
@@ -15,11 +15,21 @@ Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer toke
 |---|---|---|
 | Audience | Portal owner / Vivreal customer | Site-visitor agents (ChatGPT/Claude/Perplexity) |
 | Auth | Cognito OAuth 2.1 + PKCE (Bearer) | Per-site API key (raw header, no `Bearer`) |
-| Scope | Full CMS admin (69 tools) | Read-only content + Stripe purchase intent on ONE site |
+| Scope | Full CMS admin (count them from `toolRegistry`) | Read-only content + Stripe purchase intent on ONE site |
 
-## Tools: exactly 69 across 11 modules
+## Tools: count them from the registry, never quote a number
 
-Per `toolRegistry` in `src/resource/manifests.ts`: Session (3) · Collections (9) · Objects (12) · Media (5) · Calendar (1) · Dashboard (1) · Sites (14) · Integrations (10) · Stripe (4) · Group Mgmt (7) · Docs (3). Also 8 guided **prompts** (`create-content-plan`, `launch-content-everywhere`, etc.) and 3 static `vivreal://` **resources** + 12 URI **templates** (`src/resources/templates.ts`, `vivreal://groups/{groupId}` and descendants).
+**`toolRegistry` in `src/resource/manifests.ts` is the only answer.** The repository now derives
+its own published count from that registry rather than typing one, precisely because the typed
+copy went stale: a whole module was deleted outright and every written-down total, here included,
+kept asserting the old figure for weeks afterwards. If you need the number, read the registry on
+the deployed line and say when you read it.
+
+The module names are stable enough to be useful: Session, Collections, Objects, Media, Calendar,
+Dashboard, Sites, Integrations, Stripe, Group Mgmt, Docs. **Their per-module counts are not**, and
+neither is the module list itself. Alongside the tools there are guided **prompts**, static
+`vivreal://` **resources**, and URI **templates** in `src/resources/templates.ts`
+(`vivreal://groups/{groupId}` and descendants); count each from its own source.
 
 **Per-tier gating** lives in `TOOL_MIN_TIER` in `src/tools/catalog.ts`. **Read it. Do not quote a remembered ladder.** Three things a stale copy gets wrong: the gate has only two rungs, because two is all the catalog distinguishes; the tool-to-tier map has shrunk; and `tierForDbKey`, which graded a plan from a tenant DATABASE name, is deleted, because one shared placement holds several plans and the key was structurally incapable of telling them apart. An unreadable plan is `null`, and every gate fails OPEN on `null` and logs, because telling a paying customer to upgrade to a plan they already exceed is the worse error.
 
@@ -36,7 +46,7 @@ Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is
 - Field types live in `src/constants/fieldTypes.ts`; CI parity test guards drift vs `VR_CMS_API/src/shared/validateObjectValue.js`.
 - Endpoint specifics: `/api/groupInfoV1` (groupID + email) vs `/api/groupInfo` (email only); `/tenant/presignedUploadUrl` (not `s3PutUrl`); `/tenant/dashboardInfo` (not `dashboard`).
 - **dbKey-routing/tier-gating fixes (this window)**: a bucket-slug routing bug and a Pro Plus tier misreport are both fixed, verify current behavior against source rather than assuming the old symptoms still apply.
-- **Docs module scope expanded** (help-center docs tools), the tool COUNT is unchanged (still 69 across 11 modules); the Docs module's existing tools cover more help-center content.
+- **Docs module scope expanded** (help-center docs tools): the Docs module's existing tools cover more help-center content without new tools being added. The overall total has since moved for an unrelated reason (a module was removed), so do not infer a total from this line.
 - Repo gained ESLint + a husky gate with a coverage baseline.
 
 ## Runtime

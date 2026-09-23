@@ -27,6 +27,29 @@ Cross-cutting Lambda knowledge shared by all Vivreal backends. For repo-internal
 | VR_Client_Auth | **Serverless Framework** (`serverless.yml`) |
 | Vivreal_EventHandler | **Serverless Framework + esbuild** (state machine pushed separately, see `vivreal-site-deploy-pipeline`) |
 
+## Two functions that used to have no source anywhere
+
+`API-Failure-Fn` and `Custom-Cognito` ran in production for a long time with **no source in any
+repository**. They are now adopted into `VR_OnCall_Webhook`, under CloudFormation, deployed as
+`vivreal-error-notifier` and `vivreal-cognito-messages`, and **the originals are deleted from the
+account**: `get-function-configuration API-Failure-Fn` returns `ResourceNotFoundException`, while
+the adopted name returns its own configuration. Any note describing either as sourceless, or as
+live under its old name, is out of date.
+
+The lesson generalises past these two. **Drift detection cannot see a resource that is not in the
+template**, including the custom resource that owns a user pool's trigger configuration, which is
+the exact resource whose absence caused a months-long silent outage. A console-created resource is
+invisible to every scan that reads repositories, so its absence and its presence look identical.
+
+**Verify a handler string actually resolves.** A typo in a handler path deploys clean and fails at
+first invocation, which for a daily job is up to a day later. A file-exists check is not enough:
+Windows resolves paths case-insensitively and Lambda does not, so a case typo passes locally. Match
+every path segment against its parent's real directory listing.
+
+**An optional third parameter on a handler binds to the runtime callback.** A handler written as
+`(event, context, deps)` receives the runtime's callback as `deps`, not your injected dependencies.
+Arity catches this; coverage cannot.
+
 ## Companions
 
 `vivreal-iam-secrets` (deploy-role + secrets), `vivreal-atlas-topology` (the Mongo-connection ceiling that scaling defers to), `vivreal-auth-architecture` (the 403-on-new-route deploy-config miss). Sources of truth: each backend's `C:\repos\<repo>\CLAUDE.md`; memory `project_lambda_concurrency_reallocation.md`, `project_admin_analytics_integration.md`.

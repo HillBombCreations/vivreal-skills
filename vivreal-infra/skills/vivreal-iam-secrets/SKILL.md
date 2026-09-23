@@ -29,6 +29,35 @@ How permissions and secrets are organized across the backends. Pairs with `vivre
 - **`SESCrudPolicy` is a HARD cutover on `FromDomain`.** The SES send policy is keyed to a specific from-domain; changing the outreach send domain (e.g. `send.vivreal.io` → `vivreal.io`) is a one-shot cutover, the new domain must be in the policy or sends `AccessDenied`.
 - **New S3 buckets** are created locked down: `BlockPublicAcls/IgnorePublicAcls/BlockPublicPolicy/RestrictPublicBuckets: true` + a CloudFront OAC bucket policy (public read only via the CDN). See `vivreal-media-cdn`.
 
+## Reading a secret: ask for one key, never the map
+
+**Three credential exposures in one night came from ordinary, well-intentioned reads.** A plain
+`get-secret-value`, or a `get-function-configuration` on a Lambda, prints **every** key it holds
+into the transcript for the sake of the one value you wanted. Two live credentials sat in plain text
+in a Lambda environment here, and a single routine read exposed both.
+
+- Project to the single key you need. `--query 'Environment.Variables.THE_ONE_KEY'` on a function;
+  for a secret, pipe `SecretString` into a parser that emits one field and nothing else.
+- **Never widen it "just to see what is in there."** If you genuinely need the key list, ask for the
+  keys without the values.
+- **`${VAR:-default}` prints the VALUE when the variable is set**, and leaked a live token exactly
+  that way. Use `${VAR:+set}`, or a length plus a short prefix, to test presence.
+- A connection string is a credential. It embeds a username and password, so it goes into the
+  connect call and nowhere else: not a file, not a log, not a PR.
+
+**Two IAM ceilings this fleet has actually hit**, both of which fail a deploy rather than degrading:
+
+- **An inline role policy has a hard size ceiling.** One deploy role reached within a couple of
+  hundred bytes of it, meaning the next function anyone added was always going to fail, whoever
+  added it. Most of the budget was per-function log-group ARNs. Move grants to a managed policy.
+- **Managed policies attached per role are capped at 20.** One role here carries most of that
+  budget, none of it in any template.
+
+**A resource CloudFormation names for you is one the deploy role may refuse.** A grant scoped to a
+capitalised name prefix failed when CloudFormation generated a lower-case auto-name. Name the
+resource explicitly rather than trusting a prefix grant. This is the same trap as the queue-name
+prefix grant that once killed a release.
+
 ## Secrets Manager: `hb-api-secrets` is RETIRED and DELETED, per-service stores are current
 
 **`hb-api-secrets` no longer exists.** Secrets Phase 2 (2026-07) moved every key below out of that one shared secret into per-service secrets (`vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/secure-api`, `vivreal/prod/main-api`, `vivreal/prod/client-auth`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`, `vivreal/prod/outreach`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret SSM config under `/vivreal/prod/*`; env var names were kept unchanged. `hb-api-secrets` itself was briefly recreated with 56 placeholder-only values on 2026-09-15 to unblock a DEV-stack CloudFormation deletion, then deleted again immediately with no recovery window. It is gone, not just unused. The table below names which **category** of secret holds each key today; read the per-repo `*-knowledge` skill for the exact secret id.

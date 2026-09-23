@@ -30,6 +30,24 @@ The passive **`sentry-tracer`** knowledge skill (in the `vivreal-knowledge` plug
 **Organization:** `vivreal`
 **Region URL:** `https://us.sentry.io`
 
+> **Database spans have NEVER reached Sentry, on any service.** Zero over 30 days matching any
+> database span name, against a control returning hundreds of thousands of spans and a dozen span
+> operations, so the query discriminates and the absence is real. Every backend registers the
+> Mongoose integration correctly and initialisation order is fine. **The cause is that webpack
+> inlines the database driver into each bundle, so there is no module load for the tracer to
+> hook.** The integration patches nothing, forever.
+>
+> Two consequences, both of which change what you may say:
+>
+> 1. **Query performance is invisible fleet wide.** Never conclude "the database is not the
+>    problem" from an absence of database spans. That absence is guaranteed and carries no
+>    information.
+> 2. A span-name search returning zero here is the expected result, not a finding. Pair every
+>    zero-result span query with a control that must return rows before reporting it.
+>
+> Separately, a fraction of error events are **discarded on a plan quota**, so a lower-than-expected
+> event count can be billing rather than health. Check the quota before reading a drop as a fix.
+
 | Project Slug | Service | Platform | Tracing | What It Covers |
 |---|---|---|---|---|
 | `vivreal-portal` | Vivreal Portal (Next.js) | javascript-nextjs | **100%** | Browser spans, page transitions, HTTP client calls, error boundaries, Session Replay |

@@ -11,6 +11,13 @@ against a lowercased collection name returns zero rows against a database that h
 
 # Vivreal Multi-Tenant MongoDB: Safe Query & Linking Rules
 
+> **Which database a tenant lives in is a different subject, and it has its own skill.** This file
+> is about querying once you are in the right database. For `group.dbKey`, `resolvePlacement`, the
+> planned `pod_01`/`pod_02` rename, the package merge, or a group whose site is 403 because it has
+> no usable placement, use **`vivreal-tenancy`**. It matters here because the tenancy model is
+> **mid-migration**: describe the pod names and the merged package in the future tense, because
+> neither exists yet.
+
 > **Topology, collection names, indexes and the join rules below were verified against live Mongo on 2026-06-19.** Read this before touching the `mcp__mongodb__*` tools. For an interactive helper, use the `/db-query` and `/db-schema` commands (`vivreal-db-explorer` plugin), this skill is the passive knowledge those commands assume.
 
 ## Getting connected (sourcing the connection string)

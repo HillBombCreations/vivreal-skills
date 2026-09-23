@@ -36,7 +36,25 @@ control history. Keeping it out is what keeps a reference document readable.
 **Removing history-flavoured sentences from a document you are touching is
 always in scope**, whether or not anyone asked.
 
-## Four more rules the document set is held to
+## Where a fact belongs, before you write it anywhere
+
+Three stale-claim incidents in one week came from putting a fact in the wrong kind of file, so
+decide this first:
+
+- **What a test can pin belongs in a REPOSITORY**, as an assertion. A count, a roster, a version, a
+  route list: if a script could produce it, a script should, and the document points at the script.
+- **What needs judgement belongs in a SKILL**: why an axis is the wrong one, what a shape costs,
+  which of two readings to trust. A skill that carries no judgement is a stale fact sheet waiting
+  to happen.
+- **A skill NAMES WHERE A VALUE LIVES rather than repeating it.** "Read `TIER_QUOTAS` in
+  `src/tierQuotas.ts`" survives every change. "The allowance is 500" is wrong the first time
+  anybody moves it, and reads identically whether it is current or three months dead.
+
+The three incidents, so the cost is concrete: a code comment quoted as fact into two separate
+defects; a manifest citing evidence that no longer existed; and a guide asserting a tool count that
+was wrong by six because a whole module had been deleted.
+
+## Six more rules the document set is held to
 
 1. **A mechanical value gets a pointer, never a copy.** If you write a bare
    number that a test could have pinned, you have created the next stale
@@ -52,6 +70,18 @@ always in scope**, whether or not anyone asked.
    checkouts on a working machine sit on a stale feature branch, and describing
    code no customer has run is the most expensive mistake available to you.
    Establish the deployed ref first and say which ref each claim came from.
+5. **Tense is load-bearing when work is mid-flight.** A decided-but-unexecuted
+   plan described in the present tense sends the next reader looking for
+   something that does not exist, and they will not find out quickly. Say
+   "today" and "planned" explicitly, and put the status where it is read first
+   rather than in a closing paragraph. The live example is the tenancy work:
+   the pod database names and the merged placement package are **designed,
+   measured and not executed**, so every sentence about them is future tense.
+   See the `vivreal-tenancy` skill.
+6. **Say how you verified, not that you verified.** A document asserting a fact
+   is worth what its method is worth. Name the command, the ref, the control
+   that came back the other way, and the date. A reader can then re-run it,
+   which is the only thing that stops a document ageing silently.
 
 ## Write so an agent can actually use it
 

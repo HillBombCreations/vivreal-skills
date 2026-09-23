@@ -110,8 +110,12 @@ sweep. And anything killed mid-run leaves residue that poisons the next run: a
 killed smoke leaves a server on its port and a test build directory behind, so
 remove both.
 
-Anything killed mid-run leaves residue that poisons the next run: a killed smoke
-leaves a server on its port and a test build directory behind, so remove both.
+**The walk that costs the most is the one that excluded downstream.** The single
+worst leftover measured here was a recursive search that filtered `node_modules`
+out of its RESULTS rather than out of its TRAVERSAL, so it kept descending into
+every dependency tree in every worktree. It had burned thousands of CPU seconds
+over hours by the time anyone looked. Prune at the source, and treat a search
+that is still running minutes later as a bug rather than as thoroughness.
 
 **Prefer fewer, longer-lived agents to many short ones** when they contend for
 the same repository. The coordination cost is real and it is paid in wall clock

@@ -6,6 +6,13 @@ model: opus
 color: red
 ---
 
+> **Tenancy is mid-migration. Use the `vivreal-tenancy` skill before asserting anything about
+> which database a group uses.** Three things that are easy to get wrong here: placement is
+> **stored on the group and read back** via `resolvePlacement(group)`, never computed from a tier;
+> the `pod_01`/`pod_02` database names and the merged placement package are **planned and not
+> executed**, so describe them in the future tense; and `group.dbKey` (the database) is a different
+> field from `group.key` (the storage slug), a confusion that fails silently everywhere it happens.
+
 Last synced: 2026-08-15
 Last extended: 2026-09-08 (release 2, walks 7 to 10)
 

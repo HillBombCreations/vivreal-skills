@@ -345,6 +345,50 @@ function ruleAgentTools(files) {
 }
 
 /**
+ * An agent whose body tells it to dispatch a subagent, while its frontmatter grants no
+ * `Agent` tool.
+ *
+ * This is the cause of a failure this fleet knew only by its symptom. Five role agents
+ * carried "dispatch the relevant expert" instructions and none of them held `Agent`. The
+ * only tool left that can reach an expert is `Skill`, which loads that expert's body
+ * INLINE into the caller's own context rather than spawning a bounded subagent. The
+ * expert's report then becomes the deliverable and the actual task goes undone.
+ *
+ * The signal has to be narrow. Matching the bare word "dispatch" fires on every correct
+ * agent too, because the corrected wording says "the orchestrating thread dispatches
+ * between turns". A rule that always fires is as useless as one that never does. So this
+ * matches only two shapes that mean "YOU dispatch, now": the literal `subagent_type:`
+ * parameter, and an imperative dispatch naming an agent handle.
+ */
+function ruleAgentDispatch(files) {
+  const IMPERATIVE = /\bdispatch(?:es|ing)?\s+(?:the\s+)?`?@/i;
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (!/^[^/]+\/agents\/[^/]+\.md$/.test(rel)) continue;
+    const text = readFileSync(abs, 'utf8');
+    const end = text.indexOf('\n---', 3);
+    if (end < 0) continue;
+    const fm = text.slice(0, end);
+    const body = text.slice(end + 4);
+    const tools = (fm.match(/^tools:\s*(.*)$/m) || [, null])[1];
+    // No `tools` key at all means the default set, which includes Agent.
+    if (tools === null) continue;
+    if (/\bAgent\b/.test(tools)) continue;
+    const hit = body.includes('subagent_type:') || IMPERATIVE.test(body);
+    if (hit) {
+      fail(
+        'agent-dispatch',
+        rel,
+        'is instructed to dispatch a subagent, and its tool list grants no `Agent`. It will reach ' +
+          'for `Skill` instead, which loads the target INLINE into its own context, and the loaded ' +
+          "report becomes its deliverable. Either grant `Agent`, or reword the instruction to say " +
+          'the orchestrating thread dispatches between turns.',
+      );
+    }
+  }
+}
+
+/**
  * Most agents in this marketplace ship twice: once as `<plugin>/agents/<name>.md` and
  * once as `<plugin>/skills/<name>/SKILL.md`, with the same body. That is deliberate,
  * so the knowledge can load passively without dispatching a subagent, and it is also
@@ -516,6 +560,7 @@ function runAll(files) {
   ruleParse(files);
   ruleManifest();
   ruleAgentTools(files);
+  ruleAgentDispatch(files);
   ruleCrossReferences(files);
   ruleMirrorDrift(files);
   ruleCopiedValues(files);
@@ -559,6 +604,16 @@ function selfTest() {
       label: 'agent-tools: no Write, and silent about it',
       path: join(tmp, 'agents', 'mute.md'),
       body: '---\nname: mute\ndescription: a consultant that reports findings\ntools: Read, Grep\n---\n\nbody\n',
+    },
+    {
+      rule: 'agent-dispatch',
+      label: 'agent-dispatch: told to dispatch, holds no Agent tool',
+      // NO WRITE AND NO EDIT TOOL keeps this fixture from also tripping agent-tools,
+      // so the two rules stay independently observable.
+      path: join(tmp, 'agents', 'handless.md'),
+      body:
+        '---\nname: handless\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\n' +
+        'tools: Read, Grep, Skill\n---\n\nDispatch `@cms-api` when the design touches media.\n',
     },
     {
       rule: 'parse',

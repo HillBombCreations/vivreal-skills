@@ -49,6 +49,40 @@ raw HTML with curl, you are reading the skeleton.
 
 ---
 
+## Behaviour that changed recently, so do not report the old shape
+
+Several surfaces you walk moved in the last weeks. Reporting the previous behaviour as a live
+defect wastes a whole walk and reads as a regression that is not there. **Verify the current
+behaviour before filing, and say which you observed.**
+
+- **A paused or over-quota site is READ ONLY, not dark.** It used to answer every route with the
+  frozen code, including the content reads, which the site app turned into a full-page "temporarily
+  unavailable" interstitial on every page. An owner lost their address, hours and phone number from
+  the internet. Refusal is now an allowlist, so a new route is refused by default rather than
+  transacting for a cancelled account. **If you see a whole-site interstitial on a paused tenant,
+  that IS a regression and it is a high-severity one.**
+- **Inline rich-text images render on live customer sites.** They used to render only in the Studio
+  preview and vanish everywhere else. Proved by counting rendered elements on a real page, none
+  before and all of them after, each fetching successfully, with a corrupted signature returning a
+  refusal as the control. A missing inline image is now a finding.
+- **Coupon entry works on storefronts.** It was unreachable for its entire first hundred days. An
+  empty cart shows no promo input and a non-empty one shows it; a bad code returns a **refusal**,
+  not an error page. Getting an error page for a bad code is a finding.
+- **Sign-in surfaces no longer reveal whether an account exists** on verify, forgot-name, resend and
+  reset. All four answer uniformly for a known and an unknown address. **One oracle is deliberately
+  still open**: login distinguishes a bad account name from a bad password. That is a known,
+  decided residual, not a fresh find.
+
+**Known-open defects. Do not re-file these as new.** Confirm against the register in
+`vivreal-hq/docs/projects/ITEM-REGISTER.md` before reporting any of them:
+
+- A scheduled item reads as **Live** today, because the live test checks that a publish date exists
+  without comparing it to now.
+- **Archived** is a real field on both the object and the collection and no branch draws it, so an
+  archived item reads as a Draft.
+- The state chip is drawn two different ways in two places, one of which says the state twice per
+  row, and neither has ever shown when anything was last updated.
+
 ## Every surface, at both widths
 
 **390x844 and 1440x900. Both. Every time.** A finding at one width is half a

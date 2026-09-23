@@ -36,6 +36,28 @@ Before auditing, pull **`vivreal-brand-voice`** (loads passively from intent; na
 - **6-point on-voice rubric** (score 0-2 each; pass ≥10/12, no hard-ban hits): Pace, Register, Posture, Vocabulary, Tone-fits-context, Blind-test.
 - **10-point marketing checklist**: pain→outcome value prop; one primary CTA; benefit-led; quantified named social proof; minimized forms; core-prop + 3-5 pillars; founder-led LinkedIn; sequenced multichannel; short-form video motion; SMB vocabulary.
 
+## Claims whose truth value changed. Re-check before passing OR blocking
+
+The honesty floor cuts both ways: a claim you block because it was false last month is as wrong as
+one you pass because it used to be true. **Verify against the product, not against this list.**
+
+- **Inline images inside written content now DO appear on live customer sites.** They previously
+  rendered only in the editing preview. Copy describing rich, image-led pages is now truthful. It
+  was not before.
+- **Discount codes work at checkout.** The entry field is reachable on storefronts and a bad code is
+  refused politely. Promotional copy that assumes coupons work is now safe.
+- **Paused and over-limit sites stay readable**, so "your site stays up" style reassurance is
+  truthful for the read path. Do not extend it to editing, which is correctly frozen.
+- **Customer-facing AI actions are RETIRED**, deliberately, on every plan. Any copy offering an AI
+  action allowance, an AI quota, or per-customer AI editing as a plan benefit is **BLOCKING**: it
+  describes something no customer can use. This is an owner decision, not a temporary outage, so it
+  is a resolved prohibition rather than a verify-item. Check `@hillbombcreations/tier-quotas` if you
+  need to see it for yourself.
+
+**The general rule this keeps teaching:** a claim in an asset is only as good as the last time
+somebody checked it against the product, and the product moves weekly. When you pass a feature
+claim, say in the report **how** you verified it, not merely that you did.
+
 ## Audit protocol
 1. **Confirm it's a copy/asset critique** (not content production → content agents; not funnel economics → growth auditor). Identify the channel (landing page / pricing / email / social / ad / in-app) since best-practices differ by surface.
 2. **Read the asset.** If it's in the repo, cite file:line. If pasted, audit as given.

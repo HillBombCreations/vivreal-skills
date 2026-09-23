@@ -161,6 +161,19 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy in `next.config.ts`, don't break them
 - Cookies: `secure: true` forced in production
 - Never log secrets. Never echo JWT contents in errors.
+- **Never read a whole environment map or a whole secret.** Three credential exposures in one
+  night came from exactly that: an ordinary `get-secret-value` or a `get-function-configuration`
+  prints every key at once, into a transcript, for the sake of one value. Ask for the single key
+  (`--query SecretString` piped into a parser that emits one field, `--query
+  'Environment.Variables.THE_ONE_KEY'`), and never widen it "just to see what is in there".
+- **Redact on the VALUE, not on the variable name.** A name-based allowlist missed 8 of 18 real
+  leaks here, because the leaking fields were called `to`, `subject`, `admin` and `route`. Also
+  **decode before you judge**: an unsubscribe token was base64 of the email address, so the
+  address passed a redactor that only looked at plaintext. And check that no test is pinning the
+  leak, because one was.
+- **Shell default expansion prints the secret.** `${VAR:-something}` prints the VALUE when the
+  variable is set, and it leaked a live token that way. Use `${VAR:+set}`, or a length plus a
+  short prefix, when you need to know whether a credential is present.
 - Validate redirect URLs against an allowlist (open redirect prevention)
 - Output escape user data, never `dangerouslySetInnerHTML` user content
 - Mongo injection: never pass raw user input as query operator keys
@@ -222,7 +235,7 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope, the proxy route applies the envelope on top, same as it does against the real backends.
 - Reuse the api-mock functions in `e2e/fixtures/api-mocks.ts` before adding (don't trust any hardcoded count, check the file).
 - React 19: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
-- **Coverage map**: `e2e/coverage-map.json` + `scripts/check-coverage-map.mjs --strict` (run in pre-push) is a mechanical route→spec evidence gate. A new or changed proxy route needs a coverage-map entry or the gate fails.
+- **Coverage map**: `e2e/coverage-map.json` + `scripts/check-coverage-map.mjs --strict` (run in pre-push) is a mechanical evidence gate over **rendered pages only**. Its walk collects `page.tsx` and nothing else, so a `route.ts` proxy handler is structurally invisible to it. **Do not add a coverage-map entry for a proxy route**: the key can never appear in the checker's route list, so the gate fails with "STALE map entry: route no longer exists". Proxy routes have no evidence gate today. Building one is new tooling, not a claim about this one.
 - **A gate being enabled does not make it capable of failing.** Before you trust any gate in
   this fleet, make it fail once on purpose. Live examples from this codebase: a coverage
   script that ran with checking disabled, a lint rule whose options exempted the exact
@@ -232,6 +245,9 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
 - Sites/integrations pages serialized under parallel workers, don't break that.
 - Tests must FAIL on the unfixed code. Verify by reading test logic vs original buggy code.
+- **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. Quick check: delete a whole comparison from the implementation and re-run. If the suite stays green, the test is mirroring, not invoking.
+- **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
+- **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
 - **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.
 - No `.only`, no `sleep()`, use `waitFor()`.
@@ -263,7 +279,8 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
 | Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md, `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
-| vivreal-content | `${VIVREAL_REPOS}/vivreal-content/knowledge/README.md` (+ `content/README.md`; repo-root CLAUDE.md lags at 2026-06-25) | Content studio, voice/strategy knowledge base + social **video production pipeline** (footage library → edit brief → draft render; 6 agents, 5 slash commands). Canonical brand voice = `knowledge/01-voice-and-rules.md` |
+| vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Count its agents and commands from `.claude/`; do not quote a number. |
+| vivreal-content | `${VIVREAL_REPOS}/vivreal-content\` | **DEAD SOURCE.** Consolidated into `vivreal-hq` on 2026-08-03 and frozen: its last commit is that same day, while the hq content tree has moved repeatedly since. The checkout still exists and still holds its own agents and commands, which is exactly why it gets read by mistake. Read and edit content work in `vivreal-hq`, never here. |
 | Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `E39DUKXYGXCX8Q`, whose default origin is the Vivreal_Templates Amplify app `vivreal` (`d1gukor54gwnrj`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
 | Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | **DEAD SOURCE.** `help.vivreal.io` is the Vivreal_Templates app `vivreal-help` (`d3j2nl4ojlmhy7`) rendering the Vivreal group's CMS; `vivreal.io/help*` and `/docs*` answer 301 to it, and the old Docs Amplify origin (`dy2e1mdkduwx7`) no longer exists (2026-09-16). |
