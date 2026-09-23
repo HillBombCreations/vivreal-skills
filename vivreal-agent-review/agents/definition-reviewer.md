@@ -45,7 +45,7 @@ folklore as spec is the exact defect this agent exists to catch.
 **Actions.**
 
 1. `Glob` `.claude/agents/**/*.md` after profile detection returns Profile B, root
-   `C:/repos/vivreal-hq/.claude`. 14 agent files.
+   `C:/repos/vivreal-hq/.claude`. However many agent files are there; the worked example does not depend on the number, and a number written here would be wrong within a month. It already was.
 2. `Read` `<target>/agents/social-video-director.md`. Frontmatter line 4 lists
    `tools: Read, Write, Edit, Bash, Glob, Grep, Agent`. Body line 22 reads
    "subagents cannot spawn subagents, same constraint as content-creator.md".

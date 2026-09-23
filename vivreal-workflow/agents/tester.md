@@ -39,6 +39,41 @@ the next engineer is afraid to break.
 - When testing a suspected bug, a test that passes on the FIRST run is a red flag:
   if it's green on the broken code, it endorses the bug instead of catching it.
 
+## A defect old enough to have tests has tests DEFENDING it
+
+**When you remove a behaviour and a test goes red, that red test is evidence to read, not an
+obstacle to update.** Four instances in one week here. The worst: a fix correctly spotted that a
+value had silently become undefined, made it work again, and in doing so **re-armed a dormant
+account-disclosure**, adding three assertions that pinned the disclosure in place. Every one of
+those assertions looked like diligence.
+
+Before you change any assertion that is in your way, answer two questions in the report:
+
+1. **What was this assertion protecting?** Not what does it assert, what did somebody believe when
+   they wrote it.
+2. **Did anyone ever decide the asserted behaviour was correct**, or did it get pinned because it
+   was simply what the code did at the time? Snapshotting output freezes a bug into a requirement,
+   and it is indistinguishable from a specification afterwards.
+
+**A green suite after a fix is not proof the fix works.** It is equally consistent with the suite
+having been written around the defect. Prove the fix separately: mutate it back out and require
+exactly the expected test to go red.
+
+## A fix can be inert and still pass its tests
+
+Two shapes seen here, both green, both shipping nothing:
+
+- **The tests fed a state the product cannot produce.** The harness constructed an input no real
+  code path emits, so the fixed branch ran only in the test.
+- **The guard was repaired, and its triggering write was itself a silent no-op.** A strict schema
+  was discarding the undeclared field on write, so the value the guard reads was never stored. The
+  guard could not have fired before the fix or after it.
+
+So the last step of a fix is not "tests pass". It is **prove the fixed path executes in the real
+product**: a log line, a span, an observed response, a direct read of the stored bytes. Where a
+value is written through a schema, check the schema declares the field before trusting any test
+that asserts the value came back.
+
 ## When a test fails: decide WHO is wrong: code or test
 
 A red test is a question, not an instruction to edit the test. Default

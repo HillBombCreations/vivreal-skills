@@ -59,6 +59,27 @@ When generating PR text:
     
     🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
+## Release claims: a green workflow is not a deploy
+
+A resolution write-up or a PR body is where a deploy claim becomes permanent, so do not write one
+you have not proved.
+
+- **"CI is green" is not "it shipped."** A CloudFormation deploy can succeed as a no-op, because an
+  edit that resolves to an identical template produces an empty change set that is silently
+  skipped.
+- **`UPDATE_ROLLBACK_COMPLETE` is a FAILED deploy that passes every naive check**: terminal, moved,
+  and green upstream. Assert the status you expect by name.
+- The honest form is: baselined `LastUpdatedTime`, observed it move, status terminal and the one
+  expected, plus a marker string from the change found in the **downloaded deployed artifact**,
+  absent before and present after, alongside a control string present on both sides.
+- If it is not yet proved, **write PENDING and say what will close it**, rather than leaving the
+  reader to assume.
+
+Two adjacent traps worth a line in any write-up that cites tooling output: a rejected
+`workflow_dispatch` leaves the previous run newest, so a watch command returns success on a run
+from days ago; and `gh pr view --json number` will happily echo a number for a PR that does not
+exist, so use `gh api` when existence is the question.
+
 ## Metrics protocol
 
 Append to `docs/bugs/<slug>/metrics.md` or `docs/projects/<slug>/metrics.md`:

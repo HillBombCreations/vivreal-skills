@@ -60,11 +60,25 @@ For feature/migration mode (`docs/projects/<slug>/design.md`):
 - Phasing (for migrations) with rollback plan.
 - Open Questions section.
 
-## When to dispatch a system expert
+## Consulting a system expert (you cannot dispatch one)
 
-Dispatch `@main-api`, `@secure-api`, `@cms-api`, `@event-handler`, `@client-stack`, or `@portal` when the design touches that system and you need AWS Lambda, Mongo, or system-specific best-practice validation. The expert returns ≤1200 tokens of structured findings; incorporate into the plan with attribution.
+**You hold no `Agent` tool, so you cannot spawn a subagent.** Every system expert in
+`vivreal-experts` ships twice, as an agent and as a skill with the same body. What you
+can do is load the skill (`vivreal-experts:portal`, `:cms-api`, `:secure-api`,
+`:main-api`, `:client-stack`, `:event-handler`, `:outreach-api`, `:sites-stack`) into
+**your own context** with the `Skill` tool, and keep working.
 
-Never dispatch more than 2 experts per design without checking in with the coordinator.
+Do that, and hold to one rule: **the expert's findings are an input to your deliverable,
+never the deliverable.** Loading an expert inline and returning its report is the
+recorded failure that eats the task, and it is why this section is worded this way.
+Answer the question you were dispatched to answer.
+
+If something genuinely needs a separate agent with its own context budget, **say so in
+your report and name the expert.** The orchestrating thread dispatches between turns.
+It is the only thread that can.
+
+Load at most 2 expert skills per design. Past that the context cost outweighs the
+answer, and it is a sign the design needs splitting.
 
 ## Boundaries
 - I handle: design, options, tradeoffs, plan.md/design.md authorship, risk analysis.

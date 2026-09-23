@@ -79,6 +79,42 @@ absence when you read only the output.
 
 ---
 
+## The commonest class of all: the matcher was narrower than the data
+
+The six above are tooling quirks. This one is a habit, it produced four separate wrong answers in
+two days, and every instance looked like a finding rather than a mistake. In each, **the matcher was
+narrower than the data along a dimension nobody thought to check**, so it returned a confident zero.
+
+- **Case.** A grep run case-sensitively against a header whose real spelling is lowercase reported
+  zero occurrences, and the conclusion drawn was that the product had stopped sending it. It had
+  not. Pass `-i`, or match the spelling you verified rather than the one you remember.
+- **Anchoring.** A pattern anchored to end of line cannot match a value with a trailing comma, a
+  comment, or a closing brace after it. Real source almost never ends where the value ends.
+- **Namespace.** A query issued against a name that turned out to be a **search index** rather than
+  a database returned nothing, correctly, about a thing that was never being asked. Confirm the
+  object you are querying is the KIND of object you think it is before you believe its emptiness.
+- **A registry lookup that is confidently wrong.** One answered cleanly and incorrectly, and only a
+  negative control run beside it exposed the answer as fabricated rather than retrieved.
+
+**The counter-habit, and it is cheap:** every zero-result query gets a sibling that MUST return
+rows, issued against the same tool, the same connection, and the same syntax. If the control comes
+back empty too, you have learned something about your query rather than about the system.
+
+## Exclude at the source, never downstream
+
+A recursive search that filters its results instead of pruning its walk still visits everything. On
+this machine that means every worktree and every `node_modules` inside each. One such search was
+left running after the question it answered had been abandoned and burned **thousands of CPU
+seconds** doing it, because it excluded the directories it did not want from the OUTPUT rather than
+from the TRAVERSAL.
+
+It is a correctness rule as well as a cost one: a walk that descends into vendored trees finds
+copies of the thing you are looking for and reports them as if they were yours. Use the tool's own
+prune flags (`--glob '!node_modules'`, `-prune`, a `.gitignore`-aware searcher) and confirm the
+prune worked by timing the run, not by reading the result.
+
+---
+
 ## Assert the exact thing, never a count
 
 A fix was reported done, and was not, because its test asserted that a delete **happened**

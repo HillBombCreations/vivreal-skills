@@ -86,6 +86,36 @@ aws amplify get-job --region us-east-1 --app-id "<appId>" --branch-name "<branch
 - If Amplify-related: the job status + failing step `statusReason`.
 - One-line root cause + the next action (re-run `createSites` after fix, run promote-stable, wait on Route53, etc.).
 
+## A green workflow is not a deploy
+
+**The most common wrong answer in this whole area.** A CI run finishing green means the workflow
+finished, not that anything shipped. A CloudFormation deploy can succeed as a **no-op**: the change
+set is built from the resolved template, so a comment-only or description-only edit produces an
+empty change set that is silently skipped and the stack keeps its old body. Caught live here by
+reading the template back after a "successful" deploy.
+
+**Prove a deploy the same way every time:**
+
+1. **Baseline first.** Record the stack's `LastUpdatedTime` (and `CodeSha256` for a function)
+   BEFORE you trigger anything. Without a baseline, "it says UPDATE_COMPLETE" is satisfied by a
+   deploy from last month.
+2. **Wait for it to move AND go terminal.** A status ending `_IN_PROGRESS` is not an answer.
+3. **`UPDATE_ROLLBACK_COMPLETE` is also moved-and-terminal.** It is a FAILED deploy that satisfies
+   every naive check: the timestamp moved, the status does not end in `_IN_PROGRESS`, and the
+   workflow was green. Assert the status you expect by name, never "not in progress".
+4. **Then assert the new behaviour is in the running artifact.** Download the deployed bundle and
+   grep for a marker string from the change. Require the marker to be absent before and present
+   after, **and** pair it with a control string already in the bundle counted non-zero on both
+   sides. Two markers found without the control means you are grepping the wrong artifact.
+
+**Two traps around the workflow itself:**
+
+- **A rejected `workflow_dispatch` leaves the previous run newest**, so `gh run watch` attaches to a
+  run from days ago and returns success. Identify the run by creation time or head SHA, never by
+  taking the first row of `gh run list`.
+- **A deploy that never ran tests is not evidence of anything.** At least one deploy path here has
+  no test step on any branch, which is how a coverage gate sat red and undiscovered.
+
 ## Gotchas
 - **"My Templates/renderer change isn't live"** is usually NOT a stuck deploy, merging Templates `main`
   releases NOTHING; someone must run the **promote-stable** workflow (main→stable FF), which rebuilds every

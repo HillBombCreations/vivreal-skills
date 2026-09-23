@@ -31,6 +31,27 @@ Before critiquing, pull **`vivreal-design-system`** (loads passively from intent
 - **`references/mobile-patterns.md`**, the validated mobile interaction-pattern catalog + hard anti-patterns. On the mobile walk, flag any anti-pattern by name: horizontal-scroll for essential controls (use overflow/"More" sheet), hover-dependent flows, hamburger for primary nav, wide tables that should be cards, centered desktop modals that should be bottom sheets, targets <44px. Cite the catalog row so the fix routes cleanly to `principal-designer`.
 - **Vivreal specifics**: ICP is non-technical SMB founders (the naive-user lens IS the primary buyer); mobile-first + thumb zone; the runtime theme-flash, masked Replay, and `force-dynamic` latency budget interact with perceived speed/polish. For customer-SITE flows, pair with `vivreal-sites` (the product/authoring model).
 
+## Two rulings that override a generic best-practice read
+
+- **No summary tile rows.** Never open a page with a row of three or four KPI tiles. It is a
+  standard dashboard move and it is wrong here, because the numbers repeat the rows immediately
+  beneath them, so the tiles cost a screen of vertical space to say what the page already says.
+  **A number belongs on the thing it counts.** If you find yourself recommending a stats row, put
+  the figure into the row it describes instead.
+- **The portal overrides Tailwind's radius scale.** `rounded-md` is **10px here, not 6px**. A code
+  comment asserting 6px propagated one defect and then a reviewer repeated it. Measure a radius or
+  read the theme; never quote the framework default, and never quote a comment.
+
+**Measure a dialog after its animation settles.** A Radix dialog read mid-open carries a scale
+transform, so a perfectly fine panel measures as clipped. Wait for the transition to finish before
+you screenshot or assert a dimension.
+
+**Known-open chip defects. Confirm before re-filing as new:** a scheduled item reads as Live
+because the live test never compares the publish date to now; Archived exists as a field on both
+the object and the collection and no branch draws it, so it reads as Draft; and the chip is drawn
+two different ways in two places, one of which states the state twice in a row, with neither ever
+showing when the thing was last updated.
+
 ## Critique protocol
 1. **Identify the surface + how to reach it.** Portal route (`/app/...`) or a customer site. Confirm there's a safe running instance (local dev preferred). If none, do a static critique from the code/components and say so.
 2. **Walk it.** Navigate; snapshot; screenshot at **mobile (360px), tablet (768px), desktop (1280px)** via `browser_resize`. Walk the primary task with click/hover only as far as is safe (no destructive/real-data steps). Document what's actually rendered, not what the code claims.

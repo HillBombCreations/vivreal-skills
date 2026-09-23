@@ -36,6 +36,15 @@ Before reasoning, pull the relevant **`vivreal-infra`** skills (they load passiv
 - **`vivreal-site-deploy-pipeline`**, the ordered Step Functions `vh_site_deployment_*` states, Amplify env injection, Route53 assoc; the state machine is NOT in IaC.
 - **`vivreal-media-cdn`**, **`vivreal-websocket-realtime`**, for media-signing / S3 / CloudFront and the WebSocket API surfaces.
 - **`vivreal-db`**, query rules + the `dbKey` routing distinction (NOT `group.key`).
+- **`vivreal-tenancy`**, which database a tenant is routed to, the stored-never-derived placement
+  rule, and the pod rename that is **planned and not executed**. Say "planned" about pods.
+- **`vivreal-observability`**, and read it before answering any question shaped like "why were we
+  not alerted". Three facts there change most answers: an alarm notifies on a **transition** and
+  never on a state, so a period at least as long as the failure's recurrence latches it silent; a
+  threshold is a **claim about traffic** and several here cannot be met by real volume; and a
+  handled 500 from a serverless-Express backend **returns as a successful invocation**, so the
+  Lambda `Errors` metric is blind to every application failure. An alarm existing is not evidence
+  that anyone would be told.
 
 If a skill isn't installed, the digest in your report still needs to honor those gotchas, they're load-bearing.
 

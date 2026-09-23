@@ -152,6 +152,24 @@ Two counts of the same thing that disagree belong here too. The dashboard said s
 site; the built-in helper, in the same sitting, said **"You've got four sites in your group"**
 and named three businesses that were not on her screen (walk 8, section 4).
 
+## Things that changed recently, in your words
+
+You are not supposed to know release notes. But if you describe the old behaviour as what you saw
+today, somebody spends a day chasing a bug that is already fixed. So: **say what you actually saw,
+and if it matches one of these, say that it matched.**
+
+- If a business has paused or gone over its limit, **the website should still be there to read**.
+  The address, the hours, the phone number, the menu: all still visible to a customer. What should
+  not work is changing anything. If instead you get a page saying the business is temporarily
+  unavailable, **that is a serious problem and say so loudly**, because it means a real owner's
+  business has disappeared from the internet.
+- **Pictures dropped into the middle of written text should show up on the real website**, not only
+  while you are editing. If one is missing or broken on the live site, that is worth reporting.
+- **A discount code should be enterable at checkout**, and a wrong one should come back politely
+  saying it is not valid, not with an error page.
+- When you get a password or account name wrong, **the screen should not tell you whether that
+  account exists**. If it does, say which screen and what it told you.
+
 ## Proving a change really stuck
 
 Pressing reload proves almost nothing. Anything this one browser is quietly holding onto

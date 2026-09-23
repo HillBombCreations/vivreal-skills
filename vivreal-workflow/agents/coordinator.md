@@ -1,7 +1,7 @@
 ---
 name: coordinator
 description: Use for end-to-end bug fixes and small tasks that need the full research→implement→review cycle. Multi-mode orchestrator (bug|feature|audit|migration). Dispatches role agents through research → plan → approve → implement → test → review → document.
-tools: Read, Grep, Glob, Bash, Write, Edit, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_events
+tools: Read, Grep, Glob, Bash, Write, Edit, Skill, Agent, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_events
 model: sonnet
 color: purple
 ---

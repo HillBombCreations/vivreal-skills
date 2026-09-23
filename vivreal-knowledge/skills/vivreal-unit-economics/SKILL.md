@@ -1,9 +1,12 @@
 ---
 name: vivreal-unit-economics
-description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS, gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), overage revenue, infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches the real numbers: pricing $19/$59/$119 (annual $16/$49/$99; ~$45 blended), gross margin ~84-90%, AWS ~$35/mo flat, Atlas tiers ($0 free → ~$60 M10 → ~$150 M20 → ~$400+ M30), Anthropic ~$4/customer blended WITH prompt caching, AI quotas (read the values from the tier-quotas package) plus overage rates and spending caps + AI capability flags (aiSiteEditing/aiComponentGen), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin, for GTM/funnel/retention economics use the growth agents instead.'
+description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS, gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), overage revenue, infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches where the real numbers live and which axes still exist: pricing and quotas read from the tier-quotas package, gross margin, AWS roughly flat at this scale, Atlas rising by cluster rung, overage rates and spending caps, capability flags (aiSiteEditing/aiComponentGen), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. **Customer inference is RETIRED as a cost axis**: agentActions is 0 on every tier, so there is no per-customer model-token spend to model. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin, for GTM/funnel/retention economics use the growth agents instead.'
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-09-23. **A stamp only means anything if every hand-patch moves it.** This one
+sat at 2026-07-30 while facts were edited in underneath it, so it stopped meaning "everything
+before this date, nothing after" and became decoration. Bump it whenever you touch a fact here,
+or delete the line rather than leaving a date nobody can rely on.
 
 # Vivreal Unit Economics: cost, margin & pricing model
 
@@ -29,23 +32,32 @@ Three specific traps this table used to walk into:
 
 1. **A tier has been retired and folded into another.** Reasoning about margin per tier from a
    remembered ladder now models a plan nobody can buy.
-2. **The AI action allowance moved by an order of magnitude, and then again.** The historical
-   tail risk this file existed to track was a maxed-out AI quota on the top plan. That specific
-   exposure was closed by cutting the quota and by shipping prompt caching. Re-read the current
-   numbers before re-opening or re-closing that argument.
+2. **The AI action allowance moved by an order of magnitude, then again, and then to zero.**
+   The historical tail risk this file existed to track was a maxed-out AI quota on the top plan.
+   That exposure is now closed by construction: `agentActions` is `0` on every tier, retired
+   2026-09-18 as an owner decision to stop paying for customer inference. **There is no AI quota
+   to model, raise, or trade off.** A question premised on one has no valid answer, and saying so
+   is the correct response.
 3. **A price in a doc and a price in Stripe are two different facts.** The package holds the
    Stripe price ids; the live prices are what those ids resolve to. A pricing page that
    disagrees with either is a third, separately wrong, copy.
 
 - The blended figure and the tier mix are estimates that move with the customer base. **Recompute the mix from `Vivreal.groups` before using it in an argument**, and take the prices from the package. Annual plans exist as real Stripe prices in `TIER_DISPLAY`.
-- **AI capability flags.** AI is gated in TWO dimensions: the metered `agentActions` quota AND binary capability flags. `TIER_FLAGS` in `src/tierQuotas.ts` carries `aiSiteEditing` and `aiComponentGen`. **Read which tier gets which from the file.** Helpers mirror `canHidePoweredBy`, plus `lowestTierWithFlag()` so consumers derive the required tier rather than hardcoding one. `ENFORCEMENT_MANIFEST` entries are mandatory: it is a total Record over the flags, so omitting one fails the build and the tests. **A manifest row is only true if the path the product actually calls runs the gate**, so check the caller before believing a row.
-- **Gross margin ~84-90%** today and it *improves with scale*, fixed infra is tiny and amortizes; the dominant cost is per-customer payment + AI, both small.
+- **AI capability flags.** AI was gated in two dimensions. The metered `agentActions` quota is now `0` everywhere, so what remains live is the binary capability flags. `TIER_FLAGS` in `src/tierQuotas.ts` carries `aiSiteEditing` and `aiComponentGen`. **Read which tier gets which from the file.** Helpers mirror `canHidePoweredBy`, plus `lowestTierWithFlag()` so consumers derive the required tier rather than hardcoding one. `ENFORCEMENT_MANIFEST` entries are mandatory: it is a total Record over the flags, so omitting one fails the build and the tests. **A manifest row is only true if the path the product actually calls runs the gate**, so check the caller before believing a row.
+- **Gross margin ~84-90%** today and it *improves with scale*, fixed infra is tiny and amortizes; the dominant per-customer cost is payment processing. Model inference is no longer a per-customer cost at all.
 
 ## The cost stack (three bills, two off the AWS invoice)
 
 1. **AWS ≈ $35/mo, essentially FLAT** at current scale (WorkMail + Amplify + Route53 dominate; Lambda is $0 free-tier-absorbed). Customer count barely moves this line. The M10 Mongo upgrade does NOT change it.
 2. **MongoDB Atlas, billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). $0 free → **~$60 M10** → **~$150 M20** → **~$400+ M30**. One cluster holds all tenant DBs, you don't pay per database.
-3. **Anthropic: the AI agent calls the Claude API directly, not Bedrock, and it is billed directly.** Roughly a few dollars per customer blended WITH prompt caching, which cuts the bill substantially, and a leaner model for routine actions cuts it further. The historical tail risk was a top-plan AI quota large enough to go margin negative at full use. That was closed two ways: the quota was cut hard, and the free per-group override was removed so past-quota use is billed overage and hard-stops at the spending cap. **Read the current allowance from the package before re-opening that argument**, because the number has moved twice and the tier it applied to has since been retired.
+3. **Customer inference: RETIRED as a cost axis, 2026-09-18.** `agentActions` is `0` on every
+   tier including enterprise, so no group can enter the agent loop and there is no per-customer
+   Claude API spend. This was a deliberate owner decision to stop paying for customer inference,
+   not a quota tuned down, and it removes the whole line from the cost stack rather than shrinking
+   it. **Do not model it, and do not answer a question that presupposes an AI quota exists.**
+   What survives is `mcpToolCalls`, which meters something else entirely: Vivreal's own Lambda and
+   Mongo work. It is a HARD STOP with no overage rate, so treat it as a capacity bound, not
+   revenue. Verify both against `src/tierQuotas.ts` on the deployed line before quoting either.
 
 ### Overage billing: priced quota headroom
 
@@ -78,8 +90,13 @@ Fixed infra (~$105-110/mo all-in: AWS ~$35 + Atlas M10 ~$60 + WorkMail ~$8-16) i
 
 1. **Edge / API-Gateway caching**, cuts Client-API request volume → fewer Lambda containers → lower peak concurrency → defers the next Atlas tier step (the single biggest infra lever).
 2. **Annual plans** improve cash collection, reduce per-transaction Stripe fees and reduce churn. They are live as real Stripe prices in `TIER_DISPLAY`; read the prices there. The free-domain bundle is the sweetener cost.
-3. **Tier and cap review.** The AI quota has already been right-sized once and spending caps are default on. The remaining lever is cap tuning, plus settling the per-bucket versus total cap design call, so worst-case AI cost stays bounded and paid for. **Re-read the current quota before proposing a change to it.**
-4. **Agent prompt caching is shipped.** The large AI-cost cut is banked. Keep the cache-hit rate honest as tool schemas and tenant context grow, because that is the thing that quietly erodes it.
+3. **Tier and cap review.** Spending caps are default on. With customer inference retired, the
+   worst-case-AI-cost argument this lever existed for is gone; what remains is cap tuning on the
+   quotas that are still metered, plus settling the per-bucket versus total cap design call.
+   **Re-read the current quotas from the package before proposing a change to any of them.**
+4. **Prompt caching is shipped, and is now beside the point for unit economics.** It still
+   matters for Vivreal's own internal agent spend, which is an operating cost rather than a
+   per-customer one. It no longer defends a customer-facing margin.
 
 ## Read the reference for
 

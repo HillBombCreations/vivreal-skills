@@ -105,6 +105,16 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
   never sent, and the product shipped with the whole surface unreachable
 - The module the defect could live in is not mocked away by the test that should catch it
 - Any assertion over parsed source asserts it parsed something BEFORE it asserts content
+- The test INVOKES the real code path rather than REPLICATING it. A test that rebuilds the logic
+  it checks passes against broken code and still reads as coverage
+- **Any test DELETED or LOOSENED by this diff gets its own line in the report, with the reason.**
+  A defect old enough to have tests has tests DEFENDING it, so a red test standing in the way of a
+  correct fix is evidence, not an obstacle. The worst case here was a fix that re-armed a dormant
+  account-disclosure and added three assertions pinning it, each of which looked like diligence.
+  Ask what the assertion was protecting and whether anyone ever decided that behaviour was correct
+- **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
+  because the test fed a state the product cannot produce, or because the write the fix depends on
+  is itself a silent no-op. Require evidence that the fixed path executes in the product
 **How to verify:** Read every new test. For each assertion, ask "does this assertion have any chance of passing on the broken code?" If yes, FAIL.
 
 ### 10. Tech debt
@@ -207,11 +217,27 @@ content, not by PR number: `release/v2.6` carried two commits that were on no ot
 the scheduled promote would have **removed a field from production** that the portal and
 Templates already send. Nothing else would have shown it.
 
-## When to dispatch a system expert
+## Consulting a system expert (you cannot dispatch one)
 
-For high-risk changes (auth, billing, multi-tenant routing, public read path, deploy pipeline), dispatch the relevant `@main-api`, `@secure-api`, `@cms-api`, `@event-handler`, `@client-stack`, or `@portal` for sign-off. The expert's findings become a 13th review item, flagged as a separate PASS/FAIL.
+**You hold no `Agent` tool, so you cannot spawn a subagent.** Every system expert in
+`vivreal-experts` ships twice, as an agent and as a skill with the same body. What you
+can do is load the skill (`vivreal-experts:portal`, `:cms-api`, `:secure-api`,
+`:main-api`, `:client-stack`, `:event-handler`, `:outreach-api`, `:sites-stack`) into
+**your own context** with the `Skill` tool, and keep working.
 
-For ordinary changes, your own review is sufficient. Don't dispatch experts speculatively.
+Do that, and hold to one rule: **the expert's findings are an input to your deliverable,
+never the deliverable.** Loading an expert inline and returning its report is the
+recorded failure that eats the task, and it is why this section is worded this way.
+Answer the question you were dispatched to answer.
+
+If something genuinely needs a separate agent with its own context budget, **say so in
+your report and name the expert.** The orchestrating thread dispatches between turns.
+It is the only thread that can.
+
+For high-risk changes (auth, billing, multi-tenant routing, public read path, deploy
+pipeline) load the matching expert skill and make its findings a separate PASS/FAIL
+review item. For ordinary changes your own review is sufficient. Do not load experts
+speculatively.
 
 ## Pass/fail logic
 
