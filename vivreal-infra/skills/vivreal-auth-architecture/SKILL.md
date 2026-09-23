@@ -21,7 +21,7 @@ Each backend's API Gateway authorizes EVERY request before the Lambda runs. Two 
 ### VR_Client_Auth injected context (read on every Client API request)
 
 On Allow, the authorizer injects context the downstream Lambda reads via `req.apiGateway.event.requestContext.authorizer`:
-`database` (the STORED placement on the group, resolved by `resolvePlacement(group)` from `@hillbombcreations/tenant-placement`, which throws rather than guessing. The old tier ladder is deleted, and it was dangerous rather than untidy: a tier CHANGE silently re-pointed a live group at a different database, and two services disagreeing about one tier could route one group two ways), `bucketName` (S3 slug), `groupID` (`_id`), plus `frozen` (read by `frozenCheck` middleware to block over-quota/cancelled groups). VR_Client_Auth is the **only** backend on Serverless Framework + Node 18; it reads only the main `Vivreal` DB.
+`database` (the STORED placement on the group, resolved by `resolvePlacement(group)` from `@hillbombcreations/tenant-db/placement`, which throws rather than guessing. The old tier ladder is deleted, and it was dangerous rather than untidy: a tier CHANGE silently re-pointed a live group at a different database, and two services disagreeing about one tier could route one group two ways), `bucketName` (S3 slug), `groupID` (`_id`), plus `frozen` (read by `frozenCheck` middleware to block over-quota/cancelled groups). VR_Client_Auth is the **only** backend on Serverless Framework + Node 18; it reads only the main `Vivreal` DB.
 
 ## System 2: the portal's signed-context cookies (browser ↔ portal)
 

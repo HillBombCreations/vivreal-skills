@@ -52,9 +52,17 @@ Read this section as the state of the world, and the next one as a plan that has
 - **Placement is stored, never derived.** `deriveDbKey()` is deleted from every repository, and so
   is the `databaseDict[group.tier]` ladder, which is gone for the same reason. An inline ladder
   from a tier to a database IS the bug. Report it rather than copying it.
+- **The two tenancy packages have MERGED, and `@hillbombcreations/tenant-placement` is retired.**
+  It and `@hillbombcreations/mongo-connection` became `@hillbombcreations/tenant-db`, which is what
+  the consumer repositories depend on now. Import the placement half from the
+  `@hillbombcreations/tenant-db/placement` subpath: it pulls in no driver, so it is safe inside a
+  bundle. The root re-exports the same members but needs mongo. **The retired package cannot be
+  deprecated on this registry**, the command is rejected and its failure reads as success, so
+  installing it warns nobody. Somebody writing the old name is the only signal there is, which is
+  why a pasteable snippet naming it is worse than a sentence that merely mentions it.
 
 ```js
-const { resolvePlacement } = require('@hillbombcreations/tenant-placement');
+const { resolvePlacement } = require('@hillbombcreations/tenant-db/placement');
 const dbKey = resolvePlacement(group); // throws PlacementMissingError if absent or unroutable
 ```
 
@@ -80,15 +88,14 @@ Decided, designed, measured against production, **and not executed**:
 
 1. The `general_shared` database becomes `pod_01` and the `pro_plus` database becomes `pod_02`,
    and both legacy database names retire.
-2. `@hillbombcreations/tenant-placement` and `@hillbombcreations/mongo-connection` merge into one
-   package, proposed name `@hillbombcreations/tenant-db`.
 
-**State both in the future tense.** As things stand:
+The package merge that used to be item 2 in this list **has happened**, and is stated as fact above.
+
+**State the pod rename in the future tense.** As things stand:
 
 - **No pod exists.** No database in the cluster is named `pod_01` or `pod_02`.
 - **The default placement for a new group is still the legacy name**, set by `DEFAULT_PLACEMENT` in
   the placement package.
-- **The merged package is not published.** Both original packages are still the live dependencies.
 
 An agent that describes any of this in the present tense sends the next person looking for something
 that is not there. That costs more than having said nothing.

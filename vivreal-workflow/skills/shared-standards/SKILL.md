@@ -133,14 +133,14 @@ Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/h
 
 | Field | Source | Value example | Used for |
 |---|---|---|---|
-| `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-placement`, which returns the stored `group.dbKey` | `general_shared`, `pro_plus`, or a per-pod placement name | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
+| `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-db/placement`, which returns the stored `group.dbKey` | `general_shared`, `pro_plus`, or a per-pod placement name | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
 | `group.key` | Stored on the group document in mainDb | `thecomedycollective` | **S3 bucket naming**, bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
 | `bucketname` | `${group.type}-${group.key}` | `collection-thecomedycollective` | **S3 object path prefix**, used in media upload/retrieval paths. |
 
 **There is no `deriveDbKey()` any more.** A function by that name used to live separately in six repos (`VR_Secure_API`, `VR_CMS_API`, `VR_Main_API`, `Vivreal_EventHandler`, `VR_Client_Auth`, plus a `databaseDict[group.tier]` variant in `oauthCallback.js`), and four of the six copies had drifted from each other, misrouting real tenant writes. All six are deleted. The only way to get a tenant database name now is:
 
 ```js
-const { resolvePlacement } = require('@hillbombcreations/tenant-placement');
+const { resolvePlacement } = require('@hillbombcreations/tenant-db/placement');
 const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.dbKey is absent or unroutable
 ```
 

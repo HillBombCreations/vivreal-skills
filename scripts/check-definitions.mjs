@@ -438,7 +438,7 @@ function ruleMirrorDrift(files) {
 const COPIED_VALUE_RULES = [
   {
     id: 'package-version',
-    rx: /@hillbombcreations\/(?:site-renderer|schemas|tier-quotas|tenant-placement|site-loader)[^\n`]{0,40}?\bv?\d+\.\d+\.\d+/g,
+    rx: /@hillbombcreations\/(?:site-renderer|schemas|tier-quotas|tenant-placement|tenant-db|site-loader)[^\n`]{0,40}?\bv?\d+\.\d+\.\d+/g,
     why: 'names a package version. Point at package.json on the deployed line instead.',
   },
   {

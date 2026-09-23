@@ -50,7 +50,7 @@ Cross-cutting checks to run every audit regardless of drift:
      that same module without using the factory.
    - **MCP tool rosters**: read `src/tools/catalog.ts` in each MCP server. Both servers have
      had a CLAUDE.md that overstated the count.
-   - **Package versions** (renderer, schemas, tier-quotas, tenant-placement, site-loader):
+   - **Package versions** (renderer, schemas, tier-quotas, tenant-db, site-loader):
      `package.json` on the package deployed line for what is published, and the CONSUMER
      lockfile for what actually runs. **The renderer and the migrator have no `main`; their
      line is `origin/master`.** Confirm a published version on the registry, because the

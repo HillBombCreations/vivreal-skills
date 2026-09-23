@@ -95,7 +95,7 @@ equally wrong to say there are exactly three. The shape, which is stable:
 **Routing rule: read the stored placement. NEVER compute one from the tier.**
 
 ```js
-const { resolvePlacement } = require('@hillbombcreations/tenant-placement');
+const { resolvePlacement } = require('@hillbombcreations/tenant-db/placement');
 const dbKey = resolvePlacement(group); // throws if group.dbKey is absent or unroutable
 ```
 
