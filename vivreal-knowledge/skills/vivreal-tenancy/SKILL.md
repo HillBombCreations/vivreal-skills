@@ -52,9 +52,9 @@ Read this section as the state of the world, and the next one as a plan that has
 - **Placement is stored, never derived.** `deriveDbKey()` is deleted from every repository, and so
   is the `databaseDict[group.tier]` ladder, which is gone for the same reason. An inline ladder
   from a tier to a database IS the bug. Report it rather than copying it.
-- **The two tenancy packages have MERGED, and `@hillbombcreations/tenant-placement` is retired.**
-  It and `@hillbombcreations/mongo-connection` became `@hillbombcreations/tenant-db`, which is what
-  the consumer repositories depend on now. Import the placement half from the
+- **The two tenancy packages have MERGED, and the tenant-placement package is retired.**
+  It and mongo-connection became `@hillbombcreations/tenant-db`, which is what the consumer
+  repositories depend on now. Import the placement half from the
   `@hillbombcreations/tenant-db/placement` subpath: it pulls in no driver, so it is safe inside a
   bundle. The root re-exports the same members but needs mongo. **The retired package cannot be
   deprecated on this registry**, the command is rejected and its failure reads as success, so
