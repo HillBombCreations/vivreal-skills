@@ -18,7 +18,8 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 - Auth: `POST /api/user` (signup), `/api/user/login`, `/api/user/loginSSO`, `/api/user/signUserOut`, `/api/user/verifyEmail`, `/api/user/requestPasswordReset`, `/api/user/resetPassword`, `GET /api/user/checkRegisterValue`.
 - Demo-account claim (public, the token IS the auth): `POST /api/claim/verify` + `POST /api/claim/complete` (`services/claim/`, `verifyClaim`, `completeClaim`, `hashToken`, `changeClaimEmail`). Verify is **POST-only, reading `req.body.token`**, the 7-day claim token is an account-takeover credential that leaked into Sentry `request.url`/query_string/fetch-span `http.query` via the old GET `?token=`; GET was removed with NO alias. Claim email-change is rejected when another Cognito user holds that email, and **fails closed** when ListUsers truncates.
 - Meta compliance: `POST /api/user/deauthorize/:provider`, `POST /api/user/data-deletion/:provider`, `GET /api/user/data-deletion/status` (bypass `handleHBRoutes`, scoped urlencoded parsers). Deauthorize/data-deletion now purge the tenant's Platform Data, match users by app-scoped user id, and replay requests that previously answered `no_data`.
-- Email: `/api/sendContactUsEmail`, `/api/sendSupportEmail`, etc.; `GET/POST /api/unsubscribe` (RFC 8058 one-click, HMAC token via `UNSUBSCRIBE_SECRET`).
+- Email: `/api/sendSupportEmail` (the portal's Help form); `GET/POST /api/unsubscribe` (RFC 8058 one-click, HMAC token via `UNSUBSCRIBE_SECRET`).
+- **`POST /api/sendContactUsEmail` DOES NOT EXIST. Deleted 2026-09-23, do not re-add it.** Its route, its mailer and its validator are all gone from `src/hbcreations/`, each replaced by a comment saying so. A site's contact form posts to VR_Client_API, not here. `sendSupportEmail` survives deliberately and is a different thing.
 - The portal proxies only `user/login` + `user/ssoLogin` here (both manual cookie-setting routes).
 
 ## The templated-email spine
