@@ -38,10 +38,12 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | `NEXT_PUBLIC_CMS_URL` | VR_CMS_API | `/tenant/*` | `key` | `collections/*`, `collectionObjects/*`, `integrations/*`, `get-media`, `uploadFiles`, `calendar/*`, `audit`, `versions/*`, `activity`, `search/*` |
 | `NEXT_PUBLIC_OUTREACH_URL` | VR_Outreach_API | `/*` (Cognito + x-active-ctx) | HMAC `x-active-ctx` header | `outreach/*` (49 routes) |
 
-## Portal Proxy Layer (165 routes total, as of 2026-07-13)
+## Portal Proxy Layer
 
-- **137 factory routes** use `createProxyHandler()`, handles auth, CSRF, body parsing, upstream fetch, response envelope
-- **28 manual routes**, cookie-setting routes, complex transforms, custom validation, third-party upstreams, public no-`active_ctx` exceptions
+- **Do not quote a route count.** The filesystem is the count, and this file has carried three different stale ones. Count `route.ts` under `src/app/api/proxy/` when it matters.
+- **Most routes are factory routes** using `createProxyHandler()`, which handles auth, CSRF, body parsing, upstream fetch and the response envelope
+- **A minority stay manual**: cookie-setting routes, complex transforms, custom validation, third-party upstreams, public no-`active_ctx` exceptions
+- **To classify a route, strip comments FIRST, then look for a `createProxyHandler(` CALL.** A bare name grep and a module-path grep both overcount. `tests/unit/app/api/proxy/_helpers/manualRoutesForwardQuotaDetail.test.ts` pins the classification
 - All routes: `export const runtime = 'edge'` + `export const dynamic = 'force-dynamic'`
 - Response envelope: `{ success: true, data, error: null }` or `{ success: false, data: null, error: "msg" }`
 - `createAuthAxios()` on the client automatically unwraps this envelope, components receive `res.data` = inner `data`

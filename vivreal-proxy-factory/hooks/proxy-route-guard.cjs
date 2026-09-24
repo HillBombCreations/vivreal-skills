@@ -5,9 +5,25 @@
 // instead of staying silent. Never blocks anything outside the proxy tree.
 const fs = require('fs');
 
-// Known manual routes (as of 2026-08-15, see CLAUDE.md's proxy route table for the
-// authoritative count), path segment after src/app/api/proxy/, without the trailing
+// Known manual routes, path segment after src/app/api/proxy/, without the trailing
 // /route.ts. Prefix entries end with '/'.
+//
+// RE-MEASURED 2026-09-24 against Vivreal_Portal_Mobile origin/main (80f46c2d): 223 proxy
+// routes, 185 factory, 38 manual. Four manual routes were missing from this list and THREE
+// OF THEM WERE BEING BLOCKED OUTRIGHT (outreach/studio-draft, outreach/studio-draft/[id],
+// outreach/studio-funnel): all public no-active_ctx Studio routes that createProxyHandler
+// cannot serve because it 401s without the cookies a logged-out visitor does not have. The
+// fourth, ws/ticket, escaped only because it happens to import extractUpstreamError from the
+// factory's module path and so trips the fail-open check below. That is luck, not coverage,
+// so it is listed explicitly now.
+//
+// Do NOT re-derive this list from CLAUDE.md's proxy route table: that table is a "core
+// snapshot, not exhaustive" by its own wording. Do NOT re-derive it with a bare grep for
+// createProxyHandler either, which reads 190 factory routes instead of 185 because five
+// manual routes name the factory in a doc comment explaining why they cannot use it. Strip
+// comments first. The portal pins this exact classification in
+// tests/unit/app/api/proxy/_helpers/manualRoutesForwardQuotaDetail.test.ts; run that spec
+// rather than writing a new classifier.
 const MANUAL = [
   'billing/upgrade',
   'calendar/bulk-update-publish-date',
@@ -29,6 +45,9 @@ const MANUAL = [
   'outreach/book/', // [slug] + /create + /slots, public, no active_ctx
   'outreach/demo-link/[code]', // public studio-demo resolver, visitor is logged out, no active_ctx/token to verify, GET-only so no CSRF
   'outreach/studio-demo/visit',
+  'outreach/studio-draft', // public no-tenant Studio save; visitor is logged out, so the factory's active_ctx/token check 401s. Upserts on (vid, kitId)
+  'outreach/studio-draft/', // the [id] GET/PUT/DELETE sibling, same public exception class
+  'outreach/studio-funnel', // public beacon, 204-on-every-path so a non-null body would throw; no session to CSRF against
   'sites/create',
   'sites/instantiateTemplate',
   'sites/update',
@@ -39,9 +58,9 @@ const MANUAL = [
   'user/ssoLogin',
   'user/switch-profile',
   'user/update-default-profile',
-  'user/delete-account', // 409 body carries the deletion blockers, factory flattens non-2xx to a bare message
   'user/update-email',
   'user/verify-password',
+  'ws/ticket', // listed explicitly: it only passed before because it imports extractUpstreamError from the factory module path
 ];
 
 try {

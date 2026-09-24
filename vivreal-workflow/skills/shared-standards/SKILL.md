@@ -1,6 +1,6 @@
 ---
 name: shared-standards
-description: Vivreal Portal shared engineering standards, the non-negotiable conventions every Vivreal bug/feature workflow agent reads before working. Use when an agent or command says to consult "shared-standards" or "_shared-standards", or when a task touches Vivreal proxy routes, multi-tenancy (active_ctx/dbKey/groupID), CSRF, hydration/SSR, Lambda infra, MongoDB queries, or testing rules. Carries the ${VIVREAL_REPOS} path-resolution preamble and the lazy-reading trigger map.
+description: Vivreal Portal shared engineering standards, the non-negotiable conventions every Vivreal bug/feature workflow agent reads before working. Use when an agent or command says to consult "shared-standards" or "_shared-standards", or when a task touches Vivreal proxy routes, multi-tenancy (active_ctx/dbKey/groupID), CSRF, hydration/SSR, Lambda infra, MongoDB queries, testing rules, npm lockfiles and the node 20 versus node 22 CI runner skew, verifying a CloudFormation deploy actually landed, or proving a backport reached a release line. Carries the ${VIVREAL_REPOS} path-resolution preamble and the lazy-reading trigger map.
 ---
 
 > NOTE: This skill is the relocated form of the portal's `.claude/agents/_shared-standards.md`.
@@ -33,6 +33,13 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
+- **MSYS path mangling reaches further than the AWS CLI.** The known case is an `aws` argument
+  that starts with `/` coming back as a bogus `AccessDenied`. The case that is missed: **MSYS
+  also rewrites a `/` INSIDE a `jq` expression**, and inside a `git show ref:path` argument, so
+  `jq '.a/.b'` and `git show origin/main:file.md` both silently operate on a mangled string.
+  A `git show` mangled this way fails loudly, but a mangled `jq` filter can simply select
+  nothing and print `null`, which reads as "no such value" rather than as an error.
+  **Export `MSYS_NO_PATHCONV=1` for the whole block**, not just for the `aws` line.
 - **macOS / Linux:** native bash works as-is
 - **Setting env vars:** add to `~/.bashrc`, `~/.zshrc`, or your shell profile. Example: `export VIVREAL_REPOS="$HOME/repos"`
 
@@ -86,6 +93,9 @@ three searches returned three different incomplete answers.
 | Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
 | Integration manifests (`src/data/manifests/`) | "Conventions you'll see" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
+| `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
+| Dispatching a deploy workflow, or claiming a stack updated | "Reading and verifying a CloudFormation deploy" |
+| Backports, cherry-picks, "did this fix reach `release/*`" | "Proving a fix reached a line" |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
 
 If a task obviously spans multiple trigger areas, read each relevant section once. Do not eager-load adjacent sections.
@@ -229,6 +239,27 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - `force-dynamic` preserved on dashboard routes
 - Server vs client: default to Server Components, mark `'use client'` only for interactivity
 
+## Dependencies, lockfiles and the CI runner
+
+- **The runner and your machine do not agree about peer dependencies.** CI runs **node 20
+  (npm 10)**; dev machines here run **node 22 (npm 11)**. npm 11 and npm 10 resolve peer
+  dependencies differently, so **a lockfile written by npm 11 can be REFUSED by npm 10**.
+  The consequence that matters: **`npm ci --dry-run` passing locally proves nothing about
+  CI**, because it is npm 11 validating npm 11's own output. Verify against the runner's
+  major instead:
+  ```bash
+  npx -y npm@10 ci --dry-run
+  ```
+  Treat that, not the local run, as the gate before pushing a lockfile change.
+- **`npm install` on Windows writes a lockfile that `npm ci` REFUSES.** It prunes packages
+  that other packages still require (the optional-dependency platform pruning is the usual
+  trigger), producing a lockfile that is self-inconsistent rather than merely
+  platform-specific. `npm install` is happy with it; `npm ci` refuses it outright, so the
+  break lands in CI and in any build that uses `npm ci`. This **nearly took down all six
+  customer site builds** in one session. After any `npm install` on Windows, check the
+  lockfile diff for removed entries, and validate with the `npm@10 ci --dry-run` above before
+  it leaves the machine.
+
 ## Testing rules
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
 - **Logged-in specs authenticate with REAL signed ctx cookies**, `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses, `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
@@ -250,6 +281,18 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
 - **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.
+- **A green suite is not a building repo, because nothing in the suite runs the build.**
+  Unit and e2e runs import modules directly; they never execute `next build` or `tsc -b`, so a
+  type error or a build-time-only failure sails straight through a fully green run. **This
+  shipped an unbuildable `main`.** When a change touches config, imports, module boundaries or
+  anything the bundler resolves, run the actual build before you call it done. A test suite
+  and a build are two different questions.
+- **A control can go VACUOUS without failing.** A negative control that compares two refs
+  stops proving anything the moment those refs converge: it keeps passing, and the pass now
+  means "nothing to compare" rather than "the difference is absent". The same shape shows up
+  in any control keyed on a condition that can quietly stop holding. **State the control's
+  precondition and assert it**, for example assert the two refs still differ before trusting
+  that the comparison between them means anything.
 - No `.only`, no `sleep()`, use `waitFor()`.
 - **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
 - **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
@@ -356,6 +399,21 @@ The train is the same shape in all five repos:
 Portal's prod path: CloudFront distribution E39DUKXYGXCX8Q's origin is
 `stable.d2e6e3kdfrrxak.amplifyapp.com` (swapped from `main.`, the distro is NOT CFN-managed).
 
+### Proving a fix reached a line: `git cherry`, never `merge-base --is-ancestor`
+
+**A backported fix is patch-equivalent without being an ancestor.** Cherry-picks and squash
+merges both rewrite the commit, so `git merge-base --is-ancestor <fix> <ref>` answers "no" for
+fixes that are demonstrably present, and a sweep built on it reports healthy branches as
+missing the fix. Use patch-equivalence instead:
+
+```bash
+git cherry -v <upstream> <branch>   # '-' = already upstream (patch-equivalent), '+' = not
+```
+
+Two limits to keep in mind, because `git cherry` is necessary but not sufficient: it will
+miss a **reimplementation** (same effect, different patch), and it says nothing about whether
+the line still BUILDS. For anything that matters, confirm by behaviour on the line itself.
+
 ### Infrastructure stacks (workflow_dispatch: manual trigger from GitHub Actions)
 | Stack | Repo Location | Workflow |
 |---|---|---|
@@ -364,6 +422,28 @@ Portal's prod path: CloudFront distribution E39DUKXYGXCX8Q's origin is
 
 ### Secrets Manager (per-service `vivreal/prod/*`: secrets-audit Phase 2, 2026-07)
 The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`vivreal/prod/secure-api`, `vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/client-auth`, `vivreal/prod/main-api`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `/vivreal/prod/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
+
+### Reading and verifying a CloudFormation deploy
+
+- **`describe-stack-resources` TRUNCATES SILENTLY.** It returns one page and no error, so a
+  resource audit built on it quietly under-reports. Use **`list-stack-resources`**, which
+  paginates. Note the second half of the trap: because it paginates, a
+  `--query 'length(StackResourceSummaries)'` prints **once per page**, so a stack with three
+  pages prints three numbers and a script reading "the" number takes the first one. Sum the
+  pages, or page explicitly with `--no-paginate` plus `--starting-token`.
+- **A green workflow run is NOT a deploy.** The workflow can succeed while the stack update
+  rolls back, and it can succeed having deployed nothing at all. Verify against **stack
+  state**, not against the run:
+  1. Baseline `StackStatus` and `LastUpdatedTime` from `describe-stacks` BEFORE dispatching.
+  2. Wait for `LastUpdatedTime` to MOVE and for `StackStatus` to reach a terminal state.
+  3. **Assert the terminal status BY NAME.** "Moved and terminal" is not success:
+     `UPDATE_ROLLBACK_COMPLETE` is also moved and terminal. Require
+     `CREATE_COMPLETE` or `UPDATE_COMPLETE` explicitly.
+  4. Assert the new value of whatever you changed is actually present in the stack.
+
+  Related, and the same class of error: `gh run watch` can return `rc=0` against a run from
+  days ago when a dispatch was rejected, because the rejected dispatch never created a new
+  run and the old one is still newest.
 
 ### When to consult the Lambda inventory
 - **Env var mismatch bugs**, check which functions have which vars, verify against CloudFormation fragment

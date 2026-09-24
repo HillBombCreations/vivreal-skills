@@ -457,6 +457,14 @@ const COPIED_VALUE_RULES = [
     why: 'names a proxy-route count. The filesystem is the count.',
   },
   {
+    // The rule above only ever matched the literal phrase "N proxy routes", so the
+    // commonest way of writing the same claim walked straight past it: "57 of 76 routes
+    // use this", "223 routes, 185 factory, 38 manual". Same defect, different words.
+    id: 'route-count-split',
+    rx: /\b\d+\s+of\s+\d+\s+routes\b|\b\d+\s+factory\b|\b\d+\s+manual\s+routes?\b/gi,
+    why: 'names a factory-vs-manual proxy-route split. Strip comments, look for a createProxyHandler( CALL, and let the filesystem be the count.',
+  },
+  {
     id: 'mcp-tool-count',
     rx: /\b\d+\s+(?:CMS|outreach)\s+tools\b/gi,
     why: 'names an MCP tool count. Read src/tools/catalog.ts instead.',
@@ -598,6 +606,12 @@ function selfTest() {
       label: 'copied-value: a Lambda count',
       path: join(tmp, 'skills', 'copied', 'SKILL.md'),
       body: '---\nname: copied\ndescription: fixture\n---\n\nRuns 15 Lambdas today.\n',
+    },
+    {
+      rule: 'copied-value',
+      label: 'copied-value: a factory-vs-manual route split',
+      path: join(tmp, 'skills', 'split', 'SKILL.md'),
+      body: '---\nname: split\ndescription: fixture\n---\n\nUse the factory (57 of 76 routes use this).\n',
     },
     {
       rule: 'agent-tools',

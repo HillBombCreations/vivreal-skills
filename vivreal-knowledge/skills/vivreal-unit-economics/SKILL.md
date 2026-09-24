@@ -1,6 +1,6 @@
 ---
 name: vivreal-unit-economics
-description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS, gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), overage revenue, infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches where the real numbers live and which axes still exist: pricing and quotas read from the tier-quotas package, gross margin, AWS roughly flat at this scale, Atlas rising by cluster rung, overage rates and spending caps, capability flags (aiSiteEditing/aiComponentGen), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. **Customer inference is RETIRED as a cost axis**: agentActions is 0 on every tier, so there is no per-customer model-token spend to model. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin, for GTM/funnel/retention economics use the growth agents instead.'
+description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS, gross margin per customer, the cost stack (AWS, MongoDB Atlas, Anthropic/AI), overage revenue, infra cost as you scale, runway, or whether a proposed change dents the ~80% margin floor. Teaches where the real numbers live and which axes still exist: pricing and quotas read from the tier-quotas package, gross margin, the AWS bill as a DECOMPOSITION (usage times about 1.091 tax, plus an UNTAXED Amazon Registrar domain pass-through) rather than a flat monthly constant, Amplify BUILD minutes as the dominant and fastest-moving usage line, Atlas rising by cluster rung, overage rates and spending caps, capability flags (aiSiteEditing/aiComponentGen), that DB tier tracks PEAK CONCURRENCY not signups, and the scale ladder. **Customer inference is RETIRED as a cost axis**: agentActions is 0 on every tier, so there is no per-customer model-token spend to model. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, AWS bill, AWS tax, Cost Explorer, Amplify build minutes, Amazon Registrar, domain cost, pass-through, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. The `finance-auditor` agent grounds in this skill. This is INTERNAL cost/margin, for GTM/funnel/retention economics use the growth agents instead.'
 ---
 
 Last synced: 2026-09-23. **A stamp only means anything if every hand-patch moves it.** This one
@@ -48,7 +48,36 @@ Three specific traps this table used to walk into:
 
 ## The cost stack (three bills, two off the AWS invoice)
 
-1. **AWS ≈ $35/mo, essentially FLAT** at current scale (WorkMail + Amplify + Route53 dominate; Lambda is $0 free-tier-absorbed). Customer count barely moves this line. The M10 Mongo upgrade does NOT change it.
+1. **AWS is a DECOMPOSITION, not a constant, and it is NOT flat.** Measured from Cost Explorer
+   (`UnblendedCost`, the prod payer account), the bill ran **$37.46, $30.27, $36.58, $62.13,
+   $167.45, $170.37** for 2026-04 through 2026-09. Any answer built on "about $35 a month,
+   flat" is low by roughly 4.6x. Model it as:
+
+   ```
+   monthly_bill = usage * 1.091 + domain_registrations
+   ```
+
+   - **Tax is about 9.1 per cent of USAGE, and only of usage.** Measured 9.05, 9.04, 9.10,
+     9.08, 9.12, 9.09 per cent for six straight months. It is one of the steadiest numbers in
+     the whole model, so treat a rate that appears to have moved as a composition error first.
+   - **Amazon Registrar is a SEPARATE, UNTAXED record type** that entered the bill in 2026-08
+     at **$71.00**, then **$87.00** in 2026-09. It is a domain pass-through, so it belongs
+     against domain revenue, not against infrastructure. It is also exactly what made the rate
+     look like it moved when it had not: tax over the WHOLE 2026-08 bill reads 4.8 per cent,
+     tax over usage reads 9.12 per cent like every other month. **Group by `RECORD_TYPE`
+     before reasoning about the rate at all.**
+   - **The usage line that moves is Amplify, and it is BUILD minutes.** $11.32 (2026-04) to
+     $42.19 (2026-09), peaking at $56.88 in 2026-08, of which **67 to 81 per cent is build
+     duration rather than hosting**. Builds are billed per minute, so this line tracks
+     **DEPLOYS**, not customer count and not traffic. A redeploy sweep across customer sites
+     is a real and immediate bill.
+   - Also rising: **WAF** ($0 to $9.94, new in 2026-07), **CloudWatch** ($2.10 to $7.23),
+     **Secrets Manager** ($1.08 to $5.84, per secret per month). **WorkMail is FALLING**,
+     $15.39 down to $3.09, so it is no longer the biggest line despite older text saying so.
+   - **Lambda is still $0** (free-tier absorbed) and **Bedrock is still absent**, which keeps
+     confirming AI is the direct Anthropic API, not Bedrock.
+
+   The Atlas tier step does not change this line: Atlas is a different bill entirely (below).
 2. **MongoDB Atlas, billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). $0 free → **~$60 M10** → **~$150 M20** → **~$400+ M30**. One cluster holds all tenant DBs, you don't pay per database.
 3. **Customer inference: RETIRED as a cost axis, 2026-09-18.** `agentActions` is `0` on every
    tier including enterprise, so no group can enter the agent loop and there is no per-customer
@@ -84,7 +113,16 @@ The Atlas cost lever is driven by **simultaneous in-flight backend requests**, n
 | 1,000 | **~$45k/mo** | M20 |
 | 5,000 | **~$225k/mo** | M20→M30 |
 
-Fixed infra (~$105-110/mo all-in: AWS ~$35 + Atlas M10 ~$60 + WorkMail ~$8-16) is covered by **~2 Pro or ~6 Basic customers**. Everything above that is gross profit, which is why margin *improves* with scale.
+**Fixed infra is ~$83/mo all-in today** (2026-09 AWS usage $76.42 plus $6.95 tax, plus Atlas
+$0 on the shared tier by the 2026-09-15 owner decision). It is NOT the ~$105-110 this file used
+to claim, and that figure was wrong twice over: it assumed an M10 nobody took, and it added
+WorkMail on top of an AWS total that **already included WorkMail**. Domains are excluded on
+purpose, being an untaxed pass-through against domain revenue.
+
+The margin-improves-with-scale conclusion survives, but the mechanism has changed and matters:
+the biggest usage line is now **Amplify build minutes, which scale with DEPLOY activity rather
+than with customer count**. Fixed infra still amortizes, but a build-heavy month is a genuine
+variable cost that a per-customer model will miss entirely.
 
 ## Margin levers (when margin is under pressure, reach for these)
 

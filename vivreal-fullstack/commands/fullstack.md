@@ -48,7 +48,7 @@ Generate this checklist (adapt based on feature):
 - [ ] Add to existing type file or create `src/types/<Feature>.ts`
 
 ### 2. Proxy Route (`src/app/api/proxy/<feature>/route.ts`)
-- [ ] Create edge route using `createProxyHandler()` factory (57 of 76 routes use this)
+- [ ] Create edge route using `createProxyHandler()` factory (the large majority of routes do). **To classify any route, strip comments FIRST and then look for a `createProxyHandler(` CALL.** A bare grep for the factory name overcounts, because manual routes name the factory in a doc comment explaining why they cannot use it; a module-path grep overcounts too, because manual routes import `extractUpstreamError`/`extractUpstreamDetail` from that same module. The count is the filesystem, and the classification is pinned in `tests/unit/app/api/proxy/_helpers/manualRoutesForwardQuotaDetail.test.ts`.
 - [ ] Both exports required: `export const runtime = 'edge'` and `export const dynamic = 'force-dynamic'`
 - [ ] Choose correct `baseUrl`. **Never fall back to a `dev-*` host.** Those custom domains were deleted 2026-09-15 along with the DEV stacks behind them, so an unset env var would now fail silently against a dead domain instead of refusing to connect. Pin the prod host as the fallback instead (same rule as `vivreal-proxy-factory`'s `/proxy-route` generator):
   - CMS: `process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io'`
@@ -62,7 +62,7 @@ Generate this checklist (adapt based on feature):
 - [ ] Add `transformResponse` to reshape upstream data before wrapping in envelope
 - [ ] CSRF is automatic for POST/PUT/DELETE (override with `requireCsrf: false` if needed)
 
-**When NOT to use the factory** (28 manual routes exist for these cases, as of 2026-07-13):
+**When NOT to use the factory** (a minority of routes stay hand-written for these cases):
 - Routes that set cookies (login, ssoLogin, switch-profile, group/create, group/join)
 - Routes with complex body transforms that need full control (collections/create, sites/create)
 - Routes with custom validation logic (calendar routes)

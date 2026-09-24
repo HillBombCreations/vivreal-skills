@@ -48,7 +48,7 @@ Given a feature name, endpoint, or component:
 
 ### Step 2: Find the Proxy Route
 - Search `src/app/api/proxy/` for the matching route
-- Determine: factory (`createProxyHandler`) or manual? (factory routes use `createProxyHandler`; count route.ts files under `src/app/api/proxy/` when it matters, CLAUDE.md's proxy table is the reference)
+- Determine: factory (`createProxyHandler`) or manual? **Strip comments, then look for a `createProxyHandler(` CALL.** A bare grep and a module-path grep both overcount, because manual routes name the factory in doc comments and import its helpers. CLAUDE.md's proxy table is a "core snapshot, not exhaustive", so it is NOT the reference; `tests/unit/app/api/proxy/_helpers/manualRoutesForwardQuotaDetail.test.ts` is, and the filesystem is the count.
 - All proxy routes have: `export const runtime = 'edge'` and `export const dynamic = 'force-dynamic'`
 - For factory routes, read the config object:
   - `baseUrl` → determines which backend
