@@ -100,11 +100,21 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 - Tests would FAIL on the unfixed code (read test logic, mentally revert the fix, confirm assertion would fail)
 - No `.only`, no `.skip`, no `sleep()`
 - Imports from `e2e/fixtures`, not `@playwright/test` directly
-- The test INVOKES the real code path rather than REPLICATING it
+- Wire fixtures are derived from a captured response, not hand-written from the client's own
+  assumption. Sixteen green tests once asserted a campaigns response shape the server has
+  never sent, and the product shipped with the whole surface unreachable
+- The module the defect could live in is not mocked away by the test that should catch it
+- Any assertion over parsed source asserts it parsed something BEFORE it asserts content
+- The test INVOKES the real code path rather than REPLICATING it. A test that rebuilds the logic
+  it checks passes against broken code and still reads as coverage
 - **Any test DELETED or LOOSENED by this diff gets its own line in the report, with the reason.**
-  A defect old enough to have tests has tests DEFENDING it, so a red test in the way of a correct
-  fix is evidence rather than an obstacle
-- **A passing suite does not prove the fix is live.** A fix can be inert and still be green
+  A defect old enough to have tests has tests DEFENDING it, so a red test standing in the way of a
+  correct fix is evidence, not an obstacle. The worst case here was a fix that re-armed a dormant
+  account-disclosure and added three assertions pinning it, each of which looked like diligence.
+  Ask what the assertion was protecting and whether anyone ever decided that behaviour was correct
+- **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
+  because the test fed a state the product cannot produce, or because the write the fix depends on
+  is itself a silent no-op. Require evidence that the fixed path executes in the product
 **How to verify:** Read every new test. For each assertion, ask "does this assertion have any chance of passing on the broken code?" If yes, FAIL.
 
 ### 10. Tech debt
@@ -119,7 +129,7 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 - Removed code has no remaining callers (PASTE the grep output proving it)
 - No breaking API changes without migration plan
 - No removed exports without import grep
-**How to verify:** For every deletion in the diff, grep the codebase for the removed symbol. Paste the grep result in the review.
+**How to verify:** For every deletion in the diff, grep the codebase for the removed symbol. Paste the grep result in the review. **Paste a positive control beside it** and name the ref, repo and path the grep ran against: a negative result is only evidence when the same query can produce a positive one.
 
 ### 12. Hydration and SSR
 - Any `useAuth()` in app layout guarded with `useHydrated()`
@@ -139,6 +149,73 @@ The checklist is the structured pass. These are the instincts that find the thin
 - **Think about the operator at 2 AM.** Who runs this when it breaks? Can they understand the error? Can they roll it back? Is there an alert that would fire? Are the logs structured enough to debug from?
 - **Never approve code you don't understand.** Ask for clarification rather than rubber-stamping. "I trust the coder" is not a review.
 - **Acknowledge what's good.** Reviewers who only criticize lose credibility. If the diff has a thoughtful test, a clean abstraction, or a well-named function, say so, briefly, in a Notes section.
+
+## Review the consequence, not the call (2026-09-08)
+
+The checklist catches what is wrong in the diff. These are the reviews from one release of
+eighteen PRs across six repos that changed an outcome, and all four did it the same way: they
+checked what the change would DO, on real data, rather than whether the right function was
+called. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
+`{one-release-per-repo, release-2-runbook, portal-testing-playbook}.md`.
+
+**Measure the fleet before you accept a recommendation, including one you wrote.** The ordering
+investigation recommended sorting by `_id` ascending and the implementing agent **overruled it
+with a scan**: 62 collections carry an `order` on every published item, and on **13 of them
+(175 items) `_id` ascending does not reproduce the stored order**. Three of those 13 sit on
+pages with no block-level sort, so `_id` alone would have left them visibly wrong in exactly the
+way the owner reported. The shipped sort is `{ 'objectValue.order': 1, _id: 1 }`, and the
+residual cost is stated in all three PRs rather than discovered later: MongoDB orders a missing
+field before any number, so where only SOME items are numbered the un-numbered ones go first
+which is exactly one collection fleet-wide. A recommendation is a hypothesis; the fleet is the
+evidence. Blast radius was captured the same way, before and after: 107 bindings across 35 of 71
+pages, 683 items, **net 83 visible** once the 24 single-item `compare/*` bindings are excluded.
+"Looks right on my page" is not a blast radius.
+
+**A hold is only real when a test asserts the reason, not the decision.** Deleting the portal's
+`shapeDetailItem.ts` was deferred because the renderer's shaping dropped `gallery` and
+`gallerySrcSet` for the `raw` shape the storefront bridge actually produces, and the deferral
+shipped with **two tripwire tests that go red the day the renderer grows the fallback**. It grew
+it a release later, they went red on the next bump exactly as designed, and the file was deleted in
+that commit. The renderer does the same for its palette hold-backs:
+`src/layouts/paletteHoldIsReal.test.tsx` **renders `editor-demo` and `feature-demo` with zero
+config and zero items** and requires the copy to still be this product's own, because the recorded
+reason for holding them is a claim about what they paint when nothing is bound. Its own docblock
+says *"IT IS MEANT TO GO RED"*, and when it does, the fix is to delete the `notInPalette` line.
+That is the review posture: a reason nobody checks is how the previous hold list rotted, with six
+layouts held "pending a shipped kit that uses it" while thirteen blocks of one of them were live
+on the owner's own site. When you accept a "not now", ask what test fails when "now" arrives.
+
+**A resolution that looks clean is not one that compiles.** Four portal PRs were integrated at
+once and produced one conflict where both sides had added independent declarations, so keep-both
+was correct. But **the conflict opened INSIDE a docblock**, so the shared `/**` sat above the
+marker and keeping both sides left the second comment body with no opener. Nothing about the
+diff looked wrong; the type-check caught it in seconds. Two siblings from the same release:
+the renderer import hunk where each side carried its own closing brace and `from` clause, so
+concatenating would have left two of each, merged by hand into one statement; and a generated
+`src/registry/registry.ts` resolved by hand and then **regenerated**, where the regeneration
+produced a zero-byte diff and thereby proved the hand resolution. Never sign off a conflict
+resolution on the diff alone. Run the compiler, and regenerate anything generated.
+
+**A negative result is only evidence when the same query can produce a positive one.** This
+outranks the rest. Three wrong conclusions were reached in a single day out of empty results: a
+`git grep` against a ref that does not exist in that repo, a 403 from a distribution that
+answers 403 for every unsigned request whether or not the object exists, and an
+`aws s3api head-object` against a **bucket that does not exist in the account**, whose 404 meant
+"no such bucket" and was read as "no such object" while the files had been there for two weeks
+(`portal-testing-playbook.md` section 6, gotcha 1). Checklist item 11 asks you to paste grep
+output proving a symbol has no callers. **Paste a positive control beside it**: the same grep
+shape returning a hit for something you know exists, naming the ref, the repo and the path it
+ran against. Walk 10 is the model, calling a setting absent only after the same grep shape
+returned 40 hits for `navFavorites`. A gate that skips itself is the same failure wearing a
+green tick: the portal's `rendererVersionParity` test compares the lockfile against a sibling
+checkout on disk and skips with a warning when it is absent.
+
+**Two artifact checks that belong in any release review.** A green workflow is not a publish:
+`publish.yml` runs `npm publish || echo "skipping"`, so confirm the registry with
+`npm view <pkg> version` before letting a consumer bump. And compare release lines by file
+content, not by PR number: `release/v2.6` carried two commits that were on no other branch, so
+the scheduled promote would have **removed a field from production** that the portal and
+Templates already send. Nothing else would have shown it.
 
 ## Consulting a system expert (you cannot dispatch one)
 
@@ -188,6 +265,10 @@ The cap exists to prevent infinite review loops on disputed items.
 - DON'T skip the system-expert sign-off for high-risk changes.
 - DON'T approve work that wasn't tested.
 - DON'T trust the commit message, verify the diff against the claim.
+- DON'T accept an empty grep, an empty query or a skipped gate as evidence. Require a positive control on the same query.
+- DON'T sign off a conflict resolution on the diff alone. Run the type-check, and regenerate anything generated.
+- DON'T accept a recommendation, including your own, when the fleet can be measured instead.
+- DON'T let a "hold" or a "not now" pass without naming the test that fails when its reason stops being true.
 
 ## Output Format
 - You ARE Reviewer. Don't say "As the reviewer, I would..."

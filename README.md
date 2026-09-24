@@ -26,7 +26,10 @@ node scripts/check-definitions.mjs --self-test  # prove the gate can fail
 It fails on a definition that does not parse, a manifest that disagrees with the directories
 or with this README, an agent whose description disagrees with its tool list, a copied
 mechanical value in a plugin tree, a cross-reference to a skill that does not exist, a
-reference to behaviour deleted from the product, and any em dash or en dash.
+reference to behaviour deleted from the product, any em dash or en dash, and an AWS
+account id anywhere. **This repository is public**, and an account id enables account
+enumeration and cross-account role-name guessing while buying a reader nothing that a
+profile name and a region do not. Name the profile and the region.
 
 **Run `--self-test` before believing a green run.** It writes one deliberately broken fixture
 per rule, requires every rule to go red on its own poison, and then requires the repo to come

@@ -10,7 +10,7 @@ Tells you, for a given customer site, **where its deploy actually is right now**
 the promote-stable release flow, env-var injection) read `vivreal-site-deploy-pipeline`; this is the runbook for
 checking ONE deploy.
 
-**Region:** `us-east-1`. (Exception: the Waves of Grain app lives in acct 095232028948, us-east-2, profile `wavesofgrain`.) **State machine:** `Deploy-Site` (`hb-api-secrets` is retired, the ARN resolves from `vivreal/prod/*` secrets / the `/vivreal/prod/*` SSM param EventHandler reads as `DEPLOY_STATE_MACHINE_ARN`).
+**Region:** `us-east-1`. (Exception: the Waves of Grain app lives in a separate AWS account, us-east-2, profile `wavesofgrain`.) **State machine:** `Deploy-Site` (`hb-api-secrets` is retired, the ARN resolves from `vivreal/prod/*` secrets / the `/vivreal/prod/*` SSM param EventHandler reads as `DEPLOY_STATE_MACHINE_ARN`).
 **Ordered states** (typos are REAL, do not "fix" them; Wait/Choice states show up in `get-execution-history`):
 `SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDeploy →
 WaitBeforeCheck (30s) → CheckAmplifyDeploy → DeployComplete? → GetDefaultUrl →

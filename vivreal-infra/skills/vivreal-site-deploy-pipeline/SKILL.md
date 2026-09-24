@@ -37,7 +37,7 @@ The Deploy-Site state machine pre-dates the serverless setup; VR_Secure_API invo
 
 ## Releases: the promote-stable workflow (Phase 2: 2026-07-15)
 
-**Merging/pushing `Vivreal_Templates` `main` does NOTHING to customer sites.** To release: run the **promote-stable** GitHub Actions workflow (Actions → promote-stable → Run workflow; `workflow_dispatch`, fast-forward-only, GitHub App auth). It fast-forwards `main` → `stable`; that push auto-builds **every** site's Amplify app, including the cross-account Waves of Grain app (acct 095232028948, us-east-2).
+**Merging/pushing `Vivreal_Templates` `main` does NOTHING to customer sites.** To release: run the **promote-stable** GitHub Actions workflow (Actions → promote-stable → Run workflow; `workflow_dispatch`, fast-forward-only, GitHub App auth). It fast-forwards `main` → `stable`; that push auto-builds **every** site's Amplify app, including the cross-account Waves of Grain app (a separate AWS account, us-east-2).
 
 So: renderer change → publish renderer package → bump dep on Templates `main` → merge → **run promote-stable** → all apps rebuild → live. (The renderer publishes via its own CI on push to its `master`.)
 

@@ -30,6 +30,8 @@
  *   6. A cross-reference to a skill that does not exist.
  *   7. An em dash, an en dash or any of their relatives, anywhere.
  *   8. A reference to behaviour that has been deleted from the product.
+ *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
+ *      buys a reader nothing that a profile name and a region do not.
  *
  * Run:  node scripts/check-definitions.mjs
  * Self-test (the must-pass control):  node scripts/check-definitions.mjs --self-test
@@ -563,6 +565,54 @@ function ruleDeletedBehaviour(files) {
   }
 }
 
+// --------------------------------------------- rule 7: no AWS account id
+// THIS REPOSITORY IS PUBLIC. An AWS account id is not a password, but publishing one
+// enables account enumeration and cross-account role-name guessing, and it buys a
+// reader nothing: the thing an operator actually needs is the PROFILE and the REGION,
+// which resolve the account for them. Seven instances shipped here before anyone
+// looked, and six of them were a CUSTOMER's account rather than ours.
+//
+// Match on the VALUE's shape, never on a variable name. In one sweep across this
+// estate, 8 of 18 leaks sat in fields innocently named `to`, `subject`, `admin` and
+// `route`, so a name-based search found under half of them. The line is percent-decoded
+// before matching, because a value inside a URL is still a published value.
+//
+// No allowlist, deliberately. There is no legitimate 12-digit run anywhere in this
+// repository today, so an exemption list would only be a place for the next one to
+// hide. Write the profile and the region, or write <account-id>.
+const ACCOUNT_ID = /(?<![0-9])[0-9]{12}(?![0-9])/;
+
+/** first three and last three digits only, so a report can name a hit without republishing it */
+const maskAccount = (v) => `${v.slice(0, 3)}...${v.slice(-3)}`;
+
+function decodePercent(line) {
+  try {
+    return decodeURIComponent(line);
+  } catch {
+    // A stray % that is not an escape throws. The raw line is still checked above,
+    // so failing to decode loses nothing; swallowing it silently would.
+    return line;
+  }
+}
+
+function ruleAwsAccountId(files) {
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (!/\.(md|json|js|cjs|mjs|ps1|ya?ml)$/.test(rel)) continue;
+    const lines = readFileSync(abs, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      const m = ACCOUNT_ID.exec(line) || ACCOUNT_ID.exec(decodePercent(line));
+      if (!m) return;
+      fail(
+        'aws-account-id',
+        `${rel}:${i + 1}`,
+        `a 12-digit run (${maskAccount(m[0])}) reads as an AWS account id, and this repository is PUBLIC. ` +
+          'Name the AWS profile and the region instead, or write <account-id>.',
+      );
+    });
+  }
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -574,6 +624,7 @@ function runAll(files) {
   ruleCopiedValues(files);
   ruleDashes(files);
   ruleDeletedBehaviour(files);
+  ruleAwsAccountId(files);
 }
 
 /**
@@ -677,6 +728,23 @@ function selfTest() {
         '---',
         '',
         'The persisted dbKey wins and the tier mapping is the fallback.',
+        '',
+      ].join('\n'),
+    },
+    {
+      // The account id is ASSEMBLED rather than pasted, for the same reason the dash
+      // codepoints are: a 12-digit literal sitting in this file would trip the very rule
+      // it is poisoning, and the no-poison control at the end would then be red forever.
+      rule: 'aws-account-id',
+      label: 'aws-account-id: an account id in a public repo',
+      path: join(tmp, 'skills', 'acct', 'SKILL.md'),
+      body: [
+        '---',
+        'name: acct',
+        'description: fixture',
+        '---',
+        '',
+        'Assume `arn:aws:iam::' + '123456' + '789012' + ':role/Example`.',
         '',
       ].join('\n'),
     },
