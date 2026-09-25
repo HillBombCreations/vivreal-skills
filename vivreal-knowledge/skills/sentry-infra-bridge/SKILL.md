@@ -67,7 +67,7 @@ emits this packet; `vivreal-ops` reads it as its starting scope so it doesn't re
 ```
 
 `vivreal-ops` then pulls those metrics read-only, returns confirm/refute with values + the source
-command, and recommends the fix (which lands via `coder`/`principal-coder`, never in ops).
+command, and recommends the fix (which lands via `coder`, never in ops).
 
 ## Gotchas that change the reading
 

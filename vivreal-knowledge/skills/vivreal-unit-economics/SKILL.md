@@ -143,4 +143,4 @@ variable cost that a per-customer model will miss entirely.
 
 ## Boundary (do not confuse with growth)
 
-This skill is **internal cost / margin / profitability**. It is NOT go-to-market. For funnel/conversion economics, churn (NRR/GRR), CAC, positioning, and retention, use the `growth` / `principal-growth-auditor` / `growth-advisor` agents, they own the revenue-side levers; this skill owns the cost-side levers. Companions: `vivreal-atlas-topology` (the connection-cap mechanics behind the Atlas tier lever), `vivreal-lambda` (reserved-concurrency, which bounds the peak-concurrency cost driver).
+This skill is **internal cost / margin / profitability**. It is NOT go-to-market. For funnel/conversion economics, churn (NRR/GRR), CAC, positioning, and retention, use the `growth` / `growth-auditor` / `growth-advisor` agents, they own the revenue-side levers; this skill owns the cost-side levers. Companions: `vivreal-atlas-topology` (the connection-cap mechanics behind the Atlas tier lever), `vivreal-lambda` (reserved-concurrency, which bounds the peak-concurrency cost driver).

@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.16.0"
+    "version": "1.17.0"
   },
   "plugins": [
     {
       "name": "vivreal-principal",
       "source": "./vivreal-principal",
-      "description": "Repo-agnostic principal-level agents: single-dispatch coordinator, coder, architect, researcher, reviewer, designer, and growth auditor. Auto-dispatched for design+build, audits, refactors, code review, and GTM analysis in any repository."
+      "description": "Repo-agnostic principal-level agents: coordinator, coder, architect, researcher, reviewer, designer, and growth-auditor. The coordinator, coder, architect, researcher, and reviewer each merge a standalone principal-level mode with the Vivreal bug/feature workflow's artifact-driven mode (an approved plan.md/design.md is an OPTIONAL input, followed with zero scope creep when given, otherwise the agent runs standalone). Auto-dispatched for design+build, audits, refactors, code review, and GTM analysis in any repository."
     },
     {
       "name": "vivreal-experts",
@@ -22,7 +22,7 @@
     {
       "name": "vivreal-workflow",
       "source": "./vivreal-workflow",
-      "description": "The Vivreal bug/feature workflow: coordinator + research/architect/coder/tester/reviewer/documenter/vuln role agents, their slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix), /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill, and the verification-discipline skill: the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, and why a gate can be enabled and still incapable of failing."
+      "description": "The Vivreal bug/feature workflow: slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix) that dispatch the shared coordinator/researcher/architect/coder/reviewer agents from vivreal-principal in artifact-driven mode, plus this plugin's own delivery-orchestrator/documenter/system-doc-writer/tester/vuln role agents, /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill, and the verification-discipline skill: the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, and why a gate can be enabled and still incapable of failing."
     },
     {
       "name": "vivreal-knowledge",
@@ -42,12 +42,12 @@
     {
       "name": "vivreal-ops",
       "source": "./vivreal-ops",
-      "description": "The vivreal-ops agent, a READ-ONLY investigator of RUNNING Vivreal infrastructure (live AWS Lambda config/concurrency, Step Functions execution history, API Gateway, IAM, Secrets Manager, MongoDB Atlas state). Investigates the deployed reality and recommends; fixes route to principal-coder/coder. Grounded in the vivreal-infra + vivreal-db skills. Distinct from principal-architect (design) and the sentry agent (Sentry telemetry)."
+      "description": "The vivreal-ops agent, a READ-ONLY investigator of RUNNING Vivreal infrastructure (live AWS Lambda config/concurrency, Step Functions execution history, API Gateway, IAM, Secrets Manager, MongoDB Atlas state). Investigates the deployed reality and recommends; fixes route to coder. Grounded in the vivreal-infra + vivreal-db skills. Distinct from architect (design) and the sentry agent (Sentry telemetry)."
     },
     {
       "name": "vivreal-product",
       "source": "./vivreal-product",
-      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), and ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough). All advisory, they evaluate and recommend; fixes route to principal-coder/coder, content-creator/content-planner, or designer/principal-designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agents (which design+build)."
+      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), and ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough). All advisory, they evaluate and recommend; fixes route to coder, content-creator/content-planner, or designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agent (which designs and builds)."
     },
     {
       "name": "vivreal-fullstack",

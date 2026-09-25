@@ -27,7 +27,7 @@ Consult `sentry-infra-bridge` → **"When to cross the bridge (and when NOT to)"
 
 - **Code bug** (first-party frame + `service.*` breadcrumb that explains the throw): **STOP**. No
   CloudWatch metric explains a logic bug. Report the Sentry finding and route the fix to
-  `coder`/`principal-coder`. Do not dispatch ops.
+  `coder`. Do not dispatch ops.
 - **Infra-class** (502 with no backend event, timeout, Mongo connect-hang, throttle, OOM, deploy
   stall): proceed to Leg 2.
 - **GoneException / stale WebSocket**: only proceed if the *rate* is abnormal; otherwise note it as
@@ -51,7 +51,7 @@ filled in from Leg 1:
 ```
 
 `vivreal-ops` is read-only: it returns confirm/refute with metric values + the source command, and a
-recommended fix that lands via `coder`/`principal-coder` (never in ops).
+recommended fix that lands via `coder` (never in ops).
 
 ## Synthesize
 
@@ -75,7 +75,7 @@ Present one combined report:
 <the confirmed/refuted hypothesis, tying Sentry evidence to the metric>
 
 ### Recommendation
-- <the fix, where it lands (which template/file), routed to coder/principal-coder>
+- <the fix, where it lands (which template/file), routed to coder>
 - <operator runbook step, if a console/CLI mutation is required>
 ```
 

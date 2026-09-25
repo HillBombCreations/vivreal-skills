@@ -44,4 +44,4 @@ description: Sentry trace -- <brief description>
 prompt: <Include full context: what the user asked, which playbook, time window, any known service/trace IDs.>
 ```
 
-After the `sentry` agent returns, present the timeline table and findings to the user. If it identified code-level issues, suggest next steps (route the fix to `principal-coder` / `coder`).
+After the `sentry` agent returns, present the timeline table and findings to the user. If it identified code-level issues, suggest next steps (route the fix to `coder`).

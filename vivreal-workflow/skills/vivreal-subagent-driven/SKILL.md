@@ -244,8 +244,9 @@ on the fix, and reports results.
 - **Upstream in the chain:** `vivreal-workflow:vivreal-brainstorming` →
   `vivreal-workflow:vivreal-writing-plans` produces the `plan.md` this skill
   executes (invoke chain skills by their full plugin-qualified names).
-- **Subagents driven:** `coder` (implementer), `reviewer` (per-task + final)
-  `tester` (optional regression coverage), all from the vivreal-workflow plugin.
+- **Subagents driven:** `coder` (implementer) and `reviewer` (per-task + final), from
+  the vivreal-principal plugin; `tester` (optional regression coverage), from the
+  vivreal-workflow plugin.
 - **Read-first for every dispatch:** the `shared-standards` skill.
 - **Alternatives:** `/coordinator` for production bugs (adds research + document
   phases and a 3-pass gate); `/orchestrate` for audits/design/refactors that need

@@ -166,7 +166,7 @@ Then self-check against the 6-point on-voice rubric before returning.
 
 - **`marketing-auditor`** agent, CRITIQUES copy/assets against this skill (read-only).
 - **`content-planner` / `content-creator`** agents, PRODUCE social content to this voice.
-- **`principal-growth-auditor`**, owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
+- **`growth-auditor`**, owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
 - **`vivreal-unit-economics`**, for the cost/margin numbers behind pricing copy.
 
-Sources: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md` (canonical: promise, five traits, ban list, competitive frame, honesty floor), `vivreal-content\.claude\agents\content-planner.md` + `content-creator.md` (hard bans, per-platform limits, self-check), `principal-growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.
+Sources: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md` (canonical: promise, five traits, ban list, competitive frame, honesty floor), `vivreal-content\.claude\agents\content-planner.md` + `content-creator.md` (hard bans, per-platform limits, self-check), `growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.

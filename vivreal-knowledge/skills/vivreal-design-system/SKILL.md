@@ -1,6 +1,6 @@
 ---
 name: vivreal-design-system
-description: 'Use when designing, building, or reviewing any Vivreal portal UI/UX, new screens, components, layouts, dashboards, forms, mobile views, or design-system/accessibility decisions. Teaches the REAL Vivreal component & layout conventions, the globals.css design tokens (--primary/--surface.bg-glass.hover-lift, type + motion + spacing scales), the mobile-first + light-only + Radix/Tailwind4/Framer/Lucide stack rules, WCAG 2.2 AA musts, and the borrowed-from-Linear/Stripe/Vercel craft rules + UX-psychology laws. Triggers on: portal UI, design a screen/component, dashboard layout, stat tile, mobile-first, thumb zone, touch target, bottom sheet, bottom nav, mobile pattern, dark mode, design tokens, bg-glass, hover-lift, WCAG, empty state, skeleton, Radix, Tailwind, Framer Motion, Lucide, UX critique, cognitive load. The `designer`/`principal-designer`/`ux-critic` agents consult this skill. For the site PRODUCT model use vivreal-sites; for portal API/proxy internals use vivreal-portal-knowledge.'
+description: 'Use when designing, building, or reviewing any Vivreal portal UI/UX, new screens, components, layouts, dashboards, forms, mobile views, or design-system/accessibility decisions. Teaches the REAL Vivreal component & layout conventions, the globals.css design tokens (--primary/--surface.bg-glass.hover-lift, type + motion + spacing scales), the mobile-first + light-only + Radix/Tailwind4/Framer/Lucide stack rules, WCAG 2.2 AA musts, and the borrowed-from-Linear/Stripe/Vercel craft rules + UX-psychology laws. Triggers on: portal UI, design a screen/component, dashboard layout, stat tile, mobile-first, thumb zone, touch target, bottom sheet, bottom nav, mobile pattern, dark mode, design tokens, bg-glass, hover-lift, WCAG, empty state, skeleton, Radix, Tailwind, Framer Motion, Lucide, UX critique, cognitive load. The `designer`/`ux-critic` agents consult this skill. For the site PRODUCT model use vivreal-sites; for portal API/proxy internals use vivreal-portal-knowledge.'
 ---
 
 # Vivreal Design System: portal UI/UX knowledge
@@ -35,7 +35,7 @@ The opinionated rules + REAL conventions for any Vivreal portal interface work. 
 
 ## Who consults this skill
 
-- The **`designer`** and **`principal-designer`** agents, they DESIGN and BUILD; this skill is their Vivreal-specific token/pattern grounding.
+- The **`designer`** agent, it DESIGNS and BUILDS; this skill is its Vivreal-specific token/pattern grounding.
 - The **`ux-critic`** agent, it CRITIQUES usability read-only; `references/ux-psychology.md` is its primary lens.
 - Companions: `vivreal-sites` (the customer-site product/authoring model, distinct from portal chrome), `vivreal-portal-knowledge` (the portal's API/proxy/auth internals).
 

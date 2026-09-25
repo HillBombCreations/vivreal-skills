@@ -83,7 +83,7 @@ contract. "Don't edit" keeps it in investigation mode.
 > I need to decide how to build **[X]**: **[the problem and the forces, scale, cost, latency, simplicity]**.
 > Give me 2 to 3 options with explicit tradeoffs and one recommendation. Consider data model, API shape, and migration path. Stop at any judgment call that's really mine to make, don't just pick.
 
-"2 to 3 options + tradeoffs + one recommendation + stop at judgment calls" is the `principal-architect`
+"2 to 3 options + tradeoffs + one recommendation + stop at judgment calls" is the `architect`
 contract. Deterministic equivalent: **`/design`**.
 
 ---
@@ -93,8 +93,8 @@ contract. Deterministic equivalent: **`/design`**.
 > Review this diff before I ship it: **[branch / unstaged changes / PR #]**.
 > Go adversarial, correctness, security, performance, multi-tenancy (dbKey/groupID scoping), CSRF, error handling, and edge/failure modes. Rate each finding by severity and explain *why* it matters. Don't approve until the real issues are addressed.
 
-"Adversarial," "rate each finding," "explain why," "don't approve until fixed" maps to
-`principal-reviewer` / the workflow `reviewer` (12-point PASS/FAIL gate). Deterministic equivalents:
+"Adversarial," "rate each finding," "explain why," "don't approve until fixed" maps to the
+`reviewer` agent's 12-point PASS/FAIL gate (workflow mode). Deterministic equivalents:
 **`/reviewer`** or **`/bug-review`**.
 
 ---
@@ -114,7 +114,7 @@ rule is the #1 footgun. Wrapped by **`/db-query`** and **`/db-schema`**.
 > Give me a growth read on **[signups / a specific funnel stage / acquisition channel / churn]** for **[time window]**. Pull real numbers from GA4, PostHog, and MongoDB, cross-reference them, and give week-over-week deltas plus the 2 to 3 actions that would move the metric most.
 
 Naming the metric + "pull real numbers from GA4/PostHog/Mongo" triggers `growth-advisor`
-(quantitative) rather than the strategy-lens `principal-growth-auditor`. Commands:
+(quantitative) rather than the strategy-lens `growth-auditor`. Commands:
 **`/growth-report`**, **`/funnel-analysis`**.
 
 ---
@@ -125,7 +125,7 @@ Naming the metric + "pull real numbers from GA4/PostHog/Mongo" triggers `growth-
 > Walk it as (a) a non-technical user, where would they get stuck or confused?, and (b) a UX designer, clicks, friction, cognitive load, findability of the primary action. Check it at mobile and desktop widths. Read-only; just tell me what to fix and route the fix, don't redesign it.
 
 The dual-lens phrasing triggers `ux-critic`, which can walk the running screen via Playwright.
-"Read-only, don't redesign" keeps it out of `principal-designer` build mode.
+"Read-only, don't redesign" keeps it out of `designer` build mode.
 
 ---
 
@@ -147,8 +147,8 @@ clean-reinstall + PR steps.
 > Audit **[area/module]** for **[concern, dead code, perf, inconsistent patterns, security]** and fix what's genuinely worth fixing. Investigate first, show me what you found and what you propose to change, get my sign-off, then implement and self-review. No scope creep beyond what we agree on.
 
 "Audit … fix what's worth fixing … investigate → propose → approve → implement" is the
-`principal-coordinator` / **`/orchestrate`** (audit mode) contract. "No scope creep" keeps an
-audit from becoming a rewrite.
+`coordinator` single-dispatch shape / **`/orchestrate`** (audit mode) contract. "No scope creep"
+keeps an audit from becoming a rewrite.
 
 ---
 
