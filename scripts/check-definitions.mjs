@@ -549,6 +549,29 @@ const DELETED_BEHAVIOUR = [
     why: 'a tier does not map to a database and has not for some time. Say that the placement is STORED on the group and read back.',
     allowLine: REMOVAL_VOCABULARY,
   },
+  // H306. A DELETED ROUTE, ADVERTISED BY A SKILL AN AGENT LOADS.
+  //
+  // A route named in a skill is, to the agent reading it, a fact. The only
+  // feedback an agent gets from calling one of these is a 403 from API
+  // Gateway, which reads like an auth problem rather than like a route that
+  // was removed, so it will try again with different credentials.
+  //
+  // Each entry below is a route this fleet actually deleted, and each stays
+  // matchable AS A REFUSAL through REMOVAL_VOCABULARY, deliberately: erasing
+  // the claim leaves the next reader free to invent it again, which is how
+  // `sendContactUsEmail` came back once already. Say it is gone, out loud.
+  {
+    id: 'route-sendcontactusemail',
+    rx: /sendContactUsEmail/,
+    why: 'POST /api/sendContactUsEmail was deleted from VR_Main_API on 2026-09-23 (route, mailer and validator, each replaced by a removal comment). A site contact form posts to VR_Client_API. Say it is gone rather than deleting the sentence.',
+    allowLine: REMOVAL_VOCABULARY,
+  },
+  {
+    id: 'route-template-sync',
+    rx: /\/api\/(registerDomain|createBranch|deployTemplateSubDomain|deployTemplateCustomDomain|templateSyncWebhook)\b/,
+    why: 'this route went with the template-sync flow in VR_Secure_API and is in no CloudFormation fragment. GEMINI.md there now DERIVES its route map from the Api event Path entries, which is the deployed contract.',
+    allowLine: REMOVAL_VOCABULARY,
+  },
 ];
 
 function ruleDeletedBehaviour(files) {
@@ -685,6 +708,16 @@ function selfTest() {
       label: 'parse: no frontmatter at all',
       path: join(tmp, 'agents', 'broken.md'),
       body: 'no frontmatter at all\n',
+    },
+    {
+      // H306. A route that no longer exists, advertised as if it does. The
+      // fixture says it plainly and carries none of the removal vocabulary,
+      // because a rule that only fires on a sentence nobody writes is a rule
+      // that never fires.
+      rule: 'deleted-behaviour',
+      label: 'deleted-behaviour: a deleted route advertised as live',
+      path: join(tmp, 'skills', 'ghost-route', 'SKILL.md'),
+      body: '---\nname: ghost-route\ndescription: fixture\n---\n\nEmail: `POST /api/sendContactUsEmail` for the contact form.\n',
     },
     {
       rule: 'deleted-behaviour',
