@@ -16,7 +16,7 @@ Each backend's API Gateway authorizes EVERY request before the Lambda runs. Two 
 | VR_Main_API, VR_Secure_API, VR_CMS_API | **AWS Cognito JWT** via API Gateway authorizer | Caller sends the Cognito JWT (`token`). API Gateway validates it. Claims land at `req?.apiGateway?.event?.requestContext?.authorizer?.claims`. Some routes are `Auth: NONE` (Stripe webhooks validate a signature instead; a few token-based group routes). |
 | VR_Client_API (public site delivery) | **API-key custom Lambda authorizer = `VR_Client_Auth`** (NO Cognito) | Caller sends the group's API key in the `Authorization` header. `VR_Client_Auth` does `groups.findOne({ apiKey: token })` against mainDb, returns an Allow/Deny IAM policy + **injected tenant context**. |
 
-`aws-jwt-verify` is the library used for Cognito JWT verification. Cognito config (`CLIENT_ID`, `USERPOOL_ID`) comes from `hb-api-secrets`.
+`aws-jwt-verify` is the library used for Cognito JWT verification. Cognito config (`CLIENT_ID`, `USERPOOL_ID`) comes from SSM (`/vivreal/prod/shared/cognito-client-id`, `/vivreal/prod/shared/cognito-userpool-id`), not from the retired `hb-api-secrets`.
 
 ### VR_Client_Auth injected context (read on every Client API request)
 
@@ -37,12 +37,12 @@ The portal also signs a `user_ctx`; for the outreach API the gmail/email routes 
 ## THE BOUNDARY (don't conflate)
 
 - **API Gateway authorizers** (Cognito / API-key) gate access to the **backend Lambdas**. They produce `requestContext.authorizer` context.
-- **`active_ctx`/`CTX_SECRET`** is a **portal-internal** mechanism for "which group is active", it is signed and verified by the **portal** (and re-verified by VR_Outreach_API and VR_Secure_API's admin attribution gate, which read the SAME `CTX_SECRET` from `hb-api-secrets`).
+- **`active_ctx`/`CTX_SECRET`** is a **portal-internal** mechanism for "which group is active", it is signed and verified by the **portal** (and re-verified by VR_Outreach_API and VR_Secure_API's admin attribution gate, which read the SAME `CTX_SECRET` from Secrets Manager `vivreal/prod/core`, not the retired `hb-api-secrets`).
 - The backends behind Cognito do NOT verify `active_ctx`; they read Cognito claims + the `key`/`groupID` query params the portal passes. VR_Client_API uses neither, purely the API key.
 
 ## CTX_SECRET: the shared HMAC (atomic-rotation trap)
 
-`CTX_SECRET` MUST be **identical** between the portal (env) and every service that verifies portal-signed tokens (VR_Outreach_API; VR_Secure_API `getGroupInformation` admin gate), via `hb-api-secrets`. **Rotating one without the others → 401 "Invalid active context" on every request** to that service. Rotate atomically across all consumers. See `vivreal-iam-secrets`.
+`CTX_SECRET` MUST be **identical** between the portal (env) and every service that verifies portal-signed tokens (VR_Outreach_API; VR_Secure_API `getGroupInformation` admin gate), via Secrets Manager `vivreal/prod/core` (the old shared `hb-api-secrets` store is retired and fully deleted, see `vivreal-iam-secrets`). **Rotating one without the others → 401 "Invalid active context" on every request** to that service. Rotate atomically across all consumers. See `vivreal-iam-secrets`.
 
 ## Debugging 401/403
 
