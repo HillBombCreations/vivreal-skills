@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.18.0"
+    "version": "1.19.0"
   },
   "plugins": [
     {
@@ -22,7 +22,7 @@
     {
       "name": "vivreal-workflow",
       "source": "./vivreal-workflow",
-      "description": "The Vivreal bug/feature workflow: slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix) that dispatch the shared coordinator/researcher/architect/coder/reviewer agents from vivreal-principal in artifact-driven mode, plus this plugin's own delivery-orchestrator/documenter/ledger-keeper/system-doc-writer/tester/vuln role agents (ledger-keeper owns the vivreal-hq item ledger and the state-validator that keeps it honest), /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill, and the verification-discipline skill: the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, and why a gate can be enabled and still incapable of failing."
+      "description": "The Vivreal bug/feature workflow: slash commands (/orchestrate, /coordinator, /research, /design, /implement, /test, /reviewer, /vuln-fix) that dispatch the shared coordinator/researcher/architect/coder/reviewer agents from vivreal-principal in artifact-driven mode, plus this plugin's own delivery-orchestrator/documenter/ledger-keeper/system-doc-writer/tester/vuln/package-publisher role agents (ledger-keeper owns the vivreal-hq item ledger and the state-validator that keeps it honest; package-publisher publishes a shared @hillbombcreations/* GitHub Package and moves its exact resolved pin across every consumer), /promptify (turn a messy request into a structured, well-routed prompt via the bundled prompt playbook), and the shared-standards skill, and the verification-discipline skill: the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, and why a gate can be enabled and still incapable of failing."
     },
     {
       "name": "vivreal-knowledge",
@@ -32,7 +32,7 @@
     {
       "name": "vivreal-infra",
       "source": "./vivreal-infra",
-      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service vivreal/prod/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Distinct from vivreal-knowledge's per-repo digests, this is the plumbing that crosses repos. Skills load passively from intent."
+      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service vivreal/prod/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Also ships the WRITE-CAPABLE infra-engineer agent, which takes an infrastructure change from decision to deployed, the deliberate counterpart to vivreal-ops's read-only charter rather than a relaxation of it. Distinct from vivreal-knowledge's per-repo digests, this is the plumbing that crosses repos. Skills load passively from intent."
     },
     {
       "name": "vivreal-sentry",
