@@ -55,7 +55,7 @@ Restyling an ALREADY-LIVE site in place, neither `/migrate` nor `/template`: `sc
 ## Audit passes + the post-deploy gate
 
 - **4A, live-DOM parity sweep (MANDATORY, first):** for EVERY page, Playwright-load the LIVE site, scroll top-to-bottom, extract a fingerprint (headings, `<video>` + CSS `background-image` srcs, iframes, image/form counts, nav, every external href), diff against the blueprint. Any delta is a defect, recover from the live DOM and re-dispatch the owning agent.
-- **4B, local render vs live:** serve-preview shim on `127.0.0.1:8799` + Templates dev server (`dev:linked` for unpublished renderer work), screenshots at 1280 + 375 for home, a nested page, and each content-type page, compared against live.
+- **4B, local render vs live:** serve-preview shim on `127.0.0.1:8799` + Templates dev server (`dev:linked` for unpublished renderer work), screenshots at 1280 + 375 for home, a nested page, and each content-type page, compared against live. **`dev:linked` leaves a dev build of the renderer overlaid on Templates' installed package and never reverts it, and the version, `npm ls` and the lockfile all keep reading authentic, so a parity screenshot taken afterwards is evidence about unpublished renderer code, not about what a customer site will render (measured 2026-09-30: it went five days undetected and produced three wrong conclusions).** Revert with `node ../vivreal-site-renderer/scripts/dev-unlink.js` and confirm INSTALL with `node ../vivreal-site-renderer/scripts/dev-status.js` before you sign off a parity pass.
 - **C, post-deploy live gate:** `verify-live.js` (above), run by the cutover agent after every load/cutover deploy.
 
 ## Gap policy (block / best-fit / partial)

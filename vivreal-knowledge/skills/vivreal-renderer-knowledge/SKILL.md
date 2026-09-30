@@ -1,6 +1,6 @@
 ---
 name: vivreal-renderer-knowledge
-description: 'Use when working in vivreal-site-renderer (the @hillbombcreations/site-renderer npm package), the rendering engine that turns Vivreal site config into a live website, consumed by both Vivreal_Templates (customer sites) and the portal Studio live-preview. Covers the publish-to-GitHub-Packages release runbook (publishing hits every live customer site), the ImageComponent injection seam, the Tailwind v4 @source requirement, the powered-by-Vivreal tier gate (canHidePoweredBy), the provider-agnostic checkoutIdentifier (Stripe/Square), the isPageAllowed page-gate export, motion-signature presets, the bakery identity kits and catalog/craft/profile page templates, prefers-reduced-motion, and the DESIGN_LANGUAGE.md authority. Triggers on: vivreal-site-renderer, site-renderer, @hillbombcreations/site-renderer, renderer package, ContentRenderer, PageTemplates, publish renderer, bump renderer, primitives, design language, canHidePoweredBy, checkoutIdentifier, DetailProductData, CartAdapter, isPageAllowed, page gate, DemoRibbon, motion preset. Source of truth: C:\repos\vivreal-site-renderer\CLAUDE.md (still dated 2026-07-27, stale against heavy August drift; trust package.json/git log over it) + docs/DESIGN_LANGUAGE.md.'
+description: 'Use when working in vivreal-site-renderer (the @hillbombcreations/site-renderer npm package), the rendering engine that turns Vivreal site config into a live website, consumed by both Vivreal_Templates (customer sites) and the portal Studio live-preview. Covers the publish-to-GitHub-Packages release runbook (publishing hits every live customer site), the local dev overlay that dev-sync.js leaves on a consumer and why a green consumer run can be describing unpublished code, the ImageComponent injection seam, the Tailwind v4 @source requirement, the powered-by-Vivreal tier gate (canHidePoweredBy), the provider-agnostic checkoutIdentifier (Stripe/Square), the isPageAllowed page-gate export, motion-signature presets, the bakery identity kits and catalog/craft/profile page templates, prefers-reduced-motion, and the DESIGN_LANGUAGE.md authority. Triggers on: vivreal-site-renderer, site-renderer, @hillbombcreations/site-renderer, renderer package, ContentRenderer, PageTemplates, publish renderer, bump renderer, primitives, design language, canHidePoweredBy, checkoutIdentifier, DetailProductData, CartAdapter, isPageAllowed, page gate, DemoRibbon, motion preset, dev:linked, dev-sync, dev overlay, dev-unlink, dev-status, RENDERER-DEV-OVERLAY, is the installed renderer the published one. Source of truth: C:\repos\vivreal-site-renderer\CLAUDE.md (still dated 2026-07-27, stale against heavy August drift; trust package.json/git log over it) + docs/DESIGN_LANGUAGE.md.'
 ---
 
 # vivreal-site-renderer: knowledge digest
@@ -13,6 +13,55 @@ answer. Nothing below states a current version, on purpose: every version this f
 carried was wrong within a fortnight, and a stale version reads exactly like a current one.
 
 The **rendering engine** (`@hillbombcreations/site-renderer`) that turns Vivreal site config (pages + collections + pageConfigs) into a live website. Consumed by `Vivreal_Templates` (customer sites) and `Vivreal_Portal_Mobile` (Studio live-preview), both pull from GitHub Packages at build time. React 19 peer, next `^15||^16` peer, TypeScript, framer-motion 12, Tailwind classes in source. `C:\repos\vivreal-site-renderer\CLAUDE.md` + `docs/DESIGN_LANGUAGE.md` give depth, CLAUDE.md last refreshed 2026-07-27 at 1.39.2 (header "Current published version: 1.39.2"); it now trails the entire 1.40 to 1.50 wave (musician kit, BrandMark, cutout/editorial commerce, section-photo/full-bleed layouts, wrinsy parity kits, RESALE-1), trust `package.json`. For the site product/authoring model that drives this renderer (page formats, sections, Studio↔live composePage parity) see `vivreal-sites`.
+
+## The installed package is not always the published one
+
+**Before you conclude anything about renderer capability from a consumer build, test, type-check or
+screenshot, confirm that consumer is running the published package.** `scripts/dev-sync.js` in this
+repo, reached through `npm run dev:linked` in `Vivreal_Templates` and `Vivreal_Portal_Mobile`, builds
+this repo and copies `dist/` and `styles/` over that consumer's installed
+`node_modules/@hillbombcreations/site-renderer`. It never reverts, and it deliberately never writes
+that package's own `package.json`, so **the version string, `npm ls` and the lockfile `integrity` all
+stay authentic**. No ordinary check sees it.
+
+Measured 2026-09-30: an overlay stood in for the published package for **five days across both
+consumers** and produced **three wrong conclusions, two of which reached commits**. Every one came
+off a green run. It is not a rogue script, it is the intended local-validation path and it keeps
+working; what was missing was a way to tell afterwards. This is the skill that gets loaded when
+somebody reasons about what the renderer can do, which is exactly the population that got this
+wrong, so the warning lives here.
+
+- **Detect**, the check with no false negatives: `node C:/repos/vivreal-site-renderer/scripts/dev-status.js`
+  (`npm run dev-status` here). Byte comparison of each consumer's installed package against the tarball
+  that consumer's own lockfile `integrity` resolves to in the npm cache. About 0.2s per consumer, and it
+  never invokes npm, so it cannot touch a lockfile. `--require-clean` exits 1 on any overlay.
+- **Undo:** `node scripts/dev-unlink.js` (`--consumer <name>`, `--marker-only`). Restores from the
+  verified cache tarball and proves the result. It never runs `npm install` or `npm ci`, and it never
+  deletes the package directory, which holds a nested `lucide-react` the tarball does not contain. It
+  refuses while a `next dev --turbopack` server is live, because Turbopack caches `node_modules`: stop
+  the server first, and restart it after, a browser refresh alone will not pick the change up.
+- **The marker is evidence, never the detector.** `RENDERER-DEV-OVERLAY.json` at the consumer repo
+  root, outside the package directory (an extra file inside it would fail the byte proof), and
+  deliberately not gitignored so it surfaces as untracked in `git status`. It only exists from
+  2026-09-30, so its absence proves nothing about an older overlay.
+- **Consumer guard:** `Vivreal_Templates` `pretest` and `prebuild` refuse when the marker is present
+  (`checks/assert-no-renderer-overlay.mjs`, applied 2026-09-30). Acknowledge deliberately with
+  `ALLOW_RENDERER_OVERLAY=1 npm test` in bash, or `$env:ALLOW_RENDERER_OVERLAY='1'; npm test` in
+  PowerShell, where the bash form the guard prints is a CommandNotFoundException. Deliberately NOT on
+  `predev`. **`Vivreal_Portal_Mobile` is not guarded yet and, measured 2026-09-30, is still carrying an
+  overlay with no marker**, so treat any portal Studio-preview result as unverified until
+  `dev-status.js` says INSTALL.
+
+**Three checks that look like they would work and do not:** the version string, `npm ls` and the
+lockfile, all authentic by design; the marker alone, since the portal was contaminated and carried
+none; and an NTFS creation-time gap against `package.json`, which false-positives on any tree fixed by
+the documented repair, because the repair rewrites `dist/` today and leaves `package.json` alone so the
+gap widens. **And never quote a raw differing-file count as damage:** of 94 differing files on the
+portal only **13** are genuine content drift, the other 81 differ by line endings alone, because CRLF
+inside multi-line template literals is copied through verbatim by `tsc`. The raw count overstates it
+about sixfold.
+
+Full write-up, including the repair procedure: `docs/DEV_OVERLAY.md` in this repo.
 
 ## Structure
 
