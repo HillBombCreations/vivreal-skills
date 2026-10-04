@@ -1,7 +1,7 @@
 ---
 name: funnel-analysis
 description: Deep-dive funnel analysis tracing the user journey from landing page to site deployment, identifying the biggest drop-off stages
-allowed-tools: mcp__google-analytics__*, mcp__posthog__*, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections
+allowed-tools: mcp__google-analytics__*, mcp__posthog__*, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections
 user-invocable: true
 ---
 

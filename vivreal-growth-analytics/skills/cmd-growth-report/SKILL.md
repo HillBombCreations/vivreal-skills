@@ -1,7 +1,7 @@
 ---
 name: growth-report
 description: Pull a unified growth dashboard combining GA4 traffic, PostHog funnels, and MongoDB signup data with week-over-week deltas
-allowed-tools: mcp__google-analytics__*, mcp__posthog__*, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, WebFetch
+allowed-tools: mcp__google-analytics__*, mcp__posthog__*, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, WebFetch, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections
 user-invocable: true
 ---
 
