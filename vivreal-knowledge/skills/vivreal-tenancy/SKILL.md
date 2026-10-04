@@ -60,7 +60,7 @@ Read this section as the state of the world, and the next one as a plan that has
   retired `@hillbombcreations/tenant-placement` package still says `general_shared`; anything that
   imports it is the bug.
 - **No database name tells you a tier**, and no tier tells you a database name. The old names
-  were already fossils (`pro_plus` never held a `proPlus` group), which is why they went.
+  were already fossils (the `pro_plus` database never held a group on that retired tier), which is why they went.
 - **Placement is stored, never derived.** `deriveDbKey()` is deleted from every repository, and so
   is the `databaseDict[group.tier]` ladder, which is gone for the same reason. An inline ladder
   from a tier to a database IS the bug. Report it rather than copying it.
@@ -105,7 +105,7 @@ Still only planned or open, as of 2026-10-04:
   empty pod still costs its collections and indexes against the per-node data-file budget.
 - **Memory and docs that still say `general_shared`.** Several notes and the 2026-09-16 precedent
   scripts were written before the move and carry the old name; treat any hardcoded `general_shared`
-  or `pro_plus` as stale on sight.
+  or `pro_plus` database name as stale on sight.
 
 An agent that describes a finished change in the future tense sends the next person to redo it; one
 that describes a plan in the present tense sends them looking for something that is not there.
@@ -245,7 +245,7 @@ has substantial headroom, and document count is a third thing that is not a limi
 2. **Scan for the name, do not assume one holder.** `groups.dbKey`, `groups.database`,
    `domainOrders.dbKey` and `placement_weights._id` have each held one.
 3. **Say "today" or "planned".** The pods, the merged package and the `pod_01` default are TODAY;
-   `general_shared` and `pro_plus` are retired names. Re-read the run records before restating either.
+   `general_shared` and `pro_plus` are retired database names. Re-read the run records before restating either.
 4. **If you are changing a stored placement, sessions must be invalidated**, or the old value keeps
    arriving from signed cookies.
 5. **Never hand-write a single field** into a group document with `dbKey` and `key` both on screen.
