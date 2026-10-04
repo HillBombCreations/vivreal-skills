@@ -16,7 +16,7 @@ Creates a new edge proxy route using the `createProxyHandler()` factory pattern.
 - `<method>`: HTTP method, GET, POST, PUT, DELETE
 - `<path>`: Route path relative to `src/app/api/proxy/` (e.g. `integrations/analytics`)
 - `<upstream-path>`: Path on the upstream service (e.g. `/tenant/integrationAnalytics`)
-- `--upstream`: Which backend, `cms` (default), `secure`, `main`. (Outreach routes are OUT OF SCOPE for this generator, the 55 `outreach/*` routes follow their own conventions incl. public no-`active_ctx` exceptions; build those by hand from a sibling route.)
+- `--upstream`: Which backend, `cms` (default), `secure`, `main`. (Outreach routes are OUT OF SCOPE for this generator: the `outreach/*` routes follow their own conventions incl. public no-`active_ctx` exceptions; build those by hand from a sibling route.)
 - `--params`: Comma-separated allowed query params to forward. Tenant params are injected per upstream, see the ctx-param rule below; they are NOT always `dbKey`/`groupID`.
 - `--csrf`: Override CSRF requirement (defaults to true for POST/PUT/DELETE, false for GET)
 - `--timeout`: Upstream timeout in ms (default: 15000)
@@ -26,13 +26,15 @@ Creates a new edge proxy route using the `createProxyHandler()` factory pattern.
 
 ## Upstream URL Map
 
-| Flag | Env Var | Pinned prod host |
+| Flag | Env Var | ctx audience it maps to |
 |---|---|---|
-| `cms` | `NEXT_PUBLIC_CMS_URL` | `https://cms.vivreal.io` |
-| `secure` | `NEXT_PUBLIC_SECURE_URL` | `https://secure.vivreal.io` |
-| `main` | `NEXT_PUBLIC_MAIN_API` | `https://api.vivreal.io` |
+| `cms` | `NEXT_PUBLIC_CMS_URL` | `cms` |
+| `secure` | `NEXT_PUBLIC_SECURE_URL` | `secure` |
+| `main` | `NEXT_PUBLIC_MAIN_API` | `main` |
 
-**Never emit a `dev-*` fallback.** The old `?? 'https://dev-cms.vivreal.io'` pattern is the exact footgun the portal CLAUDE.md warns against: the `dev-*` hosts are live but serve old builds, so an unset env var fails SILENTLY with plausible-looking responses instead of refusing to connect. Pin the prod host as the fallback (per CLAUDE.md: "pin `NEXT_PUBLIC_MAIN_API` in new proxy routes").
+**Emit the bare env read, with NO fallback of any kind (H1910).** `const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL;` and nothing after it. The factory refuses an unset upstream with a loud 503 rather than guessing, and that refusal is the point: a `dev-*` fallback served old builds with plausible responses, and a pinned prod-host fallback is no better, because the factory also derives the ctx AUDIENCE from `baseUrl` (`src/lib/ctxAudience`, `resolveCtxAudience`) by matching it against these same env values, so a hardcoded host maps to no audience and answers 503 `upstream_audience_unmapped`.
+
+**Ctx tokens are audience-bound (since 2026-09-27).** The factory mints a fresh short-lived `x-active-ctx` for the upstream's audience on every request; you write nothing for it. A MANUAL route that forwards ctx must do the same with `signCtxEdge(payload, audience)`, because every backend refuses a raw portal cookie (`aud: 'portal'`).
 
 ## Generation Procedure
 
@@ -48,14 +50,14 @@ Creates a new edge proxy route using the `createProxyHandler()` factory pattern.
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-import { createProxyHandler, injectCtxParams, filterParams } from '../_helpers/createProxyHandler';
+import { createProxyHandler, injectCtxParams, filterParams } from '{HELPERS_PATH}';
 
-const {UPSTREAM_CONST} = process.env.{ENV_VAR} || '{DEFAULT_URL}';
+const {UPSTREAM_CONST} = process.env.{ENV_VAR};
 
 export const {METHOD} = createProxyHandler({
-  method: '{METHOD}'
-  baseUrl: {UPSTREAM_CONST}
-  label: '{LABEL}'
+  method: '{METHOD}',
+  baseUrl: {UPSTREAM_CONST},
+  label: '{LABEL}',
   {TIMEOUT_LINE}
   {VALIDATE_BODY}
   {TRANSFORM_BODY}
@@ -63,7 +65,7 @@ export const {METHOD} = createProxyHandler({
     {FILTER_PARAMS_LINE}
     {CTX_PARAMS_LINE}
     return `{UPSTREAM_PATH}?${params.toString()}`;
-  }
+  },
   {TRANSFORM_RESPONSE}
 });
 ```
@@ -83,10 +85,10 @@ export const {METHOD} = createProxyHandler({
 |---|---|
 | `{UPSTREAM_CONST}` | `CMS_URL` / `SECURE_URL` / `MAIN_API` |
 | `{ENV_VAR}` | `NEXT_PUBLIC_CMS_URL` / `NEXT_PUBLIC_SECURE_URL` / `NEXT_PUBLIC_MAIN_API` |
-| `{DEFAULT_URL}` | See upstream URL map above |
+| `{HELPERS_PATH}` | One `../` per segment of `<path>`, then `_helpers/createProxyHandler` (`integrations/analytics` → `'../../_helpers/createProxyHandler'`; a one-segment path → `'../_helpers/createProxyHandler'`) |
 | `{METHOD}` | GET / POST / PUT / DELETE |
-| `{LABEL}` | Derived from route path (e.g. `integrations/analytics` → `integrations-analytics`) |
-| `{TIMEOUT_LINE}` | `timeoutMs: {value},` if non-default, omit otherwise |
+| `{LABEL}` | The route path (e.g. `integrations/analytics`), matching the existing routes |
+| `{TIMEOUT_LINE}` | `timeoutMs: {value},` if non-default, omit otherwise. Every stub line (`{VALIDATE_BODY}`, `{TRANSFORM_BODY}`, `{TRANSFORM_RESPONSE}`) ends in a comma like this one; it is an object literal |
 | `{FILTER_PARAMS_LINE}` | `filterParams(params, new Set([{params}]));` if --params specified |
 | `{VALIDATE_BODY}` | Stub function if --validate |
 | `{TRANSFORM_BODY}` | Stub function if --transform-body |
@@ -115,18 +117,18 @@ Generates:
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-import { createProxyHandler, injectCtxParams, filterParams } from '../_helpers/createProxyHandler';
+import { createProxyHandler, injectCtxParams, filterParams } from '../../_helpers/createProxyHandler';
 
-const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io';
+const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL;
 
 export const GET = createProxyHandler({
-  method: 'GET'
-  baseUrl: CMS_URL
-  label: 'integrations-analytics'
+  method: 'GET',
+  baseUrl: CMS_URL,
+  label: 'integrations/analytics',
   buildPath: ({ ctx, params }) => {
     filterParams(params, new Set(['type', 'startDate', 'endDate']));
     injectCtxParams(params, ctx);
     return `/tenant/integrationAnalytics?${params.toString()}`;
-  }
+  },
 });
 ```

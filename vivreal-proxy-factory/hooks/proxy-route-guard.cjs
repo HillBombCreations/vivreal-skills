@@ -17,6 +17,13 @@ const fs = require('fs');
 // factory's module path and so trips the fail-open check below. That is luck, not coverage,
 // so it is listed explicitly now.
 //
+// RE-MEASURED 2026-10-04 against origin/stable 1c0fdd45 (v0.33.0, the deployed line), by
+// stripping comments and looking for a `createProxyHandler(` CALL in every route.ts, with both
+// directions checked on known files. One manual route was missing and would have been BLOCKED:
+// support/contact (added 2026-09-27, H6052). One entry was dead: integrations/tiktok-oembed no
+// longer exists (the TikTok oEmbed call was deleted), so it is removed rather than left as a
+// standing exemption for whatever is created at that path next.
+//
 // Do NOT re-derive this list from CLAUDE.md's proxy route table: that table is a "core
 // snapshot, not exhaustive" by its own wording. Do NOT re-derive it with a bare grep for
 // createProxyHandler either, which reads 190 factory routes instead of 185 because five
@@ -39,7 +46,6 @@ const MANUAL = [
   'group/create',
   'group/join',
   'integrations/oauth/init',
-  'integrations/tiktok-oembed',
   'marketing/sandbox-lead',
   'media/share-image', // streams raw tenant media bytes, factory always ends in apiSuccess()
   'outreach/book/', // [slug] + /create + /slots, public, no active_ctx
@@ -51,6 +57,7 @@ const MANUAL = [
   'sites/create',
   'sites/instantiateTemplate',
   'sites/update',
+  'support/contact', // public signed-out support form; mints the support attestation on the edge, and the factory 401s a visitor with no active_ctx
   'uploadFiles',
   'user/delete-account', // 409 body carries the blocker list the UI renders; the factory collapses any non-2xx into apiError(message, status) and drops the body, same reason user/update-email is manual
   'user/login',
