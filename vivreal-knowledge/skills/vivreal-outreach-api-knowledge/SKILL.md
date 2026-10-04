@@ -5,7 +5,7 @@ description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach bac
 
 # VR_Outreach_API: knowledge digest
 
-Last synced: 2026-08-15
+Last synced: 2026-10-04 (Node 22 since 2026-10-02, `60f89a7`)
 
 The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (Node 20, AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Portal reaches it via `src/app/api/proxy/outreach/*`.
 
@@ -18,13 +18,14 @@ Authoritative sources: `C:\repos\VR_Outreach_API\README.md` (full route table) +
 - **`processBounce`**, SES bounce/complaint via SNS → suppression list. Soft bounces auto-suppress after repeats (`db/schemas/transientBounce.js` + `suppressionsClient.js`); DSN/bounce detection (`inbound/detectBounce.js` → `applyBounceOutcome.js`, raw parsing via `parseRawEmail.js`) stops AND suppresses bounced enrollments.
 - **`processInboundReply`**, SES receipt rule → S3 (`vivreal-outreach-inbound-*`, 90-day expiry) → SNS → parse + forward. The same bounce detection is wired here too (DSNs delivered as inbound mail), plus reply **opt-out detection** (`inbound/detectOptOut.js`). Attribution is by **threading headers** (In-Reply-To/References → `findEnrollmentByMessageRefs`) with a guarded sole-active-by-email fallback. Follow-up threading anchors on `<sesId>@email.amazonses.com` (the SES-delivered Message-ID format, empirically pinned). The old `+r{code}` / `reply-{id}@replies.vivreal.io` token is RETIRED (2026-06-18); still decoded only for in-flight pre-cutover sends.
 
-Deploys on push: `main` → prod stack `VR-Outreach-API`; `dogfood` → dev.
+Deploys on push to `main` only → prod stack `VR-Outreach-API` (`.github/workflows/lambda_api.yml`; the `dogfood` trigger is gone). This is by design: Outreach has no release train.
 
 ## Auth: TWO tokens (the #1 gotcha)
 
-- **`x-active-ctx`** (required on all authenticated routes), the portal-signed `active_ctx`, HMAC-SHA256 with **`CTX_SECRET`** from `vivreal/prod/core`. Secret mismatch → 401 on every request; expiry → 419; a ctx missing tenant fields → 401 (tenant-scoping hardening, 2026-07). **`CTX_SECRET` must match the portal's exactly**, rotate both atomically.
-- **`x-user-ctx`** (OPTIONAL), operator identity, same secret. **`active_ctx` has NO email**, so admin gates resolve the operator from `req.userCtx` only.
-- **Admin gate** (`requireGlobalAdmin`) fails CLOSED on `ADMIN_EMAILS` (now an SSM-resolved env var, `/vivreal/prod/shared/admin-emails`; empty list → 403). 13 admin-gated routes: contact/company gmail-history + gmail-message (companies ×2 + contacts ×2), `POST /sequences/enroll-by-filter` (cap 500/call), `GET /sequences/stats` + `/sequences/step-stats` (sequences ×3), segments POST/PUT/DELETE (×3), `GET /hot-leads`, `GET /studio-demo/visits`, `POST /test-thread-send`.
+- **`x-active-ctx`** (required on all authenticated routes), the portal-signed `active_ctx`. **Since 2026-09-27 (H6006, `56f31c0`) it is signed with a key DERIVED for this service**, `HMAC(CTX_SECRET, 'vivreal/ctx/v2/outreach')` (`src/utils/ctxKeys.js`), and must carry `aud: 'outreach'`; a token minted for VR_Secure_API, or in the old raw-secret format, is refused (direct cutover, no dual-accept window). The root `CTX_SECRET` still lives in `vivreal/prod/core`. Every minter (the portal, the Outreach MCP server, the leadgen bridge in `vivreal-hq/packages/leadgen/lib/outreachCtx.js`) must use the derived key. Expiry → 419, and a token with no or a non-numeric `exp` is now refused rather than living forever (H6013). A ctx missing tenant fields → 401.
+- **`x-user-ctx`** (OPTIONAL), operator identity, same derived key and audience.
+- **Internal-cohort gate (H6009, `e89e91c`):** `src/api/middleware/requireInternalCohort.js` is mounted ONCE between `authMiddleware` and the first router, so every CRM route refuses a caller whose `groupID` is not the internal cohort's. Before it, 44 of 61 authenticated handlers answered any logged-in customer, and the lazily provisioned group-info endpoints could have pulled a customer's placement into the send cron's sweep. It gates on the GROUP, not the operator; `requireGlobalAdmin` still asks its own question. An empty allowlist refuses everything. **`active_ctx` has NO email**, so admin gates resolve the operator from `req.userCtx` only.
+- **Admin gate** (`requireGlobalAdmin`) fails CLOSED on `ADMIN_EMAILS` (now an SSM-resolved env var, `/vivreal/prod/shared/admin-emails`; empty list → 403). 13 admin-gated routes: contact/company gmail-history + gmail-message (companies ×2 + contacts ×2; moved to the ADMIN pool's authorizer on 2026-09-28 so `vivreal-hq/packages/admin-app` can reach them, `bd99d3b`), `POST /sequences/enroll-by-filter` (cap 500/call), `GET /sequences/stats` + `/sequences/step-stats` (sequences ×3), segments POST/PUT/DELETE (×3), `GET /hot-leads`, `GET /studio-demo/visits`, `POST /test-thread-send`.
 
 ## Route surface (summary: full table in the repo README)
 

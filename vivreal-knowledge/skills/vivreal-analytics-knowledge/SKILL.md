@@ -1,11 +1,11 @@
 ---
 name: vivreal-analytics-knowledge
-description: 'Use when working on Vivreal''s first-party analytics, VR_Analytics_API (the collect→store→rollup pipeline), the Templates SiteBeacon, or the per-site traffic dashboard (VR_Secure_API read route + portal AnalyticsPanel). Covers the CloudFront+WAF → Lambda Function URL ingest chain (X-Origin-Verify, bot filter, Joi, per-IP rate limit, daily-salt visitor hash), the analytics_rollup DynamoDB design, the daily rollup cron into mainDb.site_traffic_daily, the LIVE auto-deploy status (GitHub Actions → CloudFormation) plus the still-gated W4 CDN egress meter, and where increment 2 lives. Triggers on: analytics, site traffic, beacon, SiteBeacon, visitor stats, page views, unique visitors, analytics_rollup, site_traffic_daily, first-party analytics, per-site dashboard, collect.vivreal.io, visitor hash, rollup cron, CDN egress meter, VR_Analytics_API. NOTE: this repo has NO CLAUDE.md, and README.md still self-describes as DEPLOY-GATED, STALE; the CI workflow + template.yaml are the truth.'
+description: 'Use when working on Vivreal''s first-party analytics, VR_Analytics_API (the collect→store→rollup pipeline), the Templates SiteBeacon, or the per-site traffic dashboard (VR_Secure_API read route + portal AnalyticsPanel). Covers the CloudFront+WAF → Lambda Function URL ingest chain (X-Origin-Verify, bot filter, Joi, per-IP rate limit, daily-salt visitor hash), the analytics_rollup DynamoDB design, the daily rollup cron into mainDb.site_traffic_daily, the LIVE auto-deploy status (GitHub Actions → CloudFormation) plus the still-gated W4 CDN egress meter, and where increment 2 lives. Triggers on: analytics, site traffic, beacon, SiteBeacon, visitor stats, page views, unique visitors, analytics_rollup, site_traffic_daily, first-party analytics, per-site dashboard, collect.vivreal.io, visitor hash, rollup cron, CDN egress meter, VR_Analytics_API. NOTE: the repo gained a CLAUDE.md on 2026-09-23; README.md may still self-describe as DEPLOY-GATED, which is stale; the CI workflow + template.yaml are the truth.'
 ---
 
 # VR_Analytics_API: knowledge digest
 
-Last synced: 2026-08-15
+Last synced: 2026-10-04
 
 Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (this repo) is **collect → store → rollup only**; increment 2 (the read API + dashboard) lives in `VR_Secure_API` + the portal. Node 20, AWS SAM, webpack, same conventions as the other backends. **No CLAUDE.md**; `C:\repos\VR_Analytics_API\README.md` is the deepest reference but its status header is **stale** (still self-describes as DEPLOY-GATED, internally contradicting the repo's own CI workflow), trust this digest + `template.yaml`. The full design is `Vivreal_Portal_Mobile/docs/projects/vivreal-first-party-analytics/design.md` + `cost-analysis.md`.
 
@@ -33,7 +33,7 @@ Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (th
 - **Origin-verify secret rotation requires a stack redeploy**, the value is baked into both the Lambda env and the CloudFront origin config via `{{resolve:...}}` at deploy time.
 - Origin verify is a shared-secret header, NOT CloudFront OAC, OAC would force SigV4 payload hashes `sendBeacon` cannot send. Direct-to-Function-URL callers bypass WAF but still hit every Lambda-side defense.
 - Cardinality capping happens at **cron time**, not ingest (race-free; ingest path stays write-only). Paths length-capped ≤300 chars at validation.
-- `nodejs20.x` is EOL per cfn-lint, deliberately unfixed to match the fleet; needs a coordinated 5-backend bump, not a one-repo fix.
+- Runtime is `nodejs22.x` since 2026-10-02 (`c23f0d0`), moved with the rest of the fleet. The repo gained a CLAUDE.md on 2026-09-23 (`7119528`), so the "no CLAUDE.md" note in this skill's description is out of date: read it first.
 
 ## Increment 2: the read side (built: in other repos)
 

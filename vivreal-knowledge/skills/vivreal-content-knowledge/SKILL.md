@@ -1,60 +1,60 @@
 ---
 name: vivreal-content-knowledge
-description: 'Use when planning, writing, or producing Vivreal organic/social content, or working in the vivreal-content repo, the content studio (planning + creation in one repo, consolidated OUT of Vivreal_Portal_Mobile on 2026-06-25; content tooling no longer lives in the portal). Covers the video production pipeline (footage library → edit brief → draft render, Remotion+Playwright capture, Python EditDNA extractor), the knowledge read-order map 01 to 08 (voice rules, strategy, content library, posting playbook, calendar, earned-media playbook, platform video playbook, repurpose tracker), and the in-repo agents (content-planner, content-creator, footage-recorder, short-form-editor, linkedin-editor, social-video-director, filming-hygiene). Triggers on: vivreal-content, content studio, content calendar, posting playbook, content plan, earned media, content briefs, EditDNA, footage library, edit brief, social video, TikTok draft, content-planner, content-creator, /record, /social, /tiktok, /instagram, /linkedin. Source of truth: C:\repos\vivreal-content\knowledge\README.md + knowledge\CLAUDE.md + content\README.md (the repo-root CLAUDE.md lags, 2026-06-25 vintage).'
+description: 'Use when planning, writing, or producing Vivreal organic/social content, help-centre pages, guides, tutorials or carousels, or when working in vivreal-hq''s content half (the old vivreal-content repo was merged into C:\repos\vivreal-hq on 2026-08-03; the C:\repos\vivreal-content checkout is a pre-merge leftover). Covers where everything lives now (brand/voice.md, knowledge/02 to 08, content/, packages/content-studio), the video pipeline (footage library, edit brief, draft render, Remotion, Playwright portal capture, Python EditDNA extractor, the tutorial harness), the content agents and slash commands, the channel set (X retired, Instagram and TikTok approved), and the posting safety rules. Triggers on: vivreal-content, vivreal-hq content, content studio, content-studio, content calendar, posting playbook, content plan, earned media, content briefs, EditDNA, footage library, record footage, tutorial-maker, carousel, guide-writer, help-page-producer, short-form-editor, linkedin-editor, social-video-director, voice-check, filming hygiene, W42 drafts. Source of truth: C:\repos\vivreal-hq\CLAUDE.md, packages/content-studio/CLAUDE.md, knowledge/README.md.'
 ---
 
-# vivreal-content: knowledge digest
+# Vivreal content (vivreal-hq): knowledge digest
 
-Last synced: 2026-07-30
+Last synced: 2026-10-04
 
-The **Vivreal content studio**, planning *and* creation in one repo. Consolidated out of `Vivreal_Portal_Mobile` (plus two sibling repos and a loose `C:\Content` folder) on **2026-06-25**, content tooling no longer lives in the portal. This skill is a **map, not a copy**: operational content work (planning sessions, drafts, renders, calendar updates) happens **in `C:\repos\vivreal-content`**, following its `knowledge/` docs. Repo is private (copyright-firewalled reference clips, Git LFS media). **Caveat: the repo-root `CLAUDE.md` is stale (2026-06-25), it predates the video pipeline and the new agents; sync from `knowledge/README.md`, `knowledge/CLAUDE.md`, and `content/README.md` instead.**
+**The content studio is part of `C:\repos\vivreal-hq` now.** Content tooling left
+`Vivreal_Portal_Mobile` on 2026-06-25 for a `vivreal-content` repo, and that repo was merged
+with the lead generator into `vivreal-hq` on 2026-08-03 (vivreal-hq `CLAUDE.md`, "What This
+Is"). A `C:\repos\vivreal-content` checkout may still exist on a machine; it is a leftover and
+never the place to work or to read rules from. This skill is a **map, not a copy**: the
+operational work happens in `vivreal-hq`, following its own docs. The repo is private
+(copyright-firewalled reference clips, real lead data).
 
-## Subsystems (decoupled)
+## Where things live (vivreal-hq layout)
 
-1. **Social video production pipeline** (`src/`, TypeScript), a **footage library → edit brief → draft render** chain: `footage-manifest.ts`, `footage-split.ts`, `stage-footage.ts`, `beat-planner.ts`, `edit-brief.ts`, `render-video.ts`, `render-targets.ts`, `ffmpeg.ts`, `srt.ts`, `audio-plan.ts`, `tts-kokoro.ts` (+ `tts/synthesize.py`). Master format `vertical-9x16` 1080x1920@30fps; captions burned in with a sidecar `captions.srt`; Kokoro TTS (`af_heart`) for narrated cuts. **Music beds are BLOCKED in code (`src/audio-plan.ts`) until the licensed pack is bought.** The older EditDNA → Remotion render path and the Playwright portal-capture tooling (captures PROD at `vivreal.io/app`) feed this chain.
-2. **Edit extractor** (`extractor/`, Python, own .venv), extracts an EditDNA JSON from a reference video. Talks to the pipeline **only** through `*.dna.json`, no shared runtime, zero video frames in output (mathematical descriptors only). `references/INDEX.md` is the **style-DNA catalog** (the editors' shopping list): editors resolve a vibe to the best tag-overlap row with `status: ready` and pass its `.dna.json` as the brief's `dnaRef`; controlled tag vocabulary; `quarantined` rows exist (e.g. gameplay footage).
-3. **Planning knowledge** (`knowledge/`), the strategy/voice/backlog/calendar source of truth. The `.md` files are canonical; the PDFs are human-readable copies.
-
-## knowledge/ read-order map (01 to 08)
-
-| File | What it is |
+| Path | What it is |
 |---|---|
-| `01-voice-and-rules.md` | **THE canonical voice doc**, load before writing/posting ANYTHING. Zero em/en dashes, owner-visible language only, banned-jargon list, honesty floor (incl. the Email/Mailchimp rule + live-preview wording). The plugin's `vivreal-brand-voice` skill anchors on this file. |
-| `02-strategy.md` | Why/what, audience + ICP/personas, the 5 pillars, channels, GEO play (incl. the **stat quarantine**: no 23×, 51% is software buyers not consumers, BrightLocal 45% is the approved substitute), publish order. Ring 3: **Facebook = discovery re-skin of the TikTok/IG cut, not a fourth pillar; YouTube = the compounding search-intent play**, evergreen not cadence. |
-| `03-content-library.md` | The backlog, starter headlines + ready-to-write briefs (H1, slug, intent, meta, angle, proof, CTA). Always draft FROM a brief. Group D = 8 industry guides. |
-| `04-posting-playbook.md` | How to post, channel-by-channel cadence, create-once dogfood loop, repurposing; now includes a Facebook (Ring 3, Phase 2) section. |
-| `05-content-calendar.md` | The living tracker, read it first every session, update it last. Carries the seeded-publish schedule (9 CMS-scheduled posts publishing Jul 30, Aug 19). |
-| `06-ring2-earned-playbook.md` | Earned media, listings/reviews (G2/Capterra/Product Hunt), Reddit/communities, guest posts/podcasts. |
-| `07-platform-video-playbook.md` | Per-platform video specs, hooks, caption rules, audio/music policy, the editor agents load this every run (LinkedIn first-210-characters, TikTok caption ≤150 chars, hook in 2s). |
-| `08-repurpose-tracker.md` | The flywheel hub, one row per topic × one column per derivative surface (guide, stills, TikTok, IG, LinkedIn, X, email, community). |
+| `brand/voice.md` | **THE canonical voice doc.** Load it before writing or posting anything. `knowledge/01-voice-and-rules.md` is now a stub that points here. `brand/positioning.md` is the positioning doc. See `vivreal-brand-voice`. |
+| `knowledge/02` to `08` | `02-strategy.md` (ICP, pillars, channels, the GEO play), `03-content-library.md` (backlog and ready briefs), `04-posting-playbook.md`, `05-content-calendar.md` (read it first, update it last), `06-ring2-earned-playbook.md`, `07-platform-video-playbook.md` (per-platform specs and hook rules the editors load every run), `08-repurpose-tracker.md`. Plus month briefs and `draft-*.md` pages (industry guides, help drafts, trust pages). `knowledge/README.md` is the index. |
+| `content/` | `calendars/`, `drafts/` (per-week, e.g. `2026-W42/REVIEW.md`), `footage/<date>-<topic>/`, `social/<date>-<slug>/`, `tutorials/`, `ring2/`, `banners/`. |
+| `packages/content-studio/` | ESM TypeScript (its own `package.json`, `"type": "module"`; leadgen is CommonJS, which is why `packages/` exists). `src/` is the pipeline, `extractor/` the Python EditDNA extractor, `src/tutorial/` the tutorial harness, `scripts/` the renderers and `voice-check.mjs`. Tests: `npm run test:content` (vitest) from the root. |
+| `docs/filming-hygiene.md` | The HARD capture rules (account, URLs, what never appears on camera); `footage-recorder` reads it first (`.claude/agents/footage-recorder.md:20`). It used to be an agent; it is a doc now. |
 
-(The old `07-niche-targeting.md` never shipped, vertical targeting lives in the 8 `draft-for-your-business.md`-indexed industry guides: restaurants, cafes, salons-and-spas, home-services, auto-shops, photographers, fitness-studios, boutiques.)
+## The pipeline (packages/content-studio)
 
-## In-repo agents (`.claude/agents/`) + slash commands
+1. **Footage library → edit brief → draft render.** `footage-manifest.ts`, `footage-split.ts`, `stage-footage.ts`, `beat-planner.ts`, `edit-brief.ts`, `render-video.ts`, `render-targets.ts`, `ffmpeg.ts`, `srt.ts`, `audio-plan.ts`, `tts-kokoro.ts`. Master `vertical-9x16` 1080x1920@30fps, burned-in captions plus a sidecar `captions.srt`, Kokoro TTS for narrated cuts. **Music beds stay blocked in code (`src/audio-plan.ts`) until a licensed pack is bought** (content-studio `CLAUDE.md:195`).
+2. **EditDNA extractor** (`extractor/`, Python): reads a reference video, emits mathematical descriptors only, talks to the pipeline only through `*.dna.json`. `references/INDEX.md` is the style catalog.
+3. **Portal capture** (`portal-capture.ts`, Playwright against production `vivreal.io/app`), with the URL denylist in `src/denylist.ts`.
+4. **Tutorial harness** (`src/tutorial/`, `/tutorial` or `npm run tutorial -- <script>`): `tutorial-maker` shoots its own footage in one pass at BOTH viewports (1440x810 and 540x960), the highlight ring drawn in-page at capture time, `platform: "tutorial"` because a walkthrough outruns every social duration ceiling (content-studio `CLAUDE.md:116-124`).
 
-- **`content-planner`**, `--mode=plan` builds the weekly calendar (~17 dated entries across IG/LinkedIn/X/TikTok); `--mode=expand` turns one calendar row into four platform-specific drafts.
-- **`content-creator`**, coordinator for rendered assets: parses briefs, classifies shots, dispatches 4 specialists (`portal-footage`, `typography-slide`, `ui-mockup-slide`, `overlay-shot`) in parallel, writes `MANIFEST.md`. Dispatch only works as the MAIN thread (subagents can't spawn subagents).
-- **`footage-recorder`** (`/record`), plans/records/splits portal footage into the shared footage library; writes `footage-manifest.json`.
-- **`short-form-editor`** (`/tiktok`, `/instagram`), TikTok + IG drafts now, FB Reels + YT Shorts Phase 2.
-- **`linkedin-editor`** (`/linkedin`), founder-voice vertical video under 30s or PDF carousel; 210-char hook.
-- **`social-video-director`** (`/social`), batch coordinator: runs footage-recorder blocking, then the two editors in parallel, assembles `REVIEW.md`.
-- **`filming-hygiene`**, shared HARD capture rules; URL subset enforced in `src/denylist.ts`.
+## Agents and commands (`.claude/agents/`, `.claude/commands/`)
 
-## content/ output tree
+- **Content:** `content-planner` (weekly calendar and per-platform expansion), `footage-recorder` (`/record`), `short-form-editor` (`/tiktok`, `/instagram`), `linkedin-editor` (`/linkedin`), `carousel-editor` (`/carousel`), `social-video-director` (`/social`), `guide-writer` (`/guide`), `tutorial-maker` (`/tutorial`), `help-page-producer` (`/help-page`), plus `qa-walker` and `template-critic`.
+- **`content-creator` is RETIRED (2026-08-06)**: its four specialists were never registered as agents, so its dispatch could not fire. Slides moved to `carousel-editor`, capture to `footage-recorder`. The `.claude/agents/content-creator/` DIRECTORY stays because `src/repo-root.ts` `AGENT_ASSETS`, the page registry and fixtures live in it.
+- **Leadgen** (the other half of the repo): `lead-scout`, `profiler`, `contact-enricher`, `owner-researcher`, `runner`, `coordinator`, `prompt`.
 
-`calendars/`, `drafts/`, `footage/<date>-<topic>/` (`sequence.json`, `page@<hash>.webm`, `markers.json`, `clips/`, `footage-manifest.json`), `social/<date>-<slug>/` (`REVIEW.md` + per-platform `edit-brief.json`, `beat-sheet.md`, `draft.mp4`, `captions.srt`, `post.md`, `render-info.json`), `tutorials/`. **Nothing in `social/` auto-publishes**, every `post.md` carries a "Verify before posting" block and "DRAFT ONLY, human reviews and posts."
+## Channels (re-read before planning a post)
 
-## scripts/
+- **X is retired** from the plan (`content-planner.md:74`): `02-strategy.md` does not list it, older calendars' X rows are ignored, and X is also gone from the product (CMS refuses X posts; portal v0.33.0 removed it from the terms and privacy pages).
+- **Instagram is approved** (Meta App Review, 2026-09-28), so it is connectable and "coming soon" copy about it is a defect.
+- **TikTok is audited and approved** (owner, 2026-10-04, `docs/projects/channel-tutorials/plan.md:17`), so public posting is available; an unaudited app was limited to `SELF_ONLY`.
+- LinkedIn and Facebook stay; Facebook is a discovery re-skin of the TikTok/IG cut, not a fourth pillar.
 
-`sync-brand-tokens.mjs`, `voice-check.mjs` (mechanical voice pre-pass, word-checks **only the `## Body` block**, cannot check the honesty floor), `render-blog-cover.mjs` (config-driven blog covers, incl. the topic layout), `render-g2-banner.mjs`.
+## Safety rules that bite
 
-## Status (2026-07-30)
+- **Nothing auto-publishes.** Every `post.md` carries a verify block and DRAFT ONLY. Agents never type social credentials and never post except approved calendar posts after the owner's weekly go (`docs/projects/deferred-2026-10-03.md`, "Standing rules").
+- **The demo tenant's channels are Vivreal's REAL accounts.** A test site does not make posting safe.
+- **Honesty floor**: never assert an unverified feature claim or price; the verify list is in `brand/voice.md`. Violations hide in the meta description, the closing paragraph and cover-image copy, the three places `voice-check.mjs` cannot see (it word-checks only the `## Body` block).
+- Never commit `packages/leadgen/Data/`, `auth.storageState.json` or `fixtures.json`. Reference MP4s are local inputs, never crawled or republished.
+- Zero em or en dashes in any copy; scan bytes, because `grep -P` lies on this machine.
 
-Group B is **done and live**: six comparison posts (Squarespace, Wix, Shopify, Webflow, WordPress, replace-your-marketing-stack) live on vivreal.io/blog with branded covers; 9 more pages seeded to the CMS as scheduled content (publishing Jul 30, Aug 19). First footage session + first TikTok draft shipped.
+## Companions
 
-## Gotchas
-
-- **Honesty floor**, never assert an unverified feature claim or pricing number; the verify-list is in `01-voice-and-rules.md`. The two resolved rulings to know cold: **no publish-to-email claims** (email = the Mailchimp integration) and **no "what you see is what publishes"** live-preview parity claims. Violations hide in the **meta description, closing paragraph, and cover-image copy**, the three places `voice-check.mjs` can't see.
-- `auth.storageState.json` / `fixtures.json` (portal-capture auth) are gitignored, never commit; the session must be a standalone demo account.
-- Portal seams are build-time only and gated on `PORTAL_REPO` (`sync-brand-tokens`, `verify-pages.ts`), no runtime portal dependency.
-- A licensed music/SFX pack is required before any rendered montage is posted, and `src/audio-plan.ts` enforces it in code.
+- `vivreal-brand-voice` for the voice rules themselves.
+- `vivreal-social-sync` for how posts get back from the platforms into Vivreal and onto a site.
+- `vivreal-portal-knowledge` for the screens the footage shows.

@@ -13,10 +13,12 @@ against a lowercased collection name returns zero rows against a database that h
 
 > **Which database a tenant lives in is a different subject, and it has its own skill.** This file
 > is about querying once you are in the right database. For `group.dbKey`, `resolvePlacement`, the
-> planned `pod_01`/`pod_02` rename, the package merge, or a group whose site is 403 because it has
-> no usable placement, use **`vivreal-tenancy`**. It matters here because the tenancy model is
-> **mid-migration**: describe the pod names and the merged package in the future tense, because
-> neither exists yet.
+> `pod_01`/`pod_02` placements, the merged `tenant-db` package, or a group whose site is 403 because
+> it has no usable placement, use **`vivreal-tenancy`**. **The pod rename is DONE (2026-09-23)**:
+> the tenant databases are `pod_01` and `pod_02`, and `general_shared` / `pro_plus` no longer exist
+> (`vivreal-hq/docs/projects/tenancy-architecture/migration-run-2026-09-23.md`). A query against
+> either old name returns ZERO documents with no error, so a hardcoded `general_shared` in a script
+> or a memory note is a false not-found, not missing data.
 
 > **Topology, collection names, indexes and the join rules below were verified against live Mongo on 2026-06-19.** Read this before touching the `mcp__mongodb__*` tools. For an interactive helper, use the `/db-query` and `/db-schema` commands (`vivreal-db-explorer` plugin), this skill is the passive knowledge those commands assume.
 
@@ -87,8 +89,8 @@ equally wrong to say there are exactly three. The shape, which is stable:
 | Database | Role | Holds | Which groups |
 |---|---|---|---|
 | `Vivreal` | **Control plane (mainDb)** | `groups`, `leads` (+ lifecycle `activated`/`activatedAt`), `checkout_sessions`, `media_files`, `usage_trackings`, `domainorders`, `prospects`, `inquiries`, `emailEvents`, `suppressions` (lifecycle-email), `dataDeletionRequests`, `site_traffic_daily` (first-party analytics rollup), analytics caches, push subs, oauth verifiers | ALL groups (registry) |
-| `general_shared` | **Tenant content** | `collection_groups`, `collection_objects` (incl. the SIX Outreach system groups, sequences/enrollments/contacts/senders/companies/segments, with `calls[]` + bookings on senders/companies), `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events`, `square_webhook_events`, `metaWebhookEvents`, `instagram_comments`/`instagram_conversations`/`instagram_messages` | **Whichever groups carry `dbKey: "general_shared"`**, which today is most of them and spans several tiers |
-| `pro_plus` | **Tenant content** (same collections as `general_shared`, plus `stripe_products`, `collection_templates`) | same shape as `general_shared` | **Whichever groups carry `dbKey: "pro_plus"`.** It is NOT empty and it is NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
+| `pod_01` (was `general_shared` until 2026-09-23) | **Tenant content** | `collection_groups`, `collection_objects` (incl. the SIX Outreach system groups, sequences/enrollments/contacts/senders/companies/segments, with `calls[]` + bookings on senders/companies), `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events`, `square_webhook_events`, `metaWebhookEvents`, `instagram_comments`/`instagram_conversations`/`instagram_messages` | **Whichever groups carry `dbKey: "pod_01"`**: every customer group and the Vivreal group, across several tiers |
+| `pod_02` (was `pro_plus` until 2026-09-23) | **Tenant content**, same shape as `pod_01` (the old `pro_plus` also carried a `stripe_products` collection holding ZERO documents, dead storage nothing reads, CMS CLAUDE.md:228-232) | same shape as `pod_01` | **Only the Vivreal Content group** (`6a68169fe1457c2f3fd04530`), placed there deliberately. NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here**, see below. | service-global |
 | a slugified group name | **Legacy or stranded per-group DB** | usually only `audit_logs`, sometimes `content_versions` | Possibly no group at all. At least one such database has no group pointing at it. Do not rely on this pattern, and do not assume there is only one |
 
@@ -103,8 +105,8 @@ A tenant database is a **placement**, assigned by measured weight. It is not a p
 never will be again, so no database name can tell you a tier and no tier can tell you a
 database. `deriveDbKey()` and the `databaseDict[group.tier]` ladder are **deleted from every
 repository**; if you see either, or an inline tier-to-database ladder, that IS the bug. Report
-it, do not copy it. `general_shared` holds free, basic and pro tenants today, which means the
-key was never capable of telling three plans apart even when the ladder existed.
+it, do not copy it. `pod_01` holds tenants of several tiers, and the retired `general_shared`
+did too, so a database name was never capable of telling plans apart even when the ladder existed.
 
 **A slugified-groupName database holding only `audit_logs` is legacy drift, not the model.**
 More than one exists. A database no group points at is stranded, not a pattern to follow, and
@@ -112,7 +114,7 @@ the count of databases in the cluster is something to measure rather than rememb
 
 **⚠️ Two collections are NOT where you'd expect:** `media_files` and `usage_trackings`
 live in the **`Vivreal` (mainDb)** scoped by `groupID`, NOT in the tenant DB. Query them
-against `Vivreal`, not `general_shared`.
+against `Vivreal`, not a pod (`pod_01.media_files` was measured EMPTY on 2026-10-04; `Vivreal.media_files` is the store, and its `size` is a STRING, so coerce it with `$convert` before summing).
 
 ## The three keys you must not confuse
 
@@ -121,7 +123,7 @@ From the `active_ctx` JWT in the portal:
 | Field | Example | What it is | Used for |
 |---|---|---|---|
 | `groupID` | `6795c1358b97114840265e65` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc, tenant scoping |
-| `dbKey` | `general_shared`, `pro_plus`, or another placement name | The **stored** tenant database name, read back by `resolvePlacement(group)`. Never computed | Selecting the tenant database; passed as the `key` query param to CMS API |
+| `dbKey` | `pod_01`, `pod_02`, or another placement name (`general_shared`/`pro_plus` are retired and refused) | The **stored** tenant database name, read back by `resolvePlacement(group)`. Never computed | Selecting the tenant database; passed as the `key` query param to CMS API |
 | `bucketname` / `group.key` | `exodussalescollective` → bucket `vivreal-exodussalescollective` | The group's URL **slug** | S3 bucket naming, CDN media paths, NOT database routing |
 
 `dbKey` is the database name. `group.key` is the S3 slug. They are different values.
@@ -270,7 +272,7 @@ Check `publishDate` type and value FIRST. (Verified live: it is a `Date` on heal
 ## Outreach data lives in `collection_objects`
 
 Outreach **contacts, companies, and enrollments are `collection_objects`** in the tenant DB
-(`general_shared`), under system `collection_groups`, differentiated by `collectionObj.refID`.
+(the Vivreal group's placement, `pod_01`; it was `general_shared` before 2026-09-23), under system `collection_groups`, differentiated by `collectionObj.refID`. The owner decided on 2026-09-28 to move the outreach CRM into the internal admin app, so re-check where this data is served from before relying on the portal routes.
 The dedicated `outreach_*` partial/unique indexes on `collection_objects` (e.g.
 `outreach_contacts_email_unique`, `outreach_enrollments_seq_contact_unique`) are **not in the
 shared Vivreal-Schemas `collectionObjectSchema` nor in VR_CMS_API**, they are created by

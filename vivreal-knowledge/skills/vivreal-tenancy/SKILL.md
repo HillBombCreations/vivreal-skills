@@ -40,15 +40,27 @@ runbook rather than a one-line fix.
 
 Read this section as the state of the world, and the next one as a plan that has not run.
 
-- There are **two tenant databases**, named `general_shared` and `pro_plus`, alongside the `Vivreal`
-  control plane and the `outreach` service database. Census them rather than quoting a roster:
-  group `Vivreal.groups` by `dbKey`.
-- **`pro_plus` is a database name, not a tier, and never was one.** Its single occupant group is
-  on the `pro` tier. The `proPlus` tier is retired and the string survives only as a database name.
-  The name is a fossil.
-- **`general_shared` holds tenants of more than one tier.** So no database name tells you a tier,
-  and no tier tells you a database name. The key was never capable of telling plans apart even when
-  the tier ladder still existed.
+- **The pod rename HAS HAPPENED (2026-09-23).** There are **two tenant databases, `pod_01` and
+  `pod_02`**, alongside the `Vivreal` control plane and the `outreach` service database. Every
+  stored placement was repointed (`groups.dbKey`, the legacy `groups.database`, `domainOrders.dbKey`)
+  and the `placement_weights` rows keyed by the old names were deleted
+  (`vivreal-hq/docs/projects/tenancy-architecture/migration-run-2026-09-23.md`). Census them rather
+  than quoting a roster: group `Vivreal.groups` by `dbKey`.
+- **`general_shared` and `pro_plus` are GONE as placements.** `@hillbombcreations/tenant-db` puts
+  both on its forbidden list, with `test` beside them (`src/placement/placementNames.ts:80-96` in
+  `Vivreal-Mongo-Connection`, package 1.0.6), so a connect to either name is refused. The first drop
+  attempt stopped at a red gate the same day; a live database listing on 2026-09-28 showed only
+  `Vivreal`, `outreach`, `pod_01`, `pod_02`, `admin` and `local`. **A script that still hardcodes
+  `general_shared` gets ZERO documents, not an error**, which reads as "the record was deleted".
+  Pair every lookup with a positive control.
+- **Who is where:** `pod_01` holds every customer group and the Vivreal group; `pod_02` holds only
+  the Vivreal Content group (`6a68169fe1457c2f3fd04530`), placed there deliberately to keep
+  Vivreal's own content tenant off the shared placement. Tier does NOT decide placement.
+- **`DEFAULT_PLACEMENT` for a new group is `pod_01`** (`src/placement/choosePlacement.ts:19`). The
+  retired `@hillbombcreations/tenant-placement` package still says `general_shared`; anything that
+  imports it is the bug.
+- **No database name tells you a tier**, and no tier tells you a database name. The old names
+  were already fossils (`pro_plus` never held a `proPlus` group), which is why they went.
 - **Placement is stored, never derived.** `deriveDbKey()` is deleted from every repository, and so
   is the `databaseDict[group.tier]` ladder, which is gone for the same reason. An inline ladder
   from a tier to a database IS the bug. Report it rather than copying it.
@@ -84,21 +96,20 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if absent
 **Plan and runbook: `vivreal-hq/docs/projects/tenancy-architecture/`.** If you are about to tell
 somebody about pods, read the status line at the top of `pod-rename-migration.md` first.
 
-Decided, designed, measured against production, **and not executed**:
+**Both items this section used to list have now happened**: the package merge, and the pod rename
+(2026-09-23, phase 2 run; see "What is TRUE TODAY"). Do not describe either in the future tense.
 
-1. The `general_shared` database becomes `pod_01` and the `pro_plus` database becomes `pod_02`,
-   and both legacy database names retire.
+Still only planned or open, as of 2026-10-04:
 
-The package merge that used to be item 2 in this list **has happened**, and is stated as fact above.
+- **A third pod.** Nothing needs one (see "Should this tenant get its own database" below), and an
+  empty pod still costs its collections and indexes against the per-node data-file budget.
+- **Memory and docs that still say `general_shared`.** Several notes and the 2026-09-16 precedent
+  scripts were written before the move and carry the old name; treat any hardcoded `general_shared`
+  or `pro_plus` as stale on sight.
 
-**State the pod rename in the future tense.** As things stand:
-
-- **No pod exists.** No database in the cluster is named `pod_01` or `pod_02`.
-- **The default placement for a new group is still the legacy name**, set by `DEFAULT_PLACEMENT` in
-  the placement package.
-
-An agent that describes any of this in the present tense sends the next person looking for something
-that is not there. That costs more than having said nothing.
+An agent that describes a finished change in the future tense sends the next person to redo it; one
+that describes a plan in the present tense sends them looking for something that is not there.
+Check the run records before saying either.
 
 ### Why the merge is the substantive half, not the cosmetic one
 
@@ -233,8 +244,8 @@ has substantial headroom, and document count is a third thing that is not a limi
    nothing looks identical to a placement that is not there. See `verification-discipline`.
 2. **Scan for the name, do not assume one holder.** `groups.dbKey`, `groups.database`,
    `domainOrders.dbKey` and `placement_weights._id` have each held one.
-3. **Say "today" or "planned".** Never describe pods, the merged package, or a retired default in
-   the present tense.
+3. **Say "today" or "planned".** The pods, the merged package and the `pod_01` default are TODAY;
+   `general_shared` and `pro_plus` are retired names. Re-read the run records before restating either.
 4. **If you are changing a stored placement, sessions must be invalidated**, or the old value keeps
    arriving from signed cookies.
 5. **Never hand-write a single field** into a group document with `dbKey` and `key` both on screen.

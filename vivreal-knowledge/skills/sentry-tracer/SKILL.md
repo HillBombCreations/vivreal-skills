@@ -42,7 +42,7 @@ Every portal user action produces a **complete distributed trace**: browser → 
 |---|---|
 | `environment` | **Filter this FIRST**, `production` vs `staging`. Never investigate unscoped. |
 | `groupID` | Tenant triage (Mongo `_id`). |
-| `dbKey` | DB-routing scope (`general_shared` / `pro_plus`). |
+| `dbKey` | DB-routing scope (`pod_01` / `pod_02` since 2026-09-23; an event tagged `general_shared` or `pro_plus` predates the pod rename). |
 | `request_id` / `requestId` | **Critical fallback** when trace IDs don't stitch, `search_events(... 'tagged request_id:<id> across all projects')`. |
 | `lambda` | Which Lambda fired. |
 | `route` | Endpoint scope. |

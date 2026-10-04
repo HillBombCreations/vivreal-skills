@@ -1,6 +1,6 @@
 # Vivreal portal: REAL component: layout & token conventions
 
-Last synced: 2026-07-30
+Last synced: 2026-07-30 (two surfaces below re-checked 2026-10-04 and marked DELETED)
 
 This is the as-built Vivreal portal design system, mined from source. Match these patterns; don't invent parallel ones. All paths are under `C:\repos\Vivreal_Portal_Mobile\`.
 
@@ -62,11 +62,15 @@ Defined in `@layer base :root`, overridable at runtime by `Providers` from `site
 
 ## Admin tabbed-analytics pattern
 
+> **DELETED from the portal 2026-09-28** (`e9262ba7`, the five admin analytics surfaces; `5ac18a32`, the flag console): operator tooling now lives in `vivreal-hq/packages/admin-app`, a separate app with its own dark theme. The pattern below is history; do not build a new internal surface in the portal from it.
+
 `src/app/(app)/admin/page.tsx`, a `force-dynamic` server page that reads `active_ctx` from cookies, renders a header (icon chip `grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary` + `{...privacyUnmask}` title/subtitle) and a `<Suspense key={activeCtx}>` around the resolved `AdminTabs` client component. The `void activeCtx` + `Suspense key` is the intentional "remount on profile switch to force re-fetch" idiom. Constraint container is `max-w-6xl mx-auto px-4 ... `. Use this header+chip+tabs shape for new internal dashboards. The page is gated client-side (`usePermissions().canViewAttribution`) AND server-side (`ADMIN_EMAILS` fail-closed), internal pages need both. `src/components/Admin/` now also carries `EngagementPanel`, `FunnelPanel`, `TrafficPanel`, `StudioDemoVisitsPanel`, `shared.tsx`.
 
-**Feature-flag console**, a second internal surface: `src/app/(app)/admin/flags/page.tsx` + `src/components/Admin/FeatureFlagsPanel/`, gated by `usePermissions().canManageFeatureFlags` (`isGlobalAdmin`, **no** cohort/group condition, an operator must reach every group). The flag registry pattern (`defaultOn` + `confirmOff`) is deliberately retained even with one live flag (`aiActionsEnabled`), this is the internal-control-surface pattern for future flags.
+**Feature-flag console (DELETED 2026-09-28, see above)**, was a second internal surface: `src/app/(app)/admin/flags/page.tsx` + `src/components/Admin/FeatureFlagsPanel/`, gated by `usePermissions().canManageFeatureFlags` (`isGlobalAdmin`, **no** cohort/group condition, an operator must reach every group). The flag registry pattern (`defaultOn` + `confirmOff`) is deliberately retained even with one live flag (`aiActionsEnabled`), this is the internal-control-surface pattern for future flags.
 
 ## AI surfaces (`src/components/Agent/`)
+
+> **The FAB, the drawer shell and `TasksPage` were DELETED 2026-09-24** (`939c27ed`, the assistant is retired); only the Studio `AiRail` and the drawer parts it reuses remain. See `vivreal-agent-knowledge`.
 
 `AgentFab/`, `AgentDrawer/` (`ChatInput`, `MessageBubble`, `QuotaIndicator`, `ToolCallLog`), `StatusTicker.tsx`, `ConfirmationCard.tsx`, `TasksPage/{Client,Loader}`. Design rules: **hide, never disable** gated entry points (`useAgentAccess()` is the single access source); the FAB additionally hides on immersive routes (`isImmersiveRoute()`, Studio owns its own `AiRail`) and while the drawer is open; progress is a phrase-per-phase ticker (`StatusTicker`), never a token stream, and phrases never name a tool.
 

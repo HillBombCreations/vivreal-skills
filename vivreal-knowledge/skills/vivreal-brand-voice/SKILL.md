@@ -1,15 +1,15 @@
 ---
 name: vivreal-brand-voice
-description: 'Use when writing, reviewing, or critiquing Vivreal marketing copy, messaging, or brand content, landing pages, pricing copy, social posts, cold email, ad copy, onboarding/in-app copy, taglines, or any customer-facing words. Teaches the Vivreal voice (the "Approachable Guide" for non-technical SMB founders), the promise ("Create once. Publish everywhere." + easy, phone-first), the hard-banned words/patterns, the framing rules + honesty floor, the competitive frame, an on-voice audit rubric, channel best-practices, and AI prompt scaffolding. Triggers on: brand voice, tone, copy, messaging, marketing content, landing page copy, pricing copy, cold email, social post, ad copy, tagline, headline, value prop, positioning, on-voice, jargon, CTA, social proof, founder-led. The `marketing-auditor` agent grounds in this skill; the content agents in vivreal-content PRODUCE to this voice. Canonical source: C:\repos\vivreal-content\knowledge\01-voice-and-rules.md.'
+description: 'Use when writing, reviewing, or critiquing Vivreal marketing copy, messaging, or brand content, landing pages, pricing copy, social posts, cold email, ad copy, onboarding/in-app copy, taglines, or any customer-facing words. Teaches the Vivreal voice (the "Approachable Guide" for non-technical SMB founders), the promise ("Create once. Publish everywhere." + easy, phone-first), the hard-banned words/patterns, the framing rules + honesty floor, the competitive frame, an on-voice audit rubric, channel best-practices, and AI prompt scaffolding. Triggers on: brand voice, tone, copy, messaging, marketing content, landing page copy, pricing copy, cold email, social post, ad copy, tagline, headline, value prop, positioning, on-voice, jargon, CTA, social proof, founder-led. The `marketing-auditor` agent grounds in this skill; the content and leadgen agents in vivreal-hq PRODUCE to this voice. Canonical source: C:\repos\vivreal-hq\brand\voice.md (vivreal-content was merged into vivreal-hq on 2026-08-03).'
 ---
 
 # Vivreal Brand Voice: definition: rubric & channel playbook
 
-The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor that `content-planner`/`content-creator` write to (those agents live in `C:\repos\vivreal-content\.claude\agents\`, content tooling moved out of the portal 2026-06-25).
+The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor that `content-planner`/`content-creator` write to (those agents live in `C:\repos\vivreal-hq\.claude\agents\`; content tooling left the portal on 2026-06-25 for `vivreal-content`, which was merged into `vivreal-hq` on 2026-08-03).
 
-> **Canonical voice source: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine.
+> **Canonical voice source: `C:\repos\vivreal-hq\brand\voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`; the old `C:\repos\vivreal-content` checkout is a pre-merge leftover, never the source.)
 
-Last synced: 2026-07-30
+Last synced: 2026-10-04 (against vivreal-hq brand/voice.md, last changed 2026-09-21)
 
 ## The promise behind every word
 
@@ -73,22 +73,23 @@ Lead against the tools owners actually know (plus the niche industry CMS a trade
 |---|---|---|
 | **WordPress** | Monolithic, slow, needs a developer to touch | A modern site they edit themselves, no dev |
 | **Squarespace / Wix** | Editing is a guessing game; nothing for social or email | True live-preview plus one-button publish everywhere |
-| **Shopify** | Store is fine; blog, social, email are separate tools | One portal for store, content, social, and email (email = the Mailchimp integration, see the honesty floor) |
+| **Shopify** | Store is fine; blog, social, email are separate tools | One portal for store, content, social, and email (native email campaigns since 2026-09-21; see the honesty floor for what Publish does NOT do) |
 | **Buffer / Mailchimp / Hootsuite** | Five tools that don't talk to each other | Replace the stack; create once, publish everywhere |
 | **Webflow** | Powerful, but built for designers | A professional site the owner can run, no designer |
-| **Niche / industry-specific CMS** | Clunky, dated, built for one trade; locked in, thin support | One easy system for site, social, and email together, on any device (email = the Mailchimp integration, see the honesty floor) |
+| **Niche / industry-specific CMS** | Clunky, dated, built for one trade; locked in, thin support | One easy system for site, social, and email together, on any device (see the honesty floor for the email wording) |
 
-The through-line that beats all of them: **it's easy, and it runs from your phone like an app.** An owner can update the site and post to social between customers (email goes out through the Mailchimp integration, not on Publish). Nothing else does that.
+The through-line that beats all of them: **it's easy, and it runs from your phone like an app.** An owner can update the site, post to social, and send an email from their phone between customers. Nothing else does that. (`brand/voice.md` uses exactly this sentence; Publish still does not send the email.)
 
 ## Honesty floor: claims to verify before publishing
 
 These recur in proof points. Confirm each is true and current before asserting it; if it isn't shipped, soften or cut.
 
-- **Email (the #1 violation, resolved 2026-07-28).** Vivreal does NOT send native email, and publishing content does NOT create a campaign. Email is the **Mailchimp integration**. Never write "one Publish sends site, social, and email together" or "the email is built from the content on your site." The social fan-out claim IS true (and the free plan connects up to three channels), email is the exception.
+- **Email (UPDATED 2026-09-21 in `brand/voice.md`; the old prohibition is LIFTED).** Vivreal **sends native email and you may say so**: an owner can write to the people who sign up on their site, from inside Vivreal, without connecting anything (Campaigns, sent from `campaigns.vivreal.io` through its own AWS account, out of the SES sandbox; a real campaign reached a real inbox 2026-09-20). The Mailchimp integration is still supported, just no longer the only path, so stop writing "the claimable path is Mailchimp". **Still NOT claimable:** publishing content does not create a campaign, so never write "one Publish sends site, social, and email together" or "the email is built from the content on your site." Never promise an isolated sender reputation (campaign mail uses a shared sending domain). Under-claiming a shipped capability is also a false statement. The social fan-out claim IS true (and the free plan connects up to three channels).
 - **"Installs on your phone/tablet like an app"** (the PWA install prompt), if install isn't live, say "works great on your phone" instead.
 - **Real AI checkout through a Stripe-connected store.**
-- **Live preview (resolved 2026-07-28, prohibition, not a verify-item).** Do NOT write "the preview is the real site" or "what you see is what publishes." Preview and live share one renderer/composition entry point (that IS claimable), but preview deliberately diverges (sample data + preview-only placeholder copy vs the live empty state). Approved wording: *"Edit and watch the page take shape, built with the same design your live site uses."*
-- **The plain-English AI assistant making site edits.**
+- **Live preview (UPDATED 2026-09-08 in `brand/voice.md`).** Do NOT write "the preview is the real site" or "what you see is what publishes": the preview shows the UNSAVED DRAFT, and forms and checkout deliberately do not act in it. The two old divergences (sample data, preview placeholders) are GONE, so preview and live now match far more closely than the approved wording says; that wording is an understatement, not a hedge. Approved wording: *"Edit and watch the page take shape, built with the same design your live site uses."*
+- **The plain-English AI assistant making site edits.** Its portal entry points were RETIRED on 2026-09-24 (only the Studio rail remains, and its retirement is decided), so do not claim it.
+- **Channel availability (re-read before every channel claim).** Instagram passed Meta App Review on 2026-09-28 and is connectable, so "coming soon" about Instagram is now a defect; the TikTok app is audited and approved (owner, 2026-10-04), so public TikTok posting is available; **X is no longer a supported channel** (removed from posting, from the terms and the privacy page in portal v0.33.0, and from the content plan).
 - **Any pricing number**, always swap in real current pricing, never placeholder ranges.
 
 **Stat quarantine** (a *sourced* stat on the wrong audience still fails the floor): never print **23×** in owner-facing copy (single-company Ahrefs case study; cross-industry is ~4.4 to 5×); the **51%** figure is about *software buyers*, not consumers, using it for consumers is a category error; the approved on-audience substitute is **BrightLocal: 45% of consumers use AI to find local businesses, up from 6%**; the **2.8×** multi-platform citation figure stands.
@@ -131,7 +132,7 @@ A passing asset scores ≥10/12 with no hard-ban hits.
 
 - **LinkedIn = the spine.** Founder-led, not just a brand page. Buyers are cynical of polished brand accounts.
 - **Email**: nurture organically-built lists; cold outreach tightly personalized, one ask + one CTA. (Vivreal's own outreach product reinforces sequenced, personalized sends.)
-- **X**: real-time industry commentary, product announcements, responsive public support.
+- **X**: retired as a Vivreal channel (see the honesty floor); do not plan or claim it.
 - **TikTok / Instagram**: founder-led educational short video + behind-the-build; top-of-funnel awareness, not direct response.
 - **Landing pages**: one goal, one primary CTA, benefit-led copy that names the pain, trimmed forms.
 
@@ -169,4 +170,4 @@ Then self-check against the 6-point on-voice rubric before returning.
 - **`growth-auditor`**, owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
 - **`vivreal-unit-economics`**, for the cost/margin numbers behind pricing copy.
 
-Sources: `C:\repos\vivreal-content\knowledge\01-voice-and-rules.md` (canonical: promise, five traits, ban list, competitive frame, honesty floor), `vivreal-content\.claude\agents\content-planner.md` + `content-creator.md` (hard bans, per-platform limits, self-check), `growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.
+Sources: `C:\repos\vivreal-hq\brand\voice.md` (canonical: promise, five traits, ban list, competitive frame, honesty floor, the claims-to-verify list), `vivreal-hq\.claude\agents\content-planner.md` + `content-creator\` (hard bans, per-platform limits, self-check), `growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.
