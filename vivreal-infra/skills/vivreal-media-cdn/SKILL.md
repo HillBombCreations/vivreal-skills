@@ -9,7 +9,7 @@ How media is stored, uploaded, and delivered across the stack. Bytes live in **S
 
 ## S3 bucket naming
 
-- Per-group bucket slug = **`vivreal-{group.key}`** (e.g. group key `thecomedycollective` → bucket `vivreal-thecomedycollective`). `group.key` is the URL slug, **NOT** `dbKey` (which is the database name `general_shared`/`pro_plus`). Confusing them is a classic bug (see `vivreal-db`).
+- Per-group bucket slug = **`vivreal-{group.key}`** (e.g. group key `thecomedycollective` → bucket `vivreal-thecomedycollective`). `group.key` is the URL slug, **NOT** `dbKey` (which is the tenant database name, a pod such as `pod_01`). Confusing them is a classic bug (see `vivreal-db`).
 - Some contexts use `${group.type}-${group.key}` as the S3 path prefix / `bucketname` (e.g. `collection-thecomedycollective`).
 - S3 IAM is scoped `arn:aws:s3:::vivreal-*` via `Vivreal-Client-S3-Access`. New buckets are created fully locked (`BlockPublicAcls`/`IgnorePublicAcls`/`BlockPublicPolicy`/`RestrictPublicBuckets: true`) + a **CloudFront OAC** bucket policy, public read ONLY through the CDN, never direct S3.
 - **Media is NEVER stored in MongoDB**, only S3 paths/metadata (the `mediafiles` collection). Deleting a doc deletes the S3 objects + decrements `mainDb.groups.mediaUsage`.
@@ -18,19 +18,20 @@ How media is stored, uploaded, and delivered across the stack. Bytes live in **S
 
 1. Client requests a presigned S3 URL from VR_CMS_API **`POST /tenant/presignUpload`** (`handleMedia` Lambda). The portal proxies this via `/api/proxy/uploadFiles` → `/tenant/presignedUploadUrl`.
 2. Client uploads **directly to S3** (native `fetch`, never through a Lambda, keeps bytes off the 30s/6MB Lambda path).
-3. Image/video processing uses the **FFmpeg Lambda layer** (`FFMPEG_ARN` in `hb-api-secrets`, must be **arm64**, see `vivreal-lambda`).
+3. Image/video processing uses the **FFmpeg Lambda layer** (its ARN resolves from SSM `/vivreal/prod/shared/ffmpeg-arn` on the CreateSites function; it must be **arm64**, see `vivreal-lambda`).
 
 ## Delivery path (CloudFront signed URLs): VR_Client_API
 
 - Customer sites get media via the **CloudFront CDN `media.vivreal.io`** with **signed URLs**.
-- VR_Client_API: `buildMediaUrl.js` constructs the CDN URL → `signCloudFrontUrl.js` signs it with the CloudFront key pair. `resolveMediaUrl.js` is the entry point.
+- **Signed at REQUEST time since 2026-09-28.** VR_Client_API's `buildMediaUrl.js` no longer returns a pre-signed URL; it returns a stable link to the Client API's own unauthenticated `GET /media` route (`client.vivreal.io/media`, `src/shared/mediaRedirect.js`), which signs fresh on every request and 302-redirects to the signed `media.vivreal.io` object. A cached ISR page can therefore never outlive its signature. **Exception:** rich-text INLINE images (`richTextImageUrls.js`) are still signed immediately, because the renderer's sanitiser drops an inline `<img>` whose src is not on the media host; those links do expire inside cached HTML. The redirect route validates `bucket` with a character allowlist and `key` structurally, because both reach a signer.
+- `signCloudFrontUrl.js` signs with the CloudFront key pair; `resolveMediaUrl.js` is the entry point.
 - Key pair: public key in CloudFront key group `vivreal-cdn-kg`; **private key** in Secrets Manager (`CLOUDFRONT_SIGNING_PRIVATE_KEY` + `CLOUDFRONT_SIGNING_KEY_PAIR_ID`).
 - `signCloudFrontUrl.js` **gracefully falls back to unsigned** if signing fails (wrong key type / missing config), so "media loads but isn't signed" can hide a signing-config error. Check the signing key pair if URLs come back unsigned.
 - The deployed media-routing function (`Vivreal_Media_CDN_*` / MediaRouterFn) fronts CDN media routing in AWS.
 
 ## SignedUrlTtlSeconds: the cache-invalidation lever
 
-The signed-URL / CloudFront TTL is parameterized (`CLOUDFRONT_SIGNED_URL_TTL_SECONDS` / `SignedUrlTtlSeconds`, default 300 = inert). Raising it (live value **86400** = 24h) is "cache-invalidation step A", longer TTL = better cache hit rate / fewer re-signs. It must be passed in the deploy `--parameter-overrides` (the default is intentionally short so deploys don't accidentally lengthen it).
+The signed-URL TTL is parameterized (`CLOUDFRONT_SIGNED_URL_TTL_SECONDS` / `SignedUrlTtlSeconds` in `VR_Client_API/sam-template.yaml`). Its DEFAULT is now the long value; it used to be short, which silently made any deploy that did not pass `--parameter-overrides` shorten every signature. Read the parameter's `Default` and the deployed env var rather than a number from here. With request-time signing (above) the TTL only bounds one redirect's validity, not a cached page's.
 
 ## The array-signing latent-bug class (watch for it)
 

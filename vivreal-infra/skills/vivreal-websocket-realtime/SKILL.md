@@ -10,8 +10,8 @@ How live updates flow from the backends to the portal. Used for site-deploy prog
 ## Architecture: API Gateway WebSocket API + Lambdas
 
 - An **API Gateway WebSocket API** with the standard route Lambdas (deployed as `VR_ws_*`): **`$connect`**, **`$disconnect`**, **`$default`**, and **`sendmessage`**.
-- Active connections are tracked in a **DynamoDB table** (`WS_TABLE` in `hb-api-secrets`). `$connect` writes the `connectionId`; `$disconnect` removes it.
-- The endpoint backends post to is **`WS_ENDPOINT`** (the API Gateway Management API endpoint, in `hb-api-secrets`).
+- Active connections are tracked in a **DynamoDB table** (`WS_TABLE`, resolved from SSM `/vivreal/prod/shared/ws-table`). `$connect` writes the `connectionId`; `$disconnect` removes it.
+- The endpoint backends post to is **`WS_ENDPOINT`** (the API Gateway Management API endpoint, resolved from SSM `/vivreal/prod/shared/ws-endpoint`; `hb-api-secrets` is deleted).
 
 ## How backends push a message
 

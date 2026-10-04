@@ -88,6 +88,10 @@ aws amplify get-job --region us-east-1 --app-id "<appId>" --branch-name "<branch
 
 ## A green workflow is not a deploy
 
+(For a BACKEND release or a stack change, VR_CMS_API, VR_Secure_API and the rest, use
+`vivreal-deploy-proof`, which carries the full method: health SHA, aliases, the failures that leave
+no stack events, and deploy-role refusals. The summary below applies to both.)
+
 **The most common wrong answer in this whole area.** A CI run finishing green means the workflow
 finished, not that anything shipped. A CloudFormation deploy can succeed as a **no-op**: the change
 set is built from the resolved template, so a comment-only or description-only edit produces an

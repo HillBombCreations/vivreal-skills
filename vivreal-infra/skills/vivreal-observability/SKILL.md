@@ -128,7 +128,8 @@ and pin it with a test; never leave it hand-set.
 **`filter-log-events` returns a false zero.** Recent events are not yet indexed, so a filter over a
 fresh window comes back empty on a stream that plainly has data. Read the stream directly with
 `get-log-events`, and remember the API **paginates**, so a `length(events)` projection prints a
-per-page count that looks like a total. See `verification-discipline`.
+per-page count that looks like a total. See `verification-discipline`, and `vivreal-lambda-logs`
+for the full read-the-stream and Logs Insights method.
 
 **Gateway access logging was never wired, for years.** The account-level CloudWatch role that API
 Gateway requires for access logs existed and was correctly configured since 2024, and had simply

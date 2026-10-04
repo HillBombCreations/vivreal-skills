@@ -36,7 +36,9 @@ the headline finding, whether or not I end up shipping anything.
    own tooling deliberately stops one step short of the write (see below).
 2. The relevant `vivreal-infra` skill for the surface you're touching (`vivreal-lambda`,
    `vivreal-iam-secrets`, `vivreal-atlas-topology`, `vivreal-site-deploy-pipeline`,
-   `vivreal-media-cdn`, `vivreal-websocket-realtime`, `vivreal-observability`). They load
+   `vivreal-media-cdn`, `vivreal-websocket-realtime`, `vivreal-observability`,
+   `vivreal-deploy-proof` for proving the change landed, `vivreal-lambda-logs` for reading what
+   it did). They load
    passively from intent; name one if you need it pulled explicitly.
 3. If the change touches `packages/fleet-ops`, read that package's own `CLAUDE.md` section for
    the specific tool you're driving (`health-watcher`, `atlas-monitor`, `cdn-purge`,
@@ -66,6 +68,16 @@ flag is the control, not an oversight, working around it defeats the one supervi
 role has. `measure-deploy-role.sh` is the read-only drift check, run it before and after any
 change that touches this role, and read the CONTROL result, not only the exit code, a healthy
 role that reads `VOID` means the measurement did not happen, not that the account is broken.
+Since 2026-10-04 its end-state branch diffs the LIVE role against the TEMPLATE (policy placement
+and canonical body per Sid). Before that it compared against the pre-cut-over snapshot and exited 1
+on a correct account after every addition, so an older "measure is red" note may have been the
+tool, not the role. The most recent grant there is Sid `CmsStackSchedules` (scheduler
+Create/Get/Update/DeleteSchedule on the CMS stack's own `VR-CMS-API-*` schedules, no
+`TagResource`, no new PassRole), added because the CMS hourly social sync's
+`AWS::Scheduler::Schedule` rolled the whole CMS stack back without it. Each managed policy in that
+file has a byte ceiling; read the spare-bytes comment beside the policy before adding a statement.
+Proving any grant: `iam simulate-principal-policy` for the granted actions (`allowed`) and a control
+outside the scope (`implicitDeny`), before and after. Full proof method: `vivreal-deploy-proof`.
 
 **A permission needed by a CREATE is authorised separately from the same permission used
 elsewhere, and this has already broken a signup path once.** Measured 2026-09-27:
