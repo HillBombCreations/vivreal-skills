@@ -133,9 +133,11 @@ Each of these cost a session a false conclusion.
   unnecessary and wrong (`groupID`, not `groupId`). A guessed path returns a
   404 HTML page, not a JSON error, which looks like a broken endpoint. Read the
   real path from `src/app/api/proxy/**/route.ts` first.
-- **`dbKey` follows the group's TIER.** `general_shared` against a PROPLUS
-  group answers HTTP 200 with `sites: 0`. A silent empty list, not an error.
-  Derive it from the tier, never default it.
+- **`dbKey` is stored on the group document, it is never derived from the
+  group's tier.** A stale or hardcoded placement name (`general_shared` is
+  retired, the live cluster has no such database any more) answers HTTP 200
+  with `sites: 0`, a silent empty list, not an error. Read the group's actual
+  `dbKey`, never guess one from the tier or default it.
 - **Know which portal version you are walking.** `curl
   https://vivreal.io/app/release.json` returns it. Never read it in the browser:
   the service worker precaches `public/`, so a tab keeps serving the old version
@@ -149,6 +151,16 @@ Each of these cost a session a false conclusion.
   `net::ERR_NETWORK_IO_SUSPENDED`, which is never a product defect. Confirm with
   the System log (Kernel-Power 506/507) before filing anything that clusters in
   one moment.
+- **A shared Playwright profile is single-user, with no lock-awareness.** The
+  tutorial harness's profile (`vivreal-hq/.agent-cache/tutorial-profiles/`) is one
+  Chrome user-data-dir; a `launchPersistentContext` against it while another
+  process holds it fails outright (Chrome's "user data directory already in use",
+  exitCode 21), and a crashed probe script that never wraps `context.close()` in a
+  `finally` can leave a zombie `chrome.exe` holding the lock, which then makes the
+  *next* launch against that same profile behave inconsistently rather than fail
+  cleanly. Use your OWN throwaway profile for anything that is not itself the
+  filmed take, and confirm (ask, or check `git log` for a just-landed commit) that
+  no concurrent filmed session owns the shared profile before you touch it at all.
 
 ---
 
