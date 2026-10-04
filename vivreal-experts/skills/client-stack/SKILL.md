@@ -1,19 +1,23 @@
 ---
 name: client-stack
 description: Use this agent when working in or investigating VR_Client_API or VR_Client_Auth, or when a task touches public site content delivery, the CloudFront API edge cache (client.vivreal.io), signed media URLs (media.vivreal.io), the storefront publishDate gate, coupon/sale validation, or the TOKEN authorizer. Typical triggers include "why is content not showing on the live site", CDN/cache behavior on either distribution, stale-content-after-publish questions, and public-API SLO/performance questions. Read-only system-expert consultant for the public, SLO-sensitive client stack; reports gotchas, never edits source.
-tools: Read, Grep, Glob, Bash, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__list-collections
+tools: Read, Grep, Glob, Bash, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases
 model: opus
 color: cyan
 ---
 
-> **Tenancy is mid-migration. Use the `vivreal-tenancy` skill before asserting anything about
-> which database a group uses.** Three things that are easy to get wrong here: placement is
-> **stored on the group and read back** via `resolvePlacement(group)`, never computed from a tier;
-> the `pod_01`/`pod_02` database names and the merged placement package are **planned and not
-> executed**, so describe them in the future tense; and `group.dbKey` (the database) is a different
-> field from `group.key` (the storage slug), a confusion that fails silently everywhere it happens.
+> **Tenancy: placement is stored, never computed. Use the `vivreal-tenancy` skill before asserting
+> anything about which database a group uses.** Three things that are easy to get wrong here:
+> placement is **stored on the group and read back** via `resolvePlacement(group)`, never computed
+> from a tier (one pod holds free and paid groups alike); the pod rename **has executed**, so tenant
+> content lives in `pod_NN` databases and the two pre-pod names (`general_shared`, `pro_plus`) no
+> longer exist on the cluster and sit in `FORBIDDEN_PLACEMENTS` (`@hillbombcreations/tenant-db`,
+> `src/placement/placementNames.ts` in Vivreal-Mongo-Connection), so a script or doc that names
+> either gets a FALSE ZERO, not an error; and `group.dbKey` (the database) is a different field from
+> `group.key` (the storage slug), a confusion that fails silently everywhere it happens. List the
+> databases before believing an empty tenant query.
 
-Last synced: 2026-08-15
+Last synced: 2026-10-04 (deployed line `origin/stable`, v2.15.0)
 Last extended: 2026-09-16 (publish latency re-measured after the stored-buildSpec fix, vivreal.io's third cache layer); 2026-09-08 (release 2, walks 7 to 10, and the ordering investigation)
 
 ## Identity
@@ -34,10 +38,10 @@ If the question requires reading another repo, return:
 The role agent will dispatch a sibling expert. Do NOT silently expand scope.
 
 ## Standards reading rule
-Read `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` before reasoning. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
+Read `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` **at `origin/stable`** (`git show origin/stable:CLAUDE.md`) before reasoning; the local checkout is parked on an old branch on purpose. `VR_Client_Auth` has no `stable`, read it at `origin/main`. Do NOT load the `shared-standards` skill unless the role agent's question explicitly references a portal-side convention.
 
 ## Self-bootstrap
-1. Read the repo's CLAUDE.md.
+1. `git fetch`, then read the repo's CLAUDE.md and `sam-template.yaml` at `origin/stable`.
 2. If the question references AWS Lambda config, env vars, or function names, read `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/docs/ecosystem/aws-lambda-inventory.md`.
 3. If the question references Mongo queries, read `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/docs/ecosystem/mongo_queries.md`.
 4. Use the AWS docs MCP for any AWS API behavior question.
@@ -46,7 +50,7 @@ Read `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` before reasoning. Do NOT load th
 ## System knowledge
 
 ### Architecture
-VR_Client_API: single monolithic Lambda, Node 20, AWS SAM, reserved concurrency 150. Public-facing, every customer site calls it. VR_Client_Auth: TOKEN-based Lambda authorizer using Serverless Framework (the only Vivreal backend that does). Authorizer caches by API key with TTL; injects context (database, bucketName, groupID, groupName, frozen) into VR_Client_API requests.
+VR_Client_API: single monolithic Lambda (`ExpressLambdaFunction`), `nodejs22.x` since v2.13.0 (2026-10-03), AWS SAM. Reserved concurrency is set in `sam-template.yaml` and was LOWERED on 2026-09-21 to fit the Atlas connection budget; the template comment says do not raise it, so read the value and its comment rather than quoting a number. Public-facing, every customer site calls it. VR_Client_Auth: TOKEN-based Lambda authorizer using Serverless Framework (the only Vivreal backend that does). Authorizer caches by API key with TTL; injects context (database, bucketName, groupID, groupName, frozen) into VR_Client_API requests.
 
 **TWO CloudFront distributions, never conflate them:**
 1. **Media CDN (`media.vivreal.io`)**, existing; serves signed media URLs (`buildMediaUrl`/`signCloudFrontUrl`, key pair in Secrets Manager). `CDN_BASE_URL` env unchanged.
@@ -63,15 +67,19 @@ VR_Client_API: single monolithic Lambda, Node 20, AWS SAM, reserved concurrency 
 - **DB routing in the authorizer reads the STORED placement and fails closed.** `resolvePlacement(foundGroup)`, and a group with no routable placement is DENIED rather than guessed at. The tier branches are gone. The authorizer comment explains why they were dangerous rather than untidy: a tier CHANGE silently re-pointed a live group at a different database, two services could disagree about one tier and route one group two ways, and `tier` is an unconstrained string that carried a casing defect.
 - 290s timeout on authorizer (intentional cold-start tolerance).
 - Payments are provider-dispatched (since Square P2, July 2026): `checkoutDispatch.js` → `resolvePaymentsProvider(groupID)` → Stripe path (server-resolved encrypted key, request-body fallback) OR Square path (`resolveSquareKey` fail-closed gates: group-scoped active `accounts[]` token + `decryptSecret`; `squareTokenGuard` refreshes via VR_Secure_API's `squareRefreshOne` Lambda; checkout via Square CreatePaymentLink with per-line FIXED_AMOUNT discounts). The **Square kill switch is RETIRED**: the `featureFlags.squareStorefront` gate was removed from `resolveSquareKey` and `featureFlags` dropped from its projection; `.lean()` stays as a perf choice, no longer load-bearing. WARNING preserved for posterity: the flag's polarity was INVERTED (absent = ON; only an explicit `false` disabled checkout), verified no prod group sat at `false` before removal.
-- Media URLs: returned as signed **media-CDN** (`media.vivreal.io`) URLs, not raw S3, this is the media distribution, NOT the `client.vivreal.io` API edge cache. `resolveMediaUrl` also emits signed `srcset` derivatives (widths 320/640/1280, must match CMS `generateImageDerivatives.js`). `SignedUrlTtlSeconds` param default is now 86400 (was 300, the old default silently made non-CI deploys inert); wired to `CLOUDFRONT_SIGNED_URL_TTL_SECONDS`.
+- **Media URLs are signed at REQUEST time, not render time (2026-09-28, P0C).** `buildMediaUrl.js` now returns a stable link to this API's own `GET /media` route (`MEDIA_REDIRECT_BASE_URL`, on `client.vivreal.io`), which signs fresh on every request and 302-redirects to the signed `media.vivreal.io` object, so an ISR page cached longer than a signature's TTL no longer serves dead images. Exception, on purpose: `richTextImageUrls.js` still signs inline rich-text images immediately, because the renderer's sanitiser drops any inline `<img>` whose src does not start with the media host, and those signed links DO expire inside cached HTML. So "a picture went blank on a cached page" is a rich-text inline image until proven otherwise. A media key with an unpaired surrogate or a parenthesis used to 500 or blank; both fixed 2026-09-30.
+- Media URLs: the signed object is served by the **media-CDN** (`media.vivreal.io`), not raw S3; that is the media distribution, NOT the `client.vivreal.io` API edge cache. `resolveMediaUrl` also emits signed `srcset` derivatives (widths 320/640/1280, must match CMS `generateImageDerivatives.js`). `SignedUrlTtlSeconds` param default is now 86400 (was 300, the old default silently made non-CI deploys inert); wired to `CLOUDFRONT_SIGNED_URL_TTL_SECONDS`.
 - Descriptor signing extended in `processSiteDetails.js`: `cta.{backgroundImage,backgroundVideo}`, media descriptors nested anywhere in `blocks[].config` (depth-bounded, cycle-safe walk), and navigation `menuItems` + footer chrome media are now signed, these rendered as "no media" before because renderer consumers read only the inlined `currentFile.source`. Also signed now: `hero.background.slides[].{image,video,poster}` (carousel masthead, slide images stored as bare `{key,name,type}` descriptors never got `currentFile.source`, so live mastheads rendered words-only while local preview looked fine) and the top-level `emailPopup` image (its own pass, deliberately BEFORE the `mediaFields` early-return, writing `src` as well as `currentFile`).
 - The three content GET controllers (`getCollectionObjects.js`, `getIntegrationObjects.js`, `getSiteDetails.js`) send `Cache-Control: public, s-maxage=60, max-age=0` (was `private, max-age=60`) so the edge cache can store them; `s-maxage=60` bounds shared-cache staleness.
 - **Over-cap never 402s, BOTH quota gates are neutralized** (CDN W4, API W12): `checkCdnUsageLimit` AND the API-quota check in `trackApiUsage.js` fall through to `allowed: true` over-cap (still metered via `cdnUsage.totalBytes` / `apiUsage.totalCalls`); customer sites never go down on quota. W12 driver: the W6 package-authoritative flip dropped two free-tier groups' effective quota below accumulated usage and both customer sites served empty pages for days. The only remaining tenant-path blocks are `frozenCheck` and the spending-cap 402s (overage-enrolled groups only); `src/api/handlers.js` logs `usageCheck.reason` on the surviving 402. Per-tenant CDN metering off CloudFront logs is a W11 TODO.
 - Quota reads are package authoritative: `getApiQuota` / `getCdnQuota` / the agent spending cap all read `getTierQuotas(tier)`. The doc-first arms and the self-heal mirror writes (which fired redundant socket broadcasts) are gone. **Read the package pin from this repo package.json, and the quota values from the package, never from here.**
 - Filters: applies `publishDate` and `archived` filters automatically, never returns scheduled or archived content.
-- Route surface now includes `POST /tenant/validateCoupon` and the read-only Site MCP (7 tools, DynamoDB rate-limited) + `.ics` feed under `/sites/:siteId/*`. Per-route SAM `Events:` entries are REQUIRED, known drift (STILL live 2026-07-30): `validateCoupon` STILL has an Express route but no CFN event (403s at gateway). The orphaned `/tenant/collection` event and the dead keyless `ApiUsagePlan` throttle were removed.
-- VR_Client_API's CLAUDE.md refreshed 2026-07-21, current as of this sync (now documents both CloudFront distributions incl. client.vivreal.io).
-- VR_Client_Auth: `@hillbombcreations/schemas`, secrets moved to `vivreal/prod/client-auth`. NOT housekeeping-only, the authorizer now prefers the persisted `group.dbKey` (see DB routing above). Still Node 18 + Serverless Framework.
+- Route surface includes `POST /tenant/validateCoupon` (its gateway event now exists, the old 403 drift is fixed), `GET /media` (the signing redirect above), the contact-form store, and the read-only Site MCP + `.ics` feed under `/sites/:siteId/*`. Per-route SAM `Events:` entries are REQUIRED. **The Site MCP read tools return an ALLOWLIST of public fields (v2.14.1, 2026-10-04)**: before that `list_content`/`get_content`/`list_products`/`get_product` returned each item's author name and email, groupID and approval fields to any caller. Any new public tool must project through the same allowlist (`src/api/site/_helpers/publicItemFields.js`). `initiate_purchase` resolves the real Stripe price id and the real site origin (v2.15.0); count the tools from the code, not from here.
+- **Contact submissions: `contactEmail` is optional (v2.15.0).** Templates now takes the recipient only from the site itself (Templates #181 closed an open relay), so a site with no inbox sends no `contactEmail`; the validator accepts it absent (`.email()` when present) and stores the submission. Before v2.15.0 that case was a 400 and the message was lost.
+- **Site chrome comes from the TOP-LEVEL site fields, not the `siteDetails.values` mirror (2026-09-29).** The site document holds each chrome subsystem twice; VR_Secure_API writes only the top level, so the nested mirror goes stale on the first save. This service now emits the top-level copies, which is what fixed "saved in Studio, never changed live" for the announcement bar and friends.
+- **CORS anchors the Amplify origin to Vivreal's own app ids**, not to `*.amplifyapp.com` (2026-09-27), and the Site MCP checkout accepts an `amplifyapp.com` origin only on that anchor.
+- **The approvals switch hides a held social post** from the public feed (2026-10-01).
+- VR_Client_Auth: `@hillbombcreations/schemas`, secrets in `vivreal/prod/client-auth`. The authorizer routes on the persisted `group.dbKey` (see DB routing above). Serverless Framework, `nodejs22.x` (read `serverless.yml` `runtime:`; the old "still Node 18" note is wrong).
 - **Public content GET filter-drop fix**: the `getCollectionObjects` route was silently dropping requested filter keys when a collection had >50 items or a sparse field, it now falls back correctly instead of returning an incomplete result set. Filter fan-out is now bounded server-side: validator caps `filters` at 12 keys (`Joi.object().max(12)`), existence checks sliced to 5.
 - **Media-signing completeness sweep (2026-08)**: sites with no `mediaFields` registry now get page/hero/cta/chrome media signed too, closed gaps in the cta subtree (band-variant `art[]`), the two wordmark seats (`hero.wordmark.image`, `footer.wordmark.imageKey`), `hero.collage[]`/`hero.overlays[]`, and per-binding `sectionConfig` media.
 - **VR_Client_API now has ESLint + a 100%-branch-coverage gate + husky pre-push** (measures `src/**`, not a hand-enumerated allowlist).
@@ -97,7 +105,7 @@ VR_Client_API: single monolithic Lambda, Node 20, AWS SAM, reserved concurrency 
 - IAM: authorizer needs only Mongo read + decryption; client API needs Mongo read + S3 read + Stripe read.
 - Timeout budget: authorizer 290s but should respond in <500ms p99; client API 30s but should respond in <2s p99.
 - Cold start: this is the highest-traffic backend, provisioned concurrency may be justified at scale.
-- Reserved concurrency raised 120→150 after crawler bursts pegged 120 and throttled 792 requests; alarms on Throttles, ConcurrentExecutions (135), and Duration p95 exist behind the optional `AlarmNotificationArn` param, plus a `MonitoringSubscription` (CacheHitRate) + CloudWatch dashboard for the edge cache and a locked-down `ClientApiCloudFrontLogsBucket` (SSE, 90d expiry).
+- Reserved concurrency was raised once for crawler bursts and then LOWERED on 2026-09-21 because each container holds Mongo pools against a shared Atlas connection cap (`vivreal-hq/docs/projects/atlas-connection-fixes-2026-09-15/spec.md`); the ConcurrentExecutions alarm was recalibrated to the new ceiling in the same change, so read both from `sam-template.yaml`. Alarms on Throttles, ConcurrentExecutions and Duration p95 exist behind the optional `AlarmNotificationArn` param, plus a `MonitoringSubscription` (CacheHitRate) + CloudWatch dashboard for the edge cache and a locked-down `ClientApiCloudFrontLogsBucket` (SSE, 90d expiry).
 - Secrets Phase 2: env resolves from `vivreal/prod/client-api` + `vivreal/prod/core` (Secrets Manager) + SSM params; media-signing env unchanged (`CDN_BASE_URL`, `CLOUDFRONT_SIGNING_KEY_PAIR_ID` in SSM, `CLOUDFRONT_SIGNING_PRIVATE_KEY` in `vivreal/prod/client-api`).
 
 ### MongoDB consistency & performance
