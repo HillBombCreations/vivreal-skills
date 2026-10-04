@@ -4,7 +4,7 @@ description: Auto-triggers when the user mentions a backend endpoint, API route,
 version: 1.1.1
 ---
 
-Last synced: 2026-07-30
+Last synced: 2026-10-04
 
 # Vivreal Fullstack Context Loader
 
@@ -54,20 +54,19 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Lambdas | 5 (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) | 13 (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent, webhookDelivery, analyticsSnapshot, squareTokenRefresh, squareRefreshOne, instantiateTemplateWorker, instantiateTemplateWorkerDlqConsumer) | 4 (express + email consumer + lifecycle scan + notification consumer) |
+| Lambdas (read the template on `origin/stable`, rosters move) | five API functions (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) plus the invoke-only mediaExportWorker and a separate snapshot stack | the HTTP functions (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent) plus many crons, queue consumers and the invoke-only template worker; count them from `cloudYamls/allRoutes.yaml` | the Express API plus email, notification, lifecycle-scan, campaign-send, campaign-events and email-events workers |
 | Handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey from | `req.query.key` | `req.query.dbKey` | N/A |
 | API Gateway auth | Cognito authorizer | Cognito authorizer (some routes Authorizer: NONE) | None (unauthenticated API) |
 | Response pattern | `req.resData = { status, response }` | `req.resData = { status, response }` | `req.resData = { status, response }` |
-| Schemas | `@hillbombcreations/schemas` | Inline models | Inline models |
+| Schemas | `@hillbombcreations/schemas` | `@hillbombcreations/schemas` (plus some local models) | `@hillbombcreations/schemas` (plus some local models) |
 | IaC | SAM + YAML fragments (merge-template.js) | SAM + YAML fragments | SAM single template |
 
 ## MongoDB Architecture
 
 - **`Vivreal`** (mainDb), control plane: `groups`, `checkoutsessions`
-- **`general_shared`**, tenant data for free/basic/pro tier groups
-- **`pro_plus`**, another tenant content database. **A database name, not a plan name**, and it holds real data
-- **No per-group database**, tenants share a DB, isolated by `groupID` field on every document
+- **Tenant pods** (`pod_01`, `pod_02`, ...; list them), tenant content. **`general_shared` and `pro_plus` no longer exist** (pod rename, September 2026); code or a query naming either reads an empty database, a false zero
+- **No per-group database**, tenants share a pod, isolated by `groupID` field on every document; one pod holds free and paid groups alike
 - **The tier does NOT determine the tenant database.** Look up the group in mainDb and read `groups.dbKey`: that field IS the database. The ladder that derived one from a tier is deleted from every repository, and it re-pointed a live group whenever its tier changed
 - The `key` field on groups is for S3 bucket naming, NOT database routing
 
@@ -82,7 +81,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 - All backend APIs are **Express.js + serverless-express**, AWS Lambda, **JavaScript** (not TypeScript)
 - Shared schemas in `@hillbombcreations/schemas` (read the version from its `package.json`, and each consumer pin from the consumer): `groupSchema`, `collectionGroupSchema`, `collectionObjectSchema`, `integrationSchema`, `integrationAccountSchema`, `siteSchema`, `siteVersionSchema`, `mediaFileSchema`, `auditLogSchema`, `contentVersionSchema`, `webhookSchema`, `usageTrackingSchema`, `checkoutSessionSchema`, `domainOrderSchema` (orderType `purchase`|`transfer`, encrypted `authCode`, `bundleApplied`), `siteTrafficDailySchema`, `siteTemplatesSchema` (new `site_templates` collection, portal template-picker registry), plus the `domainOrderStatuses` constants export (13 purchase + 9 transfer statuses). Version history since 1.25.0: **1.26.0** added 7 Studio-editable site-chrome fields to `siteSchema` (`footerNewsletter`, `motionPreset`, `announcement`, `utilityStrip`, `fulfillmentStrip`, `floatingCta`, `favicon`, all Mixed with `default: undefined` so absence stays meaningful; `demoRibbon` deliberately NOT declared, ops-only); **1.27.0** declared the phantom Stripe billing block on `groupSchema` (`dbKey`, `stripeSubscriptionID`, `subscriptionStatus`, `subscriptionCadence`, `currentPeriodEnd`, `overageBilling`, `scheduledTierChange`, `cancellation`, `pauseCollection`, `retentionDiscount`), killed the silently-stripped class of bug; **1.28.0** added `system` to `webhookSchema`; **1.29.0** declared `featureFlags` on `groupSchema` as a strict:false sub-schema (only `aiActionsEnabled` declared, so an undeclared future flag persists instead of vanishing)
-- Auth flow: Cognito JWT (`token` cookie) + signed context JWT (`active_ctx` cookie)
+- Auth flow: Cognito JWT (`token` cookie) + signed context JWT (`active_ctx` cookie). Since 2026-09-27 ctx tokens are audience-bound: the cookie is minted for `portal` with a key derived from `CTX_SECRET`, and `createProxyHandler` mints a fresh short-lived token per upstream service from its `baseUrl`; a manual route forwarding ctx must call `signCtxEdge(payload, audience)`, because a raw portal cookie is refused by every backend
 - The `active_ctx` contains: `groupID`, `dbKey`, `bucketname`, `exp`, NOT `groupName`
 - **Never use `groupName` for mainDb queries**, always `{ key: dbKey }` or `{ _id: groupID }`
 - Portal proxy routes run on **edge runtime**, no Node.js APIs available
@@ -103,7 +102,7 @@ Start from the user's entry point and trace through each layer:
 4. Backend service (src/<lambda>/services/ in the target API)
    └── What MongoDB ops? Side effects? (audit log, content version, S3, Lambda invoke, WebSocket)
 5. MongoDB (Vivreal-Schemas or inline models)
-   └── Which database? (Vivreal / general_shared / pro_plus) Which collection? Indexes?
+   └── Which database? (Vivreal / the group's stored dbKey pod) Which collection? Indexes?
 ```
 
 Always report your findings at each layer before suggesting changes.

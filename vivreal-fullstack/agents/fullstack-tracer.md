@@ -6,7 +6,7 @@ color: cyan
 tools: Read, Grep, Glob, Bash
 ---
 
-Last synced: 2026-07-13
+Last synced: 2026-10-04
 
 # Fullstack Tracer Agent
 
@@ -94,8 +94,7 @@ Given a feature name, endpoint, or component:
 - Note: indexes, required fields, defaults, `strict: false` subdocuments
 - **Database routing**:
   - `Vivreal` (mainDb), stores `groups`, `checkoutsessions`
-  - `general_shared`, tenant data for free/basic/pro tier groups
-  - `pro_plus`, another tenant content database. **A database name, not a plan name**, and it holds real data
+  - tenant pods (`pod_01`, `pod_02`, ...), whichever one the group's stored `dbKey` names; tier does not decide it. `general_shared` and `pro_plus` no longer exist, so a trace that lands on either has followed stale code or a stale doc
   - All tenant objects use `groupID` field for isolation within shared databases
 
 ## Output Format
