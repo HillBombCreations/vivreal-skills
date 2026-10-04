@@ -5,7 +5,7 @@ description: Use when working with Vivreal CMS through the Vivreal MCP server, m
 
 # Vivreal CMS
 
-Vivreal is a multi-tenant CMS + distribution platform. Users author content once and fan it out to a website, social channels (X, LinkedIn, Instagram, Facebook, TikTok), and a Stripe storefront. This skill teaches Claude how to operate against a Vivreal account via the `mcp__vivreal__*` tools and `vivreal://` resources.
+Vivreal is a multi-tenant CMS + distribution platform. Users author content once and fan it out to a website, social channels (LinkedIn, Instagram, Facebook, TikTok), and a Stripe storefront. This skill teaches Claude how to operate against a Vivreal account via the `mcp__vivreal__*` tools and `vivreal://` resources.
 
 ## Mental model: read this first
 
@@ -65,6 +65,12 @@ Use the `post-to-all-socials` or `launch-content-everywhere` MCP prompt. Manual 
 3. create-channel-post(channelType...)    # one call per channel
 ```
 
+**X is no longer a Vivreal channel** (owner decision, 2026-09-28): the CMS API refuses an X post even though the MCP server's channel list and prompts may still name `x` (that list lags the API as of 2026-10-04). Never offer X to an owner and never plan a post to it.
+
+**Who is posting matters.** A post created or scheduled by a group member WITHOUT approval rights (the `base` role) is HELD as `pending_review` and does not send until an owner or admin approves it; the approval then schedules it at its original time, or now if that time has passed. Tell the user their post is waiting for approval rather than reporting it as scheduled. Owners and admins post straight through.
+
+**Synced posts arrive on their own.** Instagram, Facebook and TikTok posts are pulled into the group every hour with no action needed, for every connected and active account; `sync-channel` is only for an immediate refresh. LinkedIn is not synced (the platform scope is not granted), and an account the platform has revoked stays skipped until the owner reconnects it.
+
 Scheduling: set `publishDate` to a future ISO timestamp. EventBridge handles the actual publish at the scheduled time. This is now genuinely true for CONTENT items too, not just channel posts: a future `publishDate` on content registers a one-shot EventBridge schedule (`reconcileContentGolive` → `EventQueue.fifo` → a `content.updated` webhook → each site's `/api/revalidate` subscription), so the live site updates itself at that moment rather than waiting on the 24h cache TTL.
 
 ### Build a site
@@ -104,12 +110,9 @@ Call `get-content-field-types` if you need the full validator-recognized list.
 
 ## Tier gating: invisible until you hit it
 
-The MCP server filters its `tools/list` response by the user's subscription tier. Tools NOT visible on the free tier:
+There is ONE gate, and it is the whole server: MCP access itself is a plan flag (`canUseMcp` from `@hillbombcreations/tier-quotas`, checked in the MCP server's `src/tools/session.ts`). A group on a plan without it cannot call ANY tool, and gets `TIER_NOT_ENTITLED` with the upgrade sentence. A group with it can call every tool, so `tools/list` and `tools/call` agree. The old per-tool `TOOL_MIN_TIER` list (bulk tools and `sync-channel` marked Pro) was deleted on 2026-09-23 as a second, invented gate; do not reason from it. Read which plans carry MCP access from the tier-quotas package, never from memory.
 
-- `bulk-create-content`, `bulk-update-content-publish-date`, `sync-channel`, require `pro` or higher
-- **Read the current gate from `TOOL_MIN_TIER` in the MCP server `src/tools/catalog.ts`.** It has shrunk, and the tier it used to name for the deploy tools has been retired outright, so a remembered gate now describes a plan nobody holds
-
-If a workflow needs one of these and the user is on a lower tier, surface that clearly ("This requires the Pro tier, upgrade at vivreal.io/app/tier-select").
+If a call comes back `TIER_NOT_ENTITLED`, relay the server's own upgrade sentence plainly rather than naming a plan from memory; plan names and their flags move.
 
 ## Media: never construct URLs yourself
 
@@ -150,7 +153,7 @@ Eight workflow prompts ship with the server. Use them for multi-step tasks inste
 
 ## Gotchas
 
-- **`dbKey` is not `group.key`.** `dbKey` is the MongoDB database name STORED on the group document (e.g. `general_shared`, `pro_plus`). It is not derived from the plan, and no database name tells you a plan. `group.key` is the group's URL slug used for S3 paths. They look similar but are different values. The MCP tools handle this internally, just don't confuse them when reading raw API responses.
+- **`dbKey` is not `group.key`.** `dbKey` is the MongoDB database name STORED on the group document (a pod such as `pod_01`; the older `general_shared` and `pro_plus` databases no longer exist). It is not derived from the plan, and no database name tells you a plan. `group.key` is the group's URL slug used for S3 paths. They look similar but are different values. The MCP tools handle this internally, just don't confuse them when reading raw API responses.
 - **`set-active-group` is sticky for the session.** Once set, subsequent tool calls use it implicitly. If a user switches context mid-conversation, call `refresh-session-context` to re-sync.
 - **Failed channel posts are async.** `create-channel-post` returns success when the post is *queued*, not when the platform accepts it. Use `diagnose-failed-post` to investigate later failures.
 - **Site deployments take 3 to 5 minutes.** Don't expect `create-site` to return a live URL, poll `get-site-deployment-status` (statuses: `pending`, `deploying`, `live`, `failed`).
