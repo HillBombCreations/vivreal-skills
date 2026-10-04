@@ -69,6 +69,28 @@ Cross-cutting checks to run every audit regardless of drift:
 
 ## Step 4: Emit the report
 
-Output a drift report: per-repo drift level + themes (one line each), the flagged stale CLAUDE.mds, then a **checklist of skills files to update** ordered by severity, each with 1-2 bullets of WHAT is stale. End with the suggested next step: fix the source-repo CLAUDE.mds first (digests cite them), then the skills files, then bump plugin versions + `marketplace.json`, append a row to `docs/SYNC.md`, and refresh the installed cache (see the release-mechanics notes in SYNC.md / project memory).
+Output a drift report: per-repo drift level + themes (one line each), the flagged stale CLAUDE.mds, then a **checklist of skills files to update** ordered by severity, each with 1-2 bullets of WHAT is stale. End with a pointer to Step 5 below for the hand-off, fixing the source-repo CLAUDE.mds first (digests cite them), then the skills files, then bumping plugin versions + `marketplace.json`, appending a row to `docs/SYNC.md`, and refreshing the installed cache (see the release-mechanics notes in SYNC.md / project memory).
 
 Do NOT edit anything. If the user wants the fixes applied, they'll say so, the report is the deliverable.
+
+## Step 5: Hand-off (still no edits from this command)
+
+A report nobody owns applying is a report nobody applies. This command stays report-only
+by design, it does not become auto-edit, so state the follow-through explicitly instead of
+leaving it implied:
+
+1. **Per plugin group in the checklist**, dispatch `vivreal-principal:researcher` to correct
+   the files, citing the source `file:line` the drift was measured against (the source repo,
+   not a line number inside the skills file itself, see the Line-number citations check).
+   One dispatch per plugin group, not one dispatch for the whole report, so a bad correction
+   in one group never blocks or contaminates another.
+2. **The researcher bumps that plugin's version** (and `marketplace.json` if the plugin set
+   or count changed) as part of the same pass, per this repo's own version-bump rule: a new
+   agent, skill, or command is a minor bump, a correction to existing content is a patch.
+3. **The researcher commits**, `git commit --only <explicit paths>`, never `git add -A`. It
+   does not push. No researcher-authored dispatch pushes on its own initiative.
+4. **The coordinator (the orchestrating thread) pushes** after reviewing the researcher's
+   diff, and appends the sync row to `docs/SYNC.md`.
+
+If the user wants this run immediately rather than handed off, say so explicitly and dispatch
+per the steps above, this command still does not do it inline.
