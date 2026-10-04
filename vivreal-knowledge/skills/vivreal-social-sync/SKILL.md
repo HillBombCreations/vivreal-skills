@@ -118,7 +118,7 @@ to see a failing account is to read that line.
 
 ## Companions
 
-- `vivreal-cms-api-knowledge` (the Lambda this runs in), `vivreal-main-api-knowledge` (the Meta
+- `vivreal-experts:cms-api` (the CMS expert agent; its "Scheduled social sync" section is the short version of this skill), `vivreal-cms-api-knowledge` (the Lambda this runs in), `vivreal-main-api-knowledge` (the Meta
   callbacks), `vivreal-secure-api-knowledge` (token renewal, grant probe, disconnect),
   `vivreal-client-stack-knowledge` and `vivreal-templates-knowledge` (display),
   `vivreal-portal-knowledge` (the Channels and Socials screens).
