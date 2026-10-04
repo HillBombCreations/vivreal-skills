@@ -131,5 +131,5 @@ For quick reference, the user might use informal names. Map these:
 Same rules as `/db-query`:
 - `main` or `Vivreal` → `Vivreal` (control-plane DB with groups, users, checkout sessions)
 - `pod_NN` → tenant content databases. Which groups live in one is a property of their stored `dbKey`, nothing else; tier does not decide it
-- `general_shared`, `pro_plus` → RETIRED (the pod rename executed in September 2026). They connect and return nothing, which reads as "no data"; refuse and explain
+- `general_shared`, `pro_plus` databases → RETIRED database names (the pod rename executed in September 2026). They connect and return nothing, which reads as "no data"; refuse and explain
 - If user gives a group name → look up in `Vivreal.groups`, read its stored `dbKey`, route there
