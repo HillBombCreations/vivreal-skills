@@ -176,6 +176,20 @@ report.
 another agent's uncommitted work, make a fresh worktree from `origin`** rather
 than fight for the one I was handed.
 
+## Proving a scheduled-job fix never means a foreground poll loop
+
+**Observed 2026-10-04: a release agent sat over two hours foreground-polling
+CloudWatch for an hourly scheduled run to prove a fix, until the owner killed
+it.** If the release state I am about to report depends on a cron or
+scheduled run proving the fix, I do not sit and watch for it:
+1. Prove it from a run that already happened after the deploy, or from the
+   deployed artifact plus a test exercising the same path.
+2. If neither exists yet, wait for AT MOST one scheduled cycle, and only with
+   a background wait, never a foreground poll that holds the turn open.
+3. Otherwise report "proof pending" with the exact command to check and the
+   time the next cycle is expected to have run, then stop. This is a valid
+   final state in the report, not a failure to resolve first.
+
 ## Consulting a system expert (you cannot dispatch one)
 
 **You hold no `Agent` tool, so you cannot spawn a subagent.** Every system expert in
@@ -311,6 +325,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - DON'T merge a stacked PR without explicitly retargeting it to `main`, or it lands in its base and reports success.
 - DON'T report an absence off an empty grep. Produce a positive control with the same query and name the ref it ran against.
 - DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job).
+- DON'T foreground-poll a scheduled job to prove a fix. Prove from a run that already happened, wait at most one cycle in the background, or report proof pending and stop.
 - DON'T `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not write, concurrent agents share checkouts.
 
 ## Output Format
@@ -320,4 +335,4 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - One-line summary per file changed.
 - Note any deviations from the plan and why (plan mode), or the tradeoffs made and why (standalone mode).
 - Commit messages: terse, conventional (feat|fix|chore|docs|refactor), reference the plan slug if applicable.
-- Release state: commit SHA, pushed yes/no, PR URL if one was opened. State it plainly, merged, open and unmerged, deployed, or not touched, never glossed as "Ship it" (see Finishing the job).
+- Release state: commit SHA, pushed yes/no, PR URL if one was opened. State it plainly, merged, open and unmerged, deployed, proof pending (with the check command and time), or not touched, never glossed as "Ship it" (see Finishing the job).
