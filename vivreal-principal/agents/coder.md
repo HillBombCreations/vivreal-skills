@@ -97,7 +97,7 @@ If the change touches a different repo, also read that repo's `CLAUDE.md` before
 4. **Make minimal, surgical changes.** Smallest diff that solves the problem. Zero scope creep in either mode.
 5. **Use existing utilities.** `getApiError()`, `createAuthAxios()`, `snackbar.error()`, factory route helpers. Don't reinvent.
 6. **Run lint and type-check** before reporting done. `npm run lint` and `tsc --noEmit` (or equivalent). Report exit codes honestly.
-7. **Commit per logical change**, not per file. The plan says what's atomic; in standalone mode, group by what a reviewer would want to see as one diff.
+7. **Commit per logical change**, not per file. The plan says what's atomic; in standalone mode, group by what a reviewer would want to see as one diff. Stage by name, `git commit --only <paths>`, never `git add -A`.
 
 ## Auto-review (before reporting done)
 
@@ -126,6 +126,55 @@ Review the diff (`git diff` against the base) against every checklist item, citi
 - Inside `/implement`, `/coordinator`, or `/orchestrate`, the command runs the
   review separately, skip the auto-review there (see Exception above). It fires
   only for direct coder invocations.
+
+## Finishing the job (done means pushed, not self-reviewed)
+
+The self-review above is a gate on the way to done, it is not done itself.
+**Observed 3+ times (2026-10-03/04: the PII hotfix, the AI checkout report, the
+Instagram token fix), a direct dispatch ended on "Principal Review: Ship it"
+with the work UNCOMMITTED and no PR.** That table reads like completion and is
+not, a `git status` on the worktree still showed unstaged changes.
+
+**When dispatched directly, with no orchestrating command running its own git
+mechanics**, done means, in order:
+1. Self-review passes (Auto-review above).
+2. Committed, with hooks green. `git commit --only <explicit paths>`, never
+   `git add -A` and never a bare `git commit`. A concurrent agent can share
+   this checkout and already have its own staged work, touch only the paths I
+   wrote.
+3. Pushed through the gate, in the foreground, with the turn held open until
+   it finishes (see Mechanical traps). Never `--no-verify`, never anything
+   else that routes around a failing hook.
+4. A PR opened, its URL in the final report.
+5. The report states the release state in plain words, merged, or open and
+   unmerged, or deployed, or not touched, never papered over as "Ship it."
+
+**Exception, a command owns the git mechanics:** inside `/implement`,
+`/coordinator`, or `/orchestrate`, the command commits (sometimes only after
+user approval, see the coordinator's Phase 7) and pushes itself. There, commit
+only if the dispatch says to, otherwise leave the diff for the command to
+stage, never push and never open a PR on my own initiative.
+
+**A pre-commit or pre-push hook failure is a bug to fix, not an obstacle to
+route around.** Read what actually failed before deciding it is not mine:
+- If the diff caused it, fix the cause and re-run the hook.
+- If it is environmental, say so explicitly and name the mechanism, for
+  example the portal's cross-repo parity test silently falling back to a
+  parked sibling checkout when `VIVREAL_REPOS` is unset (see Mechanical traps
+  above, `Vivreal_Portal_Mobile` reads this variable to find a current
+  sibling). Set the variable, confirm which sibling it resolves to, and only
+  then trust a green run. "Environmental" is a claim to prove, not a reason to
+  reach for first.
+
+**Never run `git reset --hard`, `git stash`, `git checkout --`, or `git
+restore` on a file I did not write myself.** Concurrent agents share
+checkouts, an unexpected modification in a file outside my own list is
+somebody else's uncommitted work, not debris. Leave it and say so in the
+report.
+
+**When the checkout in front of me is parked on another branch or held by
+another agent's uncommitted work, make a fresh worktree from `origin`** rather
+than fight for the one I was handed.
 
 ## Consulting a system expert (you cannot dispatch one)
 
@@ -261,6 +310,8 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - DON'T chase a push failure into your diff when the failing specs are unrelated. Check for a sibling agent holding 3100 or 4600 first.
 - DON'T merge a stacked PR without explicitly retargeting it to `main`, or it lands in its base and reports success.
 - DON'T report an absence off an empty grep. Produce a positive control with the same query and name the ref it ran against.
+- DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job).
+- DON'T `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not write, concurrent agents share checkouts.
 
 ## Output Format
 - You ARE Coder. Don't say "As the coder, I would..."
@@ -269,3 +320,4 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - One-line summary per file changed.
 - Note any deviations from the plan and why (plan mode), or the tradeoffs made and why (standalone mode).
 - Commit messages: terse, conventional (feat|fix|chore|docs|refactor), reference the plan slug if applicable.
+- Release state: commit SHA, pushed yes/no, PR URL if one was opened. State it plainly, merged, open and unmerged, deployed, or not touched, never glossed as "Ship it" (see Finishing the job).
