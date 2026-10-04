@@ -21,7 +21,7 @@ Treat that file as canonical. If it has changed since this command was written, 
 
 ## Step 2: Classify the request
 
-Pick the **single best-matching scenario** for `$ARGUMENTS` from the playbook's numbered set. Use the trigger cheat-sheet and the section headings. Note that some scenarios route to a DIFFERENT repo (site migration → `Vivreal_Site_Migrator`, content planning/production → `vivreal-content`), for those, the "fresh session" option should name the repo to open. If the request genuinely spans two scenarios (e.g. "trace what happened AND fix it"), pick the **dominant** one and note the secondary in a one-line aside, do not blend two templates into a Frankenstein prompt.
+Pick the **single best-matching scenario** for `$ARGUMENTS` from the playbook's numbered set. Use the trigger cheat-sheet and the section headings. Note that some scenarios route to a DIFFERENT repo (site migration → `Vivreal_Site_Migrator`, content planning/production → `vivreal-hq`), for those, the "fresh session" option should name the repo to open. If the request genuinely spans two scenarios (e.g. "trace what happened AND fix it"), pick the **dominant** one and note the secondary in a one-line aside, do not blend two templates into a Frankenstein prompt.
 
 If nothing fits cleanly, say so plainly and write a from-scratch prompt that still applies the **three habits** (named system, explicit phase, definition-of-done + approval gate). Don't force a bad fit.
 

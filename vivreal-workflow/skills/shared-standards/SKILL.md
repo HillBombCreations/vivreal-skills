@@ -136,14 +136,14 @@ Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/h
 ## Auth & multi-tenancy (CRITICAL)
 - `active_ctx` JWT contains: `groupID`, `dbKey`, `bucketname`, `exp`
 - mainDb queries: ALWAYS use `{ _id: groupID }`. NEVER `groupName`.
-- Tenant DB queries: scoped via `dbKey`. `general_shared` and `pro_plus` are both live placement names. **`pro_plus` is a DATABASE name, not a tier**, and it holds real tenant data. Nothing maps a tier to a database
+- Tenant DB queries: scoped via `dbKey`. **`general_shared` is retired, the live cluster has no such database any more** (confirmed live 2026-09-28, the complete database list is `Vivreal`, `outreach`, `pod_01`, `pod_02`, `admin`, `local`; treat a hardcoded `general_shared` you find in code or a doc as a dead placement, not a working one). `pro_plus` is still a live placement name. **`pro_plus` is a DATABASE name, not a tier**, and it holds real tenant data. Nothing maps a tier to a database
 - **Nothing maps a tier to a database.** `dbKey` is a field stored on the group document, set once at creation and read back, never computed from `group.tier`. `VR_Client_Auth`'s authorizer and the portal proxy both resolve it the same way (see below), neither derives it.
 
 ### The three key fields: DO NOT CONFUSE (common source of bugs)
 
 | Field | Source | Value example | Used for |
 |---|---|---|---|
-| `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-db/placement`, which returns the stored `group.dbKey` | `general_shared`, `pro_plus`, or a per-pod placement name | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
+| `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-db/placement`, which returns the stored `group.dbKey` | `pro_plus` or a per-pod placement name (`general_shared` is retired, no longer a real database) | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
 | `group.key` | Stored on the group document in mainDb | `thecomedycollective` | **S3 bucket naming**, bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
 | `bucketname` | `${group.type}-${group.key}` | `collection-thecomedycollective` | **S3 object path prefix**, used in media upload/retrieval paths. |
 
@@ -160,7 +160,7 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 
 ### MCP skill usage for database queries
 - **`vivreal-db-explorer:db-schema`**, Use to inspect Mongoose schema, indexes, and sample docs for any collection. Invoke during research before reasoning about data shape.
-- **`vivreal-db-explorer:db-query`**, Safe MongoDB queries with built-in dbKey routing and multi-tenant safety guards. ALWAYS prefer this over raw `mcp__mongodb__find`. It handles `general_shared`/`pro_plus` routing automatically.
+- **`vivreal-db-explorer:db-query`**, Safe MongoDB queries with built-in dbKey routing and multi-tenant safety guards. ALWAYS prefer this over raw `mcp__mongodb__find`. It handles `pro_plus` and per-pod placement routing automatically (`general_shared` is retired).
 - When querying via MCP tools directly, remember: `_id` fields require `{"$oid": "..."}` syntax, `groupID` on tenant objects is a string (not ObjectId), `collectionObj.refID` is a string.
 
 ## Security non-negotiables (OWASP-aware)

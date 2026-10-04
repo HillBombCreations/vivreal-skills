@@ -178,9 +178,13 @@ goal is a reusable template, not a customer's real content.
 >
 > **[Produce:]** Expand **[calendar row / this brief]** into platform-ready drafts with per-platform limits and the on-voice self-check.
 
-Content work is operated FROM `C:\repos\vivreal-content`, its in-repo `content-planner` /
-`content-creator` agents own calendars, drafts, and rendered assets (the tooling moved out of the
-portal 2026-06-25). From anywhere else: voice/copy *critique* routes to `marketing-auditor`, and
+Content work is operated FROM `C:\repos\vivreal-hq` (the standalone `vivreal-content` repo was
+consolidated into it 2026-08-03 and is now dead source, frozen at that commit), its in-repo
+`content-planner` agent and the specialists it directs (`carousel-editor`, `footage-recorder`,
+`short-form-editor`, `linkedin-editor`, `social-video-director`, `guide-writer`,
+`help-page-producer`, `tutorial-maker`) own calendars, drafts, and rendered assets (the tooling
+moved out of the portal 2026-06-25; `content-creator` and its sub-specialists were retired
+2026-08-06). From anywhere else: voice/copy *critique* routes to `marketing-auditor`, and
 the `vivreal-brand-voice` + `vivreal-content-knowledge` skills carry the voice rules and the
 knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 
@@ -206,7 +210,7 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | Content scheduling / go-live | "scheduled content didn't publish", "publishDate", "go-live", "content golive schedule" | `cms-api` expert + `vivreal-cms-api-knowledge` (content go-live scheduler) |
 | The AI assistant surface | "AI FAB", "agent drawer", "EditPlan", "AI assistant not showing", "agent quota" | `vivreal-agent-knowledge` (+ `portal`/`secure-api` experts per side) |
 | Push notifications | "push notification", "web push", "notification queue", "user wasn't notified" | `vivreal-notifications` (+ `main-api` expert for the consumer) |
-| Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-content` |
+| Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-hq` |
 
 ## Slash-command quick reference
 

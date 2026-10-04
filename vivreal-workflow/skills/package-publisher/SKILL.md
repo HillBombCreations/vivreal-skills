@@ -1,7 +1,7 @@
 ---
 name: package-publisher
 description: Use this agent to publish a new version of a private @hillbombcreations/* GitHub Package (schemas, site-renderer, tier-quotas, email-brand, tenant-db) and move its exact RESOLVED pin across every consumer repository, discovering consumers, verifying the publish landed on the registry rather than trusting a workflow's own green, patching each consumer's lockfile surgically rather than running `npm install` on Windows, and confirming with `packages/fleet-ops/pin-sweep` and `reference-sweep` that the fleet actually converged, not merely that every declared range still reads the same string. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", "why do these six repos disagree on a version they all declare the same way", and "retire this package across the fleet". Distinct from the `/bump-package` command and the `vivreal-package-update` skill, which describe the procedure for the coordinator to run inline in the main thread and which still call for a clean `rm -rf node_modules package-lock.json && npm install` reinstall, a step that PRUNES Linux-only optional dependencies when run on Windows and has broken this exact fleet's lockfile before. This agent is the dispatchable, accountable-for-the-mutation version of that job, it patches the lockfile entry surgically, verifies the published version against the registry rather than the workflow log, and treats a caret range as a claim to be checked, not an answer.
-tools: Read, Edit, Write, Grep, Glob, Bash
+tools: Read, Edit, Write, Grep, Glob, Bash, Skill
 model: opus
 color: magenta
 ---
