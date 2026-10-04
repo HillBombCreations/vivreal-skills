@@ -5,9 +5,9 @@ description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (C
 
 # VR-MCP-Server: knowledge digest
 
-Last synced: 2026-08-15
+Last synced: 2026-10-04
 
-Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer token), deployed on Lambda (Node 20, arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. v1.0.0, deployed. Read `C:\repos\VR-MCP-Server\CLAUDE.md` for depth.
+Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer token), deployed on Lambda (Node 22 since 2026-10-02, `c8cd658`; arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. Deploys on every push to `main` (`.github/workflows/deploy.yaml`; the `dogfood` trigger was removed). Read `C:\repos\VR-MCP-Server\CLAUDE.md` for depth.
 
 ## Two MCP surfaces: don't confuse them
 
@@ -39,13 +39,14 @@ Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is
 
 ## Critical implementation gotchas
 
-- **`X-App-Source: vivreal` header is required** on every CMS + Secure API call. Without it, group lookups query `{ type: undefined }` → null → 500. Set in `src/api/cms-client.ts`.
+- **`X-App-Source: vivreal` is the TENANT PARTITION PREDICATE**, built in exactly one place, `src/api/app-source.ts` (`vivrealApiHeaders()`), for all three outbound calls (`fetchUserGroups`, `cmsRequest`, `secureApiRequest`); `test/unit/app-source-header.test.js` fails if one stops sending it. VR_Secure_API now refuses a missing or unknown value with **400** "Missing or unrecognised X-App-Source header" (`src/shared/appSource.js`, allowlist `['vivreal']`, case-sensitive). Before 2026-09-25 a missing header returned 200 with ZERO groups, silently; the old "null then 500" story was wrong too (MCP CLAUDE.md:189-215).
 - **Email comes from the ID token, not the access token**, Cognito access tokens don't include `email`. Existing-session refresh must read refreshed ID-token claims, NOT `principal.email` (always undefined).
 - **CMS requires `page` + `limit`** on many endpoints, tools default `page:"1"`, `limit:"20"`. `cmsRequest()` auto-adds `key` (dbKey) + `groupID`.
 - Calendar has 1 tool (`list-events` → `/tenant/events`); Vivreal has NO `event` entity, scheduling is a `publishDate` on content/channel objects.
 - Field types live in `src/constants/fieldTypes.ts`; CI parity test guards drift vs `VR_CMS_API/src/shared/validateObjectValue.js`.
 - Endpoint specifics: `/api/groupInfoV1` (groupID + email) vs `/api/groupInfo` (email only); `/tenant/presignedUploadUrl` (not `s3PutUrl`); `/tenant/dashboardInfo` (not `dashboard`).
-- **dbKey-routing/tier-gating fixes (this window)**: a bucket-slug routing bug and a Pro Plus tier misreport are both fixed, verify current behavior against source rather than assuming the old symptoms still apply.
+- **dbKey-routing/tier-gating fixes**: a bucket-slug routing bug and a Pro Plus tier misreport are both fixed, and a plan is never read from a database name (`tierForDbKey` deleted, TEN-9a/9b). Verify current behavior against source rather than assuming the old symptoms still apply.
+- **The write tools were repaired on 2026-09-29** after an audit found many could not work: `update-site` was uncallable because the server sent `key` where VR_Secure_API's Joi `.keys()` validator wants `dbKey` (`990c4b6`); the three remaining update tools now MERGE instead of replacing the stored object (`76ba2dd`); a route that does not exist no longer reads as a permissions problem (`b9b9e81`); phantom tools and prompts that pointed at a dead tool were removed (`60b4d6d`). Re-test a write tool against a scratch object before relying on it.
 - **Docs module scope expanded** (help-center docs tools): the Docs module's existing tools cover more help-center content without new tools being added. The overall total has since moved for an unrelated reason (a module was removed), so do not infer a total from this line.
 - Repo gained ESLint + a husky gate with a coverage baseline.
 

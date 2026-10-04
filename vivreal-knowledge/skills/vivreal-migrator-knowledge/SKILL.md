@@ -5,7 +5,7 @@ description: 'Use when migrating an external website into the Vivreal CMS, turni
 
 # Vivreal_Site_Migrator: knowledge digest
 
-Last synced: 2026-08-15
+Last synced: 2026-10-04 (deployed line is `origin/master`; this repo has NO GitHub Actions, so a push triggers nothing)
 
 Agent-driven repo with **three modes**: `/migrate` (migrate an external site's content into the Vivreal CMS, 1:1 data/structure parity), `/template` (turn an exemplar site into a reusable renderer identity kit, 1:1 design/layout parity with placeholder content + a fictional brand), and **live-site restyles** (restyle an ALREADY-LIVE site in place, see the restyle section). The repo is the **orchestrator only**, renderer components live in the renderer repo; net-new components are authored there via the template track's `component-builder` agent, never as migrator code. There is **no committed CLAUDE.md**, `docs/migration-flow.md` + `docs/template-flow.md` are truth (`README.md` WAS updated, it carries the seo-redirects banner and links `docs/migration-flow.md`, but is still thin and migrate-only). Operational detail lives in TEN `.claude/agents/`: the five stage agents `{ingest,collections,integrations,site,cutover}.md`, the Playwright-enabled template-era trio `{kit-designer,component-builder,page-confirm}.md`, plus `studio-confirm.md` (the editability authority) and `studio-registrar.md` (portal-side palette/editor/whitelist registration). The loader is extracted into `packages/site-loader`, installable as `@hillbombcreations/site-loader` (now **0.3.9** (was 0.2.4 at last sync, via 0.3.5), running inside VR_Secure_API's `instantiateTemplateWorker` in prod; this skill owns it, see the site-loader section), exposing `instantiateBlueprint` so the portal TEMPLATE PICKER can instantiate published blueprints.
 
@@ -27,11 +27,13 @@ Agent-driven repo with **three modes**: `/migrate` (migrate an external site's c
 
 **Vivreal Content template-site rule** (docs/template-flow.md): every site instantiated from a template (validation, demo, smoke, showcase) is created on the **Vivreal Content** group, groupName "Vivreal Content", key `vivrealcontent`, `_id 6a68169fe1457c2f3fd04530`.
 
-**Release train** (template-flow.md §6b + `docs/fleet-release-train.md`): any kit that shipped renderer/site-loader surface rides renderer publish → site-loader pin bump (`^0.2.x` never auto-adopts) → capability manifest regen → manual `npm publish` of site-loader.
+**Release train** (template-flow.md §6b + `docs/fleet-release-train.md`): any kit that shipped renderer/site-loader surface rides renderer publish → capability manifest regen FROM THE PUBLISHED TARBALL (`npm run gen-capabilities`; a dev dist stamps a false version) → site-loader version bump → manual `npm publish` of site-loader (there is no CI here) → VR_Secure_API pins the new site-loader EXACTLY with a tripwire test and backports it (Secure #322 took 0.7.1 into v2.20.1). Prove a publish with `npm view @hillbombcreations/site-loader@<v>` (gitHead, shasum) against the tarball, not with the publish command's exit code.
+
+**Kit gates (2026-10):** `npm run lift-gate:all` clears every authored kit (15 of 15 on 2026-10-03/04), `npm test` is `scripts/test-all.js` over the root and the site-loader suites, and the portal's `kit:validate` proves a kit is EDITABLE in Studio, not just renderable. Run the published site-loader's suite too (277 of 277 at 0.7.1).
 
 ## packages/site-loader (0.2.x → 0.3.x): owned here: runs in prod
 
-`@hillbombcreations/site-loader` is now **0.3.9** (was 0.2.4 at last sync, via 0.3.5) and runs inside VR_Secure_API's `instantiateTemplateWorker` in production; this skill owns it. Release line:
+`@hillbombcreations/site-loader` is **0.7.1** on `origin/master` (`packages/site-loader/package.json`, published 2026-10-04, gitHead `eab2bf7`) and runs inside VR_Secure_API's `instantiateTemplateWorker` in production, pinned exactly; this skill owns it. **Read the version from that file; the line moved from 0.3.9 to 0.7.1 in under a month.** 0.7.1 is a patch (`carryDisabledBindings`: a disabled binding seeds a disabled block). A 0.8.0 that lets the blueprint schema carry `hero.featureItem.timezone` and `defaultRating` was QUEUED, not built, on 2026-10-04. Early release line, kept for its lessons:
 
 - **0.2.0**, seeds pending integrations + stamps the products binding (`integrationProvider`), the mitigation the renderer doc points at for the unstamped-provider stripe fallback.
 - **0.2.1**, tag-scoped collection dedup in `packages/site-loader/src/loader/seedCollections.js`, stops cross-site absorption on shared tenants (a new site adopting another site's collections on the same tenant DB); pinned by `test/seedCollectionsDedupe.test.js`. Highest-severity loader fix; multi-tenant correctness.

@@ -17,9 +17,9 @@ The single most important structural fact: **the rendered storefront selects lay
 - "Render differently for ecommerce vs showcase" is a **renderer** concern (`vivreal-site-renderer` + `Vivreal_Templates`), never branch/deploy logic.
 - A page `format` can be added to **any** site regardless of its `templateType`.
 
-### Live page formats: the `COMPOSE_FORMATS` registry (21 entries)
+### Live page formats: the `COMPOSE_FORMATS` registry (29 entries on 2026-10-04)
 
-The runtime allowlist is `COMPOSE_FORMATS` in Templates' `src/app/[slug]/page.tsx`: `static`, `about`, `shows`, `team`, `checkout-success`, `checkout-cancel`, `products`, `schedule`, `form`, `menu`, `subscribe`, `standard`, `list`, `grid`, `collection-list`, `catalog`, `location-hub`, `craft`, `profile`, `panorama`, `discography`.
+The runtime allowlist is `COMPOSE_FORMATS` in Templates' `src/app/[slug]/page.tsx`: `static`, `about`, `shows`, `team`, `checkout-success`, `checkout-cancel`, `products`, `schedule`, `form`, `menu`, `subscribe`, `standard`, `list`, `grid`, `collection-list`, `catalog`, `location-hub`, `craft`, `profile`, `panorama`, `discography`, `inquiry`, `spaces`, `tour`, `booking-hub`, `quiz`, `intake`, `pricing`, `recipes` (read at `origin/main` 2026-10-04; recount before quoting).
 
 - **`ecommerce` and `showcase` are NOT in it**, `ecommerce` is a templateType (seed-time only, see above); the storefront format string is `products`. `showcase` is not a `pageConfigs[].format` value either.
 - **A format absent from `COMPOSE_FORMATS` 404s**, the page seeds fine, then hard-404s at runtime (the `/about-us` and `/shop` regressions).
