@@ -1,7 +1,7 @@
 ---
 name: db-query
 description: Safely query Vivreal's multi-tenant MongoDB via MCP, with built-in dbKey routing, safety guards, and result formatting
-allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats
+allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__db-stats
 user-invocable: true
 ---
 
@@ -20,8 +20,8 @@ Query Vivreal's multi-tenant MongoDB with built-in awareness of the database rou
 
 - `<database>`: Database name. Must be one of:
   - `Vivreal` (or `main`), the control-plane DB (groups, users, checkout sessions)
-  - `general_shared`, a tenant content placement. Most groups sit here
-  - `pro_plus`, another tenant content placement. **This is a DATABASE name, not a plan name.** The plan it was once named after no longer exists, the database and its data very much do
+  - a tenant content **pod**, `pod_01`, `pod_02` and onward (list them with `list-databases`). Which pod a group uses is its stored `groups.dbKey`, nothing else; tier does not decide it
+  - **`general_shared` and `pro_plus` no longer exist.** The pod rename executed in September 2026 and both names are refused as placements, so a query naming either CONNECTS FINE AND RETURNS ZERO ROWS. Refuse them, say why, and route to the group's stored `dbKey` instead
 - `<collection>`: MongoDB collection name (see collection map below)
 - `[filter]`: JSON filter object (e.g. `{"archived": {"$ne": true}}`)
 - `--limit`: Max documents to return (default: 10, max: 50)
@@ -56,14 +56,14 @@ network), say *which* step failed before asking.
 
 ## Multi-Tenant Database Routing
 
-Vivreal uses multi-tenant MongoDB. Tenant **content** lives in two shared databases by tier
+Vivreal uses multi-tenant MongoDB. Tenant **content** lives in shared pod databases, and the group's STORED `dbKey` decides which.
+**Tool names:** this plugin's server registers its tools as `mcp__plugin_vivreal-db-explorer_mongodb__*`; a project `.mcp.json` server named `mongodb` registers `mcp__mongodb__*`. Use whichever set is loaded; the names in this file mean either.
 **Count the databases rather than trusting a number here** (`list-databases`). The shape is stable, the count is not:
 
 | Database | Contents | Which groups? |
 |---|---|---|
 | `Vivreal` | Control plane: `groups`, `leads`, `checkout_sessions`, **`media_files`**, **`usage_trackings`**, `domainorders`, `prospects`, `inquiries` | All (mainDb) |
-| `general_shared` | Tenant content: `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks` | **Whichever groups carry `dbKey: "general_shared"`.** Census it, do not assume |
-| `pro_plus` | Tenant content (same shape plus `stripe_products`, `collection_templates`) | **Whichever groups carry `dbKey: "pro_plus"`.** It is NOT empty |
+| `pod_NN` (`pod_01`, `pod_02`, ...) | Tenant content: `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, plus `stripe_products`, `collection_templates` where used | **Whichever groups carry that `dbKey`.** Census it (`Vivreal.groups` grouped by `dbKey`), do not assume; one pod can hold a single group on purpose |
 | `outreach` | `suppressions` only (global) | service-global |
 | a slugified group name | usually only `audit_logs`, legacy or stranded per-group DB | Possibly no group at all. More than one exists. Do not rely on the pattern |
 
@@ -74,8 +74,9 @@ NOT the tenant DB.** New collections not listed in the per-field schemas below: 
 `stripe_webhook_events`, `stripe_products`, `collection_templates`, `prospects`, `inquiries`.
 
 Tenant isolation is via the `groupID` field on every document. To find which DB holds a group's
-content: look up the group in `Vivreal.groups`, read `tier`, route to `general_shared` (free/basic/pro)
-or `pro_plus` (proplus). The `key` field is **S3 bucket naming**, NOT database routing.
+content: look up the group in `Vivreal.groups` and read its STORED `dbKey`. That is the database. Never
+derive it from `tier` (a pod holds free and paid groups alike, and the code that once mapped tier to
+database is deleted fleet-wide). The `key` field is **S3 bucket naming**, NOT database routing.
 
 ## Collections & Schemas
 
@@ -306,15 +307,15 @@ or `pro_plus` (proplus). The `key` field is **S3 bucket naming**, NOT database r
 /db-query Vivreal groups {"key": "mygroup"}
 → Looks up a group in the mainDb by group key
 
-/db-query general_shared collection_groups {"groupID": "68f27fec..."}
-→ Finds all non-archived collection groups for a group placed in `general_shared`, limit 10
+/db-query pod_01 collection_groups {"groupID": "68f27fec..."}
+→ Finds all non-archived collection groups for a group whose stored `dbKey` is `pod_01`, limit 10
 
-/db-query general_shared collection_objects {"collectionObj.refID": "68f94f0a..."} --limit=5 --sort=createdAt:desc
+/db-query pod_01 collection_objects {"collectionObj.refID": "68f94f0a..."} --limit=5 --sort=createdAt:desc
 → Finds latest 5 objects in a specific collection
 
 /db-query <the database in that group dbKey> sites {"groupID": "68f27fec..."}
-→ All sites for a group whose stored `dbKey` is the `pro_plus` database
+→ All sites for a group, in whichever pod its stored `dbKey` names
 
-/db-query general_shared auditlogs {"groupID": "68f27fec..."} --limit=20 --sort=createdAt:desc
+/db-query pod_01 audit_logs {"groupID": "68f27fec..."} --limit=20 --sort=createdAt:desc
 → Latest 20 audit log entries for a group
 ```

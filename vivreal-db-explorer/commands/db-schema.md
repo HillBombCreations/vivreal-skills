@@ -1,7 +1,7 @@
 ---
 name: db-schema
 description: Show the Mongoose schema definition, indexes, and a sample document for any Vivreal MongoDB collection
-allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, Read, Glob, Grep
+allowed-tools: Bash, mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
 user-invocable: true
 ---
 
@@ -29,7 +29,7 @@ unreachable, say which step failed first. See the `vivreal-db` skill for the ful
 
 `/db-schema <database> <collection> [--source] [--indexes] [--sample] [--stats]`
 
-- `<database>`: Database name, `Vivreal` (mainDb), `general_shared`, or `pro_plus`. If a group name is given, look up its tier to route to the correct tenant DB.
+- `<database>`: Database name, `Vivreal` (mainDb) or a tenant pod (`pod_01`, `pod_02`, ...; list them). If a group name is given, look up its STORED `dbKey` in `Vivreal.groups` to route to the correct tenant DB. `general_shared` and `pro_plus` no longer exist; refuse them rather than return an empty schema.
 - `<collection>`: Collection name
 - `--source`: Show the Mongoose schema definition from source code (searches backend repos)
 - `--indexes`: Show all indexes on the collection
@@ -130,6 +130,6 @@ For quick reference, the user might use informal names. Map these:
 
 Same rules as `/db-query`:
 - `main` or `Vivreal` → `Vivreal` (control-plane DB with groups, users, checkout sessions)
-- `general_shared` → tenant data for free / basic / pro groups
-- `pro_plus` → another tenant content database. **A database name, not a plan name.** Which groups live in it is a property of their stored `dbKey`, nothing else
-- If user gives a group name → look up in `Vivreal.groups`, read `tier`, route to correct tenant DB
+- `pod_NN` → tenant content databases. Which groups live in one is a property of their stored `dbKey`, nothing else; tier does not decide it
+- `general_shared`, `pro_plus` → RETIRED (the pod rename executed in September 2026). They connect and return nothing, which reads as "no data"; refuse and explain
+- If user gives a group name → look up in `Vivreal.groups`, read its stored `dbKey`, route there
