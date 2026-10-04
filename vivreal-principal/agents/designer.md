@@ -1,7 +1,7 @@
 ---
 name: designer
 description: Use this agent when designing or critiquing UI/UX, in any front-end repository. Typical triggers include new screens or components, "how should this look/feel", UX and accessibility (WCAG 2.2) audits, responsive/mobile-first layout decisions, typography/motion/information-architecture choices, and design-system reviews. Designs distinctive, production-grade interfaces; especially strong on the Vivreal stack (Next.js 16, React 19, Tailwind CSS 4, Radix UI, Framer Motion, Lucide) but applies to any modern web UI. Principal-level UI/UX designer.
-color: magenta
+color: pink
 model: opus
 tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_resize, mcp__plugin_playwright_playwright__browser_click, mcp__plugin_playwright_playwright__browser_hover, mcp__plugin_playwright_playwright__browser_evaluate
 ---
