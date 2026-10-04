@@ -43,6 +43,23 @@ prompt: Review the diff just produced for "$ARGUMENTS" in diff mode. Cite
 ```
 
 3. Show the reviewer verdict. If FAIL, dispatch the coder to fix the flagged
-   items, then re-review (cap 3 passes). If still failing, escalate to the user.
-4. Only report the task complete once the reviewer verdict is PASS (or the user
-   accepts remaining notes).
+   items, then re-review (cap 3 passes). If still failing, escalate to the user
+   with the latest verdict and STOP here, no commit, no push, no PR.
+4. Once the reviewer verdict is PASS (or the user explicitly accepts remaining
+   notes), finish the job yourself. The coder was told to skip its own git
+   mechanics precisely because this command owns them now:
+   - Show `git status` and `git diff --stat` for the full diff.
+   - Stage by name and commit, `git commit --only <explicit paths>`, never
+     `git add -A` and never a bare `git commit`, with hooks green. A hook
+     failure is a bug to fix, never `--no-verify`.
+   - If currently on `main`, create a branch first, `implement/<short-kebab-slug>`
+     derived from $ARGUMENTS (<=50 chars).
+   - Push through the gate in the foreground, holding the turn open until it
+     finishes. Never background a push.
+   - `gh pr create` with a terse body: what changed, the reviewer verdict, and
+     any deviations the coder reported.
+   - Report the PR URL.
+5. State the release state in plain words in the final summary, merged, or
+   open and unmerged, never glossed as "Ship it". Only report the task
+   complete once the PR exists (or the review loop was escalated to the user
+   per step 3, in which case say so plainly instead).
