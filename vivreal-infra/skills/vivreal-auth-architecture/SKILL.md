@@ -37,17 +37,17 @@ The portal also signs a `user_ctx`; for the outreach API the gmail/email routes 
 ## THE BOUNDARY (don't conflate)
 
 - **API Gateway authorizers** (Cognito / API-key) gate access to the **backend Lambdas**. They produce `requestContext.authorizer` context.
-- **`active_ctx`/`CTX_SECRET`** is a **portal-internal** mechanism for "which group is active", it is signed and verified by the **portal** (and re-verified by VR_Outreach_API and VR_Secure_API's admin attribution gate, which read the SAME `CTX_SECRET` from Secrets Manager `vivreal/prod/core`, not the retired `hb-api-secrets`).
+- **`active_ctx`/`CTX_SECRET`** is a **portal-internal** mechanism for "which group is active". **Since 2026-09-27 (H6006/H6007) ctx tokens are audience-bound and the cookie never leaves the portal.** Each audience (`portal`, `secure`, `cms`, `outreach`, `main`, `mcp`, `client`) has a key DERIVED from the root, `HMAC(CTX_SECRET, 'vivreal/ctx/v2/<audience>')`; the cookie is minted for `portal`, and the portal's proxy mints a fresh short-lived token for the one upstream it is calling (audience resolved from the route's `baseUrl`). VR_Outreach_API and VR_Secure_API's admin gate verify with their OWN derived key and require `aud` (and `exp`). The root still lives in Secrets Manager `vivreal/prod/core`, not the deleted `hb-api-secrets`. A derived key does not defend against a compromised root; it means a token for one service is not a token for another.
 - The backends behind Cognito do NOT verify `active_ctx`; they read Cognito claims + the `key`/`groupID` query params the portal passes. VR_Client_API uses neither, purely the API key.
 
 ## CTX_SECRET: the shared HMAC (atomic-rotation trap)
 
-`CTX_SECRET` MUST be **identical** between the portal (env) and every service that verifies portal-signed tokens (VR_Outreach_API; VR_Secure_API `getGroupInformation` admin gate), via Secrets Manager `vivreal/prod/core` (the old shared `hb-api-secrets` store is retired and fully deleted, see `vivreal-iam-secrets`). **Rotating one without the others → 401 "Invalid active context" on every request** to that service. Rotate atomically across all consumers. See `vivreal-iam-secrets`.
+The ROOT `CTX_SECRET` MUST be **identical** between the portal (env) and every service that verifies portal-minted tokens (VR_Outreach_API; VR_Secure_API's admin gate), because each derives its key from it, via Secrets Manager `vivreal/prod/core` (the old shared `hb-api-secrets` store is retired and fully deleted, see `vivreal-iam-secrets`). **Rotating one without the others → 401 "Invalid active context" on every request** to that service. Rotate atomically across all consumers. See `vivreal-iam-secrets`.
 
 ## Debugging 401/403
 
 - **403 (CMS) / 502 (Secure) on a brand-new route** → API Gateway has no event for it (missing SAM fragment). CMS/Secure/Client wire **explicit per-route events, not a catch-all `{proxy+}`**, so an unknown path never reaches Express, it falls through to the default IAM-protected resource and the Cognito authorizer never fires. The CMS 403 is SigV4/IAM on that fall-through resource, *not* an auth bug. Fix: add the per-route event in the `cloudformation/` fragment (never hand-edit the generated `allRoutes.yaml`). Deploy-config miss. (Main API is exempt, public routes, no gateway authorizer.) See `vivreal-lambda`.
-- **401 "Invalid active context"** → `CTX_SECRET` mismatch between portal and the verifying service.
+- **401 "Invalid active context"** → root `CTX_SECRET` mismatch between portal and the verifying service, OR a token minted for the wrong audience (a raw portal cookie forwarded by a hand-written route, or a hand-minted test token without the service's `aud`), OR a token with no `exp`.
 - **401 to a backend** in the portal → a proxy route used native `fetch()` instead of `createAuthAxios()` (only the latter redirects on 401), portal concern, see `vivreal-portal-knowledge`.
 - **Client API Deny** → API key not found in `groups.apiKey`, or key regenerated. Check mainDb `groups`.
 
