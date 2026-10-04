@@ -45,8 +45,13 @@ The passive **`sentry-tracer`** knowledge skill (in the `vivreal-knowledge` plug
 > 2. A span-name search returning zero here is the expected result, not a finding. Pair every
 >    zero-result span query with a control that must return rows before reporting it.
 >
-> Separately, a fraction of error events are **discarded on a plan quota**, so a lower-than-expected
-> event count can be billing rather than health. Check the quota before reading a drop as a fix.
+> Separately, error events can be **discarded on a plan quota**, so a lower-than-expected event
+> count can be billing rather than health. It has happened at scale: from roughly 2026-08-24 to
+> 2026-09-17 the org ACCEPTED ZERO error events (every one rate limited), recovering on 2026-09-18.
+> Silence from that window means nothing. Read the org's outcomes BY DAY
+> (`/api/0/organizations/vivreal/stats_v2/?field=sum(quantity)&groupBy=outcome&category=error&statsPeriod=30d&interval=1d`),
+> never as a 30 day total, which blends an outage with a recovery. When Sentry is silent, the
+> CloudWatch log streams are the record (`vivreal-infra:vivreal-lambda-logs`).
 
 | Project Slug | Service | Platform | Tracing | What It Covers |
 |---|---|---|---|---|
@@ -58,6 +63,9 @@ The passive **`sentry-tracer`** knowledge skill (in the `vivreal-knowledge` plug
 | `vr-client-auth` | VR_Client_Auth Lambda authorizer | node | **100%** | API key validation for Client API |
 | `site-deployment` | Vivreal_EventHandler (Step Functions) | node | **100%** | Site deploy pipeline (10 steps: createGithubBranch -> markSiteLive) |
 | `vivreal-mcp-server` | VR-MCP-Server (MCP Lambda) | node | **100%** | OAuth flow, tool entry/exit, downstream CMS+Secure API breadcrumbs |
+| `vivreal-templates` | Vivreal_Templates (customer sites on Amplify compute) | javascript-nextjs | read the SDK config | Customer-site render and route errors. Slug inferred from its issue prefix (`VIVREAL-TEMPLATES-*`), confirm with `find_projects` |
+
+This table is not a roster. VR_Outreach_API reports too (its DSN is `/vivreal/prod/outreach/sentry-dsn`); list the org's projects with `find_projects` before concluding a service sends nothing.
 | `vivreal-templates` | Vivreal_Templates (client sites) | javascript-nextjs | **0% (errors only)** | End-user template site errors, no tracing by design |
 
 ### Distributed Tracing Architecture (current as of 2026-05-18)
@@ -106,7 +114,7 @@ Every event emitted from backend services now carries the following tags. Use th
 |---|---|---|---|
 | `environment` | CFN `SentryEnvironment` param (CI-set) | `production`, `staging` | First filter, never investigate without scoping to prod vs staging |
 | `groupID` | `handleHBRoutes`/`handleTenantRoutes` middleware + `setTag` after resolved | `68f27fec32e7acbb755c087e` | Tenant-scoped triage. Empty on pre-auth routes. |
-| `dbKey` | Same middleware | `general_shared`, `pro_plus` | DB-routing-scoped triage. Differentiates shared vs enterprise tenants. |
+| `dbKey` | Same middleware | `pod_01`, `pod_02` | DB-routing-scoped triage: which tenant pod served the request. `general_shared` and `pro_plus` appear only on events from before the September 2026 pod rename; those databases no longer exist. |
 | `bucketname` | Client API errorHandler (authorizer ctx) | `collection-thecomedycollective` | S3-pipeline issues; ties events to specific media tenant |
 | `requestId` / `request_id` | Header `x-request-id`, generated at portal edge | `a1b2c3d4...` | **Critical fallback** when trace propagation breaks, see Playbook 7 |
 | `lambda` | `process.env.AWS_LAMBDA_FUNCTION_NAME` | `VR-Secure-API-UserAndAuth-...` | Which Lambda fired the event |
@@ -200,7 +208,7 @@ With 100% tracing and header propagation, every portal HTTP request now creates 
 
 **Tenant-scoped queries (new post-audit):**
 - `search_events(projectSlug='vr-cms-api', naturalLanguageQuery='all errors for groupID:68f27fec32e7acbb755c087e in the last 24 hours')`
-- `search_events(projectSlug='vr-secure-api', naturalLanguageQuery='all events tagged dbKey:pro_plus from the last 1 hour')`
+- `search_events(projectSlug='vr-secure-api', naturalLanguageQuery='all events tagged dbKey:pod_02 from the last 1 hour')`
 - `search_events(naturalLanguageQuery='all events tagged groupID:X across all projects in the last 12 hours')`, cross-service tenant view
 
 **Environment-scoped queries (filterable now that SENTRY_ENVIRONMENT is per-stage):**
@@ -356,10 +364,10 @@ Always produce a **timeline table** as the primary output. Include tenant contex
 
 | Time (UTC) | Service | Event | Trace ID | Request ID | Tenant | Details |
 |---|---|---|---|---|---|---|
-| 20:41:14 | vivreal-portal | Page load /app/dash | e276790e... | a1b2c3d4 | 68f27fec / general_shared | 6 HTTP client spans |
-| 20:41:33 | vr-cms-api | Request received | e276790e... | a1b2c3d4 | 68f27fec / general_shared | POST /tenant/collectionObject |
-| 20:41:33 | vr-cms-api | service.collectionObjects:before-create | e276790e... | a1b2c3d4 | 68f27fec / general_shared | breadcrumb |
-| 20:41:33 | vr-cms-api | Socket sent | e276790e... | a1b2c3d4 | 68f27fec / general_shared | newCollectionObject -> group 68f27fec |
+| 20:41:14 | vivreal-portal | Page load /app/dash | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | 6 HTTP client spans |
+| 20:41:33 | vr-cms-api | Request received | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | POST /tenant/collectionObject |
+| 20:41:33 | vr-cms-api | service.collectionObjects:before-create | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | breadcrumb |
+| 20:41:33 | vr-cms-api | Socket sent | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | newCollectionObject -> group 68f27fec |
 
 ## Trace Health
 - Trace ID continuity: ✓ (single trace across portal + backend) | ✗ (split, fell back to request_id correlation)

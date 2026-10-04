@@ -27,7 +27,7 @@ Dispatch the `sentry` agent (by name, via the Agent tool) with the user query. T
 6. **DevTools network request** -- user pastes request/response headers from browser DevTools
    -> Dispatch the `sentry` agent with Playbook 5 (extract x-request-id, sentry-trace, timestamp; correlate across services)
 
-7. **Tenant-scoped triage** -- "what's broken for groupID:X", "all errors in dbKey:pro_plus", "show me errors for tenant <name>"
+7. **Tenant-scoped triage** -- "what's broken for groupID:X", "all errors in dbKey:pod_02", "show me errors for tenant <name>"
    -> Dispatch the `sentry` agent with Playbook 6 (tenant-scoped triage). Always filtered to `environment:production` unless explicitly told staging.
 
 8. **Request ID fallback** -- user pastes a request_id (UUID-shaped) from the portal toast / Network tab
