@@ -119,10 +119,13 @@ re-ships the bug.
 - React 19 hydration: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
 - `page.route()` does NOT intercept server-side fetches in Next.js server components. See `e2e/TESTING.md` "Critical Patterns & Gotchas" for workarounds.
 - Sites/integrations pages are serialized under parallel workers, don't break that.
-- **Viewports: 390, 1440, and PWA (installed app).** Owners run the portal as a home-screen app
-  (`display-mode: standalone`), with safe-area insets and a standalone-only status-bar scrim.
-  Headless Playwright never reports standalone, so an e2e spec cannot reproduce that view; do not
-  write one that claims to. Check standalone-only behaviour with vivreal-hq's `launchPwaDevice`
+- **Viewports: the PWA (installed app) is the primary mobile view, then 1440, then 390 as a
+  secondary mobile-browser check.** Owner direction 2026-10-06: we push owners to install the
+  app, so its view is the mobile view that matters most. Owners run the portal as a home-screen
+  app (`display-mode: standalone`), with safe-area insets and a standalone-only status-bar scrim.
+  Keep the 390 e2e coverage (it is still the browser check, and the only mobile view a headless
+  spec can run). Headless Playwright never reports standalone, so an e2e spec cannot reproduce
+  the app view; do not write one that claims to, and do not report a 390 result as the app. Check standalone-only behaviour with vivreal-hq's `launchPwaDevice`
   (`packages/content-studio/src/pwa-device.ts`, or `npm run pwa:open -- --url <url>`) against the
   deployed portal or a local dev server, and count a result only after `assertStandalone()` passes
   on that page. It is Blink, not WebKit: rubber-band and overscroll, Safari-only CSS, zoom-on-focus

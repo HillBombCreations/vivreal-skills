@@ -37,6 +37,7 @@ color: green
 | scene keys (optional) | `calendar-month-view, floating-calendar-open` | Explicit portal-scenes.json keys override planning |
 | duration budget (optional) | `90` | Total seconds of footage wanted (default ~60) |
 | viewport (optional) | `vertical` (default) or `horizontal` | vertical = 540×960 (9:16 mobile), horizontal = 1600×900 (Phase 2) |
+| phone view (optional) | `browser` | Vertical takes are the **installed app** by default. `browser` only when the brief explicitly asks for the mobile browser |
 | stills (default ON) | `off`, or slot specs from a guide draft | One labeled still per segment by default; slot specs add dedicated stills (see Shot planning 5) |
 
 ## What makes a shot worth keeping
@@ -155,6 +156,9 @@ are not cleared.
 
 One `CaptureSequence` JSON (see `src/portal-capture.ts`) with:
 - `viewport`: `{"w": 540, "h": 960}` (vertical) or `{"w": 1600, "h": 900}`
+- `display`: leave it out. A vertical sequence defaults to `"pwa"`, the installed app (see
+  "Phone takes are the installed app" below); a horizontal one stays `"browser"`. Write
+  `"display": "browser"` on a vertical sequence only when the brief asks for the mobile browser.
 - `baseUrl`: `https://vivreal.io/app/`
 - `storageStatePath`: the auth file
 - `recordDir`: the session folder (recording is context-wide; segments are
@@ -168,6 +172,28 @@ One `CaptureSequence` JSON (see `src/portal-capture.ts`) with:
 - `scroll` accepts `smooth: true` + `durationMs` (eased, default 1600ms) and
   `container: <selector>` for nested scrollable panels; without `smooth` it
   jumps instantly, which is never what filmed footage wants.
+
+## Phone takes are the installed app
+
+Owner direction 2026-10-06: "we should be pushing people to install the pwa so thats the main
+mobile view focus." Every vertical take films the portal as the installed home-screen app
+(`display-mode: standalone`), not a mobile browser tab, so the footage shows what an owner
+who installed it sees: the blue status-bar band across the top 47px, the tab bar lifted
+above the home-indicator gap.
+
+- `portal-capture.ts` opens a **headed** app window for it (`pwa-device.ts`), 540x960 with
+  the iPhone safe areas, on a throwaway profile signed in from `storageStatePath`. A window
+  appears on screen for the run; that is expected.
+- **`assertStandalone` gates every phone take.** It runs after every `goto`/`openPage` and
+  the run fails with `PWA_NOT_STANDALONE` if the page is not the app at the requested size,
+  or `PWA_NOT_VERIFIED` if a `startRecord`, `still` or `screenshot` comes before the first
+  navigation. stderr carries a `standalone OK {...}` line per navigation. A failed check
+  means no take: report it, never flip the sequence to `"display": "browser"` to get it green.
+- The video is still 540x960 and stills still 1080x1920, so clips drop into the same
+  library and render targets. Verify one frame per session: extract it with ffmpeg and
+  confirm the blue band is at the top. No band means a browser take.
+- The mobile browser is used only when a brief explicitly asks for it; then set
+  `"display": "browser"` and record the view in the manifest `note`.
 
 ## Dry-run gate (never skip)
 

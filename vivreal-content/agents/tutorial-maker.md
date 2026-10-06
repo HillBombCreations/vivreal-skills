@@ -93,6 +93,7 @@ Three rules that follow from that:
 | destination | `help` (default), `site`, `social` | Changes the companion text, never the recording |
 | slug | `connect-instagram` | Kebab-case; becomes the session folder |
 | only (optional) | `desktop` or `phone` | Skips a pass. Default is BOTH, and both is the point |
+| phone view (optional) | `browser` | The phone pass is the **installed app** by default. `browser` (`--phone-display=browser`) only when the brief explicitly asks for the mobile browser |
 
 ## Writing the script
 
@@ -270,6 +271,10 @@ before the Facebook, LinkedIn and TikTok takes.
   Oct 5, 11:30 AM") and the line under the picker ("in Pacific time, the clock on this device").
 - After Schedule, about 30 s of upload, then the card reads "Scheduled" with a 6 badge, the
   header's post count includes it, and Calendar shows it on the day ("Instagram, 11:30 AM").
+- **A connect-and-post phone pass attached over `TUTORIAL_CDP_URL` needs
+  `--phone-display=browser`**: the owner's Chrome cannot become the installed-app window, and
+  the app-view pass refuses the attach rather than filming a browser view under the app's name.
+  Say in the handoff that this pass is the mobile browser.
 - **The phone pass of a connect-and-post cannot repeat the connect or the post.** Film the post
   half: Channels shows the connection as Working, then the same composer, ring Schedule WITHOUT
   pressing (chapter it), Close, "Unsaved Changes", Discard Changes, then Calendar. Say so in the
@@ -457,6 +462,20 @@ each holding:
 
 plus a top-level `tutorial-session.json`.
 
+**The phone pass is the installed app, not the mobile browser** (owner, 2026-10-06: "we
+should be pushing people to install the pwa so thats the main mobile view focus"). It opens a
+headed Chrome app window with `display-mode: standalone`, 540x960, and the iPhone safe areas
+(47 top, 34 bottom), on the same signed-in profile as every other pass, so `--login` still
+covers it. `assertStandalone()` runs after the dashboard lands and after every handoff
+resume; `run.log` carries a `STANDALONE OK {...}` line, and a pass that is not the app fails
+before the take starts. The frame shows the portal's blue status-bar band across the top 47px
+and the tab bar sits above the home-indicator gap; captions are already moved clear of both.
+- `--phone-display=browser` shoots the mobile browser instead. Use it only when the brief
+  asks for the mobile browser, and say so in the handoff.
+- An app-view phone pass **refuses `--headless`** (headless never reports standalone) and
+  **refuses `TUTORIAL_CDP_URL`** (the owner's Chrome cannot become an app window). It errors;
+  it never quietly shoots a browser take. A dry run therefore opens a window on the phone pass.
+
 **The first run on a machine is `--login`.** The browser profile starts empty.
 `npm run tutorial -- --login` signs it in, with the demo credentials when they resolve
 (`VIVREAL_DEMO_USER` and `VIVREAL_DEMO_PASS`, or `dev/g2-capture/demo-credentials.json`)
@@ -511,7 +530,9 @@ reinventing a highlight-and-hide for every new script that needs stills.
 2. **Watch both videos.** Not the stills, the videos. Open the phone video at every
    caption and confirm the caption never covers a ringed control. The harness moves a
    caption off a ring by itself, so a covered control is a harness defect to report,
-   not a script choice, and it is still watched.
+   not a script choice, and it is still watched. The phone video is the installed app: the
+   blue status-bar band is across the top of every frame and `run.log` has a
+   `STANDALONE OK` line. No band means a browser take, and it is reshot, not shipped.
 3. **The first frame is the dashboard**, and no frame is a full-screen card. Pull
    frames into `.agent-cache/`, never into the session folder (it is committed, and
    PNGs go to LFS).
@@ -550,3 +571,6 @@ its Tutorial cell. Create the row if it does not exist.
   entry first, and never tick "Send notification to Vivreal" when removing one.
 - Never film any flow, including a connect-and-post take, without a clean `qa-walker` walk
   of it first on the current build.
+- Never pass `--phone-display=browser` to get past a failing standalone check. A phone pass
+  that is not the installed app is a harness defect to report; the mobile browser is used only
+  when a brief asks for it.

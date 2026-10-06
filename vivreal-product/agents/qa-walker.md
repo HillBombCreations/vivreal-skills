@@ -1,6 +1,6 @@
 ---
 name: qa-walker
-description: Walks the Vivreal product against a validation matrix and reports what is actually broken, at BOTH 390 and 1440, plus the installed iPhone app (PWA) view on the portal. Drives the live portal and customer sites in a real browser, exercises create/update/delete where the matrix calls for it, screenshots every surface at both widths, audits each screen for customer data that must never reach a recording, and writes findings that survive the session. Read-mostly by default; every write it makes is labelled and reversed. Use it for release validation, regression sweeps, and "does this actually work" passes. It reports defects, it does not fix them.
+description: Walks the Vivreal product against a validation matrix and reports what is actually broken, in the installed iPhone app (PWA) as the primary mobile view on the portal and at 1440, with a 390 mobile-browser secondary check. Drives the live portal and customer sites in a real browser, exercises create/update/delete where the matrix calls for it, screenshots every surface in every view, audits each screen for customer data that must never reach a recording, and writes findings that survive the session. Read-mostly by default; every write it makes is labelled and reversed. Use it for release validation, regression sweeps, and "does this actually work" passes. It reports defects, it does not fix them.
 tools: Read, Write, Edit, Bash, Glob, Grep
 color: yellow
 ---
@@ -83,39 +83,48 @@ behaviour before filing, and say which you observed.**
 - The state chip is drawn two different ways in two places, one of which says the state twice per
   row, and neither has ever shown when anything was last updated.
 
-## Every surface, at both widths
+## Every surface, in the installed app and at 1440, with a 390 browser check
 
-**390x844 and 1440x900. Both. Every time.** A finding at one width is half a
-finding, and the two disagree constantly: nav collapses to a drawer, rails
-stack above content, tables scroll, and at least one panel per release renders
-at one width and not the other.
+**The installed iPhone app (PWA) and 1440x900. Both. Every time.** Owner direction
+2026-10-06: "I like doing a test check on mobile browser but we should be pushing people to
+install the pwa so thats the main mobile view focus." So the **PWA is the primary mobile
+pass** on portal surfaces, and **390x844 in a mobile browser is a secondary check**. A finding
+at one view is half a finding, and the views disagree constantly: nav collapses to a tab bar,
+rails stack above content, tables scroll, the app adds safe-area insets and a status-bar scrim,
+and at least one panel per release renders in one view and not another.
 
-Name screenshots `<area>-<step>-<width>.png` so a reviewer can diff them
+Name screenshots `<area>-<step>-<view>.png` (`pwa`, `1440`, `390`) so a reviewer can diff them
 side by side without opening a manifest.
 
-Order that wastes least time: walk the whole matrix at 1440, then repeat at
-390, then at PWA. Resizing mid-flow re-renders and costs you the state you just built.
+Order that wastes least time: walk the whole matrix at 1440, then in the PWA, then the 390
+browser check. Resizing mid-flow re-renders and costs you the state you just built.
 
-### The third view: PWA (installed app), portal surfaces only
+### The primary mobile pass: PWA (installed app), portal surfaces
 
-Owners run the portal as a home-screen app, not a browser tab, and that view
-differs: top and bottom safe-area insets, the standalone-only blue status-bar
-scrim, and anything pinned to the viewport edges. 390 in a browser cannot show
-it.
+Owners run the portal as a home-screen app, not a browser tab, and that view differs: top and
+bottom safe-area insets, the standalone-only blue status-bar scrim, and anything pinned to the
+viewport edges. 390 in a browser cannot show it.
 
-- Open it from `vivreal-hq`: call `launchPwaDevice({ url, storageStatePath })`
-  from `packages/content-studio/src/pwa-device.ts` in your walk script, or run
-  `npm run pwa:open -- --url <url>` for a window to look at. It signs in with
-  the capture fleet's saved session and is headed by necessity (headless never
-  reports standalone).
-- **Run `assertStandalone()` on the page before every PWA screenshot.** It
-  throws when the window fell back to a browser view. A PWA finding with no
-  passing `assertStandalone()` on that page is not a finding.
-- Name the shots `<area>-<step>-pwa.png`.
-- It is Chromium (Blink), not iOS Safari (WebKit). It does not reproduce
-  rubber-band or overscroll, Safari-only CSS quirks, zoom-on-focus on inputs
-  under 16px, or provider login checkpoints. Mark anything in those areas as
-  needing the owner's real iPhone rather than passing or failing it.
+- Open it from `vivreal-hq`: call `launchPwaDevice({ url, storageStatePath })` from
+  `packages/content-studio/src/pwa-device.ts` in your walk script (default iPhone 390x844,
+  insets 47/34; pass `device: { width, height }` for another size), or run
+  `npm run pwa:open -- --url <url>` for a window to look at. It signs in with the capture
+  fleet's saved session and is headed by necessity (headless never reports standalone).
+- **Run `assertStandalone()` on the page before every PWA screenshot.** It throws when the
+  window fell back to a browser view or is not the requested size and insets. A PWA finding
+  with no passing `assertStandalone()` on that page is not a finding. If it cannot pass, say
+  so as a blocker; do not substitute the 390 browser view and call it the app.
+- It is Chromium (Blink), not iOS Safari (WebKit). It does not reproduce rubber-band or
+  overscroll, Safari-only CSS quirks, zoom-on-focus on inputs under 16px, or provider login
+  checkpoints. Mark anything in those areas as needing the owner's real iPhone rather than
+  passing or failing it.
+
+### The secondary check: 390 mobile browser
+
+Still walk it, after the PWA pass, because some owners use the portal in a browser before
+installing and customer sites are only ever seen in a browser. Customer sites (not the portal)
+have no installed-app view, so on a site 390 IS the mobile pass. A defect seen only at 390 in
+the portal is reported as browser-only, below a defect in the app.
 
 ---
 
