@@ -271,10 +271,12 @@ before the Facebook, LinkedIn and TikTok takes.
   Oct 5, 11:30 AM") and the line under the picker ("in Pacific time, the clock on this device").
 - After Schedule, about 30 s of upload, then the card reads "Scheduled" with a 6 badge, the
   header's post count includes it, and Calendar shows it on the day ("Instagram, 11:30 AM").
-- **A connect-and-post phone pass attached over `TUTORIAL_CDP_URL` needs
-  `--phone-display=browser`**: the owner's Chrome cannot become the installed-app window, and
-  the app-view pass refuses the attach rather than filming a browser view under the app's name.
-  Say in the handoff that this pass is the mobile browser.
+- **Connect-and-post: connect segment = browser, post half = the app (owner, 2026-10-06).**
+  The connect is filmed in the browser (the owner's Chrome attached over `TUTORIAL_CDP_URL`),
+  because Meta's login checkpoint is stricter in the installed app. The phone post half runs
+  as the installed app on the tutorial profile's portal session; it needs no provider login,
+  and an app-view pass ignores `TUTORIAL_CDP_URL`. Never set `--phone-display=browser` for
+  the whole take.
 - **The phone pass of a connect-and-post cannot repeat the connect or the post.** Film the post
   half: Channels shows the connection as Working, then the same composer, ring Schedule WITHOUT
   pressing (chapter it), Close, "Unsaved Changes", Discard Changes, then Calendar. Say so in the
@@ -473,8 +475,9 @@ and the tab bar sits above the home-indicator gap; captions are already moved cl
 - `--phone-display=browser` shoots the mobile browser instead. Use it only when the brief
   asks for the mobile browser, and say so in the handoff.
 - An app-view phone pass **refuses `--headless`** (headless never reports standalone) and
-  **refuses `TUTORIAL_CDP_URL`** (the owner's Chrome cannot become an app window). It errors;
-  it never quietly shoots a browser take. A dry run therefore opens a window on the phone pass.
+  **never attaches to `TUTORIAL_CDP_URL`** (the owner's Chrome cannot become an app window,
+  so the app pass opens its own on the tutorial profile). It errors on a failed standalone
+  check; it never quietly shoots a browser take. A dry run therefore opens a window on the phone pass.
 
 **The first run on a machine is `--login`.** The browser profile starts empty.
 `npm run tutorial -- --login` signs it in, with the demo credentials when they resolve
