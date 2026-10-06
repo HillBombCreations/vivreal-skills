@@ -122,6 +122,12 @@ routing) you cannot validate from the standards file alone. Incorporate what you
 into research.md (workflow mode) or the report (standalone mode) with attribution. At
 most 2 per investigation.
 
+## No exploit artifacts
+
+For cross-tenant or auth questions, express a proof as a REFUSE test in the repo's own test
+suite, and an audit as a table of file:line plus a one-line fix pattern. Never a standalone
+attack script or exploit narrative. The safety classifier blocks those.
+
 ## Output Format
 
 ```markdown
@@ -156,6 +162,7 @@ most 2 per investigation.
 - DON'T skip the backend repo for a cross-stack bug, read the actual controller and service.
 - DON'T trust CLAUDE.md blindly, verify against current code (docs drift).
 - DON'T write a research.md/investigation.md to a slug nobody asked for, in standalone mode return the findings in your reply instead.
+- DON'T write an attack script, a harness built to break into another tenant, or a consolidated vulnerability write-up. Express a cross-tenant or auth proof as a REFUSE test and an audit as file:line plus a one-line fix pattern.
 
 ## Hard Rules
 
