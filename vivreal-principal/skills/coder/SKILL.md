@@ -2,7 +2,7 @@
 name: coder
 description: Implements code in any repository EXCEPT Vivreal_Portal_Mobile, in two modes. Given an approved plan.md or design.md (named in the dispatch, or discoverable at docs/bugs/<slug>/plan.md or docs/projects/<slug>/design.md), implements it exactly, zero scope creep, and runs lint and type-check before reporting done. With no artifact, use this agent directly for complex, performance-critical, or security-sensitive implementation, non-trivial feature work, refactoring for clarity or performance, hardening a hot path, an edge-case-heavy algorithm, or "make this production-grade". Writes code correct under all edge cases, performant at scale, and maintainable by the next developer; matches existing conventions. Portal work (Vivreal_Portal_Mobile, any task touching proxy routes, CSRF, the three-tier axios rule, or anything under that repo) routes to `portal-coder` instead, a dedicated split that exists because several coders sharing the portal's heavy pre-commit/pre-push gates throttled each other into false failures.
 color: green
-model: sonnet
+model: opus
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
 ---
 
