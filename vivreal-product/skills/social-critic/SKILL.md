@@ -36,7 +36,34 @@ You must SEE what the audience sees, not judge from the copy alone.
   images. Judge the first 1 to 2 seconds hardest, that is where the scroll is won or lost. Note
   whether captions are burned in and readable on a phone at arm's length, and whether it works
   with the sound off.
+  - **Measure the audio, do not just note it has a track.** Added 2026-10-05: a whole week of
+    drafts all reported a normal audio stream while every one of them was silent. `ffprobe`
+    proves a track exists, not that anything is on it:
+    `ffmpeg -i draft.mp4 -af volumedetect -f null - 2>&1 | grep -E "mean_volume|max_volume"`.
+    `mean_volume`/`max_volume` both at or near `-91 dB` is silent, regardless of what the brief
+    or `render-info.json` claims the audio mode is.
+  - **Audit the cut for in-clip skips and backward overlaps**, reading the row's own
+    `edit-brief.json`: list every beat sharing a `clipId` and check whether consecutive windows
+    ever go backward (beat N+1's `inMs` before beat N's `outMs` on the same clip) or jump forward
+    far enough that the before and after states land in visibly different layouts or scroll
+    positions. Watch the actual joins at 5fps or finer
+    (`ffmpeg -i draft.mp4 -vf "fps=5,scale=150:267,tile=8x6" -frames:v 1 joins.png`), not just the
+    beat boundaries. A planned "type it wrong then correct it" beat on the ONE thing a short
+    social cut is about reads as the video rewinding, not as an authentic recovery; flag it as a
+    cut problem even though nothing is technically broken.
+  - **Context and payoff, for any portal/site screen recording:** does it show where we are (the
+    portal, the business, what is about to change) before the edit, and does it end on the live
+    site with the change legible, not just implied? A cut that opens mid-edit or holds on a
+    confirmation dialog instead of the live result fails this even if every individual frame is
+    clean.
 - **Carousel:** Read every slide in order. Slide 1 is the hook; would the reader swipe?
+  - **Freeze-frame premise test, added 2026-10-05:** cover everything except slide 1 (or, for
+    video, the first frame) and write down what a stranger who has never heard of Vivreal would
+    think this is about, before reading the caption or any later slide. If the honest answer
+    needs slide 2, the next beat, or the caption to resolve, that is a FAIL on its own, regardless
+    of how good the rest of the asset is. This is the exact test the first three critique passes
+    on W42 skipped, and it is why a six-slide deck opening on "a web guy vanished" reached the
+    owner before anyone caught that a stranger has no idea who that is.
 - **Still and text post:** read the first 210 characters exactly as the platform truncates them.
 Work in your session scratchpad for frames and sheets; never write into the draft folder.
 
@@ -75,8 +102,24 @@ Now step out and explain, as an expert on that platform's audience and current n
   jargon, claims that are not true today (verify against the drafts' own self-checks and the dev
   docs under `docs/dev-docs/`; X is not a Vivreal channel; Instagram, Facebook, LinkedIn and TikTok are),
   and whether it sounds like the platform brief says that platform should.
+  - **Narration persona, added 2026-10-05.** Any first-person "I" voiceover is only honest over
+    disclosed demo-tenant footage (`vivreal-content-demo`, e.g. Cobalt and Crumb), and the post's
+    own caption must carry a disclosure ("Demo bakery, real product." or equivalent). Over a REAL
+    customer's own footage (signed out, no portal session, e.g. a comedycollectivechi.com-style
+    shoot), narration must be third person in Vivreal's own voice ("We moved the past shows to
+    the top"); a first-person line there is a DO NOT POST regardless of how clean the cut is,
+    because it makes the content speak as if it were that customer.
+  - **Account voice.** "I" versus "we" must match the account the row posts from (Justin's
+    personal profile speaks as "I", the Vivreal Company Page as "we"). When a row pays off or
+    follows up an earlier post, check which account the earlier post went out from and flag a
+    mismatch.
 - **Week view:** repetition across the week's grid (the same footage or line on several channels
   without a real re-cut), and whether each day's posts are genuinely tailored per platform.
+  - **Visual mix, added 2026-10-05.** The week must not be all text. Tally how many of the
+    week's rows are a real screenshot, a demo-site photo, a labeled generated image, or video,
+    versus plain typography/text; if every carousel this week is text-on-a-flat-background, say
+    so explicitly even if every individual deck otherwise passes, and name which upcoming row is
+    the best candidate to convert to a visual deck.
 
 ## Verdict per row
 
