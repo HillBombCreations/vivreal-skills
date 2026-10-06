@@ -41,7 +41,18 @@ You must SEE what the audience sees, not judge from the copy alone.
     proves a track exists, not that anything is on it:
     `ffmpeg -i draft.mp4 -af volumedetect -f null - 2>&1 | grep -E "mean_volume|max_volume"`.
     `mean_volume`/`max_volume` both at or near `-91 dB` is silent, regardless of what the brief
-    or `render-info.json` claims the audio mode is.
+    or `render-info.json` claims the audio mode is. **Skip this check on a row whose
+    `render-info.json` (or the editor's own return JSON) says `awaitingVo: true`**: the voiceover
+    has not been recorded yet, so a silent file there is the expected, pending state, not a
+    finding, and re-running `volumedetect` against it would just rediscover the wait.
+  - **"Not silent" is necessary, not sufficient.** Added 2026-10-06 (definition-review). The
+    owner's standing rule is a voiceover PLUS background music, never either alone. Once a row
+    clears the silence check above, separately confirm BOTH are actually present: a voice (the
+    `volumedetect` pass finding real signal, or `render-info.json` showing `audioMode: "tts"` /
+    `"human-vo"` actually ran, not just requested) AND a licensed music track recorded in that
+    same `render-info.json` (a `music` object naming a real `file`, not an empty `notes` array or
+    the gate's own `MUSIC_GATED_NOTE`/`MUSIC OMITTED` text). A row with a voice and no music, or
+    music and no voice, still fails this check; say by name which half is missing.
   - **Audit the cut for in-clip skips and backward overlaps**, reading the row's own
     `edit-brief.json`: list every beat sharing a `clipId` and check whether consecutive windows
     ever go backward (beat N+1's `inMs` before beat N's `outMs` on the same clip) or jump forward
@@ -56,6 +67,12 @@ You must SEE what the audience sees, not judge from the copy alone.
     site with the change legible, not just implied? A cut that opens mid-edit or holds on a
     confirmation dialog instead of the live result fails this even if every individual frame is
     clean.
+  - **The person on screen, added 2026-10-06 (owner standing rule 3).** Is this a regular business
+    owner doing a real task for their own business (a bakery owner putting today's special on the
+    site), or does it read as a product demo (a tour of a feature, a cursor driving the UI with
+    nobody behind it)? The owner's own words: social screen videos follow a person, not a product
+    demo. Flag a cut that shows a feature instead of a task, even when the mechanics (hook,
+    context, payoff) are otherwise clean.
 - **Carousel:** Read every slide in order. Slide 1 is the hook; would the reader swipe?
   - **Freeze-frame premise test, added 2026-10-05:** cover everything except slide 1 (or, for
     video, the first frame) and write down what a stranger who has never heard of Vivreal would
