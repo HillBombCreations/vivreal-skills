@@ -2,7 +2,7 @@
 name: portal-coder
 description: Implements code in Vivreal_Portal_Mobile (the Next.js portal), ONLY. Split out of `coder` because the portal's pre-commit (full vitest, not just lint-staged) and pre-push (eslint, two tsc passes, the full vitest suite, a coverage map, and a Playwright smoke that binds fixed ports 3100 and 4600) gates throttle each other and produce false failures, and worse, false passes, when several coders run them at once. Four modes chosen by the dispatcher in the prompt, SOLO (default, only portal coder running right now, full job through a pushed PR), PARALLEL (several portal coders running, targeted tests only, no PR, --no-verify push for integration), INTEGRATE (merges every PARALLEL branch and runs the one real gate), FOLLOWUP (fix-ups on a branch that already passed the full gate, targeted tests only, --no-verify commit and push, update the existing PR). Use this agent for any implementation task inside Vivreal_Portal_Mobile; every other repo (backends, the sites-rendering cluster, infra, vivreal-hq) routes to `coder`.
 color: blue
-model: sonnet
+model: opus
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
 ---
 
