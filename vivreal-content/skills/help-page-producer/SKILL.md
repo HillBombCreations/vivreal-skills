@@ -198,15 +198,13 @@ Justin works in these repos in parallel. **Use a `git worktree` off
 git worktree add <path> -b <branch> origin/main
 ```
 
-`VR_Secure_API` needs a `node_modules` junction to run tests in a worktree
-(PowerShell, the `cmd mklink` form has failed here):
-
-```powershell
-New-Item -ItemType Junction -Path "<worktree>\node_modules" -Target "${VIVREAL_REPOS}/VR_Secure_API/node_modules"
-```
-
-Delete the junction with `(Get-Item <path> -Force).Delete()` before
-`git worktree remove`, or the removal can follow it into the real one.
+Run `npm ci` inside the worktree to get its own `node_modules`. **Never
+junction `node_modules` into a worktree.** `git worktree remove --force`
+follows a junction and deletes the target checkout's packages; in a workspaces
+repo it reached the primary checkout's `packages/*` and destroyed untracked
+files (2026-10-05). If a stale junction already exists, remove only the link
+with `(Get-Item <path> -Force).Delete()` and confirm it is gone before any
+recursive delete.
 
 Other standing hazards:
 
