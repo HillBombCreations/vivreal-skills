@@ -48,8 +48,9 @@ No other repository has the portal's shape, so no other split earns its keep yet
 - **The Lambda/Express services** (VR_Secure_API, VR_CMS_API, VR_Main_API, VR_Client_API,
   VR_Outreach_API, Vivreal_EventHandler, VR_Client_Auth) each gate on a pre-push hook of lint
   plus the full suite under a coverage threshold (declared at 100 on most of them, with a
-  genuine measured floor where it is not there yet), and two of them (VR_Secure_API,
-  VR-MCP-Server) add a full build. None of them starts a server or binds a port, so two coders
+  genuine measured floor where it is not there yet), and two repos, VR_Secure_API and
+  VR-MCP-Server (which is outside that list), add a full build. None of them starts a server
+  or binds a port, so two coders
   pushing in the SAME one of these repos at once pay CPU contention, which is slower, not a
   false result, and is already covered by the general `fleet-concurrency` guidance (serialize
   the gate within a repo, parallelise freely across repos). That is a materially different
