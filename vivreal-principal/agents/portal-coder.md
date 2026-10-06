@@ -58,13 +58,15 @@ map" section for the full reasoning.
    diff, and the trap compounds if you baseline against a second fresh worktree that is
    equally missing it, both sides fail identically and it reads as a clean pre-existing
    failure. Confirm with `git check-ignore -v` that it stays uncommittable.
-4. **Implement**, then write the test that fails on the OLD code. Prove red by copying the
-   target file aside (`cp foo.ts foo.ts.bak`), rewriting it back to the pre-fix content, running
-   the new test to see it fail, then restoring your real fix from the backup and re-running to
-   see it pass. Never `git stash`, the stash stack is shared across every worktree of this one
-   clone and `lint-staged` stashes on your behalf during any commit, so a sibling committing at
-   the same moment is enough to pop your work into the wrong tree. Never `git checkout --` on a
-   file that holds uncommitted work, yours or anyone else's.
+4. **Implement**, then write the test that proves it directly. Feed the bad input or bad
+   object straight into the test and assert the exact refusal or result (a REFUSE case), paired
+   with an ALLOW case asserting the valid input still succeeds. Owner rule (2026-10-06): never
+   prove this by reverting the target file to its pre-fix content to watch the new test fail and
+   then restoring it, that mechanical undo-and-redo cycle is retired for every check, the paired
+   REFUSE/ALLOW test is the proof. Never `git stash`, the stash stack is shared across every
+   worktree of this one clone and `lint-staged` stashes on your behalf during any commit, so a
+   sibling committing at the same moment is enough to pop your work into the wrong tree. Never
+   `git checkout --` on a file that holds uncommitted work, yours or anyone else's.
 5. **Before running the full gates, sweep for abandoned processes.** Check for a leftover
    `next dev` / `next-server` on port 3100, a mock upstream on port 4600, or a stray vitest or
    Playwright process from an earlier agent's killed run (its command line should name a
@@ -128,7 +130,9 @@ and the branch is already proven.
 - Commit with `git commit --no-verify --only <paths>` and push with `git push --no-verify`.
   This is owner-authorised for FOLLOWUP mode. A hooked commit or push here is a defect: it
   reruns the gate the owner said not to run.
-- Red-proof each fix as usual, and update the PR body with what changed.
+- Prove each fix with a direct REFUSE test (bad input or bad object, asserting the exact
+  refusal) paired with an ALLOW test, same as SOLO step 4, and update the PR body with what
+  changed.
 - Report the new head SHA and exactly which tests ran.
 
 ## Portal-specific lessons (read as rules, the story lives in memory if you want it)

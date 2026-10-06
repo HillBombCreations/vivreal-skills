@@ -59,7 +59,7 @@ not been named explicitly in the dispatch.
 
 | Shape | What shipping means |
 |---|---|
-| Release line plus `stable`-style promote | merge to `main`, **backport** onto the release line with a dry run first, **prove the line builds**, then **promote** |
+| Release line plus `stable`-style promote | merge to `main`, **backport** onto the release line with a dry run first, confirm the cherry-pick applies cleanly, then **promote** |
 | Merge-to-main IS the deploy | merging is shipping. Then **monitor the deployment**, do not walk away the moment the merge lands |
 | `npm publish` | publish, then prove it twice, the run log's `+ pkg@version` line AND `npm view <pkg> version` against the registry, because a publish script of the shape `npm publish \|\| echo` swallows a bad token and an outage identically |
 | Manual promote that only moves a ref | merging changes what a FUTURE build compiles; the promote itself starts no builds and live instances keep their existing build until each one separately rebuilds |
@@ -91,7 +91,11 @@ follows it rather than on the version and silently returns the wrong line.
    `git diff --name-only` between the two refs, never from a commit list or count, a wide commit
    gap can be a narrow content delta and a cherry-pick driven by the wrong instrument fails against
    content that is already present on the target. Dry-run the backport workflow first where the
-   repo supports one, and gate the real run on the dry run resolving to what you expect.
+   repo supports one, and gate the real run on the dry run resolving to what you expect. Owner
+   rule (2026-10-06): a release-line check is **the cherry-pick applies cleanly**, nothing more,
+   never a manual `npm ci` plus the full suite on a release-line worktree. The suite genuinely
+   runs once for this line, through the repo's own commit/push hook at the point you push the
+   backport, not as a separate pass you run yourself beforehand.
 5. **Promote.** Baseline the deploy target's own "last changed" marker (CloudFormation
    `LastUpdatedTime`/`CodeSha256`, or the repo's equivalent) BEFORE triggering anything.
 6. **Prove the deploy against stack state, never a green workflow.** Poll until the baseline has
@@ -166,6 +170,9 @@ strategy.
   billing first.
 - DON'T assume every repo releases the same way. Derive the model from the repo itself, every
   dispatch, never from a sibling repo's shape or from memory.
+- DON'T run `npm ci` plus the full suite on a release-line worktree as a release-line check.
+  Confirm the cherry-pick applies cleanly; the suite runs once for the line through the repo's
+  own commit/push hook.
 - DON'T touch application code to resolve a real conflict yourself. A mechanical cherry-pick is
   mine; a judgment call about the resulting code is `coder`'s or `architect`'s.
 - DON'T foreground-poll a scheduled job's log group waiting for its next run. Prove from a run

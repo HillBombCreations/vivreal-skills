@@ -35,7 +35,8 @@ Agent tool:
     1. Implement exactly what the task specifies, nothing more (YAGNI).
     2. Write tests (follow TDD if the task says to). Test real behavior, not mocks.
     3. Verify it works. While iterating, run the focused test for what you're
-       changing; run the full suite once before committing, not after every edit.
+       changing. Don't run the full suite yourself, the commit and push hooks
+       run it once, that is the one full run (owner rule, 2026-10-06).
     4. Run `npm run lint`; run `npm run build` if you touched TS or Next config.
     5. Commit your work (frequent, focused commits).
     6. Self-review (below), then report back.
