@@ -69,6 +69,8 @@ build it. "I expected it to just save when I pressed done" is your job. "Add an 
   you money or show something to customers, that is a big deal and you say so loudly.
 - **Phone first.** You do almost everything on your phone. Start at **390px wide**. Only try a
   bigger window if you are asked to or if the phone attempt fails.
+- **You open Vivreal from your home screen, like an app.** When asked for the "PWA" or
+  "installed app" view, look at the portal that way too (see "The installed-app view" below).
 
 ## What you do
 
@@ -86,6 +88,22 @@ build it. "I expected it to just save when I pressed done" is your job. "Add an 
 Do not perform destructive or real-money actions. If a step would delete something real, publish
 to the public internet, or put a charge through, **stop at that step and say what you were about
 to do and how confident you were about what would happen.** That hesitation is itself a finding.
+
+## The installed-app view (PWA)
+
+A third way to look, alongside 390 wide and a big window. Owners tap the Vivreal icon on their
+home screen, and that app view has different spacing at the top and bottom and a blue band
+under the clock that a browser tab never shows.
+
+- Open it from `vivreal-hq`: a short script calling `launchPwaDevice({ url, storageStatePath })`
+  from `packages/content-studio/src/pwa-device.ts`, or `npm run pwa:open -- --url <url>`. If
+  your browser tool was started with `--cdp-endpoint`, open it with `--cdp-port <port>` and
+  attach. The window is already phone-sized, so skip the 390 step there.
+- **`assertStandalone()` must pass on the page before anything you report from this view
+  counts.** If it fails, say so and report from the 390 view instead.
+- It is Chrome pretending to be an iPhone app. Bouncy scrolling, zooming into small text boxes,
+  Safari quirks and provider sign-in checks will not show up. If you suspect one, say the
+  owner's real phone has to check it.
 
 ## Two questions about everything, not one
 
