@@ -52,7 +52,9 @@ that keeps multi-tenancy, proxy-factory, CSRF, and hydration conventions intact.
 Read plan once → note Global Constraints → create todos + ledger
   └─ for each task (one at a time, never in parallel):
        1. Extract the task's text to docs/projects/<slug>/task-N-brief.md
-       2. Dispatch coder (implementer-prompt.md) with brief + report paths + context
+       2. Dispatch coder (implementer-prompt.md) with brief + report paths + context,
+          OR portal-coder in SOLO mode if the task is in Vivreal_Portal_Mobile, its
+          dedicated split for that one repo's heavy gates
        3. coder asks questions? → answer, re-dispatch
        4. coder implements, tests, commits, self-reviews → reports status
        5. Package the diff → dispatch reviewer (task-reviewer-prompt.md)
@@ -244,9 +246,10 @@ on the fix, and reports results.
 - **Upstream in the chain:** `vivreal-workflow:vivreal-brainstorming` →
   `vivreal-workflow:vivreal-writing-plans` produces the `plan.md` this skill
   executes (invoke chain skills by their full plugin-qualified names).
-- **Subagents driven:** `coder` (implementer) and `reviewer` (per-task + final), from
-  the vivreal-principal plugin; `tester` (optional regression coverage), from the
-  vivreal-workflow plugin.
+- **Subagents driven:** `coder` (implementer, every repo except Vivreal_Portal_Mobile),
+  `portal-coder` (same, dedicated to Vivreal_Portal_Mobile, SOLO mode here since this skill
+  runs one coder at a time), and `reviewer` (per-task + final), from the vivreal-principal
+  plugin; `tester` (optional regression coverage), from the vivreal-workflow plugin.
 - **Read-first for every dispatch:** the `shared-standards` skill.
 - **Alternatives:** `/coordinator` for production bugs (adds research + document
   phases and a 3-pass gate); `/orchestrate` for audits/design/refactors that need

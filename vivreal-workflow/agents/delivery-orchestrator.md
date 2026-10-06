@@ -32,10 +32,15 @@ because the plan looks obviously right; the reviews that matter are the ones on
 plans that looked fine. Carry the findings back into the plan rather than into
 the implementation.
 
-**4. Implement.** Dispatch coders. If more than one works the same repository,
-each gets its own worktree and **you own the gate**, per `fleet-concurrency`.
-Portal coders **write the tests their change needs and run none**, run lint and
-the type check on their own files, and accumulate locally.
+**4. Implement.** Dispatch `coder` for the backend half and `portal-coder` for
+the portal half, never `coder` for the portal, its heavy pre-commit/pre-push
+gates are exactly what throttles several coders into false results in that one
+repo. If more than one `portal-coder` works the portal at once, dispatch each in
+PARALLEL mode (targeted tests only, `--no-verify` push, no PR) and dispatch
+exactly one of them, or a dedicated `portal-coder` run, in INTEGRATE mode
+afterward to merge the branches and run the one real gate; you still own that
+gate per `fleet-concurrency`. If more than one `coder` works the same backend
+repository, each gets its own worktree and you own that gate the same way.
 
 **5. Tests.** Every change carries the tests that pin it. A test that passes
 before the fix pins nothing, so a coder proves red first, then green. Assertions

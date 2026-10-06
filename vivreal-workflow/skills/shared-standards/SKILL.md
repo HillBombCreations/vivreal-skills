@@ -77,7 +77,7 @@ three searches returned three different incomplete answers.
 
 ## Lazy standards reading: trigger map
 
-**Role agents (coordinator, researcher, architect, coder, tester, reviewer, documenter, designer, vuln, growth, sentry):** do NOT eager-read this file. The path-resolution preamble above is the only mandatory read. Read sections of this file ONLY when your task touches one of the trigger areas below.
+**Role agents (coordinator, researcher, architect, coder, portal-coder, tester, reviewer, documenter, designer, vuln, growth, sentry):** do NOT eager-read this file. The path-resolution preamble above is the only mandatory read. Read sections of this file ONLY when your task touches one of the trigger areas below.
 
 **System experts (main-api, secure-api, cms-api, event-handler, client-stack, portal):** do NOT load this file at all by default. You may consult a specific section if your findings explicitly need to align with portal-side conventions (rare).
 

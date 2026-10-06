@@ -1,11 +1,14 @@
-# Implementer (coder) Dispatch Template
+# Implementer (coder / portal-coder) Dispatch Template
 
 Use this when dispatching a `coder` subagent to implement one task. Fill every
 placeholder. Hand requirements over as the brief file, do not paste the plan.
+If `[REPO]` is `Vivreal_Portal_Mobile`, use `subagent_type: portal-coder` instead
+(SOLO mode, this skill drives one coder at a time, never PARALLEL), its
+dedicated split for that one repo's heavy pre-commit/pre-push gates.
 
 ```
 Agent tool:
-  subagent_type: coder
+  subagent_type: coder   # or portal-coder (SOLO mode) if [REPO] is Vivreal_Portal_Mobile
   description: "Implement Task N: [task name]"
   model: [MODEL, REQUIRED: haiku for transcription / single-file mechanical,
           sonnet for prose-spec or multi-file, opus for judgment. An omitted

@@ -71,7 +71,7 @@ The coordinator is dispatched with `--mode=<mode>`. Each mode controls which pha
 - **investigate** (feature/audit/migration), Dispatch `researcher` in principal stance to map the system area, constraints, and existing patterns. Output: `docs/projects/<slug>/investigation.md`.
 - **plan** (bug), Dispatch `architect` to convert research into a numbered, approvable change list with blast radius per change. Output: `docs/bugs/<slug>/plan.md` with approval checkboxes.
 - **design** (feature/migration), Dispatch `architect` to generate 2-3 options with explicit tradeoffs and a single recommendation. Output: `docs/projects/<slug>/design.md` with options + recommendation.
-- **implement**, Dispatch `coder` to apply the approved plan/design exactly. No scope creep, no adjacent fixes. Output: code changes per the approved plan/design.
+- **implement**, Dispatch `coder` to apply the approved plan/design exactly, EXCEPT when the change is in `Vivreal_Portal_Mobile`, dispatch `portal-coder` instead (SOLO mode by default; only use PARALLEL plus a single INTEGRATE pass when you are deliberately running several portal-coders at once, per `fleet-concurrency`). No scope creep, no adjacent fixes. Output: code changes per the approved plan/design.
 - **test**, Dispatch `tester` to add or extend regression coverage that fails on the broken code and passes on the fix. Tests must assert the CORRECT behavior the plan specifies, never a snapshot of current (possibly buggy) output. If implementing the fix makes a PRE-EXISTING test fail, that test is suspect: evaluate whether it was pinning the bug. Do NOT let `coder` or `tester` silently edit an assertion to go green, the change must either fix the code or correct a genuinely-wrong expectation with a stated reason. Output: passing test suite.
 - **review**, Dispatch `reviewer` for an adversarial pass against the diff. Output: `docs/bugs/<slug>/review-N.md` with PASS/FAIL per checklist item. Up to 3 passes; if still failing, escalate to user.
 - **document**, Dispatch `documenter` to produce the resolution write-up and PR body from artifacts. Output: `RESOLUTION.md` + PR description text.
@@ -117,6 +117,10 @@ If investigation surfaces that the task is misframed, STOP and report. Don't bui
 
 ### Phase 3: Implement (coder stance)
 
+- In dispatch shape, if the change is in `Vivreal_Portal_Mobile`, dispatch `portal-coder`
+  rather than `coder`, its dedicated split for that one repo's heavy gates. In single-dispatch
+  shape there is no fan-out available, so work inline with the same portal conventions below
+  regardless of which agent would have been dispatched.
 - Minimum-correct implementation of the chosen design. No scope creep.
 - Match existing patterns, read surrounding code first. Portal-specific:
   - `createAuthAxios()` for state-changing proxy calls (CSRF + 401 redirect)
