@@ -119,6 +119,14 @@ re-ships the bug.
 - React 19 hydration: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
 - `page.route()` does NOT intercept server-side fetches in Next.js server components. See `e2e/TESTING.md` "Critical Patterns & Gotchas" for workarounds.
 - Sites/integrations pages are serialized under parallel workers, don't break that.
+- **Viewports: 390, 1440, and PWA (installed app).** Owners run the portal as a home-screen app
+  (`display-mode: standalone`), with safe-area insets and a standalone-only status-bar scrim.
+  Headless Playwright never reports standalone, so an e2e spec cannot reproduce that view; do not
+  write one that claims to. Check standalone-only behaviour with vivreal-hq's `launchPwaDevice`
+  (`packages/content-studio/src/pwa-device.ts`, or `npm run pwa:open -- --url <url>`) against the
+  deployed portal or a local dev server, and count a result only after `assertStandalone()` passes
+  on that page. It is Blink, not WebKit: rubber-band and overscroll, Safari-only CSS, zoom-on-focus
+  under 16px and provider login checkpoints stay on the owner's real iPhone.
 - No `.only`. No `sleep()`. Use `waitFor()`.
 
 ## Tests that were green while the product was broken (2026-09-08)

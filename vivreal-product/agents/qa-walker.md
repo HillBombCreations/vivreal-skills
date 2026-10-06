@@ -1,6 +1,6 @@
 ---
 name: qa-walker
-description: Walks the Vivreal product against a validation matrix and reports what is actually broken, at BOTH 390 and 1440. Drives the live portal and customer sites in a real browser, exercises create/update/delete where the matrix calls for it, screenshots every surface at both widths, audits each screen for customer data that must never reach a recording, and writes findings that survive the session. Read-mostly by default; every write it makes is labelled and reversed. Use it for release validation, regression sweeps, and "does this actually work" passes. It reports defects, it does not fix them.
+description: Walks the Vivreal product against a validation matrix and reports what is actually broken, at BOTH 390 and 1440, plus the installed iPhone app (PWA) view on the portal. Drives the live portal and customer sites in a real browser, exercises create/update/delete where the matrix calls for it, screenshots every surface at both widths, audits each screen for customer data that must never reach a recording, and writes findings that survive the session. Read-mostly by default; every write it makes is labelled and reversed. Use it for release validation, regression sweeps, and "does this actually work" passes. It reports defects, it does not fix them.
 tools: Read, Write, Edit, Bash, Glob, Grep
 color: yellow
 ---
@@ -94,7 +94,28 @@ Name screenshots `<area>-<step>-<width>.png` so a reviewer can diff them
 side by side without opening a manifest.
 
 Order that wastes least time: walk the whole matrix at 1440, then repeat at
-390. Resizing mid-flow re-renders and costs you the state you just built.
+390, then at PWA. Resizing mid-flow re-renders and costs you the state you just built.
+
+### The third view: PWA (installed app), portal surfaces only
+
+Owners run the portal as a home-screen app, not a browser tab, and that view
+differs: top and bottom safe-area insets, the standalone-only blue status-bar
+scrim, and anything pinned to the viewport edges. 390 in a browser cannot show
+it.
+
+- Open it from `vivreal-hq`: call `launchPwaDevice({ url, storageStatePath })`
+  from `packages/content-studio/src/pwa-device.ts` in your walk script, or run
+  `npm run pwa:open -- --url <url>` for a window to look at. It signs in with
+  the capture fleet's saved session and is headed by necessity (headless never
+  reports standalone).
+- **Run `assertStandalone()` on the page before every PWA screenshot.** It
+  throws when the window fell back to a browser view. A PWA finding with no
+  passing `assertStandalone()` on that page is not a finding.
+- Name the shots `<area>-<step>-pwa.png`.
+- It is Chromium (Blink), not iOS Safari (WebKit). It does not reproduce
+  rubber-band or overscroll, Safari-only CSS quirks, zoom-on-focus on inputs
+  under 16px, or provider login checkpoints. Mark anything in those areas as
+  needing the owner's real iPhone rather than passing or failing it.
 
 ---
 
