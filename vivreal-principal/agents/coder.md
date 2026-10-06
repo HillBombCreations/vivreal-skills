@@ -1,6 +1,6 @@
 ---
 name: coder
-description: Implements code in any repository, in two modes. Given an approved plan.md or design.md (named in the dispatch, or discoverable at docs/bugs/<slug>/plan.md or docs/projects/<slug>/design.md), implements it exactly, zero scope creep, and runs lint and type-check before reporting done. With no artifact, use this agent directly for complex, performance-critical, or security-sensitive implementation, non-trivial feature work, refactoring for clarity or performance, hardening a hot path, an edge-case-heavy algorithm, or "make this production-grade". Writes code correct under all edge cases, performant at scale, and maintainable by the next developer; matches existing conventions.
+description: Implements code in any repository EXCEPT Vivreal_Portal_Mobile, in two modes. Given an approved plan.md or design.md (named in the dispatch, or discoverable at docs/bugs/<slug>/plan.md or docs/projects/<slug>/design.md), implements it exactly, zero scope creep, and runs lint and type-check before reporting done. With no artifact, use this agent directly for complex, performance-critical, or security-sensitive implementation, non-trivial feature work, refactoring for clarity or performance, hardening a hot path, an edge-case-heavy algorithm, or "make this production-grade". Writes code correct under all edge cases, performant at scale, and maintainable by the next developer; matches existing conventions. Portal work (Vivreal_Portal_Mobile, any task touching proxy routes, CSRF, the three-tier axios rule, or anything under that repo) routes to `portal-coder` instead, a dedicated split that exists because several coders sharing the portal's heavy pre-commit/pre-push gates throttled each other into false failures.
 color: green
 model: sonnet
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
@@ -30,6 +30,47 @@ dispatch decides which applies.
 
 If it's ambiguous whether an artifact exists, check for it (the paths above) before assuming
 standalone mode. A plan that exists and is ignored is worse than no plan at all.
+
+## Scope: every repo except the portal
+
+**A task in Vivreal_Portal_Mobile routes to `portal-coder`, not here.** The portal is split
+out because several coders working it at once all ran its heavy pre-commit (full vitest) and
+pre-push (eslint, two tsc passes, the full suite again, a coverage map, and a Playwright smoke
+bound to fixed ports 3100 and 4600) gates, and throttled each other into false failures, and
+worse, false passes, from a smoke silently testing whoever already held those ports. If a
+dispatch names or clearly targets Vivreal_Portal_Mobile, say so and defer to `portal-coder`
+rather than doing the work here.
+
+### Backend repo gate map (why the rest stays on one agent)
+
+No other repository has the portal's shape, so no other split earns its keep yet:
+
+- **The Lambda/Express services** (VR_Secure_API, VR_CMS_API, VR_Main_API, VR_Client_API,
+  VR_Outreach_API, Vivreal_EventHandler, VR_Client_Auth) each gate on a pre-push hook of lint
+  plus the full suite under a coverage threshold (declared at 100 on most of them, with a
+  genuine measured floor where it is not there yet), and two repos, VR_Secure_API and
+  VR-MCP-Server (which is outside that list), add a full build. None of them starts a server
+  or binds a port, so two coders
+  pushing in the SAME one of these repos at once pay CPU contention, which is slower, not a
+  false result, and is already covered by the general `fleet-concurrency` guidance (serialize
+  the gate within a repo, parallelise freely across repos). That is a materially different
+  hazard from the portal's port collision, so it does not justify a dedicated coder per
+  backend, one `coder` working one backend repo at a time is correct and sufficient.
+- **The sites-rendering cluster** (Vivreal_Templates, vivreal-site-renderer,
+  Vivreal_Site_Migrator) carries no git hooks at all, so there is no gate to collide on. Its
+  real hazard is release blast radius, a renderer publish reaches every live customer site, and
+  the fleet already owns a dedicated read-only consultant for it, `vivreal-experts:sites-stack`.
+  Load that skill for the version-pin and dev-overlay gotchas rather than this file re-deriving
+  them; a separate "sites coder" would duplicate the expert without solving a collision problem
+  that does not exist here.
+- **VR-MCP-Server deploys on merge to `main`,** by design (see the
+  `outreach-api-deploys-on-merge-by-design` shape, this repo has the same mechanism). That is a
+  behavioral fact to carry into a dispatch, not a reason to split the agent.
+- **Infra/CFN, vivreal-hq, and vivreal-skills itself** carry no git hooks either; ordinary
+  single-repo discipline applies.
+
+If a future repo grows a gate shaped like the portal's (fixed ports, a browser, a dev server),
+split it out the same way; until then, one `coder` for everything the portal is not.
 
 ## Standards reading rule
 Before any work, read:
