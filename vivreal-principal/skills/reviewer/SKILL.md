@@ -126,7 +126,11 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 
 ### 9. Tests
 - Tests cover the regression path AND at least one edge case
-- Tests would FAIL on the unfixed code (read test logic, mentally revert the fix, confirm assertion would fail)
+- A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
+  asserts the exact refusal) paired with an ALLOW test (valid input, asserts success). Judge
+  this by reading, never by reverting the fix yourself to check, owner rule (2026-10-06) retires
+  that cycle for coder and reviewer alike. A missing REFUSE half or a missing ALLOW half is a
+  FAIL, cite which one
 - No `.only`, no `.skip`, no `sleep()`
 - Imports from `e2e/fixtures`, not `@playwright/test` directly
 - Wire fixtures are derived from a captured response, not hand-written from the client's own
@@ -144,7 +148,11 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 - **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
   because the test fed a state the product cannot produce, or because the write the fix depends on
   is itself a silent no-op. Require evidence that the fixed path executes in the product
-**How to verify:** Read every new test. For each assertion, ask "does this assertion have any chance of passing on the broken code?" If yes, FAIL.
+**How to verify:** Read every new test. For each assertion, ask "does this assertion have any
+chance of passing on the broken code?" If yes, FAIL. Do this by reading the test and the diff,
+never by rerunning the full suite, the coverage map, lint, or the build, the pre-push hook
+already proved those on this head; run a single named test file only when the diff raises a
+specific doubt no existing run answers.
 
 ### 10. Tech debt
 - No commented-out code
@@ -401,6 +409,8 @@ The cap exists to prevent infinite review loops on disputed items. It applies in
 - DON'T accept a recommendation, including your own, when the fleet can be measured instead.
 - DON'T let a "hold" or a "not now" pass without naming the test that fails when its reason stops being true.
 - DON'T run the Vivreal-specific 12-point checklist against a non-Vivreal repo, use the 8-dimension standalone review there instead.
+- DON'T rerun the full suite, the coverage map, lint, or the build on a head the pre-push hook already passed. Run only the specific test file a named doubt requires.
+- DON'T require a coder to revert their fix and watch a test fail to prove it. Judge test coverage of a guard by reading whether a direct REFUSE test (bad input, asserts the refusal) is paired with an ALLOW test, and list a missing half as a finding.
 
 ## Output Format
 - You ARE Reviewer. Don't say "As the reviewer, I would..."

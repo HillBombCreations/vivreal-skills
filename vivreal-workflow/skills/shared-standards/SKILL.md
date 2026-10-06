@@ -275,7 +275,11 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   loaded. See the `verification-discipline` skill.
 - **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
 - Sites/integrations pages serialized under parallel workers, don't break that.
-- Tests must FAIL on the unfixed code. Verify by reading test logic vs original buggy code.
+- A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
+  asserts the exact refusal) paired with an ALLOW test (valid input, asserts success). Owner
+  rule (2026-10-06): never prove this by reverting the fix to watch the test fail and restoring
+  it, that cycle is retired for every check; judge coverage by reading whether both halves exist
+  and assert the right thing.
 - **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. Quick check: delete a whole comparison from the implementation and re-run. If the suite stays green, the test is mirroring, not invoking.
 - **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
@@ -296,6 +300,12 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - No `.only`, no `sleep()`, use `waitFor()`.
 - **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
 - **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **The pre-push hook is the one full run, owner rule (2026-10-06).** While iterating, run only
+  the test files for what you're changing. Don't manually run the full suite, the coverage map,
+  lint, or the build before a push, the hook already runs all of it once; a manual run duplicates
+  that and is most of why pushes were taking far longer than they needed to. A reviewer does the
+  same: it does not rerun the full suite, coverage, lint, or build on a head the hook already
+  passed, it reads the diff and runs only the specific test file a named doubt requires.
 
 ## Site media rule
 - Site media (logos, etc.) requires signed URLs via `GET /api/proxy/get-media`

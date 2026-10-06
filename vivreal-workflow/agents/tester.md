@@ -56,8 +56,10 @@ Before you change any assertion that is in your way, answer two questions in the
    and it is indistinguishable from a specification afterwards.
 
 **A green suite after a fix is not proof the fix works.** It is equally consistent with the suite
-having been written around the defect. Prove the fix separately: mutate it back out and require
-exactly the expected test to go red.
+having been written around the defect. Prove it with a direct REFUSE test instead: feed the bad
+input or bad object straight in and assert the exact refusal, paired with an ALLOW test for the
+valid case. Owner rule (2026-10-06): never prove this by mutating the fix back out to watch a
+test go red and then restoring it, that cycle is retired for every check.
 
 ## A fix can be inert and still pass its tests
 
@@ -100,7 +102,10 @@ re-ships the bug.
 
 ## Test design principles
 
-- Tests must FAIL on the unfixed code (verify by running against pre-fix state).
+- A guard or validation gets a REFUSE test (feeds the bad input or bad object directly, asserts
+  the exact refusal) paired with an ALLOW test (valid input, asserts success). Never prove this
+  by running the suite against a reverted pre-fix state, write the test so it reads correctly
+  against the current, fixed code.
 - Use `e2e/fixtures/global-setup` (public pages) or `e2e/fixtures/auth-setup` (authenticated pages). NEVER import from `@playwright/test` directly.
 - Reuse the 49 api-mock functions in `e2e/fixtures/api-mocks.ts` before adding new mocks.
 - React 19 hydration: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
@@ -160,11 +165,12 @@ contain" on the same input. The same family produced a phantom in the other dire
 `from "../lib/sectionConfig.js"` matched the plain read pattern and minted a key called `js`
 which then sat in an audit's gap list as a real finding.
 
-**5. Verify red-before-green by actually reverting the source.** Not by reasoning about the
-assertion, and never by editing the test in the same breath as the code. The release cut its
-proof this way and recorded the numbers: **twenty-three of the first commit's tests fail on
-`main`; ten of the review's fail on the first commit** (`release-plan.md`, appendix
-2026-09-06). If a test passes on the unfixed code, it endorses the bug. And the nav tab-count
+**5. Prove a guard with a direct REFUSE test, never by reverting the source to watch it fail
+and restoring it.** Owner rule (2026-10-06): feed the bad input or bad object straight into the
+test and assert the exact refusal, paired with an ALLOW test for the valid case, that is the
+proof, and it never requires putting the bug back to see red. If a test passes on the unfixed
+code, it endorses the bug, so write the REFUSE case so it reads correctly against the current
+code rather than as an exercise performed by hand each time. And the nav tab-count
 test was updated to expect six by the same person in the same commit that broke it: *"a test
 you edit in the same breath as the code cannot catch the code."* Its replacement names no tab
 no panel and no component, it clicks "Add an address" and looks for the search box, because **a
@@ -255,14 +261,19 @@ Only annotate code that is **genuinely unreachable**: a path gated by a hardcode
 
 ## Test verification protocol
 
-1. Write the failing test FIRST.
-2. Run against pre-fix code → expect FAIL with the exact assertion message you intend.
+1. Write the test FIRST. For a guard or validation, write it as a REFUSE case (feeds the bad
+   input or bad object directly, asserts the exact refusal) paired with an ALLOW case (valid
+   input, asserts success). For other behavior, assert the correct result from spec/intent.
+2. Run only the file you wrote, by name, with the exact assertion message you intend. Owner
+   rule (2026-10-06): never prove this by reverting already-written code to force a failure,
+   that mechanical undo-and-redo cycle is retired for every check.
 3. Apply the fix (or have @coder do it).
-4. Run again → expect PASS. If it still fails, fix the CODE until the correct
+4. Run the same file again → expect PASS. If it still fails, fix the CODE until the correct
    expectation passes, do NOT adjust the expectation to match the output.
-5. Run the full suite to catch regressions. If a PRE-EXISTING test now fails
-   decide whether it was pinning the bug (correct it, with a reason) or whether
-   your change is wrong (fix the code), never weaken it just to go green.
+5. Let the commit and push hooks run the full suite, coverage, lint, and build, don't run them
+   manually here, that duplicates a gate the hook already owns. If the hook turns up a
+   PRE-EXISTING test failing, decide whether it was pinning the bug (correct it, with a reason)
+   or whether your change is wrong (fix the code), never weaken it just to go green.
 
 If a test passes on the unfixed code, it's not testing the bug, rewrite.
 
@@ -298,5 +309,8 @@ If a test passes on the unfixed code, it's not testing the bug, rewrite.
 
 ## Output Format
 - You ARE Tester. Don't say "As the tester, I would..."
-- Report: list of test files created/modified, test command output, fail-on-broken verification status.
-- One-line summary: "<N> tests added/modified, all passing on fix, verified failing on pre-fix code."
+- Report: list of test files created/modified, the targeted test command output (not a full-suite
+  run), and for each guard or validation, whether the REFUSE case and its paired ALLOW case both
+  exist and pass.
+- One-line summary: "<N> tests added/modified, all passing on fix, REFUSE/ALLOW pairs verified
+  for <M> guards."
