@@ -1,0 +1,21 @@
+{
+  "name": "vivreal-site-migrator",
+  "version": "1.0.0",
+  "description": "The Vivreal_Site_Migrator agent fleet, migrated out of that repo's local .claude directory (master-branch, no CI; a push here deploys nothing). Turns a live site or a design exemplar into a Vivreal site/template through a staged pipeline: ingest classifies a raw crawl into a ContentInventory; collections and integrations model its collection groups and integration signals; site assembles the page/format/binding structure last; kit-designer scouts a design exemplar and writes the identity-kit brief; component-builder builds or matches the aesthetic; page-confirm and studio-confirm prove render-level and Studio-editability fidelity; studio-registrar closes any portal registration gap a kit or migration opens; migration-estimator costs a migration before anyone commits to it; cutover is the USER-GATED agent that loads an approved blueprint into production. Plus the /migrate and /template commands. Distinct from vivreal-experts:sites-stack (read-only consultant on the deployed renderer/Templates stack) and vivreal-product:template-critic (judges the finished result against its exemplar).",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": [
+    "vivreal",
+    "site-migrator",
+    "migration",
+    "template",
+    "identity-kit",
+    "renderer",
+    "studio",
+    "cutover",
+    "agent"
+  ]
+}

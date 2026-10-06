@@ -1,0 +1,22 @@
+{
+  "name": "vivreal-leadgen",
+  "version": "1.0.0",
+  "description": "Vivreal's lead-generation pipeline fleet, migrated out of vivreal-hq's local .claude directory (the packages/leadgen CommonJS package). prompt turns a vague ask into a structured LEAD CAMPAIGN BRIEF; coordinator runs the back half of the pipeline (crawl, owner research, vision-profile, confirm-angles, contact pass, owner-recovery) from that brief to a seed-ready company/contact set, gated on one confirmation before pushing to the Vivreal outreach group; lead-scout does the web-driven discovery upstream; runner executes the free, keyless pipeline scripts (import/crawl/enrich-social/discover-contacts/validate/seed-outreach) and reports results; profiler and owner-researcher do the vision/web research passes; contact-enricher is an interactive agent that enriches EXISTING Outreach contacts with per-contact sign-off before every write. Distinct from vivreal-content (content production) and VR_Outreach_API's own send pipeline, which this fleet only ever seeds into.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": [
+    "vivreal",
+    "leadgen",
+    "leads",
+    "outreach",
+    "crawl",
+    "profiler",
+    "owner-research",
+    "contacts",
+    "campaign",
+    "agent"
+  ]
+}
