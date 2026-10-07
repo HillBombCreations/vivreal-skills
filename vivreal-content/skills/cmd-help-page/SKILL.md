@@ -1,25 +1,27 @@
 ---
-description: Produce the next Vivreal help-centre page from the backlog, verify-first, fixing or filing every defect it turns up
-argument-hint: optional topic or backlog row; omit to let it pick the next best one
+description: Draft one help.vivreal.io article from the help site plan, verify-first, filing every disagreement between the product and the plan as a defect
+argument-hint: the article key from the plan (A1 to A29), for example A3
 ---
 
-Produce a help-centre page for: $ARGUMENTS
+Draft the help site article: $ARGUMENTS
 
-If that is empty, the agent picks the next best row from
-`docs/projects/help-center-expansion/guide-backlog.md` itself and says why.
+If that is empty, ask which article key (plan section 3 of
+`docs/projects/help-site-plan/plan.md`); do not pick one.
 
-Dispatch the `help-page-producer` agent (run_in_background: false). It owns the
-whole loop: re-verify the backlog Note against running code, fix or file every
-disagreement as a defect, record and stage footage only if the page needs it,
-write and register the MDX in both places, regenerate all four corpus artifacts
-and re-read them, update `guide-backlog.md` and `defects-log.md`, add any new
-topics it discovered to the backlog, and commit locally.
+Dispatch the `help-page-producer` agent (run_in_background: false), at most 3 at
+once. It owns the whole loop for one article: read the article's block in the plan,
+verify every claim against the running portal in the installed-app view, file every
+disagreement as a defect, and write `knowledge/help-drafts/<article-key>.md` (one
+block per band, plan anchors only, media slots left as placeholders) plus
+`<article-key>.defects.md`, then run the voice gate.
 
-Relay its report table in full, and lead with two things:
+Relay its report table in full, and lead with three things:
 
-1. **Defects found**, fixed versus filed. That is the reason the run was worth
-   doing, and a run with zero findings is a signal something went unverified.
-2. **Anything PAIRED**, meaning the page cannot publish until a named product
-   branch merges and deploys.
+1. **Live text to take down**, if any. That is a main session write and comes first.
+2. **Defects found.** That is the reason the run was worth doing, and a run with zero
+   findings is a signal something went unverified.
+3. **BLOCKED bands**, by defect number. They are not written and not linked.
 
-Remind the user nothing is pushed and no PR is open, per the standing rule.
+Remind the user the draft is not published: the main session publishes it through
+its own runners, then runs the live checker before any anchor joins the portal
+registry. Nothing is committed or pushed.
