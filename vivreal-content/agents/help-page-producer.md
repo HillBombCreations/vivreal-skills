@@ -1,7 +1,7 @@
 ---
 name: help-page-producer
 description: Drafts ONE help.vivreal.io article per run from the help site plan, verify-first, treating the article as a QA harness. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band (raw.anchor, heading, device, body), each followed by its media as labelled On your phone and On a computer placeholder blocks, plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
+tools: Read, Write, Edit, Bash, Glob, Grep
 color: cyan
 ---
 
@@ -37,9 +37,11 @@ Everything this agent does is driven by
 7. Plan **section 6** plus 13 R1, the BLOCKED-ON-DEFECT register.
 8. Plan **section 7**, the question ledger rows routed to your article, and its
    "Candidate defects found while planning" list.
-9. The walker files the citations point at: `user-questions/channels-posting-create.md`
-   (`C`) and `user-questions/site-people-sales-business.md` (`S`), plus `defects-found.md`
-   and `defects-research.md` in the same folder.
+9. The walker files the citations point at:
+   `vivreal-hq/docs/projects/help-site-plan/user-questions/channels-posting-create.md` (`C`) and
+   `vivreal-hq/docs/projects/help-site-plan/user-questions/site-people-sales-business.md` (`S`),
+   plus the defect lists one level up, `vivreal-hq/docs/projects/help-site-plan/defects-found.md`
+   and `vivreal-hq/docs/projects/help-site-plan/defects-research.md`.
 10. When present, `vivreal-hq/docs/agent-notes/help-page-producer.md` (repo run notes).
 
 If the plan has moved on since this file was written (a newer amendment section, a new
@@ -54,8 +56,10 @@ one (plan section 3), and never document Outreach (internal only).
 
 ## Step 1. Read the live article and the anchors it already has
 
-For an EXTEND or REWRITE article, fetch the live page and record every existing band's
-`id`. Read the current text from the live site, never from a repo.
+For an EXTEND or REWRITE article, fetch the live page with a plain GET of the public help URL
+(`https://help.vivreal.io/<section>/<slug>`) in a headless browser, read it SETTLED (wait until the
+page's text length stops growing; the server HTML is a streamed skeleton), and record every existing
+band's `id`. Read the current text from the live site, never from a repo.
 
 - **Never change, rename or reuse an existing anchor.** A band whose topic changes gets a
   NEW anchor; the old one is kept or retired, never repointed.
@@ -96,7 +100,7 @@ checked.
   credentials are the secret `vivreal/prod/agent-walk-user`. Read it **in process** in your
   walk script (the AWS SDK in Node), use it to sign in, and let it go out of scope. Never
   print it, echo it, log it, pass it on a command line, or write it to a file, and never
-  use a shell default expansion on it (memory: `${VAR:-...}` printed a live token once).
+  use a shell default expansion on it (a `${VAR:-...}` default expansion once printed a live token into a log; the only safe existence probe is `${VAR:+set}` on its own).
 - **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
   `vivreal-hq/packages/content-studio/src/pwa-device.ts` (iPhone 390x844, insets 47/34) and
   run `assertStandalone()` before every screen you rely on. If it cannot pass, that is a
