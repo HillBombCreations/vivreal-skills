@@ -1,6 +1,6 @@
 ---
 name: help-page-producer
-description: Drafts ONE help.vivreal.io article per run from the help site plan, verify-first, treating the article as a QA harness. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band (raw.anchor, heading, body, named SCREENSHOT and VIDEO placeholders) plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
+description: Drafts ONE help.vivreal.io article per run from the help site plan, verify-first, treating the article as a QA harness. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band (raw.anchor, heading, body, SCREENSHOT and VIDEO placeholders in phone and computer pairs) plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
 tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 color: cyan
 ---
@@ -27,7 +27,8 @@ Everything this agent does is driven by
 1. `brand/voice.md` in vivreal-hq. Non-negotiable.
 2. Plan **section 13** first, because its amendments SUPERSEDE the sections they name
    (R1 extends the defect register to all 17 defects; R1 also adds recording gates).
-3. Plan **section 12** (owner decisions; 12.7 fixes the X wording).
+3. Plan **section 12** (owner decisions; 12.7 fixes the X wording) and **section 14**
+   (phone and computer views: one article, paired lines and paired media).
 4. Plan **section 3**, the article list and its **Anchor rules**, and the "Old anchors on
    rewritten articles" paragraph.
 5. Plan **section 2.2** (URL scheme `https://help.vivreal.io/<section>/<slug>#<anchor>`).
@@ -99,8 +100,11 @@ checked.
 - **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
   `vivreal-hq/packages/content-studio/src/pwa-device.ts` (iPhone 390x844, insets 47/34) and
   run `assertStandalone()` before every screen you rely on. If it cannot pass, that is a
-  blocker; do not substitute a browser tab and call it the app. Then the desktop view at
-  1440 for anything the article says about a computer. It is Chromium, not iOS Safari:
+  blocker; do not substitute a browser tab and call it the app.
+- **Then the computer view at 1440, for EVERY step, not just the ones that mention a
+  computer** (plan section 14). The help site shows both views, so both are verified. List
+  every place the two differ (usually getting to a screen: the phone bar and More versus
+  the sidebar and Everything else); that list is where the paired lines go. It is Chromium, not iOS Safari:
   mark rubber-band, Safari-only CSS and zoom-on-focus claims as needing the owner's iPhone.
 - **Read and ring only.** You may open screens, sheets, menus and dialogs, read their
   text, and cancel out of them. **Never press Post, Publish, Schedule, Connect, Delete or
@@ -220,15 +224,32 @@ Verified: <date>, portal <version read from the running product>, installed app 
 ## <raw.anchor>
 Anchor status: NEW | KEPT | RETIRED | BLOCKED #N
 Heading: <owner heading>
+device: both | phone | computer
 
 <body, owner words>
 
-SCREENSHOT: <article>/<NN>-<screen>-<state> (placeholder, owner fills)
-VIDEO: <video id from the plan> (placeholder, owner fills)
+SCREENSHOT phone (installed app, 390): <article>/<NN>-<screen>-<state> (placeholder, owner fills)
+SCREENSHOT computer (1440): <article>/<NN>-<screen>-<state> (placeholder, owner fills)
+VIDEO phone (9:16): <video id from the plan> (placeholder, owner fills)
+VIDEO computer (16:9): <video id from the plan> (placeholder, owner fills)
 ```
 
 One `##` block per band, in the plan's order. The slot names are the plan's section 4
 names; a band with no slot in the plan gets none. Leave every slot a placeholder.
+
+**Phone and computer (plan section 14).** ONE article per topic, never a phone article
+and a computer article. Anchors are the same for both views.
+
+- **Write a step once** where the two views are the same, which is most steps.
+- **Where they differ, write a short paired line**, phone first, for example: "On your
+  phone: tap **More**, then **Channels**. On a computer: open **Everything else**, then
+  **Channels**." Both halves are verified, never inferred from the other view.
+- **Mark every block** `device: both` (the usual case, paired lines included), or
+  `device: phone` / `device: computer` when the whole band exists in one view only.
+- **Media comes in pairs**: each plan slot appears once per view the band covers (phone
+  stills from the installed-app view at 390, computer stills at 1440; phone video 9:16,
+  computer video 16:9, cut from the same take). A `device: phone` band gets phone slots
+  only, and the reverse.
 
 **The question coverage table** in the defects file has one row per walker question the
 section 7 ledger routes to this article (cite each, `C3.2a:1` style): answered in
