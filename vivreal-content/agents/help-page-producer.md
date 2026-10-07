@@ -1,6 +1,6 @@
 ---
 name: help-page-producer
-description: Drafts ONE help.vivreal.io article per run from the help site plan, verify-first, treating the article as a QA harness. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band (raw.anchor, heading, body, SCREENSHOT and VIDEO placeholders in phone and computer pairs) plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
+description: Drafts ONE help.vivreal.io article per run from the help site plan, verify-first, treating the article as a QA harness. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band (raw.anchor, heading, device, body), each followed by its media as labelled On your phone and On a computer placeholder blocks, plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
 tools: Read, Write, Edit, Bash, Glob, Grep, Agent
 color: cyan
 ---
@@ -226,16 +226,49 @@ Anchor status: NEW | KEPT | RETIRED | BLOCKED #N
 Heading: <owner heading>
 device: both | phone | computer
 
-<body, owner words>
+<body, owner words, no media>
 
-SCREENSHOT phone (installed app, 390): <article>/<NN>-<screen>-<state> (placeholder, owner fills)
-SCREENSHOT computer (1440): <article>/<NN>-<screen>-<state> (placeholder, owner fills)
-VIDEO phone (9:16): <video id from the plan> (placeholder, owner fills)
-VIDEO computer (16:9): <video id from the plan> (placeholder, owner fills)
+### SCREENSHOT block: captioned-media
+Title: On your phone
+Slot: <raw.anchor>-phone (installed app, 390; placeholder, owner fills)
+Plan slot: <article>/<NN>-<screen>-<state>
+
+### SCREENSHOT block: captioned-media
+Title: On a computer
+Slot: <raw.anchor>-computer (1440; placeholder, owner fills)
+Plan slot: <article>/<NN>-<screen>-<state>
+
+### VIDEO block: video
+Label: On your phone
+Slot: <raw.anchor>-phone (9:16; placeholder, owner fills)
+Plan video: <video id from the plan>
+
+### VIDEO block: video
+Label: On a computer
+Slot: <raw.anchor>-computer (16:9; placeholder, owner fills)
+Plan video: <video id from the plan>
 ```
 
-One `##` block per band, in the plan's order. The slot names are the plan's section 4
-names; a band with no slot in the plan gets none. Leave every slot a placeholder.
+One `##` block per band, in the plan's order, each followed by its media blocks. A band
+with no slot in the plan gets no media blocks. Leave every slot a placeholder.
+
+**The v1 media shape (plan section 14).** The renderer has no Phone / Computer switch yet,
+and an editorial band holds one image and NO video field (its body strips embeds). So:
+
+- **Media never goes inside a band body.** Each pair is written as two labelled blocks
+  right after the band: a `captioned-media` block titled exactly "On your phone" (slot
+  `<raw.anchor>-phone`, the installed-app view at 390) and one titled exactly "On a
+  computer" (slot `<raw.anchor>-computer`, 1440). They sit side by side on a computer and
+  stack on a phone.
+- **Videos are `video` blocks**, labelled the same two ways with the same slot names; the
+  block type is what tells a video slot from a still. Keep the plan's video id beside it.
+- **Media blocks carry no `raw.anchor`.** They are not link targets; the band above them
+  is.
+- **One pair per band.** If the plan's section 4 names more than one still for a band,
+  pair the first and list the rest in the defects file as a plan disagreement for the
+  owner, rather than inventing slot names.
+- A later renderer release moves each pair into the band's own fields; that is a move,
+  not a rewrite, so keep the pairs exactly in this shape.
 
 **Phone and computer (plan section 14).** ONE article per topic, never a phone article
 and a computer article. Anchors are the same for both views.
@@ -246,10 +279,9 @@ and a computer article. Anchors are the same for both views.
   **Channels**." Both halves are verified, never inferred from the other view.
 - **Mark every block** `device: both` (the usual case, paired lines included), or
   `device: phone` / `device: computer` when the whole band exists in one view only.
-- **Media comes in pairs**: each plan slot appears once per view the band covers (phone
-  stills from the installed-app view at 390, computer stills at 1440; phone video 9:16,
-  computer video 16:9, cut from the same take). A `device: phone` band gets phone slots
-  only, and the reverse.
+- **Media comes in pairs**, in the v1 shape above (phone stills from the installed-app view
+  at 390, computer stills at 1440; phone video 9:16, computer video 16:9, cut from the same
+  take). A `device: phone` band gets the "On your phone" blocks only, and the reverse.
 
 **The question coverage table** in the defects file has one row per walker question the
 section 7 ledger routes to this article (cite each, `C3.2a:1` style): answered in
