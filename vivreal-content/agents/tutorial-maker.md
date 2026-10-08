@@ -440,6 +440,58 @@ read before any TikTok take. Supersedes nothing above.
 video (connect, then one post), 60 to 90 seconds, push-in on every press, ending on the post
 live.
 
+## Meta App Review takes vs help-site tutorials (learned 2026-10-08, binding)
+
+Two different products with OPPOSITE rules. Decide which one you are making before writing a step.
+
+**Help-site and owner tutorials:** plain everyday owner language; no API calls, permission names or
+endpoints in captions; simple step-by-step framing; clips MAY be stitched from shorter takes;
+every screenshot must match the current live product exactly (a stale or confusing one is a defect).
+
+**Meta App Review takes:** the audience is Meta's developer reviewers.
+- **Pacing:** brisk, use the `review` pacing profile (`--pacing=review`): about 1 s per action, no push-ins, holds only on the
+  grant screen and each key result.
+- **Captions:** technical, naming the permission and the call, for example
+  "pages_read_user_content: GET /{post-id}/comments", "pages_manage_engagement: DELETE /{comment-id}".
+  They must match the submitted use-case descriptions word for word in substance.
+- **One smooth continuous take, no cuts.** ONE combined take may cover several requested items (read, commenter
+  name and picture, delete) and be uploaded to each item; captions mark which permission each part shows.
+- **Grant screen:** open the toggles or Edit view, show the Page selection, then SCROLL through
+  EVERY permission toggle readable on camera; the runner's self-check stops the take before Done
+  if one is missing or off. A take without every toggle visible gets denied.
+- **Before and after loop on the MAIN Vivreal Page:**
+  1. Login and grant.
+  2. Facebook before (the post starts with NO comments).
+  3. Vivreal.
+  4. The change (a second account comments when cued).
+  5. Facebook after.
+  6. The reverse (delete in Vivreal).
+  7. Gone in both places.
+- **Scroll the Facebook post** so the comment area is in view on every Facebook view; it sits below the fold.
+- **Cues: ONE refresh.** After a cue, re-open Comments once, wait for loading to FINISH, then check and continue.
+  The 2026-10-08 extra-refresh bug was a check made while "Loading comments" still showed. Match
+  comment text normalised (case, spaces, curly quotes, trailing punctuation) or as "the one new
+  card". Delete only when exactly one card matches.
+- **The owner may stay signed in to Facebook** ("Continue as ..."); that is approved. The login page is not
+  required when they choose this.
+- **Remove Vivreal from the account's Facebook Business Integrations before every take.** A take that
+  reaches Facebook's Done consumes the removal, even if it is stopped afterwards. One stopped
+  before Done does not.
+- **Pre-roll checks (off camera):** the take post is empty; no runner or recorder process is alive;
+  Facebook shows as not connected in Vivreal; reload Channels and confirm
+  `channel-offer-connect-facebook` is visible (once the Connect buttons were hidden until a reload,
+  because the role had not loaded).
+- **Clear the previous caption at every step change.** A stale "Facebook, after" caption sat over the
+  delete screen for 18 s in the submitted take.
+- **Uploading:** Meta expects MP4. Convert without cuts or speed change
+  (`ffmpeg -i take.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart -an take.mp4`) and
+  check that the duration is unchanged.
+
+**Stopping a take:** stopping you (the agent) does NOT stop the recorder. The `run-tutorial`, `review-take`
+or `npx tsx` node processes keep driving the owner's Chrome, and could still press Delete. On any
+stop, end them (the remote's `clearCaption` then `done`, or kill those PIDs), discard the partial
+folder, and report it. The harness logs a hand-stopped take as "ok"; do not trust that line.
+
 ## Running it
 
 ```bash
