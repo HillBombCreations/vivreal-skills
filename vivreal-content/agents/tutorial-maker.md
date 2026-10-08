@@ -467,11 +467,15 @@ plus a top-level `tutorial-session.json`.
 **The phone pass is the installed app, not the mobile browser** (owner, 2026-10-06: "we
 should be pushing people to install the pwa so thats the main mobile view focus"). It opens a
 headed Chrome app window with `display-mode: standalone`, 540x960, and the iPhone safe areas
-(47 top, 34 bottom), on the same signed-in profile as every other pass, so `--login` still
+(0 top, 34 bottom), on the same signed-in profile as every other pass, so `--login` still
 covers it. `assertStandalone()` runs after the dashboard lands and after every handoff
 resume; `run.log` carries a `STANDALONE OK {...}` line, and a pass that is not the app fails
-before the take starts. The frame shows the portal's blue status-bar band across the top 47px
-and the tab bar sits above the home-indicator gap; captions are already moved clear of both.
+before the take starts. The portal uses the `default` iOS status bar since
+Vivreal_Portal_Mobile #442, so the page runs to the top of the frame with NO blue band, and
+the tab bar sits above the home-indicator gap; captions are already moved clear of it. A blue
+band across the top is a defect to report once that release is live. To film the live app
+before it ships (`stable` v0.33.7 still has `black-translucent`), pass
+`--status-bar=black-translucent`; then the 47px band is expected and captions move below it.
 - `--phone-display=browser` shoots the mobile browser instead. Use it only when the brief
   asks for the mobile browser, and say so in the handoff.
 - An app-view phone pass **refuses `--headless`** (headless never reports standalone) and
@@ -533,9 +537,10 @@ reinventing a highlight-and-hide for every new script that needs stills.
 2. **Watch both videos.** Not the stills, the videos. Open the phone video at every
    caption and confirm the caption never covers a ringed control. The harness moves a
    caption off a ring by itself, so a covered control is a harness defect to report,
-   not a script choice, and it is still watched. The phone video is the installed app: the
-   blue status-bar band is across the top of every frame and `run.log` has a
-   `STANDALONE OK` line. No band means a browser take, and it is reshot, not shipped.
+   not a script choice, and it is still watched. The phone video is the installed app:
+   `run.log` has a `STANDALONE OK` line, and no `STANDALONE OK` means a browser take, which
+   is reshot, not shipped. There is no blue band across the top (unless the pass ran with
+   `--status-bar=black-translucent`); a band in a default take is a defect to report.
 3. **The first frame is the dashboard**, and no frame is a full-screen card. Pull
    frames into `.agent-cache/`, never into the session folder (it is committed, and
    PNGs go to LFS).

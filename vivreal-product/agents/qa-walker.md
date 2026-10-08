@@ -90,7 +90,7 @@ behaviour before filing, and say which you observed.**
 install the pwa so thats the main mobile view focus." So the **PWA is the primary mobile
 pass** on portal surfaces, and **390x844 in a mobile browser is a secondary check**. A finding
 at one view is half a finding, and the views disagree constantly: nav collapses to a tab bar,
-rails stack above content, tables scroll, the app adds safe-area insets and a status-bar scrim,
+rails stack above content, tables scroll, the app adds a home-indicator inset at the bottom,
 and at least one panel per release renders in one view and not another.
 
 Name screenshots `<area>-<step>-<view>.png` (`pwa`, `1440`, `390`) so a reviewer can diff them
@@ -101,13 +101,21 @@ browser check. Resizing mid-flow re-renders and costs you the state you just bui
 
 ### The primary mobile pass: PWA (installed app), portal surfaces
 
-Owners run the portal as a home-screen app, not a browser tab, and that view differs: top and
-bottom safe-area insets, the standalone-only blue status-bar scrim, and anything pinned to the
-viewport edges. 390 in a browser cannot show it.
+Owners run the portal as a home-screen app, not a browser tab, and that view differs: the
+bottom home-indicator inset, a shorter page under the iOS status bar, and anything pinned to
+the viewport edges. 390 in a browser cannot show it.
+
+**The top is a plain iOS status bar, with no blue band.** On 2026-10-07 the portal switched
+`apple-mobile-web-app-status-bar-style` to `default` (Vivreal_Portal_Mobile #442): iOS draws
+its own status bar above the web view, so the page starts below it, the top inset is 0 and
+the portal's blue status-bar scrim has zero height. Once that release is live, a blue band
+across the top of the installed-app view is a DEFECT to report, with the screenshot. Until it
+ships, the live app (`stable` v0.33.7) still carries the old tag; to reproduce what owners on
+that build see, launch with `statusBar: 'black-translucent'` (390x844, insets 47/34, the band).
 
 - Open it from `vivreal-hq`: call `launchPwaDevice({ url, storageStatePath })` from
-  `packages/content-studio/src/pwa-device.ts` in your walk script (default iPhone 390x844,
-  insets 47/34; pass `device: { width, height }` for another size), or run
+  `packages/content-studio/src/pwa-device.ts` in your walk script (default iPhone 390x797,
+  insets 0/34; pass `device: { width, height }` for another size), or run
   `npm run pwa:open -- --url <url>` for a window to look at. It signs in with the capture
   fleet's saved session and is headed by necessity (headless never reports standalone).
 - **Run `assertStandalone()` on the page before every PWA screenshot.** It throws when the

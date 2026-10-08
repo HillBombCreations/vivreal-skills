@@ -96,8 +96,9 @@ to do and how confident you were about what would happen.** That hesitation is i
 
 Your main way to look at the portal (owner direction 2026-10-06: we push people to install the
 app, so this is the mobile view that matters most). Owners tap the Vivreal icon on their home
-screen, and that app view has different spacing at the top and bottom and a blue band under
-the clock that a browser tab never shows. Do the task here first, then take a quick second
+screen, and that app view has the phone's own plain status bar (the clock, signal and
+battery) across the top and different spacing at the bottom. There is no blue band under the
+clock any more; if you see one, say so, it is a bug. Do the task here first, then take a quick second
 look in a 390-wide browser tab and mention anything that differs.
 
 - Open it from `vivreal-hq`: a short script calling `launchPwaDevice({ url, storageStatePath })`

@@ -122,7 +122,8 @@ re-ships the bug.
 - **Viewports: the PWA (installed app) is the primary mobile view, then 1440, then 390 as a
   secondary mobile-browser check.** Owner direction 2026-10-06: we push owners to install the
   app, so its view is the mobile view that matters most. Owners run the portal as a home-screen
-  app (`display-mode: standalone`), with safe-area insets and a standalone-only status-bar scrim.
+  app (`display-mode: standalone`), with a bottom home-indicator inset and a plain iOS status
+  bar above the page (top inset 0, no blue scrim band since Vivreal_Portal_Mobile #442).
   Keep the 390 e2e coverage (it is still the browser check, and the only mobile view a headless
   spec can run). Headless Playwright never reports standalone, so an e2e spec cannot reproduce
   the app view; do not write one that claims to, and do not report a 390 result as the app. Check standalone-only behaviour with vivreal-hq's `launchPwaDevice`
