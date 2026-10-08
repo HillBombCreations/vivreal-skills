@@ -32,7 +32,19 @@ color: orange
 
 - **One duck.** Every pose is the same character from a different angle or doing a different
   thing. Proportions, beak, eyes, bandana, VR monogram and foot shape come from the model, never
-  from a new drawing. The laptop duck (`source/laptop.png`) is the approved reference look.
+  from a new drawing. **The APPROVED look is v1 (owner, 2026-10-08): `brand/mascot/out/v1/`**,
+  classic-A face, WHITE body, wings tucked to the sides, one bill with a lip line, the VR logo
+  with a light keyline. Every new pose or animation builds on v1. Do not reopen the face, the
+  colour or the proportions without the owner. (`source/laptop.png` was the starting reference
+  only.)
+- **Style: OLD CLASSIC SIMPLE CARTOON, NOT ANIME** (owner, after r4). Simple bold shapes, one
+  clean outline, minimal detail, a readable silhouette. No sparkle eye highlights, no blush
+  stickers, no chibi detail. Wings are simple duck wings, NEVER hands or fingers (r4 feather
+  bumps read as fingers and were rejected). When unsure, simplify.
+- **Expressions must read instantly** in classic cartoon language: happy is arc eyes plus a wide
+  smiling bill with a simple dark mouth (never a second stacked bill); surprised is rounder eyes
+  plus a small round "o" bill; wink is one arc eye plus a smile. The owner said the r5 happy and
+  surprised "didn't make sense", so test each by eye at thumbnail size.
 - **Perspective follows the pose.** What the face, body and feet show depends on which way the
   duck faces and what it is doing. A standing duck's feet are flat on the ground (no soles);
   a sitting duck with legs out shows its soles. Pose the 3D model and let the camera decide;
@@ -55,11 +67,24 @@ color: orange
    through other parts, and the perspective of the feet.
 4. Show the owner: put the side-by-side in front of them and name what changed and what you
    think is still off. Ask for the next note, one piece at a time.
-5. When the owner approves a pose, it goes to `out/` as SVG plus a 2048 PNG. **Not wired yet:**
-   `build.py` still traces the 2D drawings in `source/` and never reads `.work/model-<pose>.png`.
-   The first approved model pose is the moment to connect it (a pose entry whose source is the
-   model render, with no foot replacement or shadow steps). Then commit only `brand/mascot/`
-   paths, and only when told to.
+5. When the owner approves a pose, copy the renders into the next `out/v<N>/` (v1 holds standing,
+   laptop, neutral, happy, wink, surprised at 1254 px RGBA, plus the idle GIF and WebM) and note
+   it in the README's "Approved look". SVG export is **not wired yet**: `build.py` still traces
+   the old 2D drawings and never reads model renders; connect it when the owner asks for vectors.
+   Commit only `brand/mascot/` paths, and only when told to.
+
+## How a round goes (what worked with this owner, 2026-10-08, rounds 1 to 6)
+
+- **One labelled comparison sheet per round, saved under a NEW name** (`model-compare-r<N>.png`):
+  the previous round next to this one, close-up rows for whatever changed, and a short "still
+  off" list. The owner reviews the SHEET (open it for them); a GIF alone is not enough.
+- **Do exactly the scope of the note.** "Fine-tune and smooth" means refine in place, not
+  redesign; r4 over-designed the wings and was rejected. Variants only where there is a real
+  choice (logo legibility, body colour), at most 2 or 3.
+- **State your own honest read** of what is still off (r6: tight standing wings, neutral vs
+  smile too alike); the owner decides.
+- **Colour is a palette knob** (`palette: white | yellow`); yellow needs coral cheeks if any
+  blush is used and a shifted beak-top tone. White won.
 
 ## How the outlines work (do not swap the method without the owner)
 
@@ -93,6 +118,14 @@ color: orange
 - A full render of both poses takes about 40 seconds.
 
 ## Known traps
+
+- **Another session may commit while you work.** On 2026-10-08 a coordinator commit captured a
+  half-finished `duck.py` mid-round. Keep each round's edits small and runnable, and tell the
+  coordinator when files are mid-change. If you find your file committed half-done, finish it and
+  say so in the report.
+- **Back up a file before a scripted rewrite.** A failed Python write emptied the README once
+  (restored from an earlier print). Write files with the Write or Edit tool, or write to a temp
+  file and rename; on Windows pass `encoding='utf-8'`.
 
 - **Zero-thickness sheets** (the bandana) have no volume. Give them thickness (`thicken`) before
   anything that depends on volume.
