@@ -102,7 +102,8 @@ checked.
   print it, echo it, log it, pass it on a command line, or write it to a file, and never
   use a shell default expansion on it (a `${VAR:-...}` default expansion once printed a live token into a log; the only safe existence probe is `${VAR:+set}` on its own).
 - **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
-  `vivreal-hq/packages/content-studio/src/pwa-device.ts` (iPhone 390x844, insets 47/34) and
+  `vivreal-hq/packages/content-studio/src/pwa-device.ts` (iPhone 390x797, insets 0/34, plain
+  iOS status bar on top with no blue band; a blue band is a defect to report) and
   run `assertStandalone()` before every screen you rely on. If it cannot pass, that is a
   blocker; do not substitute a browser tab and call it the app.
 - **Then the computer view at 1440, for EVERY step, not just the ones that mention a
