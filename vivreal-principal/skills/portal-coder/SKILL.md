@@ -54,9 +54,10 @@ real accounts) need a fresh dispatch.
 ### SOLO, the only portal coder working right now
 
 1. **Fresh worktree from `origin/main`, never the main checkout.** `git fetch origin`, then
-   `git worktree add -b <branch> ../pc-<slug> origin/main` (or the path the dispatcher gives);
-   without `-b` the tree is DETACHED. For an existing PR branch, `git -C <wt> switch <branch>`
-   instead. Working in the main checkout risks colliding with whatever branch it is parked on,
+   `git worktree add -b <branch> --no-track ../pc-<slug> origin/main` (or the path the dispatcher gives);
+   without `-b` the tree is DETACHED. `--no-track` keeps the branch off `origin/main`'s upstream. For an existing PR
+   branch, `git worktree add ../pc-<slug> <branch>` (or `git -C <wt> switch <branch>` in a
+   worktree you already have). Working in the main checkout risks colliding with whatever branch it is parked on,
    or another agent's uncommitted work in it.
 2. **`npm ci`, never `npm install`.** A worktree's `node_modules` does not follow a branch
    checkout, so after creating the worktree (or after any `git checkout` inside it), print
@@ -248,7 +249,7 @@ never glossed as "Ship it."
 `git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
 DETACHED HEAD: attach it before committing, `git switch -c <branch>` for a new branch, or for an
 existing one `git switch <branch>` then `git merge --ff-only <detached sha>` (stop and report if
-it will not fast-forward). Never push `HEAD:<branch>`; push the named branch you are on. The
+it will not fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with `git push -u origin <branch>`. The
 report carries the line `worktree <path> on <branch> at <sha>`, read at report time.
 This applies in every mode.
 

@@ -53,7 +53,7 @@ the old and new versions before bumping.
 ### 2. Per consumer repo (one commit on its release PR)
 For each consumer (every one of them, see Ordering & safety):
 1. Work on the repo's open release PR branch for this release; if it has none, create one from
-   `origin/main` (`git worktree add -b <branch> <path> origin/main`, never a detached tree).
+   `origin/main` (`git worktree add -b <branch> --no-track <path> origin/main`, then `git push -u origin <branch>`, never a detached tree).
 2. Set the new version in `package.json` (use the same range style already present, usually `^x.y.z`).
 3. **Patch the lockfile surgically (the key step, see the `package-publisher` agent for the full
    procedure):** never `rm -rf node_modules package-lock.json && npm install` on Windows, that

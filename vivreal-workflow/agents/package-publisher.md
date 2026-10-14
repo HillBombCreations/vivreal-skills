@@ -167,13 +167,13 @@ workflow itself is broken.
    commits awaiting one in the report.
 
 **Work each consumer in its own worktree on a named branch, and check the branch before every
-first commit.** `git fetch origin`, then `git worktree add -b <branch> <path> origin/main` (a
+first commit.** `git fetch origin`, then `git worktree add -b <branch> --no-track <path> origin/main` (a
 bare `git worktree add <path> origin/main` makes a DETACHED tree), or `git -C <path> switch
 <branch>` for an existing PR branch. Print `git branch --show-current` and `git rev-parse HEAD`
 before the first commit in each repository. An empty branch name means a detached HEAD: attach
 it first, `git switch -c <branch>` for a new branch, or `git switch <branch>` then
 `git merge --ff-only <detached sha>` for an existing one (stop and report if it will not
-fast-forward). Never push `HEAD:<branch>`; push the named branch you are on.
+fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with `git push -u origin <branch>`.
 
 ## Verify by what the registry and the lockfile say, not by what a command returned
 
