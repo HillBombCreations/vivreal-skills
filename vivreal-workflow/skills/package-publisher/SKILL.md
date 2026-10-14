@@ -154,6 +154,15 @@ workflow itself is broken.
 9. **Open PRs only after every repo is green**, cross-link them so they merge together when the
    change is breaking, and ASK before opening them, this is a mutating, multi-repository action.
 
+**Work each consumer in its own worktree on a named branch, and check the branch before every
+first commit.** `git fetch origin`, then `git worktree add -b <branch> <path> origin/main` (a
+bare `git worktree add <path> origin/main` makes a DETACHED tree), or `git -C <path> switch
+<branch>` for an existing PR branch. Print `git branch --show-current` and `git rev-parse HEAD`
+before the first commit in each repository. An empty branch name means a detached HEAD: attach
+it first, `git switch -c <branch>` for a new branch, or `git switch <branch>` then
+`git merge --ff-only <detached sha>` for an existing one (stop and report if it will not
+fast-forward). Never push `HEAD:<branch>`; push the named branch you are on.
+
 ## Verify by what the registry and the lockfile say, not by what a command returned
 
 - **A green publish workflow is not a publish.** Confirm on the registry.
@@ -218,6 +227,8 @@ workflow itself is broken.
   landing, and the `npm ci` result.
 - The `pin-sweep` sweep + control result, quoted, and the `reference-sweep` result if a retirement
   was in scope.
+- Per repository, the line `worktree <path> on <branch> at <sha>` (from
+  `git branch --show-current` and `git rev-parse HEAD`, run at report time).
 - The explicit branches/commits per repository, and whether PRs were opened (only after asking).
 - One-line summary: "<pkg> at <version>, confirmed on the registry; <N> consumers patched and
   `npm ci`-verified; pin-sweep clean with controls firing; <PRs opened/held for confirmation>."

@@ -53,10 +53,11 @@ real accounts) need a fresh dispatch.
 
 ### SOLO, the only portal coder working right now
 
-1. **Fresh worktree from `origin/main`, never the main checkout.**
-   `git worktree add ../pc-<slug> origin/main` (or the path the dispatcher gives). Working in
-   the main checkout risks colliding with whatever branch it is parked on, or another agent's
-   uncommitted work in it.
+1. **Fresh worktree from `origin/main`, never the main checkout.** `git fetch origin`, then
+   `git worktree add -b <branch> ../pc-<slug> origin/main` (or the path the dispatcher gives);
+   without `-b` the tree is DETACHED. For an existing PR branch, `git -C <wt> switch <branch>`
+   instead. Working in the main checkout risks colliding with whatever branch it is parked on,
+   or another agent's uncommitted work in it.
 2. **`npm ci`, never `npm install`.** A worktree's `node_modules` does not follow a branch
    checkout, so after creating the worktree (or after any `git checkout` inside it), print
    declared, locked, and installed versions for anything a test might version-mirror before
@@ -243,6 +244,14 @@ the turn and leaves a stale dev server that poisons the next one), a PR opened a
 the report, and the release state stated plainly, merged, open and unmerged, or not touched,
 never glossed as "Ship it."
 
+**Branch check before the first commit, and again in the report.** Print
+`git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
+DETACHED HEAD: attach it before committing, `git switch -c <branch>` for a new branch, or for an
+existing one `git switch <branch>` then `git merge --ff-only <detached sha>` (stop and report if
+it will not fast-forward). Never push `HEAD:<branch>`; push the named branch you are on. The
+report carries the line `worktree <path> on <branch> at <sha>`, read at report time.
+This applies in every mode.
+
 **PARALLEL ends in a pushed branch, by design, not a PR.** Report the branch and SHA as
 "ready for integration" and stop there; opening a PR or running the full gate in this mode
 defeats the reason the mode exists.
@@ -349,5 +358,7 @@ have saved roughly a quarter of that usage.
 - SOLO/INTEGRATE: PR URL and release state, stated plainly (merged, open and unmerged, or not
   touched).
 - PARALLEL: branch name and head SHA, labelled "ready for integration."
+- Every mode: the line `worktree <path> on <branch> at <sha>` (from `git branch --show-current`
+  and `git rev-parse HEAD`, run at report time).
 - Note any deviations from the plan (plan mode) or tradeoffs made (standalone mode), and name
   any portal-specific lesson above that changed how you ran the gates.
