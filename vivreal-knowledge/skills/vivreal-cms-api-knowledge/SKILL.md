@@ -21,7 +21,7 @@ Per-Lambda layout: `lambda.js` → `app.js` → `api/{index,handlers,controllers
 
 All routes are under `/tenant/`. **CMS reads the tenant DB key from `req.query.key`** (Secure API uses `dbKey`, don't confuse). `await dynamicDb.connect(dbKey)` selects the group's database. Always pass it.
 
-**mainDb lookups: never `{ groupName }`.** `active_ctx` has only `groupID` + `dbKey`. Use `{ _id: ObjectId(groupID) }`. `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null (walk 5 B8: every list delete answered 500 after deleting). **Webhook paths have no `key` param**, they tenant-route by a provider identifier and then read the STORED placement with `resolvePlacement(group)`, never `group.key`. **Check whether that identifier is inside the signature before calling it verified**: on the Shopify receiver it is a header, and the HMAC covers only the body.
+**mainDb lookups: never `{ groupName }`.** `active_ctx` has only `groupID` + `dbKey`. Use `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null (walk 5 B8: every list delete answered 500 after deleting). **Webhook paths have no `key` param**, they tenant-route by a provider identifier and then read the STORED placement with `resolvePlacement(group)`, never `group.key`. **Check whether that identifier is inside the signature before calling it verified**: on the Shopify receiver it is a header, and the HMAC covers only the body.
 
 ## Adding a route: 8 steps (step 7 = the 403 trap)
 

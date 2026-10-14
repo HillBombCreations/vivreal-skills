@@ -127,7 +127,7 @@ Generated: <timestamp>
 Follow the same safety rules as `/db-query`:
 - READ-ONLY, only `find`, `aggregate`, `count`
 - Connect to `vivreal` mainDb for cross-tenant metrics
-- Never query by `groupName`, always `{ _id: ObjectId(groupID) }`. `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null
+- Never query by `groupName`, always `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null
 - Limit results to 50 max
 - Redact any sensitive fields (credentials, apiKeys)
 

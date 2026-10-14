@@ -130,7 +130,7 @@ If investigation surfaces that the task is misframed, STOP and report. Don't bui
   - SSR-safe, guard `window`/`document`
   - Respect `prefers-reduced-motion` for motion
   - Privacy masking via `privacyUnmask` / `privacyMask` from `@/lib/privacy` for chrome vs. user data
-- Backend-specific: tenant filters (`groupID`) on every Mongo query. `{ _id: ObjectId(groupID) }` for mainDb lookups, never `groupName`, and never `{ key: dbKey }` (`key` is the slug, `dbKey` the tenant database name, so it returns null).
+- Backend-specific: tenant filters (`groupID`) on every Mongo query. `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`) for mainDb lookups, never `groupName`, and never `{ key: dbKey }` (`key` is the slug, `dbKey` the tenant database name, so it returns null).
 - Handle errors explicitly. No silent `catch {}`. Surface backend errors via `getApiError(err, fallback)`.
 - Validate assumptions via docs: context7 MCP for Next.js/React/Mongoose, AWS docs MCP for Lambda/API Gateway/S3.
 - Never `git add -A`. Never bump versions. Never publish. Never commit unless explicitly asked.
