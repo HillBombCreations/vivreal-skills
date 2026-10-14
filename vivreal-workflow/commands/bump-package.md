@@ -14,10 +14,12 @@ Follow the `vivreal-package-update` skill exactly. In short:
    the target package only, following the `package-publisher` agent's procedure, never
    `rm -rf node_modules package-lock.json && npm install` on Windows (see Safety below). If `npm ci` reports 401/403
    against `npm.pkg.github.com`, the repo's `.npmrc` token is stale, copy it from `Vivreal_Portal_Mobile` and retry.
+   **Actions access:** For a consumer new to this package, confirm the package's Manage Actions access (GitHub, Hill Bomb Creations org, Packages, the package, Package settings) lists the consumer repo with Read before its release PR deploys. Local installs and PR checks pass on a personal token, so only the deploy's `npm ci` would catch it, with a 403. Only an org owner can grant it (the page answers 404 signed out), so if it is missing or you cannot see it, list it as a release prerequisite for the owner.
    Then run build + tests. Commit `package.json` + the patched `package-lock.json` (never `node_modules`/`.npmrc`).
 4. **PRs:** push and open (or update) each repo's release PR once that repo is green, cross-linked so they merge together. After a reviewer PASS on the publish the owner's standing approval covers this, so do not ask. Every new commit on a PR needs a delta review.
 
-Safety: publish the producer version FIRST if you're also releasing it; re-pin EVERY consumer in the same release, breaking or additive
+Safety: publish the producer version FIRST if you're also releasing it, and only after a reviewer PASS on the package PR at
+the exact SHA being published (with no PASS, stop and request a review; asking the owner does not substitute for the review); re-pin EVERY consumer in the same release, breaking or additive
 (owner standing rule: a skew is reported, never chosen; narrowing needs an explicit owner instruction); never `--force`/`--legacy-peer-deps` to mask a conflict. **Never `rm -rf node_modules package-lock.json && npm
 install` on Windows to move a pin**, it prunes Linux-only optional dependencies, one renderer bump took the fleet's
 lockfile from 263 optional entries to 261 and broke `npm ci` (`EUSAGE`) on the next build. Patch the lockfile entry

@@ -137,7 +137,9 @@ workflow itself is broken.
    stale local checkout).
 2. **Confirm the target version's breaking-change surface** against the package's own repo
    CHANGELOG/git log between the current and target version. Classify additive vs breaking.
-3. **If publishing, publish the producer first.** Then verify with `npm view <pkg> version`
+3. **If publishing, publish the producer first, and only after a review.** Publish only after
+   a reviewer PASS on the package PR at the exact SHA being published. With no PASS, stop and
+   request a review; asking the owner does not substitute for the review. Then verify with `npm view <pkg> version`
    against the registry, never against the workflow's own conclusion.
 4. **Per consumer, one commit on that repository's open release PR, patch the lockfile
    surgically.** Each re-pin is its own commit on the repo's open release PR for this release;
@@ -151,6 +153,7 @@ workflow itself is broken.
    reinstall (done safely, off `npm ci`) can surface a transitive break the old lockfile masked,
    that is the point, do not skip it because the lockfile patch looks minimal.
 6. **Land the bump as its own commit per repository**, never squashed with an unrelated change.
+   **Actions access:** For a consumer new to this package, confirm the package's Manage Actions access (GitHub, Hill Bomb Creations org, Packages, the package, Package settings) lists the consumer repo with Read before its release PR deploys. Local installs and PR checks pass on a personal token, so only the deploy's `npm ci` would catch it, with a 403. Only an org owner can grant it (the page answers 404 signed out), so if it is missing or you cannot see it, list it as a release prerequisite for the owner.
 7. **Run `pin-sweep`'s `sweep()` + `runControls()`** across the fleet after every consumer lands,
    confirm `RESOLVED_DIVERGED` is gone and read the control result, not only the finding count.
 8. **If this bump retires an old package/version**, run `reference-sweep` and treat exit 2 as
@@ -158,7 +161,8 @@ workflow itself is broken.
 9. **Push and open (or update) each repo's release PR once that repo is green**, and cross-link
    them so they merge together. The owner's standing approval covers this: after a reviewer PASS
    on the publish, do not stop to ask before re-pinning or opening PRs. Ask only when no standing
-   approval applies (a package or release the owner has not approved). **Every new commit on a
+   approval applies (a package or release the owner has not approved), and an owner's answer never
+   stands in for the reviewer PASS that step 3 requires. **Every new commit on a
    PR needs a delta review**, including a re-pin added after an earlier review passed; name the
    commits awaiting one in the report.
 
@@ -219,6 +223,9 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on.
 - DON'T report a `pin-sweep` or `reference-sweep` result without having run its controls, and
   DON'T treat `reference-sweep`'s exit 2 as anything but VOID.
 - DON'T bump a consumer before the producer is published and confirmed on the registry.
+- DON'T publish without a reviewer PASS on the package PR at the exact SHA being published. Asking the owner does not
+  substitute for the review.
+- DON'T let a consumer new to a package deploy before the package's Actions access lists it.
 - DON'T leave any consumer on the old pin after a reviewed publish, breaking or additive. A skew
   is reported, never chosen; narrowing needs an explicit owner instruction. Cross-link the PRs so
   they merge together.

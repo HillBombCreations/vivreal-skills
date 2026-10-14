@@ -68,6 +68,7 @@ For each consumer (every one of them, see Ordering & safety):
    An `npm ci`-verified install can surface a transitive break the old lockfile was masking, that's the point.
 5. Commit `package.json` + the patched `package-lock.json` together
    (`chore(deps): bump <pkg> to <version>`). Do NOT commit `node_modules` or `.npmrc`.
+6. **Actions access:** For a consumer new to this package, confirm the package's Manage Actions access (GitHub, Hill Bomb Creations org, Packages, the package, Package settings) lists the consumer repo with Read before its release PR deploys. Local installs and PR checks pass on a personal token, so only the deploy's `npm ci` would catch it, with a 403. Only an org owner can grant it (the page answers 404 signed out), so if it is missing or you cannot see it, list it as a release prerequisite for the owner.
 
 ### 3. PRs
 Once a repo builds and tests green, push and open (or update) its release PR (`gh pr create` only
@@ -85,6 +86,7 @@ including a re-pin added after an earlier review passed.
   workflow run is not evidence; reading the registry is.
 - When you touch a package publish workflow, tolerate the duplicate-version case BY NAME and
   fail on everything else. See the `verification-discipline` skill.
+- **Review before publish:** Publish only after a reviewer PASS on the package PR at the exact SHA being published. With no PASS, stop and request a review; asking the owner does not substitute for the review.
 - **Producer first:** if you're also publishing a new version of the shared package, publish it to
   GitHub Packages BEFORE bumping consumers (else `npm install` can't find the version).
 - **Re-pin every consumer (owner standing rule):** after a reviewed publish, every consumer moves in
