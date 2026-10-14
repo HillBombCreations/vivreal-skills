@@ -1,5 +1,5 @@
 {
-  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and do a clean reinstall (once per session).",
+  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session).",
   "hooks": {
     "PostToolUse": [
       {
