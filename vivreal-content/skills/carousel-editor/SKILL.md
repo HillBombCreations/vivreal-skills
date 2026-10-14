@@ -190,9 +190,12 @@ the `carousel-source/` role in `linkedin-editor.md`.
    next-gen, world-class, unleash, unlock.
 3. **No developer jargon**: API, headless, schema, manifest, webhook, OAuth, JWT, edge runtime,
    multi-tenant, composable, PWA, structured data, meta description, render, 404.
-4. **Honesty floor.** Never a slide asserting that publishing sends email, and never a graphic in
-   which a Mailchimp tab collapses into a Vivreal tab. Email is the Mailchimp integration: the
-   account, the list, and the bill stay theirs. Never "the preview is the real site". Any
+4. **Honesty floor.** Native email is claimable (`brand/voice.md`, the Email entry): "Write it
+   once in Create, tick your site, your socials and your email list, and pick when each goes
+   out", naming Pro wherever the email half is the point. Never a slide implying one Publish
+   sends site, social and email together, or that an email goes out by itself whenever you
+   publish. Never a graphic in which a Mailchimp tab collapses into a Vivreal tab: for an owner on
+   Mailchimp, the list and the bill stay there. Never "the preview is the real site". Any
    competitor price gets a `Verify before posting` item naming the day it must be re-checked.
 5. **Stat quarantine.** Never 23x, never 51%. BrightLocal's 45% is the approved AI stat.
 6. **Slide count** inside the platform range, and slide 1 is the hook.
