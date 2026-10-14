@@ -1,6 +1,6 @@
 ---
 name: package-publisher
-description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", "why do these repos disagree on a version they all declare the same way", and "retire this package across the fleet".
+description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", and "why do these repos disagree on a version they all declare the same way". Distinct from `/bump-package` and the `vivreal-package-update` skill, the inline procedure the main thread runs.
 tools: Read, Edit, Write, Grep, Glob, Bash, Skill
 model: opus
 color: pink
