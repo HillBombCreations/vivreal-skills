@@ -37,7 +37,9 @@ placement, so ONE tenant in a placement is intent and not an abandoned
 migration. Earlier text here named the retired paid tier and its database placement,
 and that database placement is now dropped, holding zero groups) · demo user
 `vivreal-content-demo` (justin+content@vivreal.io). Set `VR_GROUP_ID` to that
-`_id`, `VR_DB_KEY=pod_02`, and skip the provisioning CLI entirely,
+`_id` and `VR_DB_KEY` to the group's own stored `dbKey`, read live from its group
+document (never typed from this file; the loader's preflight refuses a mismatch),
+and skip the provisioning CLI entirely,
 NEVER provision a prospect account for a template site, and NEVER use the
 `vivreal` group (the 2026-07-20 smoke polluted its entries quota and forced a
 tier bump). Precedents already there: Cobalt Crumb, oldmill.vivreal.io.
@@ -287,10 +289,15 @@ its Amplify build passed.
    `{"event":"site.updated","data":{}}` and header
    `x-vivreal-signature: sha256=<HMAC-SHA256(rawBody, REVALIDATE_WEBHOOK_SECRET)>`
    (secret lives in the site's Amplify env vars). **The secret is usually set at
-   the BRANCH level, not the app level**, `get-app` returns the literal string
-   `None`, which HMACs cleanly into a 401 "Invalid signature" that looks like a
-   signing bug. Read `get-branch --branch-name stable` too, and assert the
-   secret's length before using it.
+   the BRANCH level, not the app level**, an app-level read returns the literal
+   string `None`, which HMACs cleanly into a 401 "Invalid signature" that looks
+   like a signing bug. Read it from the branch, projected to that one field and
+   into a variable, never printed:
+   `S=$(aws amplify get-branch --app-id <id> --branch-name stable --query 'branch.environmentVariables.REVALIDATE_WEBHOOK_SECRET' --output text)`,
+   then check `${#S}` (length only; `None` or 0 means it is not set there, try
+   the same projection on `get-app --query 'app.environmentVariables.REVALIDATE_WEBHOOK_SECRET'`).
+   Never echo `$S` and never run `get-app` / `get-branch` unprojected: their
+   default output prints every env value and `basicAuthCredentials`.
    Note the revalidate clears the DATA tag, not the rendered HTML, re-read with
    a cache-buster (`?cb=<ts>`) before concluding the change did not land.
 5. **MEDIA HEALTH, a live site must hold ZERO `preupload-` keys.**

@@ -114,6 +114,7 @@ Hard rules: APPROVED requires ALL 10 = PASS or N/A. Even one FAIL = REJECTED. Ci
 - DON'T skip review (the review's exit gate is npm audit returning 0).
 - DON'T auto-bump major versions without a research note covering breaking changes.
 - DON'T mix phases, one phase per dispatch.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 

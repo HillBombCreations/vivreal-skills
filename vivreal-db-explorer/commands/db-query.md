@@ -284,7 +284,7 @@ database is deleted fleet-wide). The `key` field is **S3 bucket naming**, NOT da
 1. **READ-ONLY by default**, this command only uses `find`, `aggregate`, `count`. No `updateMany`, `deleteMany`, `insertMany`.
 2. **Always filter `archived`**, unless the user explicitly asks for archived items, add `{"archived": {"$ne": true}}` to the filter. Use `$ne: true` (not `false`) to handle documents where the `archived` field is missing.
 3. **Limit enforcement**, never return more than 50 documents. Default to 10.
-4. **Never query mainDb by `groupName` alone**, prefer `{ key: dbKey }` or `{ _id: groupID }`. `groupName` is for display only.
+4. **Never query mainDb by `groupName` alone**, use `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null. `groupName` is for display only.
 5. **Redact credentials**, if results contain `credentials`, `apiKey`, `secretKey`, `accessToken`, `refreshToken`, `stripeKey`, `integrationKey`, or similar fields, show `[REDACTED]` instead.
 6. **`collectionObj.refID` is a string**, never wrap it in `ObjectId()`. Same for `groupID` on tenant objects.
 7. **`_id` fields require `{"$oid": "..."}` syntax** when querying via the MCP MongoDB tool.

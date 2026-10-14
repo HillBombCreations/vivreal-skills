@@ -262,8 +262,9 @@ end and carries every live-run gotcha:
   out-of-band, never in repo/chat),
 - auth (SSO accounts: portal-session IdToken → `VR_COGNITO_ID_TOKEN`; never in
   chat/git; delete the token file after),
-- env (`VR_GROUP_ID` from Step 0's group, `VR_DB_KEY=general_shared`, prod
-  CMS/Secure URLs),
+- env (`VR_GROUP_ID` from Step 0's group, `VR_DB_KEY` = that group's own
+  stored `groups.dbKey`, read live from the group document, never typed or derived
+  (see the cutover agent), prod CMS/Secure URLs),
 - `node commands/load.js captures/<domain> --gap-policy partial --deploy`
   (seeds collections with the bulk-504 fallback, creates the site as a
   **blank-template** site, triggers `POST /api/deploySite` → Deploy-Site pipeline),

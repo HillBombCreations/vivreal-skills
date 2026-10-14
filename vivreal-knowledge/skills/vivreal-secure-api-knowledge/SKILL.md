@@ -69,7 +69,7 @@ tier id is the case to think about: nothing rewrites it when a package folds a t
 
 ## Multi-tenant routing: `dbKey` (NOT `key`)
 
-**Secure reads `req.query.dbKey`**, CMS reads `key`. The portal proxy must set `dbKey` explicitly for Secure routes. `dynamicDb.js` pools per-tenant connections (`maxPoolSize=3`). mainDb `Vivreal` holds group metadata. **Never filter mainDb by `groupName`**, use `{ _id: groupID }` / `{ key: dbKey }`.
+**Secure reads `req.query.dbKey`**, CMS reads `key`. The portal proxy must set `dbKey` explicitly for Secure routes. `dynamicDb.js` pools per-tenant connections (`maxPoolSize=3`). mainDb `Vivreal` holds group metadata. **Never filter mainDb by `groupName`**, use `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null.
 
 ## Adding a route: 7 steps (step 7 = the 502 trap)
 

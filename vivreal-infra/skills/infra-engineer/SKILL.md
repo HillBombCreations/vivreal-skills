@@ -152,9 +152,13 @@ pattern below and say so, do not silently degrade without naming it.
 ## Live-state tooling (read before, and read again after)
 
 - **Read-only first, always.** `aws cloudformation describe-stacks`, `get-template
-  --template-stage Original`, `aws lambda get-function-configuration`, `aws iam get-role-policy`
-  / `list-attached-role-policies`, `aws amplify get-app` / `list-branches`. Confirm the account's
-  current shape before writing anything against it.
+  --template-stage Original`, `aws lambda get-function-configuration --query
+  '{Timeout:Timeout,MemorySize:MemorySize,EnvKeys:keys(Environment.Variables)}'`, `aws iam
+  get-role-policy` / `list-attached-role-policies`, `aws amplify get-app --query
+  'app.{name:name,platform:platform,repository:repository,EnvKeys:keys(environmentVariables)}'` /
+  `list-branches --query 'branches[].{branchName:branchName,stage:stage}'`. Confirm the account's
+  current shape before writing anything against it. Always project these reads: unprojected, the
+  Lambda and Amplify ones print every environment VALUE, secrets included.
 - **AWS docs MCP** (`mcp__awslabs_aws-documentation-mcp-server__*`), settle any AWS
   service-behaviour question (pagination, IAM evaluation order, CloudFormation update semantics)
   against the docs before guessing.
@@ -253,6 +257,7 @@ This is the standing rule for this agent specifically, not a generic caution:
   negative read with no positive control run against the same account and role.
 - DON'T run a mutating command through `packages/fleet-ops`'s explicitly READ-ONLY tools
   (`ses-event-audit` above all). Their charter is not mine to relax by driving them differently.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 

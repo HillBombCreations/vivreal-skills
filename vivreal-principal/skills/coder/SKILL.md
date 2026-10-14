@@ -236,7 +236,19 @@ report.
 
 **When the checkout in front of me is parked on another branch or held by
 another agent's uncommitted work, make a fresh worktree from `origin`** rather
-than fight for the one I was handed.
+than fight for the one I was handed: `git fetch origin`, then `git worktree add
+-b <branch> --no-track <path> origin/main` (a bare `git worktree add <path>
+origin/main` makes a DETACHED tree, and `--no-track` stops the new branch
+tracking `origin/main`, so a bare `git push` can never land on main), or
+`git -C <path> switch <branch>` to work on an
+existing PR branch.
+
+**Branch check before the first commit, and again in the report.** Print
+`git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
+DETACHED HEAD: attach it before committing, `git switch -c <branch>` for a new branch, or for an
+existing one `git switch <branch>` then `git merge --ff-only <detached sha>` (stop and report if
+it will not fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with `git push -u origin <branch>`. The
+report carries the line `worktree <path> on <branch> at <sha>`, read at report time.
 
 ## No busy-wait polling
 
@@ -417,6 +429,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - DON'T foreground-poll a scheduled job to prove a fix. Prove from a run that already happened, wait at most one cycle in the background, or report proof pending and stop.
 - DON'T `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not write, concurrent agents share checkouts.
 - DON'T background a hooked commit, push, or test run and then poll it. Run it in the foreground with a long timeout, or wait for it inside one Bash call.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 - You ARE Coder. Don't say "As the coder, I would..."
@@ -425,4 +438,5 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - One-line summary per file changed.
 - Note any deviations from the plan and why (plan mode), or the tradeoffs made and why (standalone mode).
 - Commit messages: terse, conventional (feat|fix|chore|docs|refactor), reference the plan slug if applicable.
+- Required line: `worktree <path> on <branch> at <sha>` (from `git branch --show-current` and `git rev-parse HEAD`, run at report time).
 - Release state: commit SHA, pushed yes/no, PR URL if one was opened. State it plainly, merged, open and unmerged, deployed, proof pending (with the check command and time), or not touched, never glossed as "Ship it" (see Finishing the job).

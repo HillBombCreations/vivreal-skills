@@ -50,9 +50,10 @@ Report which repos are on which version (the skew) and confirm the **target vers
 Check the package's own repo (e.g. `Vivreal-Schemas`) git log/CHANGELOG for breaking changes between
 the old and new versions before bumping.
 
-### 2. Per consumer repo (one branch each)
-For each repo to update:
-1. Create a branch: `chore/bump-<pkg-short>-<version>` (e.g. `chore/bump-schemas-1.18.0`).
+### 2. Per consumer repo (one commit on its release PR)
+For each consumer (every one of them, see Ordering & safety):
+1. Work on the repo's open release PR branch for this release; if it has none, create one from
+   `origin/main` (`git worktree add -b <branch> --no-track <path> origin/main`, then `git push -u origin <branch>`, never a detached tree).
 2. Set the new version in `package.json` (use the same range style already present, usually `^x.y.z`).
 3. **Patch the lockfile surgically (the key step, see the `package-publisher` agent for the full
    procedure):** never `rm -rf node_modules package-lock.json && npm install` on Windows, that
@@ -67,11 +68,14 @@ For each repo to update:
    An `npm ci`-verified install can surface a transitive break the old lockfile was masking, that's the point.
 5. Commit `package.json` + the patched `package-lock.json` together
    (`chore(deps): bump <pkg> to <version>`). Do NOT commit `node_modules` or `.npmrc`.
+6. **Actions access:** For a consumer new to this package, confirm the package's Manage Actions access (GitHub, Hill Bomb Creations org, Packages, the package, Package settings) lists the consumer repo with Read before its release PR deploys. Local installs and PR checks pass on a personal token, so only the deploy's `npm ci` would catch it, with a 403. Only an org owner can grant it (the page answers 404 signed out), so if it is missing or you cannot see it, list it as a release prerequisite for the owner.
 
 ### 3. PRs
-After all repos build+test green, open a PR per repo (`gh pr create`), cross-linking them so they
-merge together (shared-schema changes are only safe when every consumer ships the same version).
-**Ask before opening PRs**, don't auto-PR.
+Once a repo builds and tests green, push and open (or update) its release PR (`gh pr create` only
+if it had none), cross-linking them so they merge together (shared-schema changes are only safe
+when every consumer ships the same version). After a reviewer PASS on the publish, the owner's
+standing approval covers this, so do not ask. **Every new commit on a PR needs a delta review**,
+including a re-pin added after an earlier review passed.
 
 ## Ordering & safety
 
@@ -82,11 +86,13 @@ merge together (shared-schema changes are only safe when every consumer ships th
   workflow run is not evidence; reading the registry is.
 - When you touch a package publish workflow, tolerate the duplicate-version case BY NAME and
   fail on everything else. See the `verification-discipline` skill.
+- **Review before publish:** Publish only after a reviewer PASS on the package PR at the exact SHA being published. With no PASS, stop and request a review; asking the owner does not substitute for the review.
 - **Producer first:** if you're also publishing a new version of the shared package, publish it to
   GitHub Packages BEFORE bumping consumers (else `npm install` can't find the version).
-- **Additive vs breaking:** purely additive `strict:false` schema changes are safe to skew (a consumer
-  on an older pin just won't write the new fields). A breaking change (new `required`/`enum`, removed
-  export, renamed field) must land in ALL consumers together, don't leave skew.
+- **Re-pin every consumer (owner standing rule):** after a reviewed publish, every consumer moves in
+  the same release, breaking or additive. A skew is reported, never chosen, and narrowing the re-pin
+  needs an explicit owner instruction. Additive vs breaking (new `required`/`enum`, removed export,
+  renamed field) still goes in the report; it does not change which consumers move.
 - **Lockfile integrity:** patch the target package's lockfile entry surgically, never
   `rm -rf node_modules package-lock.json && npm install` on Windows and never
   `--package-lock-only` as a substitute (it produces a lockfile shape that breaks a later
@@ -94,4 +100,4 @@ merge together (shared-schema changes are only safe when every consumer ships th
   bump took the fleet from 263 optional entries to 261 and broke `npm ci` (`EUSAGE`). See the
   `package-publisher` agent, which owns this procedure.
 - Never `--force` / `--legacy-peer-deps` to paper over a peer-dependency conflict, investigate it.
-- This is a mutating workflow (writes branches/PRs). Confirm scope with the user before the first push.
+- This is a mutating workflow (writes branches/PRs). Confirm scope with the user before the first push only where no standing approval covers the publish.

@@ -53,10 +53,12 @@ real accounts) need a fresh dispatch.
 
 ### SOLO, the only portal coder working right now
 
-1. **Fresh worktree from `origin/main`, never the main checkout.**
-   `git worktree add ../pc-<slug> origin/main` (or the path the dispatcher gives). Working in
-   the main checkout risks colliding with whatever branch it is parked on, or another agent's
-   uncommitted work in it.
+1. **Fresh worktree from `origin/main`, never the main checkout.** `git fetch origin`, then
+   `git worktree add -b <branch> --no-track ../pc-<slug> origin/main` (or the path the dispatcher gives);
+   without `-b` the tree is DETACHED. `--no-track` keeps the branch off `origin/main`'s upstream. For an existing PR
+   branch, `git worktree add ../pc-<slug> <branch>` (or `git -C <wt> switch <branch>` in a
+   worktree you already have). Working in the main checkout risks colliding with whatever branch it is parked on,
+   or another agent's uncommitted work in it.
 2. **`npm ci`, never `npm install`.** A worktree's `node_modules` does not follow a branch
    checkout, so after creating the worktree (or after any `git checkout` inside it), print
    declared, locked, and installed versions for anything a test might version-mirror before
@@ -243,6 +245,14 @@ the turn and leaves a stale dev server that poisons the next one), a PR opened a
 the report, and the release state stated plainly, merged, open and unmerged, or not touched,
 never glossed as "Ship it."
 
+**Branch check before the first commit, and again in the report.** Print
+`git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
+DETACHED HEAD: attach it before committing, `git switch -c <branch>` for a new branch, or for an
+existing one `git switch <branch>` then `git merge --ff-only <detached sha>` (stop and report if
+it will not fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with `git push -u origin <branch>`. The
+report carries the line `worktree <path> on <branch> at <sha>`, read at report time.
+This applies in every mode.
+
 **PARALLEL ends in a pushed branch, by design, not a PR.** Report the branch and SHA as
 "ready for integration" and stop there; opening a PR or running the full gate in this mode
 defeats the reason the mode exists.
@@ -339,6 +349,7 @@ have saved roughly a quarter of that usage.
 - DON'T skip `rm -rf .next-test` before a push just because your own run finished cleanly.
 - DON'T background a push. It dies with the turn and leaves a stale dev server behind.
 - DON'T end SOLO or INTEGRATE on a self-review with the work uncommitted.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 - You ARE Portal Coder. State which mode you ran in and who named it (the dispatch prompt, or
@@ -348,5 +359,7 @@ have saved roughly a quarter of that usage.
 - SOLO/INTEGRATE: PR URL and release state, stated plainly (merged, open and unmerged, or not
   touched).
 - PARALLEL: branch name and head SHA, labelled "ready for integration."
+- Every mode: the line `worktree <path> on <branch> at <sha>` (from `git branch --show-current`
+  and `git rev-parse HEAD`, run at report time).
 - Note any deviations from the plan (plan mode) or tradeoffs made (standalone mode), and name
   any portal-specific lesson above that changed how you ran the gates.

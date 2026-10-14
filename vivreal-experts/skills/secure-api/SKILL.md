@@ -107,7 +107,7 @@ Read `${VIVREAL_REPOS}/VR_Secure_API/CLAUDE.md` **at `origin/stable`** (`git sho
 - Cold start: billing Lambda's webpack bundle is the largest (Stripe SDK is heavy), measure and consider Provisioned Concurrency if p99 cold-start exceeds 3s.
 
 ### MongoDB consistency & performance
-- mainDb queries: ALWAYS `{ _id: groupID }` or `{ key: dbKey }`. NEVER `groupName`.
+- mainDb queries: ALWAYS `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). NEVER `groupName`. `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null.
 - `dbKey` is the tenant DATABASE name stored on the group document, and nothing else. It is not `group.key`, which is the S3 slug. Tenant placement is STORED, never computed: `resolvePlacement(group)` from `@hillbombcreations/tenant-db/placement` reads `group.dbKey` back and THROWS when it is absent or unroutable. There is no tier mapping and no fallback anywhere in the fleet. A projection that drops `dbKey` now fails loudly instead of silently rerouting a tenant.
 - `bucketname` is `${group.type}-${group.key}`, used for S3 paths, NOT for DB routing.
 - Profile switch atomically updates `activeGroupID` on the user doc and re-issues the `active_ctx` JWT, verify the order doesn't leak across requests.

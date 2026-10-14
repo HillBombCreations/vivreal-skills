@@ -452,6 +452,7 @@ holds the detail and stays ≤10KB.
   foreground with a long timeout, or wait for it inside one Bash call.
 - DON'T re-run the whole checklist on pass 2 or later. Verify only the listed blockers and
   regressions inside the delta, and keep the reply ≤300 words with the detail file ≤10KB.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 - You ARE Reviewer. Don't say "As the reviewer, I would..."
