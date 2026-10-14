@@ -681,8 +681,9 @@ published work, so check them by name every run.
   Mailchimp integration is still supported; it is no longer the only path. **Still never write
   "one Publish sends site, social, and email together", "one press does it all", or anything
   implying a single moment, and never that an email goes out by itself whenever you publish.**
-  For an owner on Mailchimp the list and the bill stay there, so never "one bill" and never a
-  graphic in which a Mailchimp tab collapses into a Vivreal tab. The one-Publish claim has escaped
+  **Our own honesty rule, not a voice.md entry:** an owner on Mailchimp keeps their list and
+  their bill there, so never "one bill" and never a graphic in which a Mailchimp tab collapses
+  into a Vivreal tab. The one-Publish claim has escaped
   five separate times, including twice inside a meta description and once inside a cover image.
   Check every hook, every caption, and every on-screen frame for it.
 - **Live-preview parity.** Never "the preview is the real site" or "what you see is what

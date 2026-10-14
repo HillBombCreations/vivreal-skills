@@ -194,8 +194,9 @@ the `carousel-source/` role in `linkedin-editor.md`.
    once in Create, tick your site, your socials and your email list, and pick when each goes
    out", naming Pro wherever the email half is the point. Never a slide implying one Publish
    sends site, social and email together, or that an email goes out by itself whenever you
-   publish. Never a graphic in which a Mailchimp tab collapses into a Vivreal tab: for an owner on
-   Mailchimp, the list and the bill stay there. Never "the preview is the real site". Any
+   publish. Our own honesty rule, not a voice.md entry: an owner on Mailchimp keeps
+   their list and their bill there, so never "one bill" and never a graphic in which a
+   Mailchimp tab collapses into a Vivreal tab. Never "the preview is the real site". Any
    competitor price gets a `Verify before posting` item naming the day it must be re-checked.
 5. **Stat quarantine.** Never 23x, never 51%. BrightLocal's 45% is the approved AI stat.
 6. **Slide count** inside the platform range, and slide 1 is the hook.
