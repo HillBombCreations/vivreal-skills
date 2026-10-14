@@ -135,10 +135,10 @@ The dual-lens phrasing triggers `ux-critic`, which can walk the running screen v
 >
 > **, or, **
 >
-> **[Package bump:]** Bump **[@hillbombcreations/____]** to **[version]** across every consumer repo, detect version skew, clean-reinstall, build/test each, and open PRs.
+> **[Package bump:]** Bump **[@hillbombcreations/____]** to **[version]** across every consumer repo, detect version skew, patch each lockfile surgically and verify with `npm ci`, build/test each, and open PRs.
 
 Map 1:1 to **`/vuln-fix`** and **`/bump-package`**, which already encode the multi-repo discovery +
-clean-reinstall + PR steps.
+patch each lockfile surgically and verify with `npm ci` + PR steps.
 
 ---
 

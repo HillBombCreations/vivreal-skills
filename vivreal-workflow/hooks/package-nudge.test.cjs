@@ -58,6 +58,14 @@ test('the message never advises deleting the lockfile or running npm install', (
   assert.doesNotMatch(msg, /then `npm install`/);
 });
 
+test('the hooks.json description matches the advice, no reinstall', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'hooks.json'), 'utf8'));
+  assert.equal(typeof manifest.description, 'string');
+  assert.ok(manifest.description.length > 0, 'parsed an empty description');
+  assert.doesNotMatch(manifest.description, /reinstall|npm install/i);
+  assert.match(manifest.description, /patch the lockfile surgically/);
+});
+
 test('a non-package.json edit stays silent', (t) => {
   const run = runHook('/repo/src/index.ts');
   t.after(() => fs.rmSync(run.marker, { force: true }));
