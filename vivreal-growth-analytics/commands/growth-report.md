@@ -127,7 +127,7 @@ Generated: <timestamp>
 Follow the same safety rules as `/db-query`:
 - READ-ONLY, only `find`, `aggregate`, `count`
 - Connect to `vivreal` mainDb for cross-tenant metrics
-- Never query by `groupName`, always `{ key: dbKey }` or `{ _id: groupID }`
+- Never query by `groupName`, always `{ _id: ObjectId(groupID) }`. `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null
 - Limit results to 50 max
 - Redact any sensitive fields (credentials, apiKeys)
 

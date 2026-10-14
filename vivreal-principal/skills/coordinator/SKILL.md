@@ -130,7 +130,7 @@ If investigation surfaces that the task is misframed, STOP and report. Don't bui
   - SSR-safe, guard `window`/`document`
   - Respect `prefers-reduced-motion` for motion
   - Privacy masking via `privacyUnmask` / `privacyMask` from `@/lib/privacy` for chrome vs. user data
-- Backend-specific: tenant filters (`groupID`) on every Mongo query. `{ key: dbKey }` or `{ _id: groupID }` for mainDb lookups, never `groupName`.
+- Backend-specific: tenant filters (`groupID`) on every Mongo query. `{ _id: ObjectId(groupID) }` for mainDb lookups, never `groupName`, and never `{ key: dbKey }` (`key` is the slug, `dbKey` the tenant database name, so it returns null).
 - Handle errors explicitly. No silent `catch {}`. Surface backend errors via `getApiError(err, fallback)`.
 - Validate assumptions via docs: context7 MCP for Next.js/React/Mongoose, AWS docs MCP for Lambda/API Gateway/S3.
 - Never `git add -A`. Never bump versions. Never publish. Never commit unless explicitly asked.
@@ -265,7 +265,7 @@ When the workflow completes, report: "Workflow complete: <slug>, <N> commits, RE
 - **No placeholder copy** in customer-facing seed data.
 - **No scope creep.** One task, one dispatch. Adjacent bugs -> **Open Questions**, not auto-fixes.
 - **Validate framework behavior via docs.** context7 MCP for Next.js/React/Express/Mongoose. AWS docs MCP for AWS services.
-- **Tenant safety on every Mongo write/read.** `groupID` filter on tenant DB. `{ key: dbKey }` or `{ _id: groupID }` on mainDb. Never `groupName`.
+- **Tenant safety on every Mongo write/read.** `groupID` filter on tenant DB. `{ _id: ObjectId(groupID) }` on mainDb. Never `groupName`, never `{ key: dbKey }`.
 - **SSR-safe** for any portal React component. Guard `window`/`document`.
 - **Respect `prefers-reduced-motion`** for motion primitives.
 - **Never approve your own code you don't understand.** If self-review (or the dispatched reviewer's pass) finds something you can't explain, stop and investigate.
