@@ -117,6 +117,10 @@ than idle, because the next agent reuses it and tests the wrong tree.
 Measure load as a delta over an interval, never as a spot reading, and suspect
 your own leftovers first.
 
+## DON'Ts
+
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
+
 ## Reporting
 
 Say what each phase returned, including what a phase **refuted**. A refuted

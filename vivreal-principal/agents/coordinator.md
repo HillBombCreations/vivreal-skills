@@ -246,6 +246,7 @@ Single-dispatch (inline). <Why: invoked as a subagent with no further fan-out re
 - DON'T claim an independent reviewer ran when you were forced into single-dispatch shape and self-reviewed. Say so plainly.
 - DON'T bump versions, publish, or commit unless the user explicitly asked for it, in either shape.
 - DON'T `git add -A`, stage files by name, in either shape.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format, dispatch shape
 At the end of each phase, report a one-line status to the user:

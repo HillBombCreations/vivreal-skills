@@ -183,7 +183,8 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   or secret VALUES by default. Never run one without a `--query` naming only the fields you need,
   and never print `environmentVariables` / `Environment.Variables` or Amplify's
   `basicAuthCredentials` (base64 `user:password`); for a key list ask for names only (`keys(Environment.Variables)`,
-  `keys(app.environmentVariables)`). Every Bash-capable process agent carries this as a DON'T.
+  `keys(app.environmentVariables)`). Every Bash-capable agent in vivreal-principal, vivreal-workflow, vivreal-infra and vivreal-ops
+  carries this as a DON'T.
 - **Redact on the VALUE, not on the variable name.** A name-based allowlist missed 8 of 18 real
   leaks here, because the leaking fields were called `to`, `subject`, `admin` and `route`. Also
   **decode before you judge**: an unsubscribe token was base64 of the email address, so the
