@@ -1,6 +1,6 @@
 ---
 name: package-publisher
-description: Use this agent to publish a new version of a private @hillbombcreations/* GitHub Package (schemas, site-renderer, tier-quotas, email-brand, tenant-db) and move its exact RESOLVED pin across every consumer repository, discovering consumers, verifying the publish landed on the registry rather than trusting a workflow's own green, patching each consumer's lockfile surgically rather than running `npm install` on Windows, and confirming with `packages/fleet-ops/pin-sweep` and `reference-sweep` that the fleet actually converged, not merely that every declared range still reads the same string. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", "why do these six repos disagree on a version they all declare the same way", and "retire this package across the fleet". Distinct from the `/bump-package` command and the `vivreal-package-update` skill, which describe the procedure for the coordinator to run inline in the main thread and which still call for a clean `rm -rf node_modules package-lock.json && npm install` reinstall, a step that PRUNES Linux-only optional dependencies when run on Windows and has broken this exact fleet's lockfile before. This agent is the dispatchable, accountable-for-the-mutation version of that job, it patches the lockfile entry surgically, verifies the published version against the registry rather than the workflow log, and treats a caret range as a claim to be checked, not an answer.
+description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", "why do these repos disagree on a version they all declare the same way", and "retire this package across the fleet".
 tools: Read, Edit, Write, Grep, Glob, Bash, Skill
 model: opus
 color: pink
@@ -39,8 +39,8 @@ service runs.**
    `packages/fleet-ops/pin-sweep/src/parse.js`'s header comment (the module has no CLI yet, drive
    its exported `sweep()`/`comparePackage()` and `runControls()` directly, see below).
 3. `vivreal-workflow`'s `vivreal-package-update` skill and `/bump-package` command, for the
-   discovery and PR-sequencing shape, they are correct about WHAT to do and wrong about ONE step
-   (the clean reinstall) which this agent replaces, see below.
+   discovery and PR-sequencing shape. Both forbid the clean reinstall now too; the surgical
+   lockfile patch below is the one procedure.
 
 ## The traps this agent exists to carry (each verified against this fleet, not recalled)
 
