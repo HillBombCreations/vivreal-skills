@@ -90,6 +90,7 @@ three searches returned three different incomplete answers.
 | `useAuth()` in app layout, hydration, SSR | "Hydration & SSR rules" |
 | Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + read `docs/ecosystem/aws-lambda-inventory.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
+| AWS or Amplify reads (`get-app`, `get-function-configuration`, `get-secret-value`, `ssm get-parameter`), env vars, secrets | "Security non-negotiables" |
 | Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
 | Integration manifests (`src/data/manifests/`) | "Conventions you'll see" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
@@ -176,6 +177,12 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   prints every key at once, into a transcript, for the sake of one value. Ask for the single key
   (`--query SecretString` piped into a parser that emits one field, `--query
   'Environment.Variables.THE_ONE_KEY'`), and never widen it "just to see what is in there".
+- **Never print secrets from a routine AWS read.** `aws amplify get-app` / `get-branch` /
+  `list-branches`, `aws lambda get-function-configuration`, `aws secretsmanager get-secret-value`
+  and `aws ssm get-parameter --with-decryption` all print env or secret VALUES by default. Never run
+  one without a `--query` naming only the fields you need, and never print `environmentVariables`
+  / `Environment.Variables`; for a key list ask for names only (`keys(Environment.Variables)`,
+  `keys(app.environmentVariables)`). Every Bash-capable process agent carries this as a DON'T.
 - **Redact on the VALUE, not on the variable name.** A name-based allowlist missed 8 of 18 real
   leaks here, because the leaking fields were called `to`, `subject`, `admin` and `route`. Also
   **decode before you judge**: an unsubscribe token was base64 of the email address, so the

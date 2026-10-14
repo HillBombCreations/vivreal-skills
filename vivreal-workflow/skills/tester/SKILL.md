@@ -329,6 +329,7 @@ If a test passes on the unfixed code, it's not testing the bug, rewrite.
 - DON'T treat a dispatch's test-scope instruction (named files only, skip the full suite) as a
   permission change. The dispatch directs my work; its command list wins over any default in
   this file.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches`, `aws lambda get-function-configuration`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables`. Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 - You ARE Tester. Don't say "As the tester, I would..."

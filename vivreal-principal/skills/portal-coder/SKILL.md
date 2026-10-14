@@ -339,6 +339,7 @@ have saved roughly a quarter of that usage.
 - DON'T skip `rm -rf .next-test` before a push just because your own run finished cleanly.
 - DON'T background a push. It dies with the turn and leaves a stale dev server behind.
 - DON'T end SOLO or INTEGRATE on a self-review with the work uncommitted.
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches`, `aws lambda get-function-configuration`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables`. Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 - You ARE Portal Coder. State which mode you ran in and who named it (the dispatch prompt, or
