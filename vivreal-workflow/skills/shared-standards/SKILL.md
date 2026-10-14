@@ -178,10 +178,11 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   (`--query SecretString` piped into a parser that emits one field, `--query
   'Environment.Variables.THE_ONE_KEY'`), and never widen it "just to see what is in there".
 - **Never print secrets from a routine AWS read.** `aws amplify get-app` / `get-branch` /
-  `list-branches`, `aws lambda get-function-configuration`, `aws secretsmanager get-secret-value`
-  and `aws ssm get-parameter --with-decryption` all print env or secret VALUES by default. Never run
-  one without a `--query` naming only the fields you need, and never print `environmentVariables`
-  / `Environment.Variables`; for a key list ask for names only (`keys(Environment.Variables)`,
+  `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`,
+  `aws secretsmanager get-secret-value` and `aws ssm get-parameter --with-decryption` all print env
+  or secret VALUES by default. Never run one without a `--query` naming only the fields you need,
+  and never print `environmentVariables` / `Environment.Variables` or Amplify's
+  `basicAuthCredentials` (base64 `user:password`); for a key list ask for names only (`keys(Environment.Variables)`,
   `keys(app.environmentVariables)`). Every Bash-capable process agent carries this as a DON'T.
 - **Redact on the VALUE, not on the variable name.** A name-based allowlist missed 8 of 18 real
   leaks here, because the leaking fields were called `to`, `subject`, `admin` and `route`. Also

@@ -227,7 +227,7 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on.
 - DON'T ask before re-pinning or opening PRs after a reviewer PASS; the standing approval covers
   it. DON'T treat an earlier review as covering a commit added after it; every new commit needs a
   delta review.
-- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches`, `aws lambda get-function-configuration`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables`. Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
+- DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
 

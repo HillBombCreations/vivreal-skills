@@ -38,11 +38,13 @@ in a Lambda environment here, and a single routine read exposed both.
 
 - Project to the single key you need. `--query 'Environment.Variables.THE_ONE_KEY'` on a function;
   for a secret, pipe `SecretString` into a parser that emits one field and nothing else.
-- **Amplify reads print env values too.** `aws amplify get-app`, `get-branch` and `list-branches`
-  return `environmentVariables` (app and branch level) with every value in it, and Amplify app env
-  vars here carry tokens. Always pass a `--query` naming only the fields you need (`--query
-  'keys(app.environmentVariables)'` for the key list), and never print `environmentVariables`.
-  The same holds for `aws ssm get-parameter --with-decryption`.
+- **Amplify reads print env values too.** `aws amplify get-app`, `get-branch`, `list-branches` and
+  `list-apps` return `environmentVariables` (app and branch level) with every value in it, plus
+  `basicAuthCredentials` (base64 `user:password`), and Amplify app env vars here carry tokens. Always
+  pass a `--query` naming only the fields you need (`--query 'keys(app.environmentVariables)'` for
+  the key list), and never print `environmentVariables` or `basicAuthCredentials`. The same holds
+  for `aws lambda get-function` (`Configuration.Environment.Variables`) and `aws ssm get-parameter
+  --with-decryption`.
 - **Never widen it "just to see what is in there."** If you genuinely need the key list, ask for the
   keys without the values.
 - **`${VAR:-default}` prints the VALUE when the variable is set**, and leaked a live token exactly
