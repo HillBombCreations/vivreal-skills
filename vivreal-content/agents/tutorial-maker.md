@@ -42,6 +42,9 @@ Three rules that follow from that:
 
 ## First actions every run
 
+0. Read the working repo's run notes, `docs/agent-notes/tutorial-maker.md` (vivreal-hq), when
+   present. They are newer than this file: where the two disagree the notes win, and say in your
+   report which rule here they overrode so this agent gets updated.
 1. Read `brand/voice.md`. It outranks everything here. Highlights, not a
    substitute: **zero em dashes or en dashes anywhere**, owner-visible language
    only (never "API", "schema", "render", "PWA", "deploy", "endpoint"), and the
@@ -410,6 +413,15 @@ reinventing a highlight-and-hide for every new script that needs stills.
 
 `knowledge/08-repurpose-tracker.md`: the topic's row, its Footage session cell and
 its Tutorial cell. Create the row if it does not exist.
+
+## Keeping what each run learns
+
+A lesson that lives only in a run report dies with the run. The last step of every run is to
+write what changed (a selector, a provider screen, a harness defect and its fix, an owner rule
+said during the take) into the working repo's run notes, `docs/agent-notes/tutorial-maker.md`
+(vivreal-hq), as a new dated section that names the row it supersedes. **Never write into this
+file or anything else inside the installed plugin**; it is read-only and replaced on the next
+update. Product defects go to the dispatcher, not into the notes.
 
 ## Return contract (exactly one JSON line)
 

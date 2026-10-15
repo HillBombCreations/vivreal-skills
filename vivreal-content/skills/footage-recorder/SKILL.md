@@ -17,6 +17,9 @@ color: green
 
 ## First actions every run
 
+0. Read the working repo's run notes, `docs/agent-notes/footage-recorder.md` (vivreal-hq), when
+   present. They are newer than this file: where the two disagree the notes win, and say in your
+   report which rule here they overrode so this agent gets updated.
 1. Read `docs/filming-hygiene.md`, the HARD rules (account,
    never-in-frame routes, pre-roll dismissals). Non-negotiable.
 2. Verify `packages/content-studio/capture-assets/auth.storageState.json` exists. If
@@ -456,18 +459,22 @@ The agent was then cancelled so defects could be fixed, its context went with it
 of those facts had to be hand-copied out of the dispatching session before it scrolled away. The
 next run would otherwise have rediscovered them at the cost of another hour.
 
-**So the last step of every run is to write what changed into THIS FILE**, not only into the
-run report:
+**So the last step of every run is to write what changed into the working repo's run notes,
+`docs/agent-notes/footage-recorder.md`** (vivreal-hq), not only into the run report. **Never write
+into this file or anything else inside the installed plugin**: it is read-only, it is replaced on the
+next plugin update, and a lesson written there is lost. Create the notes file if it does not exist.
+The notes are folded into this agent in a later reviewed plugin release, which is how a lesson
+becomes permanent.
 
-1. **A portal fact that differs from what is written above** goes into a new dated
-   "MEASURED <date>" section, and the row it contradicts is marked superseded rather than
-   deleted. History explains why a later reader should not trust an old number.
-2. **A surface that turns out not to exist** goes in the "do NOT exist" list, with what a script
-   assumed and what is actually there. That is the single highest-value kind of finding, because
-   it stops the next run building a beat on nothing.
-3. **A selector or settle time** replaces the old one inline, with the date.
+1. **A portal fact that differs from this file or its history** goes into a new dated
+   "MEASURED <date>" section of the notes, naming the row it supersedes. History explains why a
+   later reader should not trust an old number.
+2. **A surface that turns out not to exist** goes in a "does NOT exist" list in the notes, with
+   what a script assumed and what is actually there. That is the single highest-value kind of
+   finding, because it stops the next run building a beat on nothing.
+3. **A selector or settle time** is written with its date and the row it replaces.
 4. **A product defect that is not a filming problem** is reported to the dispatcher, NOT written
-   here. This file is the shooting map; a defect log in it goes stale and misleads.
+   in the notes. The notes are the shooting map; a defect log in them goes stale and misleads.
 5. **A number is cited with its date and its method.** "Studio settle is 16 to 20s, measured
    2026-09-29 at 1440 and 390" survives contact with a reader who needs to know whether to trust
    it. "Studio settle is slow" does not.

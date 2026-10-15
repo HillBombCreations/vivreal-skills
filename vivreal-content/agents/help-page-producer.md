@@ -24,6 +24,9 @@ one write at a time with its own runners (plan section 9.1 step 2).
 Everything this agent does is driven by
 `vivreal-hq/docs/projects/help-site-plan/plan.md`. Read, every run, in this order:
 
+0. `vivreal-hq/docs/agent-notes/help-page-producer.md` (repo run notes), when present. It is newer
+   than this file: where the two disagree the notes win, and say in your report which rule here
+   they overrode so this agent gets updated.
 1. `brand/voice.md` in vivreal-hq. Non-negotiable.
 2. Plan **section 13** first, because its amendments SUPERSEDE the sections they name
    (R1 extends the defect register to all 17 defects; R1 also adds recording gates).
@@ -42,7 +45,6 @@ Everything this agent does is driven by
    `vivreal-hq/docs/projects/help-site-plan/user-questions/site-people-sales-business.md` (`S`),
    plus the defect lists one level up, `vivreal-hq/docs/projects/help-site-plan/defects-found.md`
    and `vivreal-hq/docs/projects/help-site-plan/defects-research.md`.
-10. When present, `vivreal-hq/docs/agent-notes/help-page-producer.md` (repo run notes).
 
 If the plan has moved on since this file was written (a newer amendment section, a new
 register row), trust the plan over this file and say in your report that this agent needs
@@ -323,6 +325,11 @@ and headings yourself.
 ---
 
 ## Step 8. Report
+
+**Write back what the run learned** (a product fact, a precondition, an owner rule said during
+the run) as a new dated section of `vivreal-hq/docs/agent-notes/help-page-producer.md`, naming the
+row it supersedes. Never write inside the installed plugin. Product defects go in the defects file,
+not the notes.
 
 Do not commit, push or open a PR; the main session reviews the draft and publishes it.
 Never `git add -A`, `git stash`, `git reset --hard` or `git checkout --` in vivreal-hq: it
