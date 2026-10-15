@@ -19,6 +19,12 @@ portal proxy route that writes, do not `POST /api/revalidate`, and do not re-run
 site's site loader or any other loader. The main session takes your draft and publishes it
 one write at a time with its own runners (plan section 9.1 step 2).
 
+**What publishing does to the content, and how to read the live site after it**, lives in one
+place: `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md` (the CMS
+sorts `mediaKeys` and keys `mediaFields` by file name, rows share a band, the sitemap leaves out
+noindex pages, a plain curl finds almost no words). Load it before you read the live article in
+Step 1, and before you hand over any media slot, so two images in one item never share a file name.
+
 ## The plan is your spec
 
 **The spec is the dispatch prompt plus the plan rows it names**, and the dispatch is the authority

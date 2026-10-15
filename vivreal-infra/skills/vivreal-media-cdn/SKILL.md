@@ -41,6 +41,14 @@ A media-signing pattern keyed on `targetField.name` **silently no-ops on ARRAY f
 
 - **The sanctioned tool is `vivreal-hq/packages/fleet-ops/cdn-purge`** (the admin app's "Purge a CDN path" uses the same planner). It maps the fleet's distributions by target (`media`, `client-edge`, `portal` and others; `--list` prints them), resolves the alias live on every run, plans by default, refuses `/*` without `--everything`, and writes only with `--execute`.
 - **vivreal.io (target `portal`):** prove the Amplify origin healthy first, read directly and bypassing the distribution. Then plan, `MSYS_NO_PATHCONV=1 node packages/fleet-ops/cdn-purge/cli.js portal "/*" --everything`, then run the same with `--execute --wait` and confirm the invalidation reached `Completed`; record its id and verify through the apex. `/*` is right there because every query string is a separate cache key, and it cannot touch `/app*`, `/api/*` or `/help*` (those behaviours cache nothing).
+- **A vivreal.io purge reaches only the apex tier, so freshness arrives slowly and unevenly**
+  (measured 2026-10-15, copy pass 2 and media pass 3). Behind our distribution sits Amplify's
+  own CloudFront, which caches per edge location and per content encoding for 300 s
+  plus 3300 s stale, and each Amplify server instance keeps its own ISR and data cache. After a
+  purge, one read can be new and the next old. So a freshness gate samples many reads, across
+  edge locations and encodings, and a proof is time-boxed rather than one read: it
+  converged in about 20 minutes that day. If the origin itself still serves old content, the
+  fix is an Amplify RELEASE on the same commit, not another purge.
 - **Never POST `/api/revalidate` by hand.** On 2026-09-06 it made `robots.txt` answer 500 at the origin and CloudFront cached the error, so the whole host looked dead. The `/*` invalidation that ran alongside was not the cause. When site data is stale too, the client API edge goes first, then the page cache.
 - **Customer sites have no distribution in our account** (Amplify owns it); their only edge purge is a new deployment.
 - Evidence: `vivreal-hq/docs/projects/next-release-2026-10/research-cloudfront-invalidation-method-2026-10-14.md`.
