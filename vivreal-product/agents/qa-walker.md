@@ -266,16 +266,53 @@ are not.
 
 ## Tenants, and which to use
 
-Confirm this against the product every run; it goes stale.
+Read each tenant's tier and `dbKey` live at the start of the walk (the group document, or the
+portal's own read route); never copy them from a file, this one included. The previous table here
+called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three were wrong by
+2026-10, and QA residue on it forced a demo cleanup.
 
 | Tenant | Use for | Watch out |
 |---|---|---|
-| **Vivreal Content** (PROPLUS) | The filming and CRUD tenant. Site: Windward House | No payment provider, so no commerce. No Campaigns. 656 lists |
-| **Vivreal** (PRO) | Admin surfaces, campaigns empty state | Its nav has 6 tabs a customer never sees. Sales is broken here |
+| **QA v5 scratch** (and scratch-2 to scratch-4) | **The CRUD and commerce tenant.** Create, update, delete, checkout on Stripe test | Its Stripe test account cannot charge. Sign in as its owner (below) |
+| **Vivreal Content** | Read-mostly walks, the filming business | A **prospect** business, so search-visibility UI is hidden there by design. Its channels are Vivreal's own real accounts. Never leave QA objects on it |
+| **Vivreal** | Admin surfaces, and surfaces Vivreal Content hides | A real live business: read only. Its nav carries entries a customer never sees |
+
+**Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
+or written to a file): Vivreal Content `vivreal/prod/agent-walk-user`; QA v5 scratch
+`vivreal/qa/scratch-owner`; scratch-2 to scratch-4 `vivreal/qa/scratch2-owner`, `scratch3-owner`,
+`scratch4-owner`; plus `vivreal/qa/canlook`, `canedit`, `free-walker`, `empty-owner`,
+`square-sandbox` and `admin-operator` (TOTP) for the role and plan cases the matrix names. List
+them by name only (`aws secretsmanager list-secrets --filters Key=name,Values=vivreal/qa/ --query
+'SecretList[].Name'`). `agent-walk-user` cannot reach the scratch businesses. Delete any saved
+session state file a walk produced at the end of the run.
 
 **Admin tenants carry extra entries.** A matrix written against one tenant
 references entries the other does not have. Enumerate the nav from the product
 at the start of every walk rather than assuming it.
+
+## Local-stack walks: prove the guard first, and know which code you are walking
+
+The local stack (`packages/fleet-ops/e2e-local` in vivreal-hq) runs the real services against the
+**production** database, Cognito and media. It has dispatched a real LinkedIn post before the guard
+existed. So before ANY local walk:
+
+1. `node e2e.js probe` runs every startup check live and starts nothing; it must exit 0.
+2. Start it detached (the README's `Start-Process ... e2e.js start`), then read `run.log`. It must
+   show `NO-DISPATCH guard holds` for **every** service it started (cms, secure, client, main,
+   outreach, mcp, admin, portal, templates) and each API's `runs as ...federated-user/local-e2e-<svc>`
+   line. **Paste every one of those lines into the matrix header**, with the recorder counts
+   (`recorder/*.jsonl`) before and after the walk. A missing line means stop: do not walk.
+3. Block non-GET requests in your browser context as a second layer wherever the matrix does not
+   need a write.
+4. **Record every service's head.** `node e2e.js heads` prints each worktree's commit and any local
+   change; paste it into the matrix header. The launcher runs FIXED worktrees (`e2e-portal`,
+   `e2e-templates`, `e2e-mcp` and the API ones under `C:/repos/_wt`), so an unmerged PR is invisible
+   to a walk unless you move to it.
+5. **When the brief names a PR,** point that service at the PR head with
+   `node e2e.js move <svc> <sha>`, then a FULL `stop` and `start` so every guard check runs again, and
+   re-run `heads` to prove it. Name the PR, its head and the service in the matrix.
+
+The README in that folder is the authority on commands; read it on the day.
 
 ### The navigation: enumerate it from the product
 
@@ -303,15 +340,21 @@ current walk's matrix; it moves.
 
 Read-only by default. When the matrix calls for create/update/delete:
 
-1. Only on a tenant the owner has named for it.
-2. Name every object you create `QA TEST <date>` so it is identifiable on sight.
+1. Only on a tenant the owner has named for it: by default the QA v5 scratch businesses,
+   never Vivreal Content or Vivreal.
+2. Name every object you create `QA TEST <date>` (or your walk id) so it is identifiable on sight.
 3. Follow every create through to a delete, in the same run.
-4. List anything you could not clean up under **RESIDUE** at the top of your
+4. For a CHANGE to something that already existed (a setting, a visibility, an item), run the
+   owner-approved write protocol in `vivreal-content:footage-recorder` ("The write protocol"):
+   snapshot, write, fresh-process read-back, restore, read-back equal to the snapshot, and name
+   any field that does not come back identical.
+5. List anything you could not clean up under **RESIDUE** at the top of your
    report. An empty RESIDUE section is a claim you must be able to defend.
 
 **Never** press Send on a campaign, never Revert a site version, never save the
 footer social panel, and never publish a social post. Composing and closing is
-free; sending is not.
+free; sending is not. Never write the database directly; cleanup goes through the app or API, or
+it is reported and left.
 
 ---
 

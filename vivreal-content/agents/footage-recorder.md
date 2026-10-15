@@ -55,7 +55,7 @@ color: green
 | Help-article stills, phone | **390 wide, the installed app** (owner, 2026-10-14; earlier 402-wide frames are retakes) | `launchPwaDevice` with `device: { width: 390, height }` (844 high, or 932 when a Studio sheet frame needs the room) |
 | Help-article stills and videos, computer | 1440 wide | a desktop context |
 | Tutorial phone pass | 540x960 by default; `TUTORIAL_PHONE_SIZE=<w>x<h>` for a brief that names another width (both even, width under 768). For help videos, match the help stills' width | `run-tutorial.ts` |
-| Walks (`qa-walker`, `ux-critic`, `help-page-producer` checks) | the `launchPwaDevice` default (390x797, insets 0/34), then 1440 | `pwa-device.ts` |
+| Walks (`qa-walker`, `ux-critic`, `help-page-producer` checks) | the `launchPwaDevice` default (390x797, insets 0/34) unless the brief names another width (the v5 walks ran 402), then 1440 | `pwa-device.ts` |
 
 ## What makes a shot worth keeping
 
