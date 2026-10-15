@@ -48,6 +48,8 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 
 ## Gotchas
 
+- **`errorHandler` is correct only in CONTROLLER position** (it sets `req.resData` and always calls `next()`): router-level middleware must write its own response, or the gate fails OPEN while still logging (VR_Client_API's `frozenCheck` once served frozen accounts a 200 this way). Test a gate by the status on the wire, never by "errorHandler was called".
+- **A handled 4xx/5xx is a SUCCESSFUL Lambda invocation** under serverless-express, so `AWS/Lambda Errors` never moves. Alarm on a log literal the code emits on every failure exit, paired with an API Gateway 5xx alarm for throttled requests that never ran.
 - **CORS is wide open** (`callback(null, true)`), intentional for the public API.
 - **Mongo is one client per process now**, built by `@hillbombcreations/tenant-db`'s `createMongo` (`src/shared/mongo.js:4`, `appName: 'VR_Main_API'` at `:40`) and shared by `scripts/db.js`, `services/campaigns/campaignDb.js` and `notificationConsumer/db.js`; tenant databases are `useDb` views, with no eviction on `readyState` (`src/hbcreations/scripts/db.js:1-17`). The old `maxPoolSize=10` figure is gone: no `maxPoolSize` literal remains under `src/`, so read the pool from the package default. See `vivreal-atlas-topology`.
 - **Secrets Phase 2 is done**: every Lambda resolves config via CloudFormation dynamic references from `vivreal/prod/main-api` + `vivreal/prod/stripe` + `vivreal/prod/social-oauth` (Secrets Manager) and SSM `/vivreal/prod/*`, **any `hb-api-secrets` reference is now wrong**. The old hardcoded Stripe live key (`createUserService.js`/`checkUserExistsEmail.js`) and repo-root `googleAppJSON.json` are gone.

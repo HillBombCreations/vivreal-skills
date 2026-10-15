@@ -56,6 +56,8 @@ Roster read 2026-10-15 from `sam-template.yaml` at `origin/stable` (re-derive it
 - **Two auth bypasses closed this window**: quota seat gates now DENY on a 0-seat quota instead of admitting everyone (was fail-open), and the Meta callback auth gate's prototype-key bypass is closed (`provider='toString'` used to resolve to `Object.prototype.toString`, bypassing identity matching).
 - ESLint + a husky pre-push gate with a coverage ratchet are now in place, no GitHub Actions test workflow exists, so this hook is the only automated gate before merge.
 - **Release train:** prod serves `stable`, never `main`. The model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's own runbook is `docs/RELEASE.md`.
+- **`errorHandler` is correct only in CONTROLLER position** (it sets `req.resData` and always calls `next()`): router-level middleware must write its own response, or the gate fails OPEN while still logging. This is how VR_Client_API's `frozenCheck` once served frozen accounts a 200. Test a gate by the status on the wire, never by "errorHandler was called".
+- **A handled 4xx/5xx is a SUCCESSFUL Lambda invocation** under serverless-express, so `AWS/Lambda Errors` never moves. Alarm on a log literal the code emits on every failure exit, paired with an API Gateway 5xx alarm for throttled requests that never ran.
 - ⚠️ **Tests can send REAL emails**, `queueEmail` is not stubbed in the test suite; never run the full suite against a prod `.env` (this has fired ~140 real sends before).
 
 ### AWS Lambda best-practice alignment
