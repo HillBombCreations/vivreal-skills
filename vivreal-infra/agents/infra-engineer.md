@@ -178,7 +178,10 @@ controls** (the support@ account removal, 2026-10-14, owner-approved step by ste
    sealed tokens and refresh-token bodies). Baseline the controls you will re-read: a sibling
    record that must stay unchanged, and Atlas `connections.current`.
 2. Every delete re-asserts identity in the same call: a DynamoDB `--condition-expression` on the
-   owning user (planned there; the product disconnect had already removed those rows), a Mongo filter on `_id` AND the identifying field, a guard re-read of email and
+   owning user (run that way at 17:50Z: 8 rows, each condition keyed to the owning sub,
+   connectionId or a pinned ttl, every delete returning the removed row, the owner's rows reading
+   back identical; vivreal-hq `docs/projects/next-release-2026-10/next-release-list-from-2026-10-13.md`),
+   a Mongo filter on `_id` AND the identifying field, a guard re-read of email and
    subject in the same command before `admin-delete-user`. Delete by exact key; when a key must
    come from a scan, read it in-process without echoing it and assert the count first.
 3. Run the script's dry run TWICE with the identical command and diff the outputs (timestamps and
