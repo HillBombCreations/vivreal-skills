@@ -45,14 +45,14 @@ You must SEE what the audience sees, not judge from the copy alone.
     `render-info.json` (or the editor's own return JSON) says `awaitingVo: true`**: the voiceover
     has not been recorded yet, so a silent file there is the expected, pending state, not a
     finding, and re-running `volumedetect` against it would just rediscover the wait.
-  - **"Not silent" is necessary, not sufficient.** Added 2026-10-06 (definition-review). The
-    owner's standing rule is a voiceover PLUS background music, never either alone. Once a row
-    clears the silence check above, separately confirm BOTH are actually present: a voice (the
-    `volumedetect` pass finding real signal, or `render-info.json` showing `audioMode: "tts"` /
-    `"human-vo"` actually ran, not just requested) AND a licensed music track recorded in that
-    same `render-info.json` (a `music` object naming a real `file`, not an empty `notes` array or
-    the gate's own `MUSIC_GATED_NOTE`/`MUSIC OMITTED` text). A row with a voice and no music, or
-    music and no voice, still fails this check; say by name which half is missing.
+  - **"Not silent" is necessary, not sufficient: the VOICEOVER is required, music is optional**
+    (owner decision D2, 2026-10-14, relaxing the 2026-10-06 voiceover-plus-music rule, because no
+    licensed music pack is on disk). Once a row clears the silence check above, confirm a voice is
+    actually present: the `volumedetect` pass finding real signal AND `render-info.json` showing
+    `audioMode: "tts"` or `"human-vo"` actually ran, not just requested. A row with music and no
+    voice fails; a row with a voice and no music passes this check. If a `music` object is present,
+    it must name a real licensed `file`, never the gate's own `MUSIC_GATED_NOTE` / `MUSIC OMITTED`
+    text standing in for one.
   - **Audit the cut for in-clip skips and backward overlaps**, reading the row's own
     `edit-brief.json`: list every beat sharing a `clipId` and check whether consecutive windows
     ever go backward (beat N+1's `inMs` before beat N's `outMs` on the same clip) or jump forward
@@ -126,10 +126,10 @@ Now step out and explain, as an expert on that platform's audience and current n
     shoot), narration must be third person in Vivreal's own voice ("We moved the past shows to
     the top"); a first-person line there is a DO NOT POST regardless of how clean the cut is,
     because it makes the content speak as if it were that customer.
-  - **Account voice.** "I" versus "we" must match the account the row posts from (Justin's
-    personal profile speaks as "I", the Vivreal Company Page as "we"). When a row pays off or
-    follows up an earlier post, check which account the earlier post went out from and flag a
-    mismatch.
+  - **Account voice.** Every row posts from Vivreal's own accounts (on LinkedIn, the Vivreal
+    Company Page), so the voice is "we" (owner, 2026-10-05). An "I" line on any row is a FIX, unless
+    it is disclosed first-person narration over demo footage (above). Older calendars that say a row
+    posts from Justin's personal profile are stale.
 - **Week view:** repetition across the week's grid (the same footage or line on several channels
   without a real re-cut), and whether each day's posts are genuinely tailored per platform.
   - **Visual mix, added 2026-10-05.** The week must not be all text. Tally how many of the

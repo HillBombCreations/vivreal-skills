@@ -1,12 +1,14 @@
 ---
-description: Draft one help.vivreal.io article from the help site plan, verify-first, filing every disagreement between the product and the plan as a defect
-argument-hint: the article key from the plan (A1 to A29), for example A3
+description: Draft one help.vivreal.io article, verify-first, filing every disagreement between the product and the plan as a defect
+argument-hint: the article key (A1 to A29) or a site-refresh plan or tracker row, for example A3, or "3.1 selling with Stripe"
 ---
 
 Draft the help site article: $ARGUMENTS
 
-If that is empty, ask which article key (plan section 3 of
-`docs/projects/help-site-plan/plan.md`); do not pick one.
+If that is empty, ask which article: a key from plan section 3 of
+`docs/projects/help-site-plan/plan.md`, or a row of `docs/projects/site-refresh-after-v5/plan.md`
+section 3 or its closeout tracker. Do not pick one. Pass the named rows through in the dispatch:
+the dispatch prompt plus those rows is the agent's spec.
 
 Dispatch the `help-page-producer` agent (run_in_background: false), at most 3 at
 once. It owns the whole loop for one article: read the article's block in the plan,

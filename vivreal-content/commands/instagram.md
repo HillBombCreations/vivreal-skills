@@ -12,6 +12,6 @@ You are the top-level session, so run the two-step flow yourself:
    (run_in_background: false) and wait. On `auth_expired`, stop and show the user
    the refresh command.
 2. **Edit.** Dispatch the `short-form-editor` agent with:
-   `{"platform":"instagram","topic":"$ARGUMENTS","source":"direct-prompt","audioMode":"captions-only","styleDna":"auto","outputRoot":"content/social/<today>-<slug>/"}`
+   `{"platform":"instagram","topic":"$ARGUMENTS","source":"direct-prompt","audioMode":"tts","styleDna":"auto","outputRoot":"content/social/<today>-<slug>/"}`
 3. Relay the editor's summary: asset path, duration, self-check result, and any
    "Verify before posting" items. Never publish anything.

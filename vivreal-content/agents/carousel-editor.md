@@ -66,7 +66,7 @@ already used 1080 x 1350 and that is the live convention.
 
 ### 1. Typography templates (the default, and the safest)
 
-`.claude/agents/content-creator/templates/typography/`
+`packages/content-studio/capture-assets/templates/typography/`
 
 | Brief shape | Template | Variables |
 |---|---|---|
@@ -76,7 +76,7 @@ already used 1080 x 1350 and that is the live convention.
 
 ```bash
 npx tsx src/render-slide.ts \
-  .claude/agents/content-creator/templates/typography/<template>.html \
+  packages/content-studio/capture-assets/templates/typography/<template>.html \
   <outputPath> 1080 1350 '<JSON vars>'
 ```
 
@@ -85,7 +85,7 @@ the templates directory. Run from `packages/content-studio/`.
 
 ### 2. Mockup scenes (diagrams)
 
-`.claude/agents/content-creator/templates/mockups/scenes.json`, 15 SVG scenes with named text
+`packages/content-studio/capture-assets/templates/mockups/scenes.json`, 15 SVG scenes with named text
 slots (`hookTop`, `ctaBottom`, `statCenter`).
 
 Select with `src/scene-selector.ts`, passing the scene list, the shot, and the scene ids used in
@@ -113,7 +113,7 @@ the same `render-slide.ts` call.
 ### 3. Callout over a footage still
 
 For "screenshot of X with an arrow reading Y", composite
-`.claude/agents/content-creator/templates/overlays/arrow-callout.html` over an image from the
+`packages/content-studio/capture-assets/templates/overlays/arrow-callout.html` over an image from the
 footage library. **Never capture it yourself.**
 
 1. Read every `content/footage/*/footage-manifest.json`. Match on `visible`, `action`, `pageKey`.
@@ -198,6 +198,13 @@ the `carousel-source/` role in `linkedin-editor.md`.
    their list and their bill there, so never "one bill" and never a graphic in which a
    Mailchimp tab collapses into a Vivreal tab. Never "the preview is the real site". Any
    competitor price gets a `Verify before posting` item naming the day it must be re-checked.
+5. **Honesty traps and premise** (load the `vivreal-content:content-planner` skill's "Honesty
+   floor" for the full list): a demo site is never a real business; "every channel ready" and
+   "right away" are false on our own screens. **Slide 1 must make sense to a stranger on its own**
+   (the W42 "a web guy vanished" deck opened with no context and lost viewers); the week's mix must
+   include visual decks (a real screenshot, a demo-site photo, or a labeled generated image that
+   never poses as a real customer), not only text on a flat background.
+6. **US spelling** on every slide and in the caption (`brand/voice.md`, the US spelling rule).
 5. **Stat quarantine.** Never 23x, never 51%. BrightLocal's 45% is the approved AI stat.
 6. **Slide count** inside the platform range, and slide 1 is the hook.
 
@@ -225,7 +232,7 @@ For LinkedIn, `assetPath` is the `carousel.pdf`.
 - `content-planner`: the brief, the slide table, the caption angle
 - `footage-recorder`: every screenshot. I read the library, I never capture.
 - `short-form-editor` / `linkedin-editor`: anything that moves
-- `guide-writer`: blog and docs stills
+- `guide-writer`: blog stills (help-article stills come from `footage-recorder`)
 - Human: visual approval and publishing
 
 ## DON'Ts

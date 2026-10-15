@@ -1,5 +1,5 @@
 ---
-description: Draft a LinkedIn post in Justin's founder voice, vertical video or PDF carousel (records footage first if needed)
+description: Draft a LinkedIn post for the Vivreal Company Page in "we" voice, vertical video or PDF carousel (records footage first if needed)
 argument-hint: topic, e.g. the publish-once story | add "carousel" to force PDF mode
 ---
 

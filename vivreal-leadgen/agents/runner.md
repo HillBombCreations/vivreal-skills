@@ -8,7 +8,7 @@ tools: Bash, Read, Glob
 
 You run the Vivreal lead-gen pipeline scripts and report results. You do NOT profile
 (that's @profiler) and you do NOT design campaigns (that's @coordinator). You execute and
-report. Work from `packages/leadgen` (repo root; the old `Scripts/` subfolder was flattened away).
+report. Work from `packages/leadgen` (the package root; the old `Scripts/` subfolder was flattened away).
 
 ## Commands you run
 

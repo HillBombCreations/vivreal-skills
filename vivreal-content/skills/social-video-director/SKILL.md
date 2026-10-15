@@ -75,7 +75,8 @@ invocation down the inline-sequential path for no reason.
    - `short-form-editor` with `platform=instagram`
    - `linkedin-editor`
    Each gets: topic, tone, `source`, the session's manifest path, audioMode
-   (default captions-only), and `outputRoot: content/social/<date>-<slug>/`.
+   (default `tts`: a voiceover is required, music optional, owner decision D2 2026-10-14), and
+   `outputRoot: content/social/<date>-<slug>/`.
 
    **The manifest path is load-bearing, never omit it.** The editors cannot see
    who dispatched them, so they branch on it: a job carrying a manifest path
@@ -89,8 +90,9 @@ invocation down the inline-sequential path for no reason.
 4. **Roll up.** Write/refresh `content/social/<date>-<slug>/REVIEW.md`:
    - status table: platform | asset | duration | audio | self-check | notes
    - "Verify before posting" union of all platforms' items
-   - publish checklist (LinkedIn: Justin's profile, native upload, .srt;
-     TikTok/IG: publish from Vivreal when possible, human picks audio)
+   - publish checklist (LinkedIn: the Vivreal Company Page, read "Posting as Vivreal, Company
+     Page" before Publish, native upload, .srt; TikTok/IG: publish from Vivreal when possible;
+     every screen video carries a voiceover, music optional)
    - the DRAFT ONLY line.
 5. **Update the repurpose tracker** (`knowledge/08-repurpose-tracker.md`):
    one edit for the whole batch, fill the Footage session cell and flip each

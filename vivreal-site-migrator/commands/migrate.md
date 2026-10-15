@@ -8,8 +8,10 @@ for the URL the user gave: **$ARGUMENTS**
 
 Work from `C:\repos\Vivreal_Site_Migrator`. The capture dir is
 `captures/<domain>/` where `<domain>` is the URL's hostname (sans `www.`).
-The durable reference for every stage is `docs/migration-flow.md`; the agent
-prompts in `.claude/agents/` are the per-stage source of truth.
+The durable reference for every stage is `docs/migration-flow.md`; the per-stage
+source of truth is each stage's agent in the `vivreal-site-migrator` plugin (`ingest`,
+`collections`, `integrations`, `site`, `page-confirm`, `studio-confirm`, `cutover`; load
+`vivreal-site-migrator:<name>` to read one). The migrator repo has no `.claude/agents/`.
 
 ## PARITY STANDARD (non-negotiable, overrides any "best-fit is fine" guidance)
 The bar is **1:1 parity with the live site on DATA and STRUCTURE.** Every page,
@@ -269,8 +271,10 @@ end and carries every live-run gotcha:
   (seeds collections with the bulk-504 fallback, creates the site as a
   **blank-template** site, triggers `POST /api/deploySite` → Deploy-Site pipeline),
 - verification: `pipelineStatus: live`, live home + ONE nested page render,
-  chrome/footer correct; content edits post-deploy need the signed
-  `/api/revalidate` webhook (24h cache).
+  chrome/footer correct; content edits post-deploy reach the site within the app's own
+  `SITE_CACHE_TTL_SECONDS` (Templates code default 60; 300 on the four Amplify apps read
+  2026-10-14; read the app's value), or at once through the signed `/api/revalidate` webhook,
+  which a Studio save fires by itself (see the cutover agent).
 The run is resume-safe (`captures/<domain>/load-state.json`, gitignored),
 re-running after any failure continues without duplicates.
 The result is a **noindex demo**; the arc continues per the cutover agent's

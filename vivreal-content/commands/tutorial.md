@@ -10,7 +10,8 @@ destination (`help` by default), a kebab-case slug derived from the topic, and a
 `--only` flag from the arguments.
 
 **Both passes run by default, and that is the point.** One script, shot at desktop
-(1440x810, cuts to 16:9) and at phone (540x960, cuts to 9:16). Only pass `--only`
+(1440x810, cuts to 16:9) and at phone (540x960 by default, cuts to 9:16; the size table is in
+footage-recorder's "Sizes"). Only pass `--only`
 when the user explicitly asked for a single viewport.
 
 Relay its JSON result: slug, session path, the per-pass status, the voice-check
@@ -26,6 +27,7 @@ Two things to tell the user rather than let them discover:
    the half that worked.
 
 On `status: blocked`, show which surface the agent refused to film and why. The
-"Currently unsafe to film" table in `.claude/agents/footage-recorder.md` is dated
+"unsafe" tables in the footage-recorder's dated history (`references/footage-history.md` in the
+`vivreal-content` plugin) are dated
 per row, so a block may just be stale: offer to re-check that row before re-planning
 the topic.

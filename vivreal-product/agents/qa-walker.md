@@ -108,10 +108,10 @@ the viewport edges. 390 in a browser cannot show it.
 **The top is a plain iOS status bar, with no blue band.** On 2026-10-07 the portal switched
 `apple-mobile-web-app-status-bar-style` to `default` (Vivreal_Portal_Mobile #442): iOS draws
 its own status bar above the web view, so the page starts below it, the top inset is 0 and
-the portal's blue status-bar scrim has zero height. Once that release is live, a blue band
-across the top of the installed-app view is a DEFECT to report, with the screenshot. Until it
-ships, the live app (`stable` v0.33.7) still carries the old tag; to reproduce what owners on
-that build see, launch with `statusBar: 'black-translucent'` (390x844, insets 47/34, the band).
+the portal's blue status-bar scrim has zero height. It is live (portal `origin/stable`
+`src/app/layout.tsx` sets `default` and says never `black-translucent`), so a blue band across
+the top of the installed-app view is a DEFECT to report, with the screenshot. Launch with
+`statusBar: 'black-translucent'` only to reproduce an old build.
 
 - Open it from `vivreal-hq`: call `launchPwaDevice({ url, storageStatePath })` from
   `packages/content-studio/src/pwa-device.ts` in your walk script (default iPhone 390x797,
@@ -246,10 +246,11 @@ You audit every screen for this, and you say so in the report even when clean.
   the account by name, with member counts and plan tiers. It cannot be scrubbed
   by editing a field; the whole list is the exposure, however long it is.
   Change groups before recording starts, never on camera. It lives in three
-  places: the desktop sidebar's business menu, the
-  phone avatar menu (tap the business NAME: `mobile-header-switcher`, list
-  `mobile-header-switcher-list`), and `/more`'s inline switcher. Opening the
-  avatar menu is filmable; tapping the business name inside it is not.
+  places: the desktop sidebar's business menu, the phone business menu
+  (`mobile-header-avatar` opens it; the list is `mobile-header-business-list`), and
+  `/more`'s inline switcher. **Since portal v0.36.0 the phone business menu holds only the
+  businesses, the signed-in person, Log out and "Open More", so opening it at all shows the
+  list: it is not filmable.**
 - **`/admin/flags`.** Same exposure: every group by name, slug and tier.
 - **Any admin-only surface** on a tenant whose nav carries `Admin analytics` or
   `Feature flags`. Customers never see those tabs.
@@ -265,41 +266,76 @@ are not.
 
 ## Tenants, and which to use
 
-Confirm this against the product every run; it goes stale.
+Read each tenant's tier and `dbKey` live at the start of the walk (the group document, or the
+portal's own read route); never copy them from a file, this one included. The previous table here
+called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three were wrong by
+2026-10, and QA residue on it forced a demo cleanup.
 
 | Tenant | Use for | Watch out |
 |---|---|---|
-| **Vivreal Content** (PROPLUS) | The filming and CRUD tenant. Site: Windward House | No payment provider, so no commerce. No Campaigns. 656 lists |
-| **Vivreal** (PRO) | Admin surfaces, campaigns empty state | Its nav has 6 tabs a customer never sees. Sales is broken here |
+| **QA v5 scratch** (and scratch-2 to scratch-4) | **The CRUD and commerce tenant.** Create, update, delete, checkout on Stripe test | Its Stripe test account cannot charge. Sign in as its owner (below) |
+| **Vivreal Content** | Read-mostly walks, the filming business | A **prospect** business, so search-visibility UI is hidden there by design. Its channels are Vivreal's own real accounts. Never leave QA objects on it |
+| **Vivreal** | Admin surfaces, and surfaces Vivreal Content hides | A real live business: read only. Its nav carries entries a customer never sees |
+
+**Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
+or written to a file): Vivreal Content `vivreal/prod/agent-walk-user`; QA v5 scratch
+`vivreal/qa/scratch-owner`; scratch-2 to scratch-4 `vivreal/qa/scratch2-owner`, `scratch3-owner`,
+`scratch4-owner`; plus `vivreal/qa/canlook`, `canedit`, `free-walker`, `empty-owner`,
+`square-sandbox` and `admin-operator` (TOTP) for the role and plan cases the matrix names. List
+them by name only (`aws secretsmanager list-secrets --filters Key=name,Values=vivreal/qa/ --query
+'SecretList[].Name'`). `agent-walk-user` cannot reach the scratch businesses. Delete any saved
+session state file a walk produced at the end of the run.
 
 **Admin tenants carry extra entries.** A matrix written against one tenant
 references entries the other does not have. Enumerate the nav from the product
 at the start of every walk rather than assuming it.
 
-### The navigation, the same for every customer
+## Local-stack walks: prove the guard first, and know which code you are walking
 
-Every tenant gets the same navigation. A matrix that says "More tab", "Sites
-tab" or "the manage page's tabs" is describing a product that does not exist,
-which is why you enumerate the nav from the product at the start of a walk
-rather than from a matrix.
+The local stack (`packages/fleet-ops/e2e-local` in vivreal-hq) runs the real services against the
+**production** database, Cognito and media. It has dispatched a real LinkedIn post before the guard
+existed. So before ANY local walk:
 
-| Where | What is there |
-|---|---|
-| Phone tab bar | **Home, Sales, People, Addresses, Socials.** The bar alone says "People"; every other surface says Subscribers. No More tab |
-| Desktop sidebar | The same five, then Content, Calendar, Channels; business menu at the top |
-| Phone avatar menu | Content, Calendar, Channels, Settings, Upgrade, Log out; the business NAME is the switcher |
-| Settings › Your tabs | Each person picks their own five; persists to the account; the app opens on the first |
-| `/sites` | Redirects to Home. Sites are tiles on Home and open the Studio |
-| A site's manage page | The site launcher. Publish when unpublished; the address is not a link until something answers at it |
-| `/more` | Renders by URL only; nothing in the chrome links to it |
+1. `node e2e.js probe` runs every startup check live and starts nothing; it must exit 0.
+2. Start it detached (the README's `Start-Process ... e2e.js start`), then read `run.log`. It must
+   show `NO-DISPATCH guard holds` for **every** service it started (cms, secure, client, main,
+   outreach, mcp, admin, portal, templates) and each API's and the admin app's
+   `runs as ...federated-user/local-e2e-<svc>` line. **The MCP server prints no runs-as line**; its
+   equivalent is `no AWS credentials (child NONE CredentialsProviderError; control GOT [machine
+   identity])` (as in `docs/projects/next-release-2026-10/walk-447-d76757ba-2026-10-14.md`), so expect that one
+   instead and do not stop on its absence. **Paste every one of those lines into the matrix header**,
+   with the recorder counts (`recorder/*.jsonl`) before and after the walk. Any other missing line
+   means stop: do not walk.
+3. Block non-GET requests in your browser context as a second layer wherever the matrix does not
+   need a write.
+4. **Record every service's head.** `node e2e.js heads` prints each worktree's commit and any local
+   change; paste it into the matrix header. The launcher runs FIXED worktrees (`e2e-portal`,
+   `e2e-templates`, `e2e-mcp` and the API ones under `C:/repos/_wt`), so an unmerged PR is invisible
+   to a walk unless you move to it.
+5. **When the brief names a PR,** point that service at the PR head with
+   `node e2e.js move <svc> <sha>`, then a FULL `stop` and `start` so every guard check runs again, and
+   re-run `heads` to prove it. Name the PR, its head and the service in the matrix.
+
+The README in that folder is the authority on commands; read it on the day.
+
+### The navigation: enumerate it from the product
+
+Every tenant gets the same navigation, and this file deliberately carries no map of it: the last
+one was from v0.20.3 and wrong by v0.33. At the start of every walk, read the nav at portal
+`origin/stable` with `git show` (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` and
+`defaultFavorites`, `src/components/NavigationTabs/tabs.ts`, `src/components/MobileHeader/index.tsx`,
+`src/lib/nav/moreSections.ts`, `src/components/DesktopSidebar/index.tsx`), then enumerate it on the
+running product in each view and put that list at the top of the matrix. A matrix that names a
+tab or a menu row the product does not show is describing a product that does not exist.
 
 **What the e2e suite already proves, so you do not re-walk it as the owner.**
 Studio, content and lists, navigation, sign-in, business and team, Addresses,
 Home, plans and settings have deep e2e coverage against a mock upstream. Walk
 them in the regular-user pass only. Spend the owner pass where e2e is thin or
-blind: Sales, Socials, Traffic, Calendar, Subscribers and campaigns, the
-Assistant, Channels, and anything that needs a real backend (publish, a real
-multi-business switch, a real integration). Recheck the e2e depth table in the
+blind: Sales, Socials, Traffic, Calendar, Subscribers and campaigns, Bookings,
+Channels, and anything that needs a real backend (publish, a real
+multi-business switch, a real integration). (The in-portal Assistant was deleted
+on 2026-09-24; AI is reached through MCP only.) Recheck the e2e depth table in the
 current walk's matrix; it moves.
 
 ---
@@ -308,15 +344,21 @@ current walk's matrix; it moves.
 
 Read-only by default. When the matrix calls for create/update/delete:
 
-1. Only on a tenant the owner has named for it.
-2. Name every object you create `QA TEST <date>` so it is identifiable on sight.
+1. Only on a tenant the owner has named for it: by default the QA v5 scratch businesses,
+   never Vivreal Content or Vivreal.
+2. Name every object you create `QA TEST <date>` (or your walk id) so it is identifiable on sight.
 3. Follow every create through to a delete, in the same run.
-4. List anything you could not clean up under **RESIDUE** at the top of your
+4. For a CHANGE to something that already existed (a setting, a visibility, an item), run the
+   owner-approved write protocol in `vivreal-content:footage-recorder` ("The write protocol"):
+   snapshot, write, fresh-process read-back, restore, read-back equal to the snapshot, and name
+   any field that does not come back identical.
+5. List anything you could not clean up under **RESIDUE** at the top of your
    report. An empty RESIDUE section is a claim you must be able to defend.
 
 **Never** press Send on a campaign, never Revert a site version, never save the
 footer social panel, and never publish a social post. Composing and closing is
-free; sending is not.
+free; sending is not. Never write the database directly; cleanup goes through the app or API, or
+it is reported and left.
 
 ---
 

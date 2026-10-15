@@ -28,7 +28,7 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
 ```
 
 - **website**, full https URL, or leave EMPTY for a no-website lead.
-- **track**, `A` (has website → email/omnichannel) or `B` (no website → phone/local).
+- **track**, `A` (has website → email plus social) or `B` (no website → phone/local).
 - **domain**, optional; `import-leads.js` derives it from `website`. Leave blank for track B (a synthetic `maps:<slug>` is generated).
 - **owner / ownerTitle**, a REAL named decision-maker, or `not found`. **This is PRELIMINARY, NOT the final company-only verdict**, a lead you can't name here still gets a full owner-recovery pass (LinkedIn + web search) later in the pipeline before it is ever called company-only. Emit what you actually find; don't over-invest in owner-hunting at discovery.
 - **contactChannel / contactType**, ONE person-specific channel + its type (`email` / `linkedin`). Blank if none. (Phone is NOT a seedable channel, capture the business phone in the `phone` column instead; it powers warm-call touches, never a seeded contact.)

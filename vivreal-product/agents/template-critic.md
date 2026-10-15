@@ -35,7 +35,9 @@ sells nothing. The tell is that you can describe the layout without mentioning t
 
 The target between them: **the same design GRAMMAR, different everything else.** Take the
 relationship between ground and accent, the type pairing, what leads the page, how dense it is,
-how imagery is treated. Leave the content, the nav labels and the section order.
+how imagery is treated. Leave the content, the nav labels, the section order and the brand facts
+(founding year, addresses, phone numbers, accolades). That is the owner's bar for every template
+(2026-10-14), and `/template` builds to it.
 
 ## Method
 
@@ -105,6 +107,70 @@ how imagery is treated. Leave the content, the nav labels and the section order.
   text contains a bare `&` is malformed XML, returns HTTP 200, and renders as a broken icon.
   Check the bytes before reporting a missing asset.
 - **Do not judge exposure or content from a note about it. Open the image.**
+- **Popups spoil the 390 menu check.** A newsletter modal can open about 5 s after load; wait
+  about 6 s, close any `[role=dialog]` close button, then open the menu. A "no overlap" result
+  with zero matched wordmarks is vacuous when the sheet's wordmark is an `<img alt="Logo">`.
+- **Headless shots paint map iframes as blank grey panels.** Read the iframe `src` and shoot it
+  in a headed browser before filing an empty section.
+- **A raster census must decode `/_next/image?url=`.** Unwrap `url=`, then read `key=`, before
+  calling an SVG a raster.
+- **Forms often submit through `type=button`** with a JS handler, so `requestSubmit()` sends
+  nothing. Click by text (send, submit, inquire) with a route that aborts every non-GET; most
+  `form:has(input[type=email])` hits are the newsletter.
+
+## Standing checks, run on every review (folded from the per-trade run notes, 2026-10-14)
+
+Each of these found a defect no screenshot comparison did. Run them before scoring.
+
+**For rubric B (not a copy):**
+- **Measure the copy first.** Build 12-word shingles from every string in the exemplar capture
+  (`captures/<exemplar>/capture.json`: lower-case, dashes to commas, whitespace collapsed) and from
+  every string of 90+ characters in the kit's `blueprint.json`; report hits over total. Two kits read
+  60% and one read 0.0%, which is what proves the measure is real. Then confirm each lift is served
+  live with a `curl | grep -c`.
+- **Grep for the exemplar's phone numbers and emails** in the demo's served HTML, and diff every
+  `a[href^="tel:"]` against its own link text. A real business's number has shipped behind a 555
+  label on every page of two demos.
+- **Diff the facts, not just the layout:** founding year, address format, accolade names, nav
+  vocabulary, CTA labels, location names in URL slugs. A fictional brand that inherits the
+  exemplar's founding year is more identifying than any layout similarity.
+- **A section-order table settles B when the copy test reads clean.** Put the two homes' heading
+  sequences side by side; ten sections in the exemplar's order is a clone with zero shared words.
+- **Rank background colours by on-screen area** from computed styles and element boxes, top four in
+  order, plus the `document.body.scrollHeight` ratio and the accent element count. Do NOT use an
+  `elementFromPoint`-after-scroll sampler: it misread a page as 69% black. Confirm against the shots.
+- **Diff kits of one trade against each other** (page slugs, bindings, location strings, hero
+  variants) before judging any one. Three kits that are one blueprint with three skins share their
+  fixes, which changes the effort estimate threefold.
+- **Read the owner's directive** in the brief before scoring. The bar is the owner's decision of
+  2026-10-14: copy the exemplar's design grammar faithfully; content, nav words, section order and
+  brand facts are the kit's own. A brief that asked for "1 to 1" does not turn a clone into a pass:
+  score B FAIL, say the instruction conflicts with that bar, and route the conflict to the owner.
+
+**For rubrics C, E and F (structure, states, widths):**
+- **Mobile conversion first.** At 390, list the visible controls inside `<header>` and every
+  `position: fixed` element. "Home" and "Open menu" alone means the phone visitor cannot book or buy.
+  The chrome nulls in `blueprint.json` (`fulfillmentStrip`, `floatingCta`, `utilityDock`,
+  `utilityStrip`, `announcement`, `emailPopup`, `edgeDock`) predict this before a browser opens.
+- **Measure the page header on every page**, not a sample: height, element count, images, links,
+  total text, and whether authored `labels.title`/`labels.subtitle` actually render.
+- **Reachability, both directions:** every page slug against nav and footer hrefs, and every nav and
+  footer href against a page. A recovered page is the likeliest orphan.
+- **Self-linking CTAs** are a dead-control class: count `href === location.pathname` (and hrefs equal
+  to the page a card claims to be about) over total CTAs.
+- **Judge the destination, not just the chooser.** For every index component, ask what a card opens.
+- **The purchase path,** on any kit that prints a price: the header CTA's label and href, a cart
+  control on the home, and every `a` and `button` on one product page.
+- **Crawl past the curl pass.** Hover every `header button` and re-collect `a[href]` (a mega-menu
+  hid 22 of 23 dead links), and seed the queue with every `llms.txt` page (the 390 menu sheet's links
+  exist only once it opens).
+- **Server HTML with JS off, and the RSC payload.** A page that is clean in the hydrated DOM can ship
+  seed text in its loading skeleton or flight payload. Check a `javaScriptEnabled: false` context and
+  grep the raw body (unescape `\"`); keep the two counts separate.
+- **Census the fonts.** `document.fonts.check()` returns true when no face exists; list
+  `[...document.fonts]` and test whether the computed first family is among them.
+- **Re-measure contrast yourself on any dark-ground kit**, and never trust a walker's PASS there. Open
+  the shot before filing a number: a translucent first ancestor gives false failures on light chrome.
 
 ## Evidence standard
 
@@ -129,10 +195,17 @@ Write a report to the path the dispatcher names, or return it if none is given:
 
 ## Keeping what each run learns
 
-A finding that lives only in a report dies when the run ends. If the working repo has
-`docs/agent-notes/template-critic.md`, **read it before the capture step** (it carries the
-prior dated findings per trade: what the pages that trade needs actually are, which exemplars
-are worth returning to, which component gaps recur) and **write the last step of every run
-back into it**: a new dated section per trade, superseding a row rather than deleting it, and
-citing any number with its date and method. If that file does not exist in the working repo,
-create it there, never inside this plugin.
+A finding that lives only in a report dies when the run ends. Prior runs' findings live in the
+working repo (vivreal-hq), **split by trade**: read `docs/agent-notes/template-critic/<trade>.md`
+for the trade you are judging (for example `bakery.md`, `live-events.md`, `salon-barber-taproom.md`,
+`med-spa.md`, `wedding-venue.md`, `resale.md`, `shop.md`) **before the capture step**. If that
+folder does not exist yet, read only the dated sections of `docs/agent-notes/template-critic.md`
+whose heading names your trade, plus the newest fleet-wide section; never the whole file, which
+outgrew a single read. Those notes carry what pages the trade needs, which exemplars are worth
+returning to, and which component gaps recur. Where they disagree with this file, they win; say so
+in your report.
+
+**Write the last step of every run back** into your trade's file: a new dated section, superseding
+a row rather than deleting it, citing any number with its date and method. A method that would help
+on ANY trade goes in a short "Method candidates" list at the top of the notes for the next plugin
+release to fold into "Standing checks" above. Never write inside this plugin.

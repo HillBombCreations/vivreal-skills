@@ -283,8 +283,13 @@ its Amplify build passed.
 2. Fetch the live home page: dark/light chrome as authored, nav dropdowns,
    multi-column footer, pricing/feature blocks with real data.
 3. Fetch ONE nested page (e.g. `/features/<x>`), the historical 404 trap.
-4. Content edits after deploy: the site caches `siteDetails` for
-   `SITE_CACHE_TTL_SECONDS` (86400 on current apps). To reflect a change now, fire
+4. Content edits after deploy: the site caches `siteDetails` for the app's own
+   `SITE_CACHE_TTL_SECONDS` (Templates `src/lib/api/client.ts` defaults it to 60; the four apps
+   read on 2026-10-14 set 300; read it with
+   `aws amplify get-app --app-id <id> --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'`,
+   then the same on the branch). A Studio save fires the revalidate webhook by itself and lands in
+   seconds; a write behind the product (this load included) waits out the TTL. To reflect a
+   change now, fire
    the signed revalidation webhook: `POST https://<site>/api/revalidate` with body
    `{"event":"site.updated","data":{}}` and header
    `x-vivreal-signature: sha256=<HMAC-SHA256(rawBody, REVALIDATE_WEBHOOK_SECRET)>`
