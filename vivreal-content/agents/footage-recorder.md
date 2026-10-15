@@ -42,9 +42,20 @@ color: green
 | topic prompt | "the content calendar feature" | Free text; you derive the shot list |
 | scene keys (optional) | `calendar-month-view, floating-calendar-open` | Explicit portal-scenes.json keys override planning |
 | duration budget (optional) | `90` | Total seconds of footage wanted (default ~60) |
-| viewport (optional) | `vertical` (default) or `horizontal` | vertical = 540×960 (9:16 mobile), horizontal = 1600×900 (Phase 2) |
+| viewport (optional) | `vertical` (default) or `horizontal` | See "Sizes" below |
 | phone view (optional) | `browser` | Vertical takes are the **installed app** by default. `browser` only when the brief explicitly asks for the mobile browser |
 | stills (default ON) | `off`, or slot specs from a guide draft | One labeled still per segment by default; slot specs add dedicated stills (see Shot planning 5) |
+
+## Sizes (the one table; other content agents cite this one)
+
+| What | Size | Where it comes from |
+|---|---|---|
+| Social footage, vertical | 540x960 CSS, the installed app; stills land at 2x (1080x1920) | `portal-capture.ts` sequences, `pwa-device.ts` |
+| Social footage, horizontal | 1600x900 | `portal-capture.ts` sequences |
+| Help-article stills, phone | **390 wide, the installed app** (owner, 2026-10-14; earlier 402-wide frames are retakes) | `launchPwaDevice` with `device: { width: 390, height }` (844 high, or 932 when a Studio sheet frame needs the room) |
+| Help-article stills and videos, computer | 1440 wide | a desktop context |
+| Tutorial phone pass | 540x960 by default; `TUTORIAL_PHONE_SIZE=<w>x<h>` for a brief that names another width (both even, width under 768). For help videos, match the help stills' width | `run-tutorial.ts` |
+| Walks (`qa-walker`, `ux-critic`, `help-page-producer` checks) | the `launchPwaDevice` default (390x797, insets 0/34), then 1440 | `pwa-device.ts` |
 
 ## What makes a shot worth keeping
 
@@ -114,20 +125,28 @@ what it **does**. Open on the second one.
 
 ## Shot planning
 
-**Read "RE-WALKED 2026-09-29" below FIRST, then "The portal itself, measured".** The re-walk is
-the current map, taken against deployed `stable` v0.29.1 at both 1440 and 390. Everything under
-the "2026-09-08 list, SUPERSEDED" heading pre-dates the portal restyle, the deletion of the
-six-tab manage shell, and the removal of X and Google Analytics, so it is history rather than
-planning material. The re-walk also names, explicitly, the rows it could NOT verify, and those
-are not cleared.
+**Read the nav from the product, every run. This file carries no nav map on purpose.** Five
+agents carried a map from v0.18 to v0.33 and every one went stale (the phone business menu now
+holds only the businesses, the signed-in person, Log out and "Open More"; Content is labelled
+"Lists"). The sources, read with `git show origin/stable:<path>` in `Vivreal_Portal_Mobile`, never
+from a working checkout: `src/lib/nav/favorites.ts` (`NAV_DESTINATIONS`: every destination and its
+label; `defaultFavorites`), `src/components/NavigationTabs/tabs.ts` (the phone bar),
+`src/components/MobileHeader/index.tsx` (the phone business menu), `src/lib/nav/moreSections.ts`
+(the More page), `src/components/DesktopSidebar/index.tsx` and `src/lib/nav/desktopNav.ts` (the
+sidebar). Then confirm on the running product in the probe, and write the version you walked
+(`curl https://vivreal.io/app/release.json`) into the manifest. The filming account's tab bar is
+whatever it last chose (favorites are stored on the account); read it in the probe.
+
+Then read the dated shooting history (below), newest section first.
 
 1. Match the topic against `packages/content-studio/capture-assets/portal-scenes.json`
    (21 pre-canned scenes). Prefer these; they encode settle times. They predate the
    nav redesign, so verify the destination and selectors in the probe.
 2. Fall back to keyword lookup in `packages/content-studio/capture-assets/pages.json`
-   (45 routes; respect `agentSafe`). The five new tabs (Sales, Subscribers, Domains,
-   Socials, and the Orders/Products redirects) have NO registry entry: reach them with
-   `goto` or by clicking the tab.
+   (respect `agentSafe`). **The registry is behind the product**: it has no entry for sales,
+   subscribers, people, domains, social, bookings, analytics or channels/ai, and it still lists
+   `agent`, whose route is gone. Reach an unregistered screen by clicking the real nav (the
+   better shot anyway) or with a `goto` relative to `baseUrl`.
 3. Build 4-10 segments of 5-20s each. Every segment needs MOTION: scroll,
    hover, tab switch, dialog open. Static pages read as screenshots. Name
    segments `<topic-slug>--<scene>--NN` with a human `label` describing what
@@ -189,7 +208,7 @@ portal uses the `default` iOS status bar since Vivreal_Portal_Mobile #442, so iO
 plain status bar above the web view and the top inset is 0), and the tab bar lifted above the
 home-indicator gap (34).
 
-- `portal-capture.ts` opens a **headed** app window for it (`pwa-device.ts`), 540x960 with
+- `portal-capture.ts` opens a **headed** app window for it (`pwa-device.ts`), at the size in "Sizes", with
   the iPhone safe areas, on a throwaway profile signed in from `storageStatePath`. A window
   appears on screen for the run; that is expected.
 - **`assertStandalone` gates every phone take.** It runs after every `goto`/`openPage` and
@@ -201,9 +220,9 @@ home-indicator gap (34).
   library and render targets. The proof a take is the app is the `standalone OK {...}` line
   on stderr, not the pixels: with the `default` status bar the app and a browser tab both
   start the page at row 0. Still extract one frame per session with ffmpeg and look at the
-  top: a blue band there is a DEFECT once the #442 release is live. To film the live app
-  before that release ships (`stable` v0.33.7 still has `black-translucent`), set
-  `"statusBar": "black-translucent"` on the sequence; then the 47px band is expected.
+  top: a blue band there is a DEFECT (portal `origin/stable` `src/app/layout.tsx` sets
+  `apple-mobile-web-app-status-bar-style` to `default`, and its comment says never
+  `black-translucent`). Set `"statusBar": "black-translucent"` only to reproduce an old build.
 - The mobile browser is used only when a brief explicitly asks for it; then set
   `"display": "browser"` and record the view in the manifest `note`.
 

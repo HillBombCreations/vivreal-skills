@@ -18,12 +18,9 @@ MDX or `meta.json` into `Vivreal_Docs`.** Produce the voice-checked draft under
 `vivreal-hq/knowledge/` as before, list the stills it needs with their session paths,
 and name the target site and page. The main session enters it in Studio.
 
-**Navigation vocabulary for every instruction (v0.20.3, every customer):** phone tab
-bar **Home, Sales, People, Addresses, Socials** ("People" on the phone bar only;
-Subscribers everywhere else); Content, Calendar and Channels are in the desktop
-sidebar and, on a phone, the **avatar menu**. No More tab, no Sites tab (sites are
-tiles on Home). People can choose their own five tabs, so prefer paths that survive
-a custom bar.
+**Navigation words in a draft come from the product, never from this file.** Read the labels at
+portal `origin/stable` (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS`) and on the running product,
+and prefer paths that survive a customised tab bar ("tap More, then ...").
 
 ## Identity
 

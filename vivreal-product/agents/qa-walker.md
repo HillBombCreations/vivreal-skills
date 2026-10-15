@@ -108,10 +108,10 @@ the viewport edges. 390 in a browser cannot show it.
 **The top is a plain iOS status bar, with no blue band.** On 2026-10-07 the portal switched
 `apple-mobile-web-app-status-bar-style` to `default` (Vivreal_Portal_Mobile #442): iOS draws
 its own status bar above the web view, so the page starts below it, the top inset is 0 and
-the portal's blue status-bar scrim has zero height. Once that release is live, a blue band
-across the top of the installed-app view is a DEFECT to report, with the screenshot. Until it
-ships, the live app (`stable` v0.33.7) still carries the old tag; to reproduce what owners on
-that build see, launch with `statusBar: 'black-translucent'` (390x844, insets 47/34, the band).
+the portal's blue status-bar scrim has zero height. It is live (portal `origin/stable`
+`src/app/layout.tsx` sets `default` and says never `black-translucent`), so a blue band across
+the top of the installed-app view is a DEFECT to report, with the screenshot. Launch with
+`statusBar: 'black-translucent'` only to reproduce an old build.
 
 - Open it from `vivreal-hq`: call `launchPwaDevice({ url, storageStatePath })` from
   `packages/content-studio/src/pwa-device.ts` in your walk script (default iPhone 390x797,
@@ -246,10 +246,11 @@ You audit every screen for this, and you say so in the report even when clean.
   the account by name, with member counts and plan tiers. It cannot be scrubbed
   by editing a field; the whole list is the exposure, however long it is.
   Change groups before recording starts, never on camera. It lives in three
-  places: the desktop sidebar's business menu, the
-  phone avatar menu (tap the business NAME: `mobile-header-switcher`, list
-  `mobile-header-switcher-list`), and `/more`'s inline switcher. Opening the
-  avatar menu is filmable; tapping the business name inside it is not.
+  places: the desktop sidebar's business menu, the phone business menu
+  (`mobile-header-avatar` opens it; the list is `mobile-header-business-list`), and
+  `/more`'s inline switcher. **Since portal v0.36.0 the phone business menu holds only the
+  businesses, the signed-in person, Log out and "Open More", so opening it at all shows the
+  list: it is not filmable.**
 - **`/admin/flags`.** Same exposure: every group by name, slug and tier.
 - **Any admin-only surface** on a tenant whose nav carries `Admin analytics` or
   `Feature flags`. Customers never see those tabs.
@@ -276,30 +277,24 @@ Confirm this against the product every run; it goes stale.
 references entries the other does not have. Enumerate the nav from the product
 at the start of every walk rather than assuming it.
 
-### The navigation, the same for every customer
+### The navigation: enumerate it from the product
 
-Every tenant gets the same navigation. A matrix that says "More tab", "Sites
-tab" or "the manage page's tabs" is describing a product that does not exist,
-which is why you enumerate the nav from the product at the start of a walk
-rather than from a matrix.
-
-| Where | What is there |
-|---|---|
-| Phone tab bar | **Home, Sales, People, Addresses, Socials.** The bar alone says "People"; every other surface says Subscribers. No More tab |
-| Desktop sidebar | The same five, then Content, Calendar, Channels; business menu at the top |
-| Phone avatar menu | Content, Calendar, Channels, Settings, Upgrade, Log out; the business NAME is the switcher |
-| Settings › Your tabs | Each person picks their own five; persists to the account; the app opens on the first |
-| `/sites` | Redirects to Home. Sites are tiles on Home and open the Studio |
-| A site's manage page | The site launcher. Publish when unpublished; the address is not a link until something answers at it |
-| `/more` | Renders by URL only; nothing in the chrome links to it |
+Every tenant gets the same navigation, and this file deliberately carries no map of it: the last
+one was from v0.20.3 and wrong by v0.33. At the start of every walk, read the nav at portal
+`origin/stable` with `git show` (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` and
+`defaultFavorites`, `src/components/NavigationTabs/tabs.ts`, `src/components/MobileHeader/index.tsx`,
+`src/lib/nav/moreSections.ts`, `src/components/DesktopSidebar/index.tsx`), then enumerate it on the
+running product in each view and put that list at the top of the matrix. A matrix that names a
+tab or a menu row the product does not show is describing a product that does not exist.
 
 **What the e2e suite already proves, so you do not re-walk it as the owner.**
 Studio, content and lists, navigation, sign-in, business and team, Addresses,
 Home, plans and settings have deep e2e coverage against a mock upstream. Walk
 them in the regular-user pass only. Spend the owner pass where e2e is thin or
-blind: Sales, Socials, Traffic, Calendar, Subscribers and campaigns, the
-Assistant, Channels, and anything that needs a real backend (publish, a real
-multi-business switch, a real integration). Recheck the e2e depth table in the
+blind: Sales, Socials, Traffic, Calendar, Subscribers and campaigns, Bookings,
+Channels, and anything that needs a real backend (publish, a real
+multi-business switch, a real integration). (The in-portal Assistant was deleted
+on 2026-09-24; AI is reached through MCP only.) Recheck the e2e depth table in the
 current walk's matrix; it moves.
 
 ---

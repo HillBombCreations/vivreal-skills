@@ -46,104 +46,13 @@ are new refusals to film in their place. All of that is in the unsafe table belo
    of walk 8's blockers were closed inside 24 hours by one release. Re-check anything you plan
    to film before you plan a shot around it, and re-date the line when you do.
 
-### The map, and the shortest path to each screen
+### The nav map that used to sit here was removed (2026-10-14)
 
-The app opens on `/app/launch` (a splash) and lands on `/app/dash`. Everything else hangs
-off the tab bar, the menu, or the dashboard's own buttons.
-
-| Screen | Route | Registry key | How a person gets there |
-|---|---|---|---|
-| Dashboard | `/app/dash` | `dash` | where the app lands |
-| Site Studio | `/app/sites/studio?site=<siteId>` | `sites.studio` (bare `/sites/studio`) | **tap the site tile on the dashboard** |
-| Content | `/app/content` | `content` | menu, under "Your work" |
-| Create | `/app/create` | `create` | "Create something", the largest button on the dashboard |
-| Sales | `/app/sales` | **none** | tab bar |
-| Orders / Products | `/app/orders`, `/app/products` | **none** | dashboard quick actions. Both **redirect to `/app/channels/square?tab=orders` / `?tab=products`**, a page titled and headed "Square" (walk 2 C1) |
-| Subscribers | `/app/subscribers` | **none** | tab bar |
-| Campaigns | `/app/subscribers?view=campaigns` | **none** | the People/Campaigns switcher on the Subscribers screen. **New in v0.18.0**; unreachable by anybody before it (walk 9, walk 10 take 2 #3) |
-| Domains | `/app/domains` | **none** | tab bar, where the tab itself reads **"Addresses"** (walk 10, 3.1) |
-| Socials | `/app/social` | **none** | tab bar; the composer opens from "Compose" |
-| Channels | `/app/channels` | `channels` | menu; also the desktop nav since the walk 2 B3 fix |
-| Calendar | `/app/calendar` | `calendar` | menu |
-| Settings | `/app/settings` | `settings` | profile menu |
-| "Your tabs", the nav picker | inside `/app/settings` | `settings` | business chip, then Settings, then scroll past Account. Heading **"Your tabs"**, between Account and Notifications (walk 10 take 1 #1) |
-| Upgrade / plan | `/app/tier-select` | `tier-select` | profile menu, **"Upgrade"**, not Settings (walk 2 C21) |
-| Assistant | a floating button on every screen | `agent` for the standalone page | the FAB, bottom right |
-
-**The five new tabs have no registry entry.** `pages.json` carries 45 routes and none of
-them is `/sales`, `/subscribers`, `/domains`, `/social`, `/orders` or `/products`, so
-`openPage` fails with "unknown registry key" on all of them. Reach them with `goto` and a
-path relative to `baseUrl` (`sales`, not `/sales`: the leading-slash trap below drops
-`/app`), or by clicking the tab, which is the better shot anyway.
-
-**`portal-scenes.json` predates the nav redesign.** Its 21 scenes are built around the old
-information architecture (`/more`, the MoreFab, `/agent`). They still encode good settle
-times, but verify the destination and the selectors in a probe before trusting a scene
-whole. **The `openMoreFab` and `openProfileMenu` helper verbs are dead under the
-redesign** (confirmed 2026-09-10 against v0.20.3 source): the MoreFab was retired, and
-`[data-testid=profile-menu-trigger]` renders only on `/more`, which nothing in the chrome
-links to any more. Open the avatar menu with `[data-testid=mobile-header-avatar]` instead.
-`/more` itself still renders by URL and stopped throwing a hydration error in v0.20.3, but a
-shot that begins there begins somewhere no customer can reach.
-
-**Never in frame, enforced in code:** `/app/outreach/*`, `/app/group?tab=audit`,
-`/app/group?tab=users`, and the Blogs collection `6a68b217200c2d57db4cecf0`. See
-`FILMING_BLOCKED_URLS` in `src/denylist.ts` and filming-hygiene.md.
-
-### The nav, phone versus desktop
-
-**Since v0.20.3 (2026-09-10) this is EVERY tenant's nav, not a flag.** Walks 2 to 10 filmed
-it on flagged tenants while customers still had the old bar; from v0.20.3 the demo tenant and
-every customer match what is described here. Any older footage or scene with a More tab, a
-Sites tab or the six-tab manage page shows a product that no longer exists: re-shoot it, do
-not reuse it.
-
-**Phone (390).** A five-slot bottom tab bar, and the slots are **owner-chosen favorites**:
-ten destinations offered, minimum 2, maximum 5 (walk 2 C8). The standard set, and what an
-untouched account shows: **Home, Sales, People, Addresses, Socials** (walk 10 take 1 #2). The
-bar alone says **"People"** (v0.20.0, #378); every other surface, the page heading included,
-says Subscribers, so a caption that cuts from the tab to the page must use both words or
-neither.
-
-**Switching business on a phone** is the business NAME inside the avatar menu (v0.20.3):
-`mobile-header-avatar` opens `mobile-header-menu`, and `mobile-header-switcher` opens the list.
-**Opening the menu is filmable; the list never is** (every group on the account, by name and
-tier; see the never-film rules). `/sites` redirects to Home, where sites are tiles, and a
-site's manage page is now the site launcher (v0.20.2).
-
-**They are stored on the account, not per browser, and walk 2's C9 is now wrong about that**
-(walk 10 take 1 #7). The picker writes `PUT /app/api/proxy/user/nav-favorites`, the value lands
-in `Vivreal.userpreferences` keyed by the login email with no group id, and deleting both the
-`nav_favorites` cookie and the `nav_favorites_seeded` localStorage flag brought the custom bar
-straight back while the cookie was rewritten from the account. For capture that means **the tab
-bar you film is whatever the filming account last chose**, not a per-context default. Read it in
-the probe and say so in the manifest, and if a shoot changes it, put it back with the **"Use the
-standard tabs"** row rather than by clearing storage, which does nothing.
-
-The rest lives behind a menu that opens **downward from the top** as a sheet covering about
-70 percent of the screen (walk 2 C18, batched for a fix). **No tab is highlighted on any
-menu destination** (walk 2 C19): Content, Calendar, Channels, Approvals, Traffic, Settings,
-Group and the Square pages all render the bar with nothing active, so a cut to one of them
-loses its you-are-here.
-
-**Desktop and tablet (768, 1280).** A sidebar: Home, Sales, Subscribers, Domains, Socials,
-Content, Calendar, Outreach, Admin analytics, Feature flags, plus Channels since the B3 fix.
-A profile menu behind the business chip carries Approvals, Outreach, Traffic, Group,
-Settings, Upgrade, New business, Join, Support. **"Outreach", "Admin analytics" and
-"Feature flags" are visible in that sidebar** and Outreach is a filming-blocked route, so
-frame desktop nav shots carefully or stay on the phone.
-
-**The tab picker is the best short beat the nav has, and it is a phone beat only.** Two taps
-from the business chip through Settings to "Your tabs", then ten rows in owner language ("People
-who signed up", "Your web addresses", "What is going out, and when"), each an instant on and off
-with **no Save button anywhere**, and the bottom bar changes on screen as you toggle (walk 10
-take 1 #1, #2, #4). Turning one on slots it into catalogue order rather than dumping it on the
-end. Both limits refuse out loud and name the way out: at two chosen, "Keep at least 2. Turn
-another one on first."; at five, "You have 5. Turn one off first." (take 1 #8, #9). A **"Use the
-standard tabs"** row appears once customised and puts everything back (#10). It is fast, visual,
-and the navigation bar itself is the thing that changes, which is exactly what a short cut wants.
-**At 1280 the same panel renders, accepts every tap and changes nothing in the sidebar** (take 1
-#3), so shoot it at 390 only. See the unsafe table.
+It described the 2026-09 nav (a five-slot Home, Sales, People, Addresses, Socials bar, an avatar
+menu holding Content, Calendar and Channels) and was wrong by v0.33. Read the nav from the product,
+as the agent body says. Two non-nav facts it carried still hold: the Studio route is
+`/app/sites/studio?site=<siteId>` (the tile on Home links there; `?siteId=` silently falls back to
+the first site), and the never-in-frame routes are `FILMING_BLOCKED_URLS` in `src/denylist.ts`.
 
 ### Inside the Studio
 
@@ -364,12 +273,6 @@ answer**, which is that list's own stated principle.
 Walked signed in as the demo tenant (`vivreal-content-demo`, group Vivreal Content) at **both 1440
 and 390**, on the deployed `stable` line, not `main`. Every surface settled before it was read.
 
-**The nav is nine flat entries and the old six are gone.** Measured, in order:
-`Home · Socials · Sales · My website · Content · People · Calendar · Channels · Addresses`, plus
-`Create` and `More`. The old map's `Dashboard / Content / Sites / Calendar / Channels / Social`
-is wrong on three names (`Dashboard` is Home, `Sites` is My website, `Social` is Socials) and
-misses `Sales`, `People` and `Addresses` entirely.
-
 **Confirmed GONE from the live portal, at both widths, on all eleven surfaces:** any X or
 X (Twitter) channel, Google Analytics, the internal **Feature flags** entry, the deleted six-tab
 manage shell, and every "coming soon" label. Instagram is present and carries no caveat. The
@@ -450,6 +353,10 @@ surfaces do not exist as written. Prefer it unless a script's own surface is ver
   publishes the site and ticks nothing. See the share beat below.
 
 ### The share beat, and why the scripts are wrong about it
+
+> **2026-10-14:** `ShareUpdateLauncher.tsx` no longer exists at portal `origin/stable`
+> (`src/lib/sites/shareUpdateDraft.ts`, `Studio/LeftRail/ShareCardPreview.tsx` and
+> `Universal/SocialSharePicker` remain). Re-probe the share beat before building on this section.
 
 Eight P6 scripts end on a channel checklist that does not exist. **The real screen is
 `Vivreal_Portal_Mobile/src/components/Sites/Studio/ShareUpdateLauncher.tsx`, "Share this
@@ -651,7 +558,8 @@ contributes nothing and none of the multi-generation trouble that bites vivreal.
 **A portal save fires the revalidate webhook. A direct database write does not.**
 `updateSiteValues.js` emits `site.updated` onto SQS and Templates' `/api/revalidate` hard
 invalidates that site's tag. So a Studio save clears immediately; anything written behind the
-product waits out the full 60 second data cache.
+product waits out the full data cache. (2026-10-14: that is the app's own `SITE_CACHE_TTL_SECONDS`,
+code default 60 in Templates `src/lib/api/client.ts`, and 300 on the four Amplify apps read that day.)
 
 **Do NOT put a stopwatch graphic on screen.** A tag invalidation clears only the instance that
 received the webhook, and these run as frozen Lambdas, so a second warm instance can serve the old
@@ -954,7 +862,9 @@ phantom outage mid-shoot.
 
 - **Tenant: `vivreal-content-demo` only.** Never `justin@vivreal.io`, which resolves to 20
   groups including real customers. filming-hygiene.md is the rule; this is the reminder.
-- **Demo tenant site slots are scarce**, 9 of 10 used as of 2026-08-30. Filming a site
+  (2026-10-14: superseded by the agent's "Accounts and owner-approved writes".)
+- **Demo tenant site slots are scarce** (9 of 10 used on 2026-08-30; read `get-group-usage`
+  on the day rather than this number). Filming a site
   creation end to end burns one permanently. Do not plan a shoot that creates a site without
   asking first.
 - **`/app/launch` is a splash that reads as signed out.** It shows a progress state and a

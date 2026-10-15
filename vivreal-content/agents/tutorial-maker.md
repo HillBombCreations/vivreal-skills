@@ -128,19 +128,18 @@ Rules for the body:
 - **Navigate through `nav`, never with a raw `goto`.** `nav.go` clicks the real
   control, which is what makes the following screen read as cause and effect. A
   `goto` teleports and teaches the viewer nothing.
-- **Never hardcode a nav word.** Use `nav.label(dest)`. The phone tab bar says
-  "People" where every other surface says "Subscribers", and "Addresses" where
-  desktop says "Domains". A hardcoded caption is wrong on one of the two passes.
-  When a caption crosses from the tab to the page it lands on, use both words or
-  neither.
+- **Never hardcode a nav word.** Use `nav.label(dest)`. The phone bar can print a
+  shorter label than every other surface (`shortLabel` in `src/lib/nav/favorites.ts`
+  `NAV_DESTINATIONS` at portal `origin/stable`), so a hardcoded caption is wrong on one of
+  the two passes. When a caption crosses from the tab to the page it lands on, use both
+  words or neither. Read the current labels there, not from memory or an older note.
 - **`r.click` already rings the control.** Never click a locator any other way;
   an un-highlighted tap is invisible at phone size.
 - **Captions name the place.** There are no title cards: the product stays on screen
   the whole time, and `r.chapter(title)` only records a timestamp for cut points and
   YouTube chapters. So the caption that starts a section says where the viewer is
-  going, through `nav.label(dest)` ("lives under Content"). This matters most on the
-  phone: Content, Calendar and Channels light up no tab, and the header avatar's tint
-  says "the menu", not which page.
+  going, through `nav.label(dest)`. This matters most on the phone, where a
+  destination under More lights up no tab, so nothing on screen says which page it is.
 - **Call `r.focusPoint(control)` on whatever the beat is about** and put the result
   in the edit brief. That is the zoom target, measured off the live frame rather
   than eyeballed off the rendered video afterwards.
@@ -366,16 +365,17 @@ plus a top-level `tutorial-session.json`.
 
 **The phone pass is the installed app, not the mobile browser** (owner, 2026-10-06: "we
 should be pushing people to install the pwa so thats the main mobile view focus"). It opens a
-headed Chrome app window with `display-mode: standalone`, 540x960, and the iPhone safe areas
+headed Chrome app window with `display-mode: standalone`, 540x960 (or `TUTORIAL_PHONE_SIZE`; see
+footage-recorder's "Sizes" table), and the iPhone safe areas
 (0 top, 34 bottom), on the same signed-in profile as every other pass, so `--login` still
 covers it. `assertStandalone()` runs after the dashboard lands and after every handoff
 resume; `run.log` carries a `STANDALONE OK {...}` line, and a pass that is not the app fails
 before the take starts. The portal uses the `default` iOS status bar since
 Vivreal_Portal_Mobile #442, so the page runs to the top of the frame with NO blue band, and
 the tab bar sits above the home-indicator gap; captions are already moved clear of it. A blue
-band across the top is a defect to report once that release is live. To film the live app
-before it ships (`stable` v0.33.7 still has `black-translucent`), pass
-`--status-bar=black-translucent`; then the 47px band is expected and captions move below it.
+band across the top is a defect to report (portal `origin/stable` `src/app/layout.tsx` sets
+`default` and says never `black-translucent`). `--status-bar=black-translucent` exists only to
+reproduce an old build; then the 47px band is expected and captions move below it.
 - `--phone-display=browser` shoots the mobile browser instead. Use it only when the brief
   asks for the mobile browser, and say so in the handoff.
 - An app-view phone pass **refuses `--headless`** (headless never reports standalone) and

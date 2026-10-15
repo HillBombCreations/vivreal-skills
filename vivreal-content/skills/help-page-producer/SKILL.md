@@ -104,8 +104,8 @@ checked.
   print it, echo it, log it, pass it on a command line, or write it to a file, and never
   use a shell default expansion on it (a `${VAR:-...}` default expansion once printed a live token into a log; the only safe existence probe is `${VAR:+set}` on its own).
 - **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
-  `vivreal-hq/packages/content-studio/src/pwa-device.ts` (iPhone 390x797, insets 0/34, plain
-  iOS status bar on top with no blue band; a blue band is a defect to report) and
+  `vivreal-hq/packages/content-studio/src/pwa-device.ts` (default iPhone 390x797, insets 0/34,
+  plain iOS status bar on top with no blue band; a blue band is a defect to report) and
   run `assertStandalone()` before every screen you rely on. If it cannot pass, that is a
   blocker; do not substitute a browser tab and call it the app.
 - **Then the computer view at 1440, for EVERY step, not just the ones that mention a
@@ -127,31 +127,23 @@ checked.
   When stable and the running product disagree, the running product wins for the article
   and the disagreement is a defect.
 
-### Navigation vocabulary (verified 2026-10-06 against portal `origin/main` and `origin/stable`; re-read it on the day)
+### Navigation: read it from the product, every run
 
-- **Phone bar, default:** Home, My website (the bar prints "My site"), Create, Socials,
-  More. A business confirmed to have no store gets **Calendar** in My website's slot.
-  Create and More are on every bar; "Your tabs" in Settings lets a person choose the other
-  three, so a "tap Socials" step only holds for a default bar. Sources:
-  `src/components/NavigationTabs/tabs.ts` (`TABS`), `src/lib/nav/favorites.ts`
-  (`NAV_DESTINATIONS`, `defaultFavorites`).
-- **Phone, everything else:** the **business menu** opens from the business name button at
-  the top of the screen (`src/components/MobileHeader/index.tsx`). It lists what is not on
-  the bar under **Your work** (Content, Sales, People, Calendar, Channels, Addresses, plus
-  Approvals and Traffic) and **Your business** (Business, Settings, Upgrade, Add another
-  business, Use a code to join one) (`src/lib/nav/flyoutEntries.ts`). The More tab opens
-  the More page (Work, Your business, Your account; `src/lib/nav/moreSections.ts`).
-- **Desktop sidebar:** **Favorites** is the phone bar's own tabs minus More, so Create is
-  in it; then one **Everything else** row that opens a menu of every other destination,
-  Channels and Calendar included (`src/components/DesktopSidebar/index.tsx`). The
-  **business menu** opens from the business button at the top of the sidebar ("Open
-  business menu"), and that is where Approvals is on a computer.
-- **Approvals is NOT in desktop "Everything else"** in code; it lives in the business menu
-  on both surfaces. The plan lists this as a candidate defect (section 7, C7:7, S1d:2).
-  Verify it and file it; do not write "Everything else, Approvals".
-- Prefer a path that survives a customised bar: "open the business menu, then Channels"
-  holds for everyone; "tap Channels on the bar" does not. If the demo business's bar
-  differs from the default above, it has been customised; write the default and say so.
+This file carries no nav map: every map written into these agents went stale within weeks. Read
+the nav at portal `origin/stable` with `git show` (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` for
+every destination and its exact label, `src/components/NavigationTabs/tabs.ts` for the phone bar,
+`src/components/MobileHeader/index.tsx` for the phone business menu, `src/lib/nav/moreSections.ts`
+for the More page, `src/components/DesktopSidebar/index.tsx` and `src/lib/nav/desktopNav.ts` for the
+sidebar), then confirm each path on the running product in both views, and write the labels
+exactly as the screen prints them.
+
+- **Phone, portal v0.36.0:** the business menu only switches business and points to More ("Open
+  More"); Channels, Settings and every other destination are under More.
+- **Prefer a path that survives a customised bar.** "Tap More, then Channels" holds for everyone;
+  "tap Channels on the bar" does not, because each person chooses their own tabs. If the demo
+  business's bar differs from `defaultFavorites`, it has been customised: write the default and
+  say so.
+- Where the two views differ (usually getting to a screen), that is where the paired lines go.
 
 ### Rules that have each already caught a real defect
 
