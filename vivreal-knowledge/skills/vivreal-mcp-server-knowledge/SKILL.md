@@ -1,13 +1,13 @@
 ---
 name: vivreal-mcp-server-knowledge
-description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model, the tool modules and per-tier tool gating, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, TOOL_MIN_TIER, X-App-Source, Site MCP. Source of truth: C:\repos\VR-MCP-Server\CLAUDE.md.'
+description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model and its 2026-10-09 hardening, the single canUseMcp plan gate and mcpToolCalls metering, per-area connection grants (ACCESS_NOT_GRANTED), the team and billing-portal tools that are off by default, the v6 Allow access business picker and siteStatus, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, canUseMcp, mcpToolCalls, ACCESS_NOT_GRANTED, connection grants, Allow access, siteStatus, X-App-Source, Site MCP. Source of truth: VR-MCP-Server CLAUDE.md at origin/main.'
 ---
 
 # VR-MCP-Server: knowledge digest
 
-Last synced: 2026-10-04
+Last synced: 2026-10-15 against `origin/main` at `84b0921` (#50, the v6 release; this repo deploys on every merge to `main`)
 
-Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer token), deployed on Lambda (Node 22 since 2026-10-02, `c8cd658`; arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. Deploys on every push to `main` (`.github/workflows/deploy.yaml`; the `dogfood` trigger was removed). Read `C:\repos\VR-MCP-Server\CLAUDE.md` for depth.
+Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer token), deployed on Lambda (Node 22 since 2026-10-02, `c8cd658`; arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. Deploys on every push to `main` (`.github/workflows/deploy.yaml`, no `workflow_dispatch`; the `dogfood` trigger was removed), so a merge IS a production deploy. Read `CLAUDE.md` at `origin/main` for depth. **The AI offering is this server, and only this server** (owner 2026-10-07): the in-app agent is retired, and in owner copy it is "an AI agent", never "assistant" or a model name.
 
 ## Two MCP surfaces: don't confuse them
 
@@ -26,16 +26,24 @@ kept asserting the old figure for weeks afterwards. If you need the number, read
 the deployed line and say when you read it.
 
 The module names are stable enough to be useful: Session, Collections, Objects, Media, Calendar,
-Dashboard, Sites, Integrations, Stripe, Group Mgmt, Docs. **Their per-module counts are not**, and
+Dashboard, Sites, Integrations, Stripe, Group Management (the files under `src/tools/`). **Their per-module counts are not**, and
 neither is the module list itself. Alongside the tools there are guided **prompts**, static
 `vivreal://` **resources**, and URI **templates** in `src/resources/templates.ts`
 (`vivreal://groups/{groupId}` and descendants); count each from its own source.
 
-**Per-tier gating** lives in `TOOL_MIN_TIER` in `src/tools/catalog.ts`. **Read it. Do not quote a remembered ladder.** Three things a stale copy gets wrong: the gate has only two rungs, because two is all the catalog distinguishes; the tool-to-tier map has shrunk; and `tierForDbKey`, which graded a plan from a tenant DATABASE name, is deleted, because one shared placement holds several plans and the key was structurally incapable of telling them apart. An unreadable plan is `null`, and every gate fails OPEN on `null` and logs, because telling a paying customer to upgrade to a plan they already exceed is the worse error.
+**One plan gate: `canUseMcp`** (`@hillbombcreations/tier-quotas`, the `mcpAccess` flag), applied in `src/tools/session.ts` and again per call, so a business whose plan lacks it is refused whatever tool it names (`TIER_NOT_ENTITLED`). `TOOL_MIN_TIER` and its per-tool ladder are **deleted** (`src/tools/catalog.ts` records why: it could never refuse a call the first gate allowed, and it answered three tools with a different error code). What remains there is `entitlementTier`, which resolves a stored plan string into the tier-quotas vocabulary and is not a gate. `tierForDbKey` is deleted too: a tenant database name cannot tell a plan. **Metering is `mcpToolCalls`** (`src/middleware/usage-quota.ts`, the limit from `getTierQuotas(tier).mcpToolCalls`): a hard stop with no overage rate. `agentActions` is the retired in-app agent's allowance and is `0` on every tier.
+
+## What a connection may do (2026-10-09 hardening, v5 grants)
+
+- **OAuth.** `POST /oauth/register` is real dynamic client registration (one client id per app, stored as `client:<id>` in `VR-MCP-Server-connections`, every redirect checked against the allowlist in `config.ts`, rate limited per IP). `/oauth/authorize` requires an EXACT match against the client's registered redirects (loopback: any port); every refusal is a plain page that never redirects. `__Host-vr_oauth_req` binds authorize to callback in one browser, and `redirect_uri` is required at `/oauth/token`. No token passthrough: with no cached ID token, `/mcp` answers 401 and calls nothing downstream.
+- **Per-area grants** (`src/auth/grants.ts`): each connection row carries `areas` (`content_types`, `content_items`, `media`, `calendar`, `website`, `channels`, `billing`, `team`, each `off | read | write`) and a derived preset. The grant is NEVER in a token: it is read consistently on every request, so a change in Connected apps applies to the next call and a refresh cannot widen it. A grant only NARROWS: it runs before the group-role gate and never replaces it. A tool outside the grant answers `ACCESS_NOT_GRANTED` with the area; `tools/call`, `resources/read` and `tools/list` all ask the same module.
+- **Off by default** (`src/auth/tool-gates.ts`): every team tool (derived from `requiredGroupRole: "admin"` or `cms.admin`, so a future admin tool is off by construction) and `get-customer-portal` (a read by annotation whose URL can cancel the plan) are refused for EVERY token unless `ADMIN_TOOLS_ENABLED` / `BILLING_PORTAL_TOOL_ENABLED` is exactly `true`.
+- **Allow access (v6, #50).** `GET /api/connect/request` adds `account.email`, `businesses [{ groupId, name, canUseAi }]` (only groups the caller is a member of; `null`, never `[]`, when the Secure read fails, so a failed read cannot make the screen refuse a paying owner) and `startGroupId`. `POST /api/connect/approve` takes an optional `groupId`, which must match EXACTLY a business the caller belongs to whose plan includes AI agents, checked against a fresh read before the request is marked used; anything else is 400 `invalid_business` and writes nothing. An accepted pick is the `pref:<sub>` row every new session starts from; absent keeps the old behaviour.
+
 
 ## Session model: set-active-group is the linchpin
 
-Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is sticky for the session; on cache miss it transparently re-fetches the user's groups once then retries. `get-session-context` is a pure read; `refresh-session-context` re-fetches (use after the user creates a group mid-session). Sessions persist to DynamoDB after each tool call. Bootstrap loads groups from Secure API `/api/allUsersGroups`.
+Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is sticky for the session; on cache miss it transparently re-fetches the user's groups once then retries. `get-session-context` is a pure read; `refresh-session-context` re-fetches (use after the user creates a group mid-session). Sessions persist to DynamoDB after each tool call. Bootstrap loads groups from Secure API `/api/groupInfo` (`VR_SECURE_GROUPS_PATH` is unset in production, so the `config.ts` default applies). **Not `/api/allUsersGroups`**: that path is declared in VR_Secure_API's gateway template but has no Express handler, so pointing the server at it would 404 every bootstrap.
 
 ## Critical implementation gotchas
 
@@ -43,13 +51,14 @@ Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is
 - **Email comes from the ID token, not the access token**, Cognito access tokens don't include `email`. Existing-session refresh must read refreshed ID-token claims, NOT `principal.email` (always undefined).
 - **CMS requires `page` + `limit`** on many endpoints, tools default `page:"1"`, `limit:"20"`. `cmsRequest()` auto-adds `key` (dbKey) + `groupID`.
 - Calendar has 1 tool (`list-events` → `/tenant/events`); Vivreal has NO `event` entity, scheduling is a `publishDate` on content/channel objects.
+- **`siteStatus` says whether an item is on the site (v6).** Content item output (`list-content`, the create/update/archive tools, the item resources) and `list-events` CONTENT entries carry `siteStatus`: `live`, `scheduled`, `not_published`, `archived`, `waiting_for_approval` or `sent_back`, derived the way the portal decides it (`src/tools/siteStatus.ts`). `approvalStatus` is the approval WORKFLOW state and says `draft` on every item never sent for approval, live or not; an AI agent once told an owner "every item is still marked draft" for live items. `list-events` needs VR_CMS_API's `getEvents` to project `archived`; channel posts carry no `siteStatus`.
+- **Before a caller sends a new param, read the DEPLOYED validator.** VR_Secure_API validates with `Joi.object().keys({...})`, whose default rejects unknown keys, so a param sent "ahead of" a backend release 400s in production, and this repo deploys on merge, so the break is live at once (MCP #42, reverted in #43). Ship the key optional on the backend first.
 - Field types live in `src/constants/fieldTypes.ts`; CI parity test guards drift vs `VR_CMS_API/src/shared/validateObjectValue.js`.
 - Endpoint specifics: `/api/groupInfoV1` (groupID + email) vs `/api/groupInfo` (email only); `/tenant/presignedUploadUrl` (not `s3PutUrl`); `/tenant/dashboardInfo` (not `dashboard`).
 - **dbKey-routing/tier-gating fixes**: a bucket-slug routing bug and a Pro Plus tier misreport are both fixed, and a plan is never read from a database name (`tierForDbKey` deleted, TEN-9a/9b). Verify current behavior against source rather than assuming the old symptoms still apply.
 - **The write tools were repaired on 2026-09-29** after an audit found many could not work: `update-site` was uncallable because the server sent `key` where VR_Secure_API's Joi `.keys()` validator wants `dbKey` (`990c4b6`); the three remaining update tools now MERGE instead of replacing the stored object (`76ba2dd`); a route that does not exist no longer reads as a permissions problem (`b9b9e81`); phantom tools and prompts that pointed at a dead tool were removed (`60b4d6d`). Re-test a write tool against a scratch object before relying on it.
-- **Docs module scope expanded** (help-center docs tools): the Docs module's existing tools cover more help-center content without new tools being added. The overall total has since moved for an unrelated reason (a module was removed), so do not infer a total from this line.
 - Repo gained ESLint + a husky gate with a coverage baseline.
 
 ## Runtime
 
-`src/index.ts` (local HTTP) + `src/lambda.ts` (API Gateway v2 adapter). SAM CloudFormation, GitHub Actions on `main`/`dogfood` (CI token scoped `packages: read`). Required env: `AWS_REGION`, `USERPOOL_ID`, `MCP_CLIENT_ID`, `COGNITO_DOMAIN`; Sentry config is resolved from SSM.
+`src/index.ts` (local HTTP) + `src/lambda.ts` (API Gateway v2 adapter). SAM CloudFormation, GitHub Actions on `main` only (CI token scoped `packages: read`). Required env: `AWS_REGION`, `USERPOOL_ID`, `MCP_CLIENT_ID`, `COGNITO_DOMAIN`; Sentry config is resolved from SSM.

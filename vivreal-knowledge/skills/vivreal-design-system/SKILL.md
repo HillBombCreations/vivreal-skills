@@ -5,7 +5,7 @@ description: 'Use when designing, building, or reviewing any Vivreal portal UI/U
 
 # Vivreal Design System: portal UI/UX knowledge
 
-Last synced: 2026-07-30
+Last synced: 2026-10-15 (portal `origin/stable` v0.36.0)
 
 The opinionated rules + REAL conventions for any Vivreal portal interface work. This is a lean selector; the depth lives in the three references, read the one your task needs. Grounded in the actual portal source (cited paths below) and curated June-2026 design/UX research.
 
@@ -23,7 +23,7 @@ The opinionated rules + REAL conventions for any Vivreal portal interface work. 
 
 ## The four references: read the one you need
 
-- **`references/portal-components.md`**, the REAL Vivreal patterns: Dashboard `StatTile`/`UsagePanel`/`PromoBanner`/`ActivityFeed`/`ActiveGroup` (cited files), the tier-gating/overage patterns (Group `OverageBillingSection`/`SpendingCapSection`, the Group `UsagePanel` free-tier quota banner, the tier-quotas `isUnlimited`/`canHidePoweredBy` helpers), outreach list/detail layout, the admin tabbed-analytics page, the full `globals.css` token set (`--primary`/`--surface`/`--text-primary`, `.bg-glass`, `.hover-lift`, the type/motion/typography scales), mobile breakpoints, the light-only styling rule, the Radix + Tailwind 4 + Framer + Lucide stack conventions. **Read this when building/reviewing a portal screen or component.**
+- **`references/portal-components.md`**, the REAL Vivreal patterns: the today-first Dashboard bands (no summary-tile rows; the old `StatTile`/`PromoBanner`/`ActivityFeed`/`ActiveGroup` set is deleted), the tier-gating/overage patterns (Group `OverageBillingSection`/`SpendingCapSection`, the Group `UsagePanel` free-tier quota banner, the tier-quotas `isUnlimited`/`canHidePoweredBy` helpers), outreach list/detail layout, the admin tabbed-analytics page, the full `globals.css` token set (`--primary`/`--surface`/`--text-primary`, `.bg-glass`, `.hover-lift`, the type/motion/typography scales), mobile breakpoints, the light-only styling rule, the Radix + Tailwind 4 + Framer + Lucide stack conventions. **Read this when building/reviewing a portal screen or component.**
 - **`references/inspiration.md`**, distilled mobile-first SaaS UI craft: thumb zones, bottom-nav rules, 44-48px targets, one-accent/one-primary-action, the 8-based spacing scale, the 6 designed states, and the specific "what to borrow" notes from Linear / Stripe / Vercel. (Any dark-mode guidance in it is generic craft, NOT a portal instruction, the portal is light-only.) **Read this when making visual/layout/craft decisions or pushing past "templated" defaults.**
 - **`references/mobile-patterns.md`**, the mobile interaction-pattern **decision catalog**: the device-mode rules (touch vs pointer), the app-like-default direction, and a problem→pattern→anti-pattern table (crowded toolbar → overflow sheet not h-scroll; table → cards; selection → action sheet; in-context switch → segmented control; etc.), each cited to Apple HIG / Material / NN/g / WCAG, plus the app-like-component → Vivreal-stack implementation map. **Read this when designing/reviewing any mobile behavior, picking a component pattern, or when a layout doesn't fit a small screen.**
 - **`references/ux-psychology.md`**, the canonical UX laws (Hick, Fitts, Miller, Jakob, Tesler, Doherty, Peak-End, Zeigarnik, Von Restorff, Aesthetic-Usability, Proximity, Recognition-over-recall) mapped to concrete portal moves, plus the dual-lens (naive-user + designer) critique rubric and the 12-point usability checklist. **Read this when critiquing usability, reducing friction/clicks, or doing a UX review. This is also the `ux-critic` agent's grounding.**
@@ -39,4 +39,4 @@ The opinionated rules + REAL conventions for any Vivreal portal interface work. 
 - The **`ux-critic`** agent, it CRITIQUES usability read-only; `references/ux-psychology.md` is its primary lens.
 - Companions: `vivreal-sites` (the customer-site product/authoring model, distinct from portal chrome), `vivreal-portal-knowledge` (the portal's API/proxy/auth internals).
 
-Sources of truth (read for depth): `C:\repos\Vivreal_Portal_Mobile\src\styles\globals.css` (tokens), `src/components/Dashboard/*` + `src/app/(app)/outreach/*` + `src/app/(app)/admin/page.tsx` (patterns), `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` (Styling + Privacy sections), and the `.claude/agents/designer.md` protocol.
+Sources of truth (read for depth): `C:\repos\Vivreal_Portal_Mobile\src\styles\globals.css` (tokens), `src/components/Dashboard/*` + `src/app/(app)/outreach/*` (patterns; the admin pages are deleted), `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` (Styling + Privacy sections), and the `.claude/agents/designer.md` protocol.

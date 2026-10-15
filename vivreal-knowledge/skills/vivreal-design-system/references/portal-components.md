@@ -1,6 +1,6 @@
 # Vivreal portal: REAL component: layout & token conventions
 
-Last synced: 2026-07-30 (two surfaces below re-checked 2026-10-04 and marked DELETED)
+Last synced: 2026-10-15 against portal `origin/stable` v0.36.0 (the Dashboard section rewritten; the admin and AI sections are history)
 
 This is the as-built Vivreal portal design system, mined from source. Match these patterns; don't invent parallel ones. All paths are under `C:\repos\Vivreal_Portal_Mobile\`.
 
@@ -39,19 +39,24 @@ Defined in `@layer base :root`, overridable at runtime by `Providers` from `site
 
 ## Dashboard patterns (the canonical primitives)
 
-`src/components/Dashboard/`, the reference implementation of "stat tiles top, panels/feed below."
+`src/components/Dashboard/` is a **today-first feed** for non-technical owners (`5ee2c91a3`, 2026-08-10): `TodayBand`, `WeekBand`, `SetupBand`, `HealthBand`, `GrowthBand`, `SuggestionsBand`, `WorthDoing`, `QuickActions`, `SiteTiles`, `FeedbackPrompt`, with the `Client`/`Loader` split (`Loader` is the skeleton matching the real layout, `Client` the hydrated dashboard). List the directory before citing a band; it changes.
 
-- **`StatTile/index.tsx`**, the KPI tile primitive. `rounded-2xl p-4`, `border border-black/10`, `bg-[var(--surface,#fff)]`, soft shadow `shadow-[0_4px_10px_rgba(0,0,0,0.04)]`, icon + label + value in a flex row. Skeleton is `animate-pulse bg-black/10` until `useHydrated()` is true (prevents SSR/CSR flash). Optional `href` wraps it in a prefetched `Link`. `labelProps` exists specifically to spread `{...privacyUnmask}` onto the label. **Copy this shape for any new tile.**
-- **`UsagePanel/index.tsx`**, quota/usage display: a tile registry (`TILES`) of icon+label+usedKey, user-customizable visible set persisted to `localStorage` (`dash_usage_tiles`) with an SSR-safe loader. Each row is a `UsageRow` (`src/components/Group/UsageRow`) showing used-vs-limit. This is the model for any "X of Y used + upgrade CTA" surface, near-limit is a peak moment (see ux-psychology peak-end), so the upgrade CTA belongs there.
-- **`PromoBanner/`**, the lobby-style auto-rotating promo carousel (custom `VivrealGlyph` rail, CSS progress sweep, Pause/Play per WCAG 2.2.2). One announcement at a time. Carousels MUST have a Pause/Play control. Slides fill the card via the Embla viewport `flex-1 min-h-0` pattern.
-- **`ActivityFeed/`**, `FeedItem` rows + `ChannelPill` + `WeekSummary`; the "recent activity" list pattern that sits below the stat tiles.
-- **`ActiveGroup/`** + **`Client/index.tsx`** + **`Loader/index.tsx`**, the Client/Loader split: `Loader` is the skeleton matching the real layout, `Client` is the hydrated interactive dashboard.
+- **`StatTile`, `PromoBanner`, `ActivityFeed` and `ActiveGroup` are DELETED.** Do not build from them, and do not reintroduce their shape.
+- **No summary-tile rows (owner 2026-09-18).** Never draw a row of 3 or 4 summary tiles across the top of a page with the real content underneath: the strip nearly always repeats a number the destinations already carry. **A number lives on the thing it counts, and nowhere else.**
+- **Usage: `UsagePanel` + `Group/UsageRow`** show used-vs-limit; near-limit is a peak moment (see ux-psychology peak-end). Reuse the Group usage flags (`pctOfQuota` / `nearQuota` / `overQuota`), never recompute percentages client-side.
+- Carousels, wherever they appear, MUST have a Pause/Play control (WCAG 2.2.2).
 
-**Dashboard layout order** (also the general SaaS rule): KPI **stat tiles at top** → activity feed / lists in the middle → secondary panels last. Group related tiles with whitespace (Law of Proximity), not dividers.
+## Shape, theme and installed-app rules (measured, easy to get wrong)
+
+- **`rounded-md` is 10px, not 6px.** `--radius: 0.75rem` (`globals.css`) and `tailwind.config.ts` derive `lg` = 12px (cards), `md` = 10px (buttons, inputs, selects), `sm` = 8px. There is no 6px utility, which is why chips and state labels are written `rounded-[6px]` by hand.
+- **Light-only.** A bare `dark:` utility is a bug: with no `@custom-variant dark`, Tailwind v4 resolves it against the OS `prefers-color-scheme` and paints dark styles on a permanently light surface (see "Light-only styling" above).
+- **Design every change for the installed app (PWA standalone) as well as the mobile browser.** In standalone there is no browser chrome, so the top inset is the notch and the bottom inset the home indicator; padding right in one mode is wrong in the other, and only a real device shows it. The installed app is the main mobile view (owner 2026-10-06).
+- **The app shell is `position: fixed`**, so an inline `position: fixed` overlay sits under the header and tab bar whatever its z-index. Portal every overlay, drawer, sheet and wizard to `document.body` (Radix dialogs already do).
+- **iOS 26 and `black-translucent`.** With `apple-mobile-web-app-status-bar-style` `black-translucent` plus `viewport-fit=cover`, iOS 26.1+ keeps the status bar opaque and shrinks the web view (WebKit 301994), lifting every bottom bar about 57 pt with nothing CSS can reach. `src/app/layout.tsx` uses `content="default"`; never reintroduce black-translucent without a real-device test. A bottom-spacing bug the simulator does not reproduce is a device question first.
 
 ## Tier gating & overage patterns
 
-- **Gate on the package helpers, never a hand-rolled tier set.** The quota-gate components (`CollectionObjects/Client`, `CollectionObjects/Wrapper`, `Integrations/Client`, `Sites/Client`, `Universal/SchemaFormDialog/Create` + `Update`) use `isUnlimited` from `@hillbombcreations/tier-quotas` (declared ^3.0.0; **3.1.0 installed/required**, it adds the `aiSiteEditing`/`aiComponentGen` capability flags), **renamed from `isUnlimitedQuota`**; a local `<0` helper still named `isUnlimitedQuota` survives only in `src/lib/usage/format.ts`, `src/components/Group/UsagePanel`, and `src/components/Group/UsageRow`, don't "fix" those to the package name or vice versa.
+- **Gate on the package helpers, never a hand-rolled tier set.** The quota-gate components (`CollectionObjects/Client`, `CollectionObjects/Wrapper`, `Integrations/Client`, `Sites/Client`, `Universal/SchemaFormDialog/Create` + `Update`) use `isUnlimited` from the tier-quotas package (read the declared pin from `package.json` and the installed one from the lockfile; they have disagreed before, and an old installed copy reads the capability flags as absent), **renamed from `isUnlimitedQuota`**; a local `<0` helper still named `isUnlimitedQuota` survives only in `src/lib/usage/format.ts`, `src/components/Group/UsagePanel`, and `src/components/Group/UsageRow`, don't "fix" those to the package name or vice versa.
 - **`src/components/Group/OverageBillingSection/index.tsx`** + **`SpendingCapSection.tsx`**, the overage billing surface: auto-enroll disclosure copy plus a spending cap control with a "Default cap" badge. Copy this shape for any billing-disclosure panel (disclosure text adjacent to the control it explains, cap state as a badge not color alone).
 - **Group `UsagePanel` free-tier upgrade banner**, near/over-quota state driven by the Group usage flags (cdn/api/agent buckets, each `pctOfQuota`/`nearQuota`/`overQuota`). This is the near-limit peak-moment upgrade CTA (see ux-psychology peak-end) implemented in practice, reuse the flags, don't recompute percentages client-side.
 - **Studio `FooterEditor`** (`src/components/Sites/Studio/LeftRail/chrome/FooterEditor.tsx`) calls the package `canHidePoweredBy()` (which includes Basic) instead of a local tier set, so the permitted set lives in one place. **Read that set from the package rather than from here**: it has changed, and the renderer keeps a deliberate second copy for a build-token reason, so the two can drift. Tier copy accuracy matters: a tooltip once promised a multiple of the agent-action quota on the top plan when the two paid plans in fact shared one, and it was removed. **Read the quota from the package before writing any tier copy**, and remember the ladder itself has since changed shape, verify quota copy against tier-quotas before shipping it.

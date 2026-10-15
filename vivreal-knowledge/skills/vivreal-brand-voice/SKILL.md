@@ -5,11 +5,11 @@ description: 'Use when writing, reviewing, or critiquing Vivreal marketing copy,
 
 # Vivreal Brand Voice: definition: rubric & channel playbook
 
-The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor that `content-planner`/`content-creator` write to (those agents live in `C:\repos\vivreal-hq\.claude\agents\`; content tooling left the portal on 2026-06-25 for `vivreal-content`, which was merged into `vivreal-hq` on 2026-08-03).
+The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor the `vivreal-content` plugin's editors (`content-planner`, `linkedin-editor`, `carousel-editor`, `short-form-editor` and the rest) write to. Those agents live in the vivreal-skills marketplace, not in `vivreal-hq/.claude/`, which holds only settings and hooks.
 
 > **Canonical voice source: `C:\repos\vivreal-hq\brand\voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`; the old `C:\repos\vivreal-content` checkout is a pre-merge leftover, never the source.)
 
-Last synced: 2026-10-04 (against vivreal-hq brand/voice.md, last changed 2026-09-21)
+Last synced: 2026-10-15 (against vivreal-hq `brand/voice.md`, last changed 2026-10-14; re-read it, it is the canonical copy)
 
 ## The promise behind every word
 
@@ -59,7 +59,10 @@ Defined on four dimensions ([Technotize](https://technotize.io/insights/brand-vo
 | "Are you struggling with…?" / "Tired of…?" openers | Infomercial cadence | A specific scene |
 | "Thoughts?" / "Agree?" closers | Engagement-bait cliché; LinkedIn downranks | A real question, or none |
 | Developer jargon: API, API-first, headless, schema, manifest, webhook, OAuth, JWT, edge runtime, multi-tenant, composable, omnichannel, "content at scale" | ICP is non-technical | Plain English: "connection," "template," "behind the scenes" |
-| Any non-owner-visible term: "404," "structured data," "render," "meta description," "PWA" | **Owner-visible language only**, reference what an owner can SEE or DO | What the owner experiences: "that page is missing," "how it looks in Google," "installs on your phone" |
+| Any non-owner-visible term: "404," "structured data," "render," "meta description," "PWA" | **Owner-visible language only**, reference what an owner can SEE or DO | What the owner experiences: "that page is missing," "how your page looks in search results," "installs on your phone" |
+| "SEO," "meta," "schema," "canonical," "sitemap," "keywords," "indexing" (owner 2026-10-09) | The target owner does not know the word, and it makes a simple task feel like expert work | "Show up when people search online," "people searching for a business like yours." Say "search engines," not Google, unless the step really is that company (connecting a Google account, Google Business Profile) |
+| "AI assistant," or naming a model or vendor for the AI feature (owner 2026-10-08) | The term is retired, and the feature is an AI agent the owner connects | "An AI agent": "connect an AI agent to run Vivreal for you" |
+| British spellings in owner copy: "customise," "colour," "organise," "favourite," "cancelled," "centre," "licence" (owner 2026-10-14) | US spelling everywhere an owner reads it, after "Customise" shipped on the Allow access screen | customize, color, organize, favorite, canceled (but "cancellation"), center, license. Code comments are out of scope |
 | Excessive emoji (>5 IG, >2 LinkedIn/X/TikTok) | Reads as bot/spam | One anchor emoji max |
 | Empty hashtags (`#business`, `#marketing`, `#content`) | Pure noise | Niche tags + branded `#Vivreal #PublishOnce` |
 | Naming real customers / quoting real prospects | Privacy | Anonymized scenes |
@@ -85,10 +88,10 @@ The through-line that beats all of them: **it's easy, and it runs from your phon
 These recur in proof points. Confirm each is true and current before asserting it; if it isn't shipped, soften or cut.
 
 - **Email (UPDATED 2026-09-21 in `brand/voice.md`; the old prohibition is LIFTED).** Vivreal **sends native email and you may say so**: an owner can write to the people who sign up on their site, from inside Vivreal, without connecting anything (Campaigns, sent from `campaigns.vivreal.io` through its own AWS account, out of the SES sandbox; a real campaign reached a real inbox 2026-09-20). The Mailchimp integration is still supported, just no longer the only path, so stop writing "the claimable path is Mailchimp". **Still NOT claimable:** publishing content does not create a campaign, so never write "one Publish sends site, social, and email together" or "the email is built from the content on your site." Never promise an isolated sender reputation (campaign mail uses a shared sending domain). Under-claiming a shipped capability is also a false statement. The social fan-out claim IS true (and the free plan connects up to three channels).
-- **"Installs on your phone/tablet like an app"** (the PWA install prompt), if install isn't live, say "works great on your phone" instead.
-- **Real AI checkout through a Stripe-connected store.**
+- **"Installs on your phone/tablet like an app"** (UPDATED 2026-10-08 in `brand/voice.md`): **live and claimable.** A bar at the top of the portal on a phone offers Install, with a step guide on iPhone; dismissing it holds it back for 7 days.
+- **Real AI checkout through a Stripe-connected store** (UPDATED 2026-10-08): built (the site MCP's `initiate_purchase` opens a Stripe Checkout) but not yet exercised live. **Do not claim it** until a real run proves it.
 - **Live preview (UPDATED 2026-09-08 in `brand/voice.md`).** Do NOT write "the preview is the real site" or "what you see is what publishes": the preview shows the UNSAVED DRAFT, and forms and checkout deliberately do not act in it. The two old divergences (sample data, preview placeholders) are GONE, so preview and live now match far more closely than the approved wording says; that wording is an understatement, not a hedge. Approved wording: *"Edit and watch the page take shape, built with the same design your live site uses."*
-- **The plain-English AI assistant making site edits.** Its portal entry points were RETIRED on 2026-09-24 (only the Studio rail remains, and its retirement is decided), so do not claim it.
+- **AI in Vivreal is connecting an AI agent through the MCP server, on the plans that carry MCP access (Pro and Enterprise in the package as of 2026-10-15)** (owner 2026-10-07: the in-app assistant is gone). Describe it as "connect an AI agent to run Vivreal for you"; never claim in-app AI site editing, and never read `agentActions: 0` as a feature waiting to ship. Read which plans carry MCP access from the tier-quotas package before naming one.
 - **Channel availability (re-read before every channel claim).** Instagram passed Meta App Review on 2026-09-28 and is connectable, so "coming soon" about Instagram is now a defect; the TikTok app is audited and approved (owner, 2026-10-04), so public TikTok posting is available; **X is no longer a supported channel** (removed from posting, from the terms and the privacy page in portal v0.33.0, and from the content plan).
 - **Any pricing number**, always swap in real current pricing, never placeholder ranges.
 
@@ -166,8 +169,8 @@ Then self-check against the 6-point on-voice rubric before returning.
 ## Boundaries / companions
 
 - **`marketing-auditor`** agent, CRITIQUES copy/assets against this skill (read-only).
-- **`content-planner` / `content-creator`** agents, PRODUCE social content to this voice.
+- **`vivreal-content`** plugin agents (`content-planner` and the editors), PRODUCE social content to this voice.
 - **`growth-auditor`**, owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
 - **`vivreal-unit-economics`**, for the cost/margin numbers behind pricing copy.
 
-Sources: `C:\repos\vivreal-hq\brand\voice.md` (canonical: promise, five traits, ban list, competitive frame, honesty floor, the claims-to-verify list), `vivreal-hq\.claude\agents\content-planner.md` + `content-creator\` (hard bans, per-platform limits, self-check), `growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.
+Sources: `vivreal-hq/brand/voice.md` (canonical: promise, five traits, spelling rule, ban list, competitive frame, honesty floor, the claims-to-verify list), `vivreal-hq/brand/positioning.md`, the `vivreal-content` plugin's `content-planner` agent (hard bans, per-platform limits, self-check), `growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.

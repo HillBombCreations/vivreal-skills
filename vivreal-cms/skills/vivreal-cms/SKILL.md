@@ -53,7 +53,9 @@ Use the `create-content-plan` MCP prompt, it walks the full workflow with schema
 4. list-content                              # confirm
 ```
 
-For bulk creation use `bulk-create-content` (tier: pro+).
+For bulk creation use `bulk-create-content` (the same plan gate as every other tool; see "Plan gating" below).
+
+**Whether an item is on the site is `siteStatus`, not `approvalStatus`.** Content output carries `siteStatus` (`live`, `scheduled`, `not_published`, `archived`, `waiting_for_approval`, `sent_back`). `approvalStatus` is the approval WORKFLOW state and reads `draft` on every item never sent for approval, live or not, so never tell an owner an item is a draft or not live from `approvalStatus`.
 
 ### Schedule a post across socials
 
@@ -70,6 +72,8 @@ Use the `post-to-all-socials` or `launch-content-everywhere` MCP prompt. Manual 
 **Who is posting matters.** A post created or scheduled by a group member WITHOUT approval rights (the `base` role) is HELD as `pending_review` and does not send until an owner or admin approves it; the approval then schedules it at its original time, or now if that time has passed. Tell the user their post is waiting for approval rather than reporting it as scheduled. Owners and admins post straight through.
 
 **Synced posts arrive on their own.** Instagram, Facebook and TikTok posts are pulled into the group every hour with no action needed, for every connected and active account; `sync-channel` is only for an immediate refresh. LinkedIn is not synced (the platform scope is not granted), and an account the platform has revoked stays skipped until the owner reconnects it.
+
+**`publishDate` decides what a channel post does, so choose it on purpose:** leave it OUT on an update to change only the content; `publishDate: null` saves a DRAFT that is never sent (and removes any schedule; null never publishes); `publishNow: true` or a date now or earlier publishes now; a future date schedules it.
 
 Scheduling: set `publishDate` to a future ISO timestamp. EventBridge handles the actual publish at the scheduled time. This is now genuinely true for CONTENT items too, not just channel posts: a future `publishDate` on content registers a one-shot EventBridge schedule (`reconcileContentGolive` → `EventQueue.fifo` → a `content.updated` webhook → each site's `/api/revalidate` subscription), so the live site updates itself at that moment rather than waiting on the 24h cache TTL.
 
@@ -108,11 +112,17 @@ When creating or updating content, `objectValue` keys must match the schema's fi
 
 Call `get-content-field-types` if you need the full validator-recognized list.
 
-## Tier gating: invisible until you hit it
+## Plan gating and what a connection may do
 
 There is ONE gate, and it is the whole server: MCP access itself is a plan flag (`canUseMcp` from `@hillbombcreations/tier-quotas`, checked in the MCP server's `src/tools/session.ts`). A group on a plan without it cannot call ANY tool, and gets `TIER_NOT_ENTITLED` with the upgrade sentence. A group with it can call every tool, so `tools/list` and `tools/call` agree. The old per-tool `TOOL_MIN_TIER` list (bulk tools and `sync-channel` marked Pro) was deleted on 2026-09-23 as a second, invented gate; do not reason from it. Read which plans carry MCP access from the tier-quotas package, never from memory.
 
-If a call comes back `TIER_NOT_ENTITLED`, relay the server's own upgrade sentence plainly rather than naming a plan from memory; plan names and their flags move.
+If a call comes back `TIER_NOT_ENTITLED`, relay the server's own upgrade sentence plainly rather than naming a plan from memory; plan names and their flags move. Tool calls are metered against the plan's `mcpToolCalls` allowance, a hard stop with no overage.
+
+Two more refusals come from the CONNECTION, not the plan:
+- **`ACCESS_NOT_GRANTED` with an area.** The owner chose, per connection, which areas this AI agent may use (content types, content items, media, calendar, website, channels, billing, team; each off, read or write). A tool outside that grant is refused whatever the user's role. Tell the owner they can widen it in Connected apps in Vivreal, and do not retry another way.
+- **Team and billing-page tools are off by default.** The team tools and `get-customer-portal` are refused for every connection unless the server operator has turned them on. Ask the owner to make that change in Vivreal itself.
+
+**Which business the agent starts in** is the owner's pick on the Allow access screen (only businesses whose plan includes AI agents are offered). Use `set-active-group` to move between the businesses the user belongs to.
 
 ## Media: never construct URLs yourself
 
