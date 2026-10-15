@@ -156,7 +156,7 @@ Eight workflow prompts ship with the server. Use them for multi-step tasks inste
 - `create-content-plan`, guided content creation with schema validation
 - `diagnose-failed-post`, debug a failed channel post
 - `import-data-wizard`, bulk import from CSV/JSON
-- `launch-content-everywhere`, publish to website + socials in one scheduled action (NO email, Vivreal does not send native email; email is the Mailchimp integration)
+- `launch-content-everywhere`, publish to website + socials in one scheduled action (it sends NO email; Vivreal's own email goes out only through Create's Email row or a campaign, never by publishing, per `brand/voice.md`'s Email entry; Mailchimp remains an optional integration)
 - `post-to-all-socials`, multi-channel social post
 - `setup-integration-checklist`, connect a new channel correctly
 - `site-builder-guide`, guided site creation
