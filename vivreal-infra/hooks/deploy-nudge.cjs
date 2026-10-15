@@ -26,8 +26,8 @@ try {
 
   const which = isTemplates ? 'Vivreal_Templates' : 'Vivreal_Portal_Mobile';
   const msg = isTemplates
-    ? `You changed Vivreal_Templates. Merging \`main\` alone releases NOTHING to customer sites, all sites build the shared \`stable\` branch. To release, run the promote-stable workflow (Actions → promote-stable → Run workflow), which fast-forwards main→stable and rebuilds every site's Amplify app. Use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm builds reached "live".`
-    : `You changed Vivreal_Portal_Mobile. Merging \`main\` only builds the canary; production serves \`stable\`, which moves on the release train (promote.yml, Monday cron or a dispatched promote), so confirm the served \`/app/release.json\` before calling a portal change live. If your change affects site deploys, use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm a deploy reached "live" and isn't stuck in a Step Functions/Amplify state.`;
+    ? `You changed Vivreal_Templates. Merging \`main\` alone releases NOTHING to customer sites, all sites build the shared \`stable\` branch. Releases run only on the owner's GO; once given, release by running the promote-stable workflow (Actions → promote-stable → Run workflow), which fast-forwards main→stable and rebuilds every site's Amplify app. Use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm builds reached "live".`
+    : `You changed Vivreal_Portal_Mobile. Merging \`main\` only builds the canary; production serves \`stable\`, which moves on the release train (promote.yml, Monday cron or a dispatched promote), and releases run only on the owner's GO, so confirm the served \`/app/release.json\` before calling a portal change live. If your change affects site deploys, use the \`vivreal-deploy-tracker\` skill or \`/deploy-status <site>\` to confirm a deploy reached "live" and isn't stuck in a Step Functions/Amplify state.`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: msg } }));
 } catch (e) { /* fail open, never disrupt the edit */ }
 process.exit(0);
