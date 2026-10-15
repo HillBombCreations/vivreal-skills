@@ -37,6 +37,18 @@ The signed-URL TTL is parameterized (`CLOUDFRONT_SIGNED_URL_TTL_SECONDS` / `Sign
 
 A media-signing pattern keyed on `targetField.name` **silently no-ops on ARRAY fields**, galleries (arrays of media) come back **unsigned** even though single-media fields work. This bug lived in **5 duplicate copies** (3 inline + 2 helpers) in VR_Client_API before a shared-helper refactor (fixed 2026-05-27). Paired hazard: a `mimeType`-required `looksLikeMediaItem` check that drops items missing `mimeType`. When media in a **gallery/array** isn't signed but single images are, suspect this class. (For the array-signing analog in the portal renderer, see `vivreal-renderer-knowledge`.)
 
+## Purging an edge cache: `cdn-purge`, never `/api/revalidate`
+
+- **The sanctioned tool is `vivreal-hq/packages/fleet-ops/cdn-purge`** (the admin app's "Purge a CDN path" uses the same planner). It maps the fleet's distributions by target (`media`, `client-edge`, `portal` and others; `--list` prints them), resolves the alias live on every run, plans by default, refuses `/*` without `--everything`, and writes only with `--execute`.
+- **vivreal.io (target `portal`):** prove the Amplify origin healthy first, read directly and bypassing the distribution. Then plan, `MSYS_NO_PATHCONV=1 node packages/fleet-ops/cdn-purge/cli.js portal "/*" --everything`, then run the same with `--execute --wait` and confirm the invalidation reached `Completed`; record its id and verify through the apex. `/*` is right there because every query string is a separate cache key, and it cannot touch `/app*`, `/api/*` or `/help*` (those behaviours cache nothing).
+- **Never POST `/api/revalidate` by hand.** On 2026-09-06 it made `robots.txt` answer 500 at the origin and CloudFront cached the error, so the whole host looked dead. The `/*` invalidation that ran alongside was not the cause. When site data is stale too, the client API edge goes first, then the page cache.
+- **Customer sites have no distribution in our account** (Amplify owns it); their only edge purge is a new deployment.
+- Evidence: `vivreal-hq/docs/projects/next-release-2026-10/research-cloudfront-invalidation-method-2026-10-14.md`.
+
+## Deleting a group's bucket
+
+Only through `VR_Secure_API/scripts/purge-closed-group.js` (dry run by default), on owner approval, using the snapshot, conditional-delete, dry-run-twice, read-back-with-controls pattern in the `infra-engineer` agent: diff two identical dry runs before `--apply`, then prove the bucket gone with `head-bucket` 404 beside a 200 on a bucket that exists. A 404 alone also reads that way for a bucket name that never existed.
+
 ## Debugging media issues
 
 - **Image 403 on a site** → expired/unsigned URL, or the bucket OAC policy. Check `signCloudFrontUrl` config + the key pair in Secrets Manager.

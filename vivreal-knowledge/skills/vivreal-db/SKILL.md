@@ -94,6 +94,13 @@ equally wrong to say there are exactly three. The shape, which is stable:
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here**, see below. | service-global |
 | a slugified group name | **Legacy or stranded per-group DB** | usually only `audit_logs`, sometimes `content_versions` | Possibly no group at all. At least one such database has no group pointing at it. Do not rely on this pattern, and do not assume there is only one |
 
+**The cluster is Atlas M0 Free, and its limits bite query work.** 10 GB out per rolling 7 days
+(over it, every read slows to about 90 KB/s with no error), 100 ops/s, 100 databases, 500
+collections. Project your reads (`find` with a projection, never whole site documents in a loop),
+because a heavy exploration session spends the same weekly byte budget production sites live on.
+Slow reads with ~0 ms server time are the data-out throttle, not your query. Diagnosis, levers and
+the pending tier change (Flex chosen 2026-10-14, switch held): `vivreal-atlas-topology`.
+
 **Routing rule: read the stored placement. NEVER compute one from the tier.**
 
 ```js

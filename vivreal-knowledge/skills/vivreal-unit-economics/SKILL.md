@@ -103,6 +103,7 @@ The Atlas cost lever is driven by **simultaneous in-flight backend requests**, n
 - **Each Atlas tier step raises the cap by roughly a factor of three.** Read the current tier and its cap from the Atlas console or `serverStatus`, and price the step from the MongoDB invoice, which does not appear on the AWS bill.
 - Daily spikes from the public Client API already push against the shared cap, which is why an upgrade is on the table despite light total volume. **Re-measure before citing a spike figure**: this one has been quoted three-times wrong in this repo before.
 - **Implication for forecasting:** model the DB-tier step from a peak-concurrency projection, not a signup count. A traffic burst forces the upgrade long before raw customer count would.
+- **The current tier is M0 Free, and in 2026-10 the limit that bit was BYTES, not connections.** M0 allows 10 GB out per rolling 7 days (then about 90 KB/s), 100 ops/s, 100 databases and 500 collections. Origin egress scales with live sites times payload (for continuously visited sites, CloudFront refreshes each one about once a minute whatever the visitor count), so tenant growth spends the byte budget with no growth in revenue traffic. The owner chose **Flex** ($8 base to $30 cap a month, unlimited transfer) plus payload slimming on 2026-10-14 and is holding the switch; model it as a pending fixed cost and read the Atlas invoice before quoting it as spent. Mechanics: `vivreal-atlas-topology`.
 
 ## The scale ladder (revenue at the ~$45 blended)
 
