@@ -5,7 +5,7 @@ description: 'Use when working in VR_Main_API, Vivreal''s public/unauthenticated
 
 # VR_Main_API: knowledge digest
 
-Last synced: 2026-10-04
+Last synced: 2026-10-15 against `origin/stable` (tag v2.14.2, the v6 release; read the tag)
 
 The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 22 on all seven functions, arm64; `sam-template.yaml` `Runtime: nodejs22.x`), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `C:\repos\VR_Main_API\CLAUDE.md` for the full route list (refreshed 2026-10-02).
 
@@ -50,7 +50,7 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 
 - **CORS is wide open** (`callback(null, true)`), intentional for the public API.
 - **Mongo is one client per process now**, built by `@hillbombcreations/tenant-db`'s `createMongo` (`src/shared/mongo.js:4`, `appName: 'VR_Main_API'` at `:40`) and shared by `scripts/db.js`, `services/campaigns/campaignDb.js` and `notificationConsumer/db.js`; tenant databases are `useDb` views, with no eviction on `readyState` (`src/hbcreations/scripts/db.js:1-17`). The old `maxPoolSize=10` figure is gone: no `maxPoolSize` literal remains under `src/`, so read the pool from the package default. See `vivreal-atlas-topology`.
-- **Secrets Phase 2 is done**: all four Lambdas resolve config via CloudFormation dynamic references from `vivreal/prod/main-api` + `vivreal/prod/stripe` + `vivreal/prod/social-oauth` (Secrets Manager) and SSM `/vivreal/prod/*`, **any `hb-api-secrets` reference is now wrong**. The old hardcoded Stripe live key (`createUserService.js`/`checkUserExistsEmail.js`) and repo-root `googleAppJSON.json` are gone.
+- **Secrets Phase 2 is done**: every Lambda resolves config via CloudFormation dynamic references from `vivreal/prod/main-api` + `vivreal/prod/stripe` + `vivreal/prod/social-oauth` (Secrets Manager) and SSM `/vivreal/prod/*`, **any `hb-api-secrets` reference is now wrong**. The old hardcoded Stripe live key (`createUserService.js`/`checkUserExistsEmail.js`) and repo-root `googleAppJSON.json` are gone.
 - arm64-only Lambda layers (x86_64 extension → `Extension.Crash`).
 - Coverage gate: 100% lines/statements/functions, 85% branches.
 - **errorHandler forwards `err.code`** as `errorCode` on non-5xx responses. Error bodies here are **bare JSON strings**, not the standard `{success,data}` envelope, the portal's manual `user/login` route now unwraps them via `extractUpstreamError()`/`extractUpstreamDetail()` (login error branches like badUsername/incorrectPassword were DEAD in prod before this).
@@ -59,19 +59,6 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 - ⚠️ **Tests can send REAL emails**, `queueEmail` is not stubbed in the test suite; never run the full suite against a prod `.env` (this has fired ~140 real sends before). Never copy a prod `.env` into a backend test worktree.
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
 
-## Deploy model: release train (2026-08-15)
+## Deploy model: release train
 
-Merging to `main` no longer deploys prod. Prod serves from the fixed `stable` branch. Friday
-5pm PST (cron `0 1 * * 6` UTC Saturday) `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday **15:30 UTC**
-`promote.yml` (`.github/workflows/promote.yml:14`) force-with-lease moves `stable` to the newest tag. CMS (15:00) and Secure (15:15)
-promote first (CMS has led since 2026-10-01), then Main, then Client (15:45) and portal (16:00). Incremental
-release (2026-08-19): a backport mints a PATCH of the line's last tag, never a new minor.
-`backport.yml` cherry-picks main-merged commits onto the line, no tag, no bump, no deploy; ship
-now by dispatching `promote.yml` with `target=release/vX.Y` (tags `vX.Y.Z+1`), or do nothing and
-Monday's cron auto-mints the patch and ships it (the cron refuses only when the line's last tag
-is yanked). Never dispatch `release-cut.yml` for a backport, a cut forks a new minor off ALL of
-`main`. Rollback (`rollback.yml`, dispatch-only)
-moves `stable` back to a prior tag and yanks it, **but a force-push that REWINDS `stable` to an
-ancestor fires NO GitHub Actions push run** (forward re-points do fire), so rollback must ALSO
-manually dispatch `gh workflow run lambda_api.yml --ref stable` or the old build keeps serving.
-Full runbook: this repo's `docs/RELEASE.md`.
+Prod serves `stable`, never `main`. The shared model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.

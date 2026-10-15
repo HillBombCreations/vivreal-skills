@@ -5,7 +5,7 @@ description: 'Use when working in VR-Outreach-MCP-Server, the internal-only remo
 
 # VR-Outreach-MCP-Server: knowledge digest
 
-Last synced: 2026-10-04 (Node 22 since 2026-10-02, `edb651d`)
+Last synced: 2026-10-15 against `origin/main` (Node 22 since 2026-10-02, `edb651d`)
 
 **Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions), but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` for depth (updated 2026-07-27, FRESH; header says "50 tools, 0 prompts").
 
@@ -13,7 +13,7 @@ Last synced: 2026-10-04 (Node 22 since 2026-10-02, `edb651d`)
 
 `session`(3: get/refresh-session-context, set-active-group) · `companies`(10, 2 admin gmail-history) · `contacts`(10, 2 admin gmail-history; `update-contact` is CMS-fanout) · `sequences`(8, 3 CMS-fanout + admin `bulk-enroll-contacts`) · `enrollments`(7, 3 CMS-fanout + 2 **native** stop/resume) · `segments`(4, 3 admin) · `senders`(4, 3 CMS-fanout) · `suppressions`(3) · `queue`(1: get-outbound-queue). 8 tools carry `admin: true` (x-user-ctx minted): companies 2, contacts 2, segments 3, sequences 1. Guards/validation in `src/tools/guards.ts` + `validation.ts`. The `catalog.ts` "tier" system is an explicit **no-op** (single `"basic"` tier), all 50 tools are exposed to every connected operator; the only gate is the ADMIN_EMAILS connect allow-list. **0 prompts**, the `seed-leads` prompt was retired with the prospects module; `promptRegistry` in `src/resource/manifests.ts` is an empty array.
 
-The prospects module is GONE (2026-07-27): `src/tools/prospects.ts` and its 8 tools were deleted when VR_Outreach_API retired `/prospects` (leads now live in `C:\Leads\Data\prospects.jsonl`). What survived: **hookless seeding** lives on in `create-company`/`import-companies`, hooks are not required, name + website/domain is the seed bar, and `companies.ts` + `contacts.ts` keep full pipeline-field pass-through (reachEmail, phone, address, socials, …).
+The prospects module is GONE (2026-07-27): `src/tools/prospects.ts` and its 8 tools were deleted when VR_Outreach_API retired `/prospects` (leads now live in `vivreal-hq/packages/leadgen/Data/prospects.jsonl`, gitignored). What survived: **hookless seeding** lives on in `create-company`/`import-companies`, hooks are not required, name + website/domain is the seed bar, and `companies.ts` + `contacts.ts` keep full pipeline-field pass-through (reachEmail, phone, address, socials, …).
 
 ## list-suppressions fix (the shape trap)
 
