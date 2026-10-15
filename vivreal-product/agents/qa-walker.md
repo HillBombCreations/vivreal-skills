@@ -299,9 +299,13 @@ existed. So before ANY local walk:
 1. `node e2e.js probe` runs every startup check live and starts nothing; it must exit 0.
 2. Start it detached (the README's `Start-Process ... e2e.js start`), then read `run.log`. It must
    show `NO-DISPATCH guard holds` for **every** service it started (cms, secure, client, main,
-   outreach, mcp, admin, portal, templates) and each API's `runs as ...federated-user/local-e2e-<svc>`
-   line. **Paste every one of those lines into the matrix header**, with the recorder counts
-   (`recorder/*.jsonl`) before and after the walk. A missing line means stop: do not walk.
+   outreach, mcp, admin, portal, templates) and each API's and the admin app's
+   `runs as ...federated-user/local-e2e-<svc>` line. **The MCP server prints no runs-as line**; its
+   equivalent is `no AWS credentials (child NONE CredentialsProviderError; control GOT [machine
+   identity])` (as in `docs/projects/next-release-2026-10/walk-447-d76757ba-2026-10-14.md`), so expect that one
+   instead and do not stop on its absence. **Paste every one of those lines into the matrix header**,
+   with the recorder counts (`recorder/*.jsonl`) before and after the walk. Any other missing line
+   means stop: do not walk.
 3. Block non-GET requests in your browser context as a second layer wherever the matrix does not
    need a write.
 4. **Record every service's head.** `node e2e.js heads` prints each worktree's commit and any local

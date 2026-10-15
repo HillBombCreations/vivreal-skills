@@ -8,6 +8,27 @@ it contradicts. Treat every dated "do not film" as a question to re-probe on the
 **Do not plan navigation from this file.** It records the portal nav of the day each walk ran. Read the current
 nav from the product (see the agent's "Read the nav from the product" rule).
 
+## Contents (line numbers in this file)
+
+- 32: The portal itself, measured (walks 2 to 10, 2026-09-04 to 2026-09-08)
+- 47: What the 2026-09-08 release changed for a shoot
+- 70: The nav map that used to sit here was removed (2026-10-14)
+- 78: Inside the Studio
+- 130: What films well, and what cannot, with the reason
+- 217: Timings, because they set shot length
+- 247: What the 2026-09-10 release changed for a shoot
+- 286: RE-WALKED 2026-09-29 against deployed `stable` v0.29.1 (P4-T0). SUPERSEDED by the 2026-10-02 section
+- 333: MEASURED 2026-09-29, second walk, during the P6 shoot. Newer than the re-walk above
+- 376: The share beat, and why the scripts are wrong about it
+- 399: MEASURED 2026-09-29, third pass: re-taking the published-site proof shots
+- 479: MEASURED 2026-09-30, filming a LIVE CUSTOMER SITE (P6-T0, comedycollectivechi.com)
+- 560: MEASURED 2026-10-02, after the release train. READ THIS FIRST, it is the newest
+- 689: MEASURED 2026-10-02, shooting the twelve-site P6 round. Newest of all
+- 802: The 2026-09-08 list, SUPERSEDED. Kept for history, not for planning
+- 845: Sheets, scrims, and the Save bar
+- 882: Session and state, before the first frame
+- 913: Console and network noise that is not a fault
+
 ## The portal itself, measured (walks 2 to 10, 2026-09-04 to 2026-09-08)
 
 Ten read-only walks drove the whole product, mostly on a 390x844 phone, in the first week
@@ -287,7 +308,7 @@ without probing that surface again on the day.**
 
 | Surface | What happens | Filmable? |
 |---|---|---|
-| **Channels, the connected-account avatars** | A connected **Facebook** account's avatar is a **broken image** at both widths, every load. Its `scontent-*.xx.fbcdn.net` URL has expired, and `avatarSelfHeal.ts:78` sets `SELF_HEAL_ENABLED_PROVIDERS` to `['tiktok','linkedIn','instagram']` only, so **Facebook and Meta avatars never refresh** and this cannot heal itself. The file's own comment says the fix is one line here plus a matching Secure-side allowlist. | **Not as a held or close shot** until fixed. A wide pass is survivable; a push-in on the account row is not. |
+| **Channels, the connected-account avatars** | A connected **Facebook** account's avatar is a **broken image** at both widths, every load. Its `scontent-*.xx.fbcdn.net` URL has expired, and `avatarSelfHeal.ts:81` (line at portal `origin/stable` b38d5a57; the file still exists) sets `SELF_HEAL_ENABLED_PROVIDERS` to `['tiktok','linkedIn','instagram']` only, so **Facebook and Meta avatars never refresh** and this cannot heal itself. The file's own comment says the fix is one line here plus a matching Secure-side allowlist. | **Not as a held or close shot** until fixed. A wide pass is survivable; a push-in on the account row is not. |
 
 **A defect found during the walk that is NOT a filming issue**, recorded so it is not lost: a
 Google Ads conversion tag (`AW-472935172`) fires on every portal page and is **100% blocked by

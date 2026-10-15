@@ -132,7 +132,9 @@ checked.
   Save**, or any button that sends, charges, disconnects or writes, on the demo business
   or anywhere else. The demo's channels are real accounts. If a claim can only be
   verified by pressing one of those, write the claim as unverified in the defects file
-  and leave it out of the article.
+  and leave it out of the article. The only route to verifying it is an owner-approved write run
+  through footage-recorder's eight-step write protocol (load `vivreal-content:footage-recorder`,
+  "The write protocol"); ask for that approval in your report, never press it yourself.
 - **Search visibility is hidden on Vivreal Content** (a prospect business, by design): the status
   line, "Let people find your site" and the Home card do not render there. Verify that UI on the
   Vivreal business (vivreal.io), **read only**: switch with the business menu and switch back,

@@ -3,6 +3,119 @@
 Moved verbatim out of the `site` agent body on 2026-10-14 (skills audit batch 5): it was about 60% of a 239 KB file
 that the skill copy loaded into the main thread whole. It is still a REQUIRED step of every `site` run.
 
+## Contents (line numbers in this file)
+
+- 119: Step 4, Integration provider normalization (I4)
+- 121: Meta to granular provider split MUST happen BEFORE `normalizeProvider()`
+- 139: Facebook and Instagram are ALWAYS SEPARATE providers
+- 148: Social feed presentation, `sectionConfig.variant: 'grid'` (opt-in)
+- 157: Integration section headers are AUTHORABLE, never ship a raw provider key as a
+- 166: Universal section-styling knobs (Gate-2 CC round 2, all opt-in, Studio-editable
+- 272: Events → `displayAs: 'calendar'` (preferred over `timeline` for event collections)
+- 281: Bookable sessions → `displayAs: 'agenda'` (bakery net-new kit #3, pick by the SOURCE's
+- 294: Tour/itinerary lists → `agenda` + `sectionConfig.variant:'itinerary'` (musician kit
+- 310: Multi-location businesses → `displayAs: 'locations'` (bakery net-new kit #2)
+- 323: Large categorized catalogs → `format: 'catalog'` (bakery net-new kit #1, a PAGE
+- 336: Catalog facets + hard per-category scope (A Bakeshop feedback round, renderer
+- 371: Color-blocked one-pagers → `format: 'panorama'` (poster-pop kit, musician template
+- 395: Cover-first index pages → `format: 'discography'` (poster-pop kit, musician template
+- 414: Overlapping photo spreads → `displayAs: 'photo-cluster'` (Coastal Estate kit)
+- 425: Figures that deserve ceremony → `displayAs: 'pattern-band'` (Coastal Estate kit)
+- 435: Awards / accreditations → `displayAs: 'accolade-row'` (Coastal Estate kit)
+- 444: Virtual-tour pages → `format: 'tour'` (Coastal Estate kit, a PAGE FORMAT)
+- 451: Word-ladder mastheads → `hero.variant: 'word-ladder'` (Coastal Estate kit)
+- 459: A MEDIA hero on a non-home page MUST wear a composed variant
+- 468: Author (or disable) EVERY page's `cta` explicitly on a SIBLING-mode template
+- 475: Bottom-docked conversion bars → `utilityDock` (Coastal Estate kit, SITE-LEVEL chrome)
+- 485: Multi-location menus → `navigation.dropdownStyle: 'grouped'` (House & Garden kit)
+- 494: NOTE, dropdown groups themselves are NOT net-new
+- 498: Garden bar → `navigation.layout: 'garden'` (House & Garden kit)
+- 505: Offset framed-plate body rows → `displayAs: 'plate-rows'` (House & Garden kit)
+- 529: Single flanked testimonial bands → `displayAs: 'pressed-quote'` (House & Garden kit)
+- 540: Venue/space pages → `format: 'spaces'` (House & Garden kit, a PAGE FORMAT)
+- 547: Framed-plate mastheads → `hero.variant: 'framed-plate'` (House & Garden kit)
+- 556: Document / brochure rows → `displayAs: 'brochure-columns'` (venue kit)
+- 567: Numbered photo tours → `displayAs: 'photo-band-pager'` (venue kit)
+- 580: Vendor / project credit lists → `displayAs: 'credit-roll'` (venue kit)
+- 595: Per-event / seasonal rate sheets → `displayAs: 'rate-tiers'`, NEVER `pricing` (venue
+- 607: Inclusions are SHARED, not per-tier
+- 615: Lead-capture / "request a date" pages → `format: 'inquiry'` (venue kit, wedding-venue
+- 635: Partner/press/sponsor logo strips → `displayAs: 'logo-wall'` (bakery identity kit)
+- 643: App-download bands → `displayAs: 'app-band'` (bakery identity kit)
+- 651: Statement-led home headers → `hero.variant: 'split-statement'` (bakery identity
+- 659: Seasonal-product home headers → `hero.variant: 'split-product'` (bakery identity
+- 671: Persistent header info bars → site-level `utilityStrip` (bakery identity kit)
+- 680: Featured-product shelves → `displayAs: 'product-tiles'` (bakery identity kit, Levain
+- 691: Press pull-quote bands → `displayAs: 'quote-carousel'` (bakery identity kit, Levain
+- 700: Tinted brand-story panels → `displayAs: 'story-panel'` (bakery identity kit, Levain
+- 718: Centered-wordmark headers → site-level `navigation.layout: 'logo-center'` +
+- 724: Logo-center fit guard (governs KIT ADOPTION too)
+- 737: Solid color-band headers with per-item accent links → site-level
+- 755: Deep-color centered footers → site-level `footer.variant: 'centerpiece'` (bakery
+- 764: Image-panel newsletter modals → `emailPopup.variant: 'split-image'` (bakery identity
+- 772: Inner-page headers → `hero.variant: 'statement'` / `'split-statement'` +
+- 788: Inner-page closers → `cta.variant: 'crossroads'` (Levain inner-page round)
+- 798: Framed photo collages → `displayAs: 'collage-strip'` (Levain inner-page round)
+- 807: Thin boutique bars → `navigation.layout: 'editorial'` + `cta.shape:'square'`
+- 820: Editorial statement headers → `hero.variant: 'editorial'` (heritage-editorial kit,
+- 832: Giant-wordmark light footers → `footer.variant: 'wordmark'` (+ `stamp`, `ticker`)
+- 844: Slim legal-strip footers → `footer.variant: 'band'` (poster-pop kit, musician
+- 856: Photo category directories → `displayAs: 'category-directory'` (heritage-editorial
+- 868: Craft/process editorial splits → `displayAs: 'craft-split'` (heritage-editorial
+- 879: Ruled editorial indexes → `displayAs: 'index-list'` (heritage-editorial kit,
+- 888: Price anchors + cut-out shelves → `product-tiles` `price` field +
+- 896: Chromeless floating merch cut-outs → `product-tiles`
+- 911: Product-tile column pin → `sectionConfig.columns` (poster-pop round B)
+- 918: Catalog Levain re-tone → `sectionConfig.tileStyle:'tinted'` + `badgeStyle:'sticker'`
+- 926: Catalog Poilâne re-tone → `sectionConfig.tileStyle:'cutout'` (heritage-editorial
+- 938: Stamp status badges → `sectionConfig.badgeStyle:'stamp'` (heritage-editorial kit,
+- 945: Panel tab menus → `navigation.dropdownStyle:'panel'` + grandchildren +
+- 957: Editorial index heading + side photo → `index-list`
+- 965: Directory header beside the grid → `category-directory`
+- 974: Combined social CTA → `displayAs: 'social-panel'` (REV-2, net-new)
+- 988: Utility headers + card menus → `navigation.layout:'boutique'` +
+- 1003: Gallery scatter heroes → `hero.variant:'collage'` + `hero.collage[]` (Ansel
+- 1016: Product spotlight monoliths → `displayAs:'spotlight-panel'` (Ansel kit,
+- 1028: Ghost-headline narrative rows → `displayAs:'feature-split'` (Ansel kit,
+- 1041: Pinned ordering-channel strips → `site.fulfillmentStrip` (Ansel kit,
+- 1051: Pastel product cards → `product-tiles` `sectionConfig.tileStyle:'pastel'`
+- 1060: Ghost inner-page mastheads → `hero.variant:'editorial'` +
+- 1074: Studio gallery shop grids → catalog `sectionConfig.tileStyle:'gallery'` +
+- 1089: Collection-page grammar → catalog `sectionConfig.masthead`/`titleCell`/
+- 1106: Editorial split contact → form `sectionConfig.formStyle:'editorial-split'`
+- 1118: Boutique contact forms → form `sectionConfig.formStyle:'boutique'` (Ansel
+- 1132: In-grid editorial promo tile → catalog `sectionConfig.promoTile` (heritage-
+- 1149: Catalog page header + mid-catalog banner (corporate-cluster walk)
+- 1163: Full-width section band → `sectionConfig.bandColor` (corporate-cluster walk)
+- 1173: Lead placement on about pages → `sectionConfig.placement:'lead'` (corporate-cluster
+- 1180: Billboard perks band knobs → `hero.perksBackground`/`perksLabel`/`perksSublabel`
+- 1188: Menu chip re-tone → `labels.chipStyle:'brand'` (Levain inner-page round)
+- 1193: Menu presentation → `labels.itemStyle:'tiles'` (Levain menu-tiles round)
+- 1208: Menu tile restyle → `labels.tileStyle:'cutout'` (Poilâne round B, live-extracted
+- 1221: Menu item detail pages (Levain PDP round)
+- 1232: Double perks ticker → `hero.tickerStyle:'double'` (Levain catering round)
+- 1243: Curated package tiles → `product-tiles` + per-item `eyebrow`/`meta` (Levain
+- 1253: Full-bleed photo reel → `slideshow` displayAs (Levain catering round, net-new)
+- 1261: FAQ card rows + trailing order CTA → `faq` `sectionConfig.itemStyle:'boxed'` +
+- 1268: FAQ page, author one when the source (or its analog) carries site-wide
+- 1282: Locations page, author one for any multi-location business (bakery
+- 1298: Contact page, author one (bakery page-taxonomy round)
+- 1311: Multi-dimension pricing → `options: [{label, price}]` (Levain catering round,
+- 1323: Quote band panel color → `sectionConfig.panelColor` on `quote-carousel` (Levain
+- 1328: Per-page mood tint → `page.palette` (existing #7c vehicle, REMEMBER IT for themed
+- 1334: Per-location pages → `format: 'location-hub'` (taproom net-new page type)
+- 1346: Craft/story pages → `format: 'craft'` (Poilâne-kit net-new page type, bakery
+- 1359: Person-led bio pages → `format: 'profile'` (Ansel-kit net-new page type,
+- 1373: Two-price product cards → `displayAs: 'offer-tiles'` (Marlowe & Kept kit, resale
+- 1388: Per-kit storefront shell → `sectionConfig.shell: 'vitrine-storefront'` on
+- 1403: Dated batch releases → `displayAs: 'release-shelf'` (Marlowe & Kept kit)
+- 1424: Sparse A-Z indexes → `displayAs: 'alpha-index'` (Marlowe & Kept kit)
+- 1433: Ornamented uneven media tiles → `displayAs: 'framed-tiles'` (Marlowe & Kept kit)
+- 1449: Bleeding split mastheads → `hero.variant: 'split-bleed'` (Marlowe & Kept kit)
+- 1468: Header search → `navigation.search` (Marlowe & Kept kit, `SearchBand` chrome)
+- 1477: Tint-swap motion → `theme.motionPreset: 'vitrine'` (Marlowe & Kept kit)
+- 1486: Sell-in / intake funnels → `format: 'intake'` (Marlowe & Kept kit net-new page type)
+
 ## Step 4, Integration provider normalization (I4)
 
 **Meta to granular provider split MUST happen BEFORE `normalizeProvider()`.**

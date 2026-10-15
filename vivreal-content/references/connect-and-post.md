@@ -4,6 +4,46 @@ Moved out of the `tutorial-maker` agent body on 2026-10-14 (skills audit batch 5
 2026-10-04 to 2026-10-05 channel series (Instagram, LinkedIn, TikTok). **Newest dated section wins**; re-probe any
 selector on the day before a take rests on it.
 
+## Contents (line numbers in this file)
+
+- 47: MEASURED 2026-10-04, Instagram retake 2 (video 1, shot clean, portal v0.33.1)
+- 49: Disconnecting a wrong account works in the UI
+- 55: A disconnected provider's Connect is `[data-testid=channel-offer-<key>] button`
+- 57: Instagram forces its own login form even when the browser is signed in
+- 63: The consent screen names the account
+- 69: Composer
+- 75: Instagram's schedule picker is IN-PAGE, not native
+- 85: Connect-and-post: connect segment = browser, post half = the app (owner, 2026-10-06)
+- 91: The phone pass of a connect-and-post cannot repeat the connect or the post
+- 95: Resolve a selector BEFORE sending it
+- 99: Use a fresh `REMOTE_DIR` per take
+- 101: Harness defects found and fixed this run
+- 117: Scope every scrub or bulk rewrite to the take's own paths. Never walk the scratchpad root
+- 125: MEASURED 2026-10-05, LinkedIn (video 3): r01 published from the Vivreal Company Page
+- 127: Posting identity, owner rule: every LinkedIn calendar row posts from the Vivreal Company
+- 132: The identity is NOT picked inside the composer
+- 142: Byte-compare the composer, do not eyeball it
+- 146: After Publish
+- 152: A killed agent does not kill its recorder
+- 158: Never reuse the killed take's session folder for the new take
+- 162: Git Bash rewrites a leading-slash argument into a Windows path
+- 165: An inspector that finds a tab by URL must take the NEWEST match
+- 167: Two takes attached to one Chrome corrupt each other's captions (FIXED in `tutorial-lib.ts`)
+- 173: The orphan's encode failed
+- 176: LinkedIn schedule, measured 2026-10-05 (r12, no recording, headless Playwright on the portal
+- 183: A post filmed AFTER the real post carries tells
+- 188: MEASURED 2026-10-05, TikTok (video 4): r11 scheduled Mon Oct 5 7:00 PM PT as @vivreal.io
+- 190: Ending a stopped take that is still attached
+- 196: TikTok pre-checks, all read-only in a throwaway tab
+- 201: TikTok skipped its login entirely
+- 208: The channel header shows the display name as a handle
+- 212: Composer
+- 220: The TikTok composer defaults Comment, Duet and Stitch to OFF
+- 225: TikTok's schedule picker is the same in-page wheel as Instagram's
+- 232: Picker defect (portal, unfixed): the FIRST row of a column cannot reach the centre band
+- 242: Captions persist until replaced
+- 245: The `tasks/` output folder of the session is shared with other agents
+
 **MEASURED 2026-10-04, Instagram retake 2 (video 1, shot clean, portal v0.33.1).** Newest; read
 before the Facebook, LinkedIn and TikTok takes.
 - **Disconnecting a wrong account works in the UI** (the footage-recorder 2026-10-02 note that

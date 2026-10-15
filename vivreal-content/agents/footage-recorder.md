@@ -399,7 +399,10 @@ surface you plan to film appears in. Newest section wins.
 This replaces the 2026-08-02 "authorized restorative write", whose only allowed surface
 (`/sites/:siteId?tab=business`) now redirects into the Studio (`retiredTabRedirect` in
 `src/components/Sites/SiteManage/tabs.ts` at portal `origin/stable`). `tutorial-maker` follows the
-same protocol.
+same protocol, **except the connect-and-post take in `vivreal-content:tutorial-maker`, which carries
+its own owner authority (2026-10-04)**: press Connect, the provider's own Allow/Continue screens, the
+media upload, and Schedule for one already-approved calendar row. That is the only place approved
+scheduling lives; nothing in this agent schedules.
 
 ### Which login, for which business
 
@@ -452,7 +455,8 @@ Every one runs the same eight steps, or not at all:
 
 **Never, approved or not:** Post, Publish to a channel, Schedule, Send, Connect, Disconnect, Delete
 anything that is not your own approved test item, Deploy, Purchase, Revert a site version, or save
-the footer social panel.
+the footer social panel. (Connect and Schedule of one approved calendar row happen only in
+`vivreal-content:tutorial-maker`'s connect-and-post take, under its own owner authority, never here.)
 
 **Never swap names in the page.** Editing a business or site name in the DOM before a capture fakes
 the product (the "Harbour Street Barbers" still, 2026-10-14). If a frame needs a different name,

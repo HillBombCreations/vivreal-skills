@@ -341,9 +341,9 @@ npm run tutorial -- src/tutorial/scripts/<slug>.ts
 **`--out` must be an ABSOLUTE path.** `run-tutorial.ts` resolves it with a bare `resolve(outArg)`,
 which is relative to the package you run from, so `--out=content/footage/...` lands under
 `packages/content-studio/content/...` instead of the repo's `content/`. Build it from the repo root
-(`--out=C:/repos/vivreal-hq/content/tutorials/<date>-<slug>`). A take written outside
-`content/tutorials/**` also leaves its `*.raw.webm` where `.gitignore` does not cover it: move the
-raws to `.agent-cache/` after the run.
+(`--out=C:/repos/vivreal-hq/content/tutorials/<date>-<slug>`). The `*.raw.webm` raws are
+gitignored under `content/tutorials/**` and `content/footage/**`; a take written anywhere else
+leaves raws nothing ignores, so move those to `.agent-cache/` after the run.
 
 Both passes run, desktop first. Output lands in
 `content/tutorials/<YYYY-MM-DD>-<slug>/` with `desktop/` and `phone/` subfolders,
@@ -520,7 +520,8 @@ update. Product defects go to the dispatcher, not into the notes.
   take (session-e family) does post, a single already-approved calendar row, under the
   owner's 2026-10-04 authority. Nothing else is covered by that exception.**
 - Never film on any identity or business outside footage-recorder's "Accounts and owner-approved
-  writes" (load `vivreal-content:footage-recorder`): the demo account by default, the owner's own
+  writes" (load `vivreal-content:footage-recorder`; its "never Schedule or Connect" list defers to
+  this agent's connect-and-post exception, and the two must keep agreeing): the demo account by default, the owner's own
   session for per-person connections, `vivreal/qa/scratch-owner` for QA v5 scratch only. Any write
   in a take other than the connect-and-post exception runs that agent's eight-step write protocol
   and gets a `mutations[]` entry. Never swap a name in the page before a take. Never film a route in

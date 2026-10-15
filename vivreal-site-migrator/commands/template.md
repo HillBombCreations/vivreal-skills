@@ -190,8 +190,8 @@ Vivreal Content profile, or pass its group env to the loader.
   success.** `instantiateTemplateWorker` resumes on the site id, and site-loader's
   `seedCollections.js` skips every collection already `published`. To re-seed a demo site, reset
   its content first with site-loader's `deleteSweep.js` (`deleteSiteContent`, which keeps the site),
-  clear `instantiation.runState.collections` and `.pageMedia`, reset `instantiation.attempts`, and
-  only then invoke the worker. Prove the result by counting the site's objects, never by the
+  clear `instantiation.runState.collections` and `.pageMedia`, reset `instantiation.attempts` to 0,
+  `$unset` `instantiation.seedPlanScope`, and only then invoke the worker. Prove the result by counting the site's objects, never by the
   worker's ok.
 - The two generalized helpers (`rebrand-capture.js`, `harden-demo.js`) read per-capture config
   (`rebrand.json` / `harden.json`) beside the contracts; author them once per template.

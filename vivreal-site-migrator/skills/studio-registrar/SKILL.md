@@ -152,7 +152,11 @@ while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
   start a second one.
 - You never commit or push. When the coordinator says go, the registration is handed to
   `vivreal-principal:portal-coder` (SOLO when it is the only portal agent, otherwise the INTEGRATE
-  run), which owns the one full gate and the PR.
+  run), which owns the one full gate and the PR. Your edits stay uncommitted in the portal
+  checkout you worked in (`${VIVREAL_REPOS}/Vivreal_Portal_Mobile`, or the worktree the coordinator
+  named). Put that path, its branch, its HEAD and the `git status --short` list of YOUR files in the
+  registration ledger, so portal-coder can carry exactly those files across into its own worktree
+  without touching anyone else's work in that checkout.
 
 ## Verification (the definition of done)
 1. Local Studio harness up (migrator: `npm run studio` + portal dev pointed at
