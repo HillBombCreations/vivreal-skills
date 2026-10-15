@@ -271,8 +271,10 @@ end and carries every live-run gotcha:
   (seeds collections with the bulk-504 fallback, creates the site as a
   **blank-template** site, triggers `POST /api/deploySite` → Deploy-Site pipeline),
 - verification: `pipelineStatus: live`, live home + ONE nested page render,
-  chrome/footer correct; content edits post-deploy need the signed
-  `/api/revalidate` webhook (24h cache).
+  chrome/footer correct; content edits post-deploy reach the site within the app's own
+  `SITE_CACHE_TTL_SECONDS` (Templates code default 60; 300 on the four Amplify apps read
+  2026-10-14; read the app's value), or at once through the signed `/api/revalidate` webhook,
+  which a Studio save fires by itself (see the cutover agent).
 The run is resume-safe (`captures/<domain>/load-state.json`, gitignored),
 re-running after any failure continues without duplicates.
 The result is a **noindex demo**; the arc continues per the cutover agent's

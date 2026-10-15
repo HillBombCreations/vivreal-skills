@@ -15,14 +15,21 @@ Work from `C:\repos\Vivreal_Site_Migrator`. The durable reference for the whole 
 `template-identity-kits.md` (quota) + `bakery-netnew-kit.md` (net-new rule).
 
 **A template build is NOT a `/migrate` run.** Migration reaches 1:1 DATA parity with a live
-client site. A template reaches 1:1 DESIGN + LAYOUT parity with an exemplar, wearing PLACEHOLDER
-content and a distinct fictional brand. The two share only the deterministic back half
+client site. A template copies an exemplar's design GRAMMAR faithfully, wearing PLACEHOLDER
+content, its own nav words and section order, and a distinct fictional brand. The two share only the deterministic back half
 (`assemble-blueprint → preview-bundle → serve-preview`).
 
 ## KIT STANDARD (non-negotiable, the pass/fail bar for this track)
-- **1:1 with the exemplar on DESIGN + LAYOUT.** Match its visual grammar, section anatomy,
-  chrome, and motion, page by page. Content is deliberately PLACEHOLDER (this is not data
-  parity); the *look and structure* are the bar.
+- **The exemplar's design grammar, copied faithfully; content, nav words, section order and brand
+  facts are the kit's own** (owner decision, 2026-10-14). Grammar is the bar: the relationship
+  between ground and accent, the type pairing, density and rhythm, imagery treatment, the chrome
+  devices and the motion, page by page. The kit's own: placeholder content, its own nav labels,
+  a section order chosen for the trade, and a fictional brand's facts (never the exemplar's
+  founding year, address, phone number, email or accolades). A kit that lifts the exemplar's
+  copy, nav words, section order or facts is a CLONE and fails Gate 3, however good it looks;
+  this replaces the earlier "1:1 DESIGN + LAYOUT parity" bar, which `template-critic` scores as a
+  clone. If the user's brief asks for "1 to 1", put this bar to them at Gate 1 rather than build
+  a clone.
 - **A full IDENTITY KIT, meeting the quota** (`template-identity-kits.md`): **Nav** 1 ·
   **Header-hero** variant 1 · **Landing structured components** ≥3 · **Motion preset** 1 ·
   **Page type** (new `format`) ≥1. Knobs are welcome but do NOT count toward quota.
@@ -82,7 +89,7 @@ whitelists + live-preview threading + page-type presets) so nothing ships as
 renderable-but-uneditable. Do this BEFORE validation, not as a parked Gate-3 batch.
 
 **Round A, kit authoring** (persona maps + theme onto both theme objects + chrome + the home
-composed 1:1 vs the exemplar home; keep `homePageConfig` deep-equal to `pages[]` home):
+composed in the exemplar home's grammar, in the kit's own section order; keep `homePageConfig` deep-equal to `pages[]` home):
 ```
 node commands/assemble-blueprint.js captures/<kit> --group "<Vertical>" --gap-policy block   # gotcha L: exits nonzero on gaps but WRITES blueprint, run bundle SEPARATELY, never &&-chained
 node commands/preview-bundle.js captures/<kit>/blueprint.json --out captures/<kit>/preview
@@ -91,8 +98,9 @@ cd C:/repos/Vivreal_Templates && NEXT_PUBLIC_CLIENT_API=http://127.0.0.1:8799 SI
 ```
 Shoot/probe the Round-A render (zero-trace, single-H1, computed-color/type asserts).
 
-**Round B, the page walk:** live-extract each page's exemplar analog, author it 1:1 (section
-order, hover, animation, fine detail), shoot/probe. Hand any section whose data+structure are
+**Round B, the page walk:** live-extract each page's exemplar analog, author it in that page's
+grammar (hover, animation, fine detail; the section order and words stay the kit's own),
+shoot/probe. Hand any section whose data+structure are
 right but whose COMPONENT doesn't match the exemplar to `component-builder`.
 
 ## GATE 2, Round-A / kit REV
@@ -100,7 +108,7 @@ Present the built kit (scrolled-viewport screenshots / a Gate-2 artifact) vs the
 `AskUserQuestion`: approve the kit, or order fixes (re-dispatch `component-builder` / adjust
 authoring). Record the verdict into the brief STATUS.
 
-## VALIDATION (the confirm toolchain + the fidelity agents, 1:1 fidelity gate)
+## VALIDATION (the confirm toolchain + the fidelity agents, the grammar-fidelity gate)
 1. **Placeholderize** to the distinct brand (if not already done in the Round-A persona maps):
    `node commands/rebrand-capture.js captures/<kit> --brand "<Brand>"` (reads
    `captures/<kit>/rebrand.json` for the ordered token map + logo typography; idempotent).
@@ -108,8 +116,9 @@ authoring). Record the verdict into the brief STATUS.
    source + exemplar-as-proper-noun + the OTHER templates' DISTINCTIVE identity + owner personas +
    brand-regression tokens, NOT shared placeholder staff, NOT generic domain words; seed from the
    Round-A `FORBIDDEN` regex, pre-scan the blueprint) + `expected-nav.json` (the exemplar header
-   nav mapped to our slugs; omit any with no faithful in-header 1:1). See PAGE-1TO1-PLAYBOOK
-   §4b + gotcha N.
+   nav mapped to our slugs, in the kit's own nav words; omit any with no faithful in-header
+   equivalent). See PAGE-1TO1-PLAYBOOK §4b + gotcha N. Where the playbook says "1:1", read it as
+   the grammar bar above, never as copying content, nav words or section order.
 3. **`node commands/confirm-site.js --capture captures/<kit>`** → SITE PASS (fix nav/orphan FAILs).
 4. **`node commands/confirm-page.js <slug> --capture captures/<kit>`** across every page → each ✅
    CONFIRM PASS; on a FAIL, classify + close cheapest-tier (authoring before renderer; watch
@@ -137,7 +146,16 @@ authoring). Record the verdict into the brief STATUS.
    customer can't edit has NOT met the standard, no matter how it renders.
 
 ## GATE 3, SHIP the template (USER-GATED)
+Before presenting, run two more checks:
+- **`npm run kit:validate -- --kit <kit>`** in `Vivreal_Portal_Mobile` (the kit's JSON under
+  `kit-surfaces/`): registration, live view at 1440 and 390 in the four states, and a real Studio
+  edit walk, all local, before anything publishes. It does not judge whether the look is good.
+- **Dispatch `vivreal-product:template-critic`** on the kit against its exemplar. Its rubric B
+  (not a copy: copy shingles, the exemplar's phone and email, the facts, the section-order table)
+  is part of this gate. A B FAIL is a DO NOT SHIP, whatever the other rubrics say.
+
 Present the DoD: confirm-site SITE PASS · every page ✅ CONFIRM PASS · 0 dead external links ·
+kit:validate green · template-critic B not FAIL ·
 agent exemplar-diff done with defects closed + adaptations flagged · **STUDIO PASS + the
 studio-confirm classification ledger (no un-waived non-EDITABLE rows)** · **quota met** (the kit
 checklist: nav / header-hero / ≥3 landing comps / motion preset / page type) · renderer + migrator
@@ -147,7 +165,13 @@ it as a portal template / stand up a demo site, do not do this without an explic
 registration IS greenlit, the **preview tile is part of it, not optional**: shoot the look's
 real picker tile with `node commands/shoot-template-tile.js <live-demo-or-preview-url>
 --template-id <id>` (inspect the JPEG), `--upload --bucket vivreal-site-templates`, then stamp
-`previewImageKey` on the `site_templates` row (the command prints the exact update), see
+`previewImageKey` on the `site_templates` row (the command prints the exact update). **That row
+may not exist:** `commands/publish-template.js` uploads to S3 and writes
+`publish-out/<kit>/site-templates.row.json`, a FILE, and never inserts into `Vivreal.site_templates`,
+though its summary reads like a database insert (three kits were reported "row created" on
+2026-09-30 and none was in the collection). Inserting the row is a separate, deliberate step;
+the row file also ships `previewImageKey: null`. A kit is registered only when a read of
+`site_templates` returns it: count before and after. See
 `docs/template-flow.md` §6b leg (3b). A registered look with no real screenshot falls back to
 the portal's CSS vignette, which is a registration gap, not a done state.
 **Template sites live on the Vivreal Content group:** any site instantiated from a template for
@@ -159,8 +183,16 @@ dbKey: read the group's own stored `dbKey` live, never a literal; demo user `viv
 Vivreal Content profile, or pass its group env to the loader.
 
 ## Notes
-- 1:1 DESIGN/LAYOUT parity with the exemplar is the bar; content is placeholder. A missing/wrong
-  device, a re-skin where the exemplar has distinct grammar, or a quota miss is a DEFECT.
+- The exemplar's design grammar, copied faithfully, is the bar; content, nav words, section order
+  and brand facts are the kit's own. A missing/wrong device, a re-skin where the exemplar has
+  distinct grammar, a lifted fact or copy, or a quota miss is a DEFECT.
+- **Re-instantiating a template on a site that is already seeded does nothing and reports
+  success.** `instantiateTemplateWorker` resumes on the site id, and site-loader's
+  `seedCollections.js` skips every collection already `published`. To re-seed a demo site, reset
+  its content first with site-loader's `deleteSweep.js` (`deleteSiteContent`, which keeps the site),
+  clear `instantiation.runState.collections` and `.pageMedia`, reset `instantiation.attempts`, and
+  only then invoke the worker. Prove the result by counting the site's objects, never by the
+  worker's ok.
 - The two generalized helpers (`rebrand-capture.js`, `harden-demo.js`) read per-capture config
   (`rebrand.json` / `harden.json`) beside the contracts; author them once per template.
 - Bring up ONE preview stack at a time (kill any :8799/:3000 first); run `component-builder` /

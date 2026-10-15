@@ -86,6 +86,11 @@ then restart :3000. On any data/authoring change, re-bundle and restart BOTH :87
      inline). Unbind it in authoring; check `page.format` too (gotchas H, I).
    - **DEFECT**, a genuine break. Close it with the cheapest fleet-safe tier: authoring
      (reuse a layout / set an existing knob) before any renderer change (playbook §2, §3).
+   - **On a TEMPLATE, the bar is the exemplar's design grammar** (owner decision, 2026-10-14):
+     content, nav words, section order and brand facts are the kit's own. A template whose
+     section order, nav words or copy DIFFER from the exemplar is a MATCH on that axis, never a
+     DEFECT; one that copies them, or the exemplar's founding year, phone, email or address, is a
+     clone DEFECT to flag (`/template` Gate 3 runs `vivreal-product:template-critic` rubric B on it).
    A measured delta from exemplar-diff is a *candidate*, not a verdict, a kit-wide token delta
    (e.g. a ghost-masthead tone off by ΔN) is a DEFECT worth flagging but has site-wide blast
    radius, so recommend it for approval rather than silently re-toning the whole kit.

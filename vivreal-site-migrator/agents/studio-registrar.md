@@ -139,6 +139,21 @@ preview-shell threading), then prove each in the local Studio harness AFTER Step
 - Small, reviewable diffs; one surface family per commit-sized change.
 - NOTHING committed without the coordinator's explicit go; leave the tree dirty.
 
+## Portal gates: you follow portal-coder's PARALLEL rules
+
+The portal's pre-commit and pre-push gates (the full vitest suite, two `tsc` passes, a coverage
+map, and a Playwright smoke on the fixed ports 3100 and 4600) collide when two agents run them at
+once, producing false failures and, worse, false passes. Several portal agents may be running
+while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
+
+- Run only the tests that touch your files (`npx vitest run <paths>`), plus lint and one
+  `tsc --noEmit` on the touched areas. Never the full suite, the pre-push hook or the smoke.
+- Before any test run, check for a stale test or dev-server process on 3100 or 4600 and do not
+  start a second one.
+- You never commit or push. When the coordinator says go, the registration is handed to
+  `vivreal-principal:portal-coder` (SOLO when it is the only portal agent, otherwise the INTEGRATE
+  run), which owns the one full gate and the PR.
+
 ## Verification (the definition of done)
 1. Local Studio harness up (migrator: `npm run studio` + portal dev pointed at
    the shim, `docs/local-studio-runbook.md`).
@@ -147,7 +162,8 @@ preview-shell threading), then prove each in the local Studio harness AFTER Step
    editor-coverage + save-roundtrip GREEN for every surface you registered.
 3. Manual spot-check in the harness: add the block from the palette, edit it,
    Save all, reload, see it, and the live preview reflects it (layer 6).
-4. Portal lint + type-check green; touched-area tests green.
+4. Portal lint + type-check green on the touched areas; touched-area tests green (targeted only,
+   per "Portal gates" above).
 5. Report a registration ledger: surface → layers wired (1-8, with file:line) →
    verification evidence. Flag anything you could NOT wire (backend gap,
    unpublished renderer) with the exact blocker.
