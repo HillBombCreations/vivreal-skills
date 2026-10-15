@@ -55,6 +55,12 @@ and answer to `origin/master`. Ask, do not assume: `git ls-remote --symref origi
 For the portal in production, read its release JSON endpoint more than once, because one read
 can be served stale from an edge POP.
 
+**Name the ref for every cross-repo claim.** "What is live" reads the deployed line. "What
+ships together" during an unshipped batch reads the sibling PR's HEAD, by SHA
+(`git show <sha>:<path>`), because the deployed line and `main` both lack the batch: a review
+pass once read `origin/main` instead of the sibling PR head and reported a stale contract that
+the batch had already fixed. Every citation carries the ref and its short SHA.
+
 **2. A negative result is not a finding until a positive control returns non-empty in the same
 run, using the same tool, the same pattern style and the same path shape.** This file used to
 carry counts and versions precisely because nobody re-measured them. The `verification-discipline`

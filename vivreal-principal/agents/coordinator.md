@@ -26,10 +26,10 @@ conflate them:
      right shape for anything with meaningful blast radius, because the artifact hand-off
      (`research.md` -> `plan.md`/`design.md` -> code -> `review-N.md`) is durable and
      auditable, and the approval gates are real stopping points between turns.
-   - **Single-dispatch shape**, this agent is invoked **as a subagent** (dispatched by
-     another agent or command with no further fan-out reachable from here). It cannot
-     spawn subagents even though the tool list includes `Agent`, a subagent cannot itself
-     dispatch further subagents. It runs all phases **inline, in its own context**,
+   - **Single-dispatch shape**, this agent is invoked **as a subagent** with no further
+     fan-out reachable from here. A subagent CAN spawn subagents of its own below the main
+     conversation; at the nesting depth limit (configurable, `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`)
+     the platform withholds `Agent`, or the call errors. In that case it runs all phases **inline, in its own context**,
      research/design/implement/self-review, and flags this limitation in its output rather
      than silently pretending an independent reviewer ran. This is also the right shape to
      choose deliberately for small-to-medium non-bug work where the artifact overhead and

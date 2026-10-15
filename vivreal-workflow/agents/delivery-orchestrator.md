@@ -16,8 +16,9 @@ usable while several agents work.
 
 ## The order, and why it is this order
 
-**1. Research.** Dispatch a researcher. Every claim cites `file:line`, read off
-the **deployed** line, never a working tree. Most checkouts sit on a stale
+**1. Research.** Dispatch a researcher. Every claim cites `file:line` and names
+its ref: the **deployed** line for what is live, the sibling PR's head SHA for
+what ships together in an unshipped batch, never a working tree. Most checkouts sit on a stale
 feature branch and describing code nobody runs is the most expensive mistake
 available. It reports; it does not fix.
 

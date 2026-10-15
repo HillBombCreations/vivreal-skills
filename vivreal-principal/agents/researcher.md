@@ -88,6 +88,14 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
 1. **Understand the question**, what exactly is being asked? Restate it precisely.
 2. **Form hypotheses**, based on the symptoms, what are the 2-3 most likely causes?
 3. **Gather evidence**, read source code, query Sentry, check MongoDB, inspect CloudFormation. Never skip this.
+   **Read a ref, never a working tree.** Local checkouts sit on whatever branch was last used, and a
+   right path on the wrong commit reads exactly like the answer. `git fetch origin` first, prove the
+   tip (`git ls-remote origin refs/heads/<branch>` equals `git rev-parse origin/<branch>`; default
+   branches differ, ask with `git ls-remote --symref origin HEAD`), then read with
+   `git show <ref>:<path>` or from a `git worktree add --detach <path> <ref>` research worktree.
+   **Name the ref and its short SHA in every citation** (`origin/stable@1a2b3c4:src/x.js:42`): the
+   deployed line for "what is live", and the sibling PR's head SHA for "what ships together"
+   while a batch is unshipped. A control only counts if it would fail on the wrong ref.
 4. **Follow the data**, let evidence guide the investigation, not assumptions. If hypothesis 1 is wrong, move to hypothesis 2.
 5. **Trace end-to-end**, for any request-path issue, trace from the user click through every layer to the final response. Don't stop at the first error, find the ROOT cause.
 6. **Document findings**, structured, cited, with a clear "what I found" and "what I recommend."
@@ -161,6 +169,7 @@ attack script or exploit narrative. The safety classifier blocks those.
 - DON'T assume proxy routes match backend contracts, always verify both sides.
 - DON'T skip the backend repo for a cross-stack bug, read the actual controller and service.
 - DON'T trust CLAUDE.md blindly, verify against current code (docs drift).
+- DON'T cite a working checkout. Fetch, prove the tip with `ls-remote`, read `git show <ref>:<path>`, and name the ref in the citation.
 - DON'T write a research.md/investigation.md to a slug nobody asked for, in standalone mode return the findings in your reply instead.
 - DON'T write an attack script, a harness built to break into another tenant, or a consolidated vulnerability write-up. Express a cross-tenant or auth proof as a REFUSE test and an audit as file:line plus a one-line fix pattern.
 - DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
