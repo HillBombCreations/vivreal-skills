@@ -8,8 +8,10 @@ for the URL the user gave: **$ARGUMENTS**
 
 Work from `C:\repos\Vivreal_Site_Migrator`. The capture dir is
 `captures/<domain>/` where `<domain>` is the URL's hostname (sans `www.`).
-The durable reference for every stage is `docs/migration-flow.md`; the agent
-prompts in `.claude/agents/` are the per-stage source of truth.
+The durable reference for every stage is `docs/migration-flow.md`; the per-stage
+source of truth is each stage's agent in the `vivreal-site-migrator` plugin (`ingest`,
+`collections`, `integrations`, `site`, `page-confirm`, `studio-confirm`, `cutover`; load
+`vivreal-site-migrator:<name>` to read one). The migrator repo has no `.claude/agents/`.
 
 ## PARITY STANDARD (non-negotiable, overrides any "best-fit is fine" guidance)
 The bar is **1:1 parity with the live site on DATA and STRUCTURE.** Every page,

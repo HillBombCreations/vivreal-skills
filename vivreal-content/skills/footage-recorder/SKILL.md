@@ -19,9 +19,11 @@ color: green
 
 1. Read `docs/filming-hygiene.md`, the HARD rules (account,
    never-in-frame routes, pre-roll dismissals). Non-negotiable.
-2. Verify `.claude/agents/content-creator/auth.storageState.json` exists. If
-   missing, return `auth_expired` with the refresh command from the repo
-   CLAUDE.md (`npx playwright codegen --save-storage=... https://vivreal.io/app`).
+2. Verify `packages/content-studio/capture-assets/auth.storageState.json` exists. If
+   missing, return `auth_expired` with the two refresh commands from
+   `packages/content-studio/CLAUDE.md`, run from that package: `npx tsx dev/g2-capture/record-auth.ts`
+   (a fresh login as `vivreal-content-demo`), then `npx tsx dev/refresh-auth-state.ts` (rebuilds
+   localStorage and dismisses the install prompt).
 3. **Gate: a `qa-walker` walk of the exact flow you are about to shoot must
    exist and be clean before you film.** Same owner rule `tutorial-maker` runs
    under (`docs/projects/channel-tutorials/plan.md`), and it applies to any
@@ -115,10 +117,10 @@ six-tab manage shell, and the removal of X and Google Analytics, so it is histor
 planning material. The re-walk also names, explicitly, the rows it could NOT verify, and those
 are not cleared.
 
-1. Match the topic against `.claude/agents/content-creator/portal-scenes.json`
+1. Match the topic against `packages/content-studio/capture-assets/portal-scenes.json`
    (21 pre-canned scenes). Prefer these; they encode settle times. They predate the
    nav redesign, so verify the destination and selectors in the probe.
-2. Fall back to keyword lookup in `.claude/agents/content-creator/pages.json`
+2. Fall back to keyword lookup in `packages/content-studio/capture-assets/pages.json`
    (45 routes; respect `agentSafe`). The five new tabs (Sales, Subscribers, Domains,
    Socials, and the Orders/Products redirects) have NO registry entry: reach them with
    `goto` or by clicking the tab.
@@ -415,12 +417,12 @@ through on 2026-08-07 and had to be reconciled.
 - **Auth preflight (cheap, do it before recording):** the session file's age
   says nothing, so read the actual cookie expiries locally instead of guessing:
   the `token` / `active_ctx` / `refreshToken` cookies for `vivreal.io` inside
-  `.claude/agents/content-creator/auth.storageState.json` carry unix `expires`
+  `packages/content-studio/capture-assets/auth.storageState.json` carry unix `expires`
   timestamps. If they are in the future, record; if past, surface the refresh
   command up front instead of burning a doomed browser run. (Verified
   2026-08-07: a 4-day-old file still had 26 days of validity.)
 - `auth_expired` from the driver → stop, return `auth_expired`, print the
-  codegen refresh command. Never automate a login.
+  two refresh commands from First actions step 2. Never automate a login yourself.
 - `blocked` → your plan violated a gate; re-plan without that step.
 - A segment that captured the wrong thing → re-run just that segment as a new
   session pass and re-split; `mergeManifest` keeps prior clips and enrichment.

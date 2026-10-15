@@ -26,6 +26,7 @@ Two things to tell the user rather than let them discover:
    the half that worked.
 
 On `status: blocked`, show which surface the agent refused to film and why. The
-"Currently unsafe to film" table in `.claude/agents/footage-recorder.md` is dated
+"unsafe" tables in the footage-recorder's dated history (`references/footage-history.md` in the
+`vivreal-content` plugin) are dated
 per row, so a block may just be stale: offer to re-check that row before re-planning
 the topic.

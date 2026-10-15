@@ -390,7 +390,7 @@ and the home page's feature-card band):
   weight than its siblings, which reads like a "different band" at a glance, but
   that is not evidence of a separate `<section>`. Default: it is the LAST card of the
   collection the Collections agent already modeled (CP-2 guardrail,
-  `.claude/agents/collections.md`), do NOT split it into a separate
+  `vivreal-site-migrator:collections`), do NOT split it into a separate
   collection/binding, and NEVER invent enumerated sub-items (per-channel tiles, etc.)
   that aren't in `candidate.objects`. If that last card also carries a trailing link
   (e.g. "View all integrations →"), carry it as **`sectionConfig.footerLink`** on the
@@ -431,7 +431,7 @@ and the home page's feature-card band):
       **`displayAs: 'use-case-selector'`** (an ARIA tablist/tabpanel chip picker +
       two-panel detail view; in `renderableBlocks.layout`). The Collections agent
       already modeled this as a dedicated `use-case-selector` collection
-      (`.claude/agents/collections.md`, `.claude/agents/ingest.md`'s recognizer),
+      (`vivreal-site-migrator:collections`, `vivreal-site-migrator:ingest`'s recognizer),
       **simply BIND it; do not re-author the item content yourself.** One
       collection item per tab: `title` (chip label) + a nested
       `raw.panel: { heading, description, ctaLabel?, ctaLink?, benefits[] }`, the
@@ -460,7 +460,7 @@ and the home page's feature-card band):
         compares") as `use-case-selector`.** That content stays exclusively on
         `displayAs: 'home-comparison'` (below), the Ingest/Collections agents never
         create a `use-case-selector` candidate for it (see the recognizer guard in
-        `.claude/agents/ingest.md` / `isUseCaseTabWidget` in
+        `vivreal-site-migrator:ingest` / `isUseCaseTabWidget` in
         `src/inventory/analyze.js`); if you ever see one dangling, do not bind it as
         `use-case-selector` yourself.
       Do **NOT** flatten it into a `feature-list` grid anymore, that was the prior
@@ -666,7 +666,7 @@ and the home page's feature-card band):
     `/compare/*` anymore; that was the prior pass's degraded stand-in, before the renderer
     shipped a real competitor-chip picker.
     - **You do NOT build this collection or pick its rows.** The Collections agent's
-      mandatory Step 9 (`.claude/agents/collections.md`) already ran
+      mandatory Step 9 (`vivreal-site-migrator:collections`) already ran
       `node commands/build-derived-collections.js captures/<domain>` and wrote a
       `home-comparison` collection (key `home-comparison`, objects
       `{feature, us, competitor, them, note}`, one row per (feature × competitor)) into
@@ -700,7 +700,7 @@ and the home page's feature-card band):
   - **Two ways to build** (e.g. `SolutionsSection`, heading "One platform, two ways to
     build", THREE cards: "Managed Templates" + "Headless CMS" + "Connect your tools").
     Bind the Collections agent's `home-two-ways-to-build` collection, all THREE cards,
-    see the CP-2 guardrail in `.claude/agents/collections.md`, as
+    see the CP-2 guardrail in `vivreal-site-migrator:collections`, as
     **`displayAs: 'feature-list'`** with a top-level `title` (verbatim heading) +
     `subtitle` (the sub-line, e.g. "Two ways to build. One portal to manage
     everything."). Each of the first two cards' short `raw.badge` ("No code" /
@@ -900,7 +900,7 @@ so to match the source set `sectionConfig: { stepLabel: "" }` on every
 ordinal in `step`, so the medallion is the single source of the number.)
 
 The Collections agent's `process-steps` objects should already be step-only, numbered
-1..N (`.claude/agents/collections.md`, Step 6), do not add a card yourself for the
+1..N (`vivreal-site-migrator:collections`, Step 6), do not add a card yourself for the
 section's intro line or a "How It Works" heading; those belong in this binding's
 `title`/`subtitle`. If a collection still carries a step-less leading card, a
 deterministic backstop (`normalizeStepsCollections`, `src/blueprint/assemble.js`)

@@ -66,7 +66,7 @@ already used 1080 x 1350 and that is the live convention.
 
 ### 1. Typography templates (the default, and the safest)
 
-`.claude/agents/content-creator/templates/typography/`
+`packages/content-studio/capture-assets/templates/typography/`
 
 | Brief shape | Template | Variables |
 |---|---|---|
@@ -76,7 +76,7 @@ already used 1080 x 1350 and that is the live convention.
 
 ```bash
 npx tsx src/render-slide.ts \
-  .claude/agents/content-creator/templates/typography/<template>.html \
+  packages/content-studio/capture-assets/templates/typography/<template>.html \
   <outputPath> 1080 1350 '<JSON vars>'
 ```
 
@@ -85,7 +85,7 @@ the templates directory. Run from `packages/content-studio/`.
 
 ### 2. Mockup scenes (diagrams)
 
-`.claude/agents/content-creator/templates/mockups/scenes.json`, 15 SVG scenes with named text
+`packages/content-studio/capture-assets/templates/mockups/scenes.json`, 15 SVG scenes with named text
 slots (`hookTop`, `ctaBottom`, `statCenter`).
 
 Select with `src/scene-selector.ts`, passing the scene list, the shot, and the scene ids used in
@@ -113,7 +113,7 @@ the same `render-slide.ts` call.
 ### 3. Callout over a footage still
 
 For "screenshot of X with an arrow reading Y", composite
-`.claude/agents/content-creator/templates/overlays/arrow-callout.html` over an image from the
+`packages/content-studio/capture-assets/templates/overlays/arrow-callout.html` over an image from the
 footage library. **Never capture it yourself.**
 
 1. Read every `content/footage/*/footage-manifest.json`. Match on `visible`, `action`, `pageKey`.

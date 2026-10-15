@@ -237,7 +237,7 @@ Do NOT create a collection for:
   static rich text, `sectionConfig`-driven bindings, or omitted product decisions.
   **Exception: tab/chip-driven use-case pickers ARE a collection** (component-parity
   Item 1), see the `use-case-selector` type below. This is NOT a bespoke one-off;
-  the Ingest agent's recognizer (`.claude/agents/ingest.md`) surfaces it as a normal
+  the Ingest agent's recognizer (`vivreal-site-migrator:ingest`) surfaces it as a normal
   candidate exactly like any other repeating structure.
   **Exception: a tabbed detailed-feature showcase (e.g. vivreal.io's own "Platform
   Features" / `FeatureGifSection`) is ALSO a collection** (exact-1:1 item 3b), an
@@ -383,7 +383,7 @@ e.g. vivreal.io's home "What do you want to build?"):**
 ```
 `title` is the chip label; `description` is the isolated pane paragraph (also
 mirrored inside `panel.description` below). The Ingest agent's recognizer
-(`.claude/agents/ingest.md`) links the section and sets `suggestedType:
+(`vivreal-site-migrator:ingest`) links the section and sets `suggestedType:
 'use-case-selector'`; the enrichment step (`extractUseCaseTabItems`,
 `src/inventory/analyze.js`) populates `objects[]` deterministically from the
 captured tab data, use them **verbatim**, exactly like the CP-2 rule in Step 6
@@ -678,7 +678,7 @@ home-comparison collection built → captures/vivreal.io/collections.part.json
 
 **Report the printed competitor order to the Site agent** (or in your own report if you
 run this step yourself), it MUST be copied verbatim into `sectionConfig.competitors` on
-the home page's `home-comparison` binding (`.claude/agents/site.md` §2c "Comparison
+the home page's `home-comparison` binding (`vivreal-site-migrator:site` §2c "Comparison
 teaser" rule), so the renderer's chip order matches the aggregation's own order.
 
 A site with no `/compare/*` collections is unaffected, the command detects zero

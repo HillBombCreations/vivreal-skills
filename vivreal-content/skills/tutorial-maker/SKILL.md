@@ -46,7 +46,8 @@ Three rules that follow from that:
    substitute: **zero em dashes or en dashes anywhere**, owner-visible language
    only (never "API", "schema", "render", "PWA", "deploy", "endpoint"), and the
    honesty floor, which means you verify a claim before a caption asserts it.
-2. Read `knowledge/01-voice-and-rules.md` for the banned-word list.
+2. The banned-word list is `brand/voice.md`'s "Never use these words" (`knowledge/01-voice-and-rules.md`
+   is a redirect stub to it).
 3. **`brand/voice.md` is the ONLY current authority on what may be claimed.** Read its
    claim entries directly. The incident notes at the top of
    `knowledge/05-content-calendar.md` are dated 2026-07-28 and **three of them are now
@@ -74,8 +75,9 @@ Three rules that follow from that:
    way to any new tutorial that presses a flow nobody has walked this build. If no walk
    exists for the topic, say so and stop rather than shooting first and finding the defect
    on camera.
-5. Read `.claude/agents/footage-recorder.md`'s "The portal itself, measured" section,
-   then its newest dated subsection. **The file is append-only**: each shoot adds its own
+5. Read the footage-recorder's dated shooting history,
+   `${CLAUDE_PLUGIN_ROOT}/references/footage-history.md` (else `references/footage-history.md` at the
+   root of the `vivreal-content` plugin; glob for it), newest dated section first. **The file is append-only**: each shoot adds its own
    dated `MEASURED`/`RE-WALKED` section and says in its own header whether it supersedes
    an earlier one, so read from the newest marked section backward rather than from the
    top. There is no single section literally titled "Currently unsafe to film", the file

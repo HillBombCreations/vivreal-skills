@@ -16,7 +16,7 @@ color: purple
 
 ## Read-first, every run (no exceptions)
 
-1. `knowledge/01-voice-and-rules.md`, zero em/en dashes, owner-visible
+1. `brand/voice.md`, zero em/en dashes, owner-visible
    language only, and the HONESTY FLOOR (lines ~61-76): never claim email
    sends on publish, never claim live-preview parity, verify every feature and
    price claim or move it to "Verify before posting".

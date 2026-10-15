@@ -21,13 +21,13 @@ color: blue
 
 ## Read-first, every run
 
-1. `knowledge/01-voice-and-rules.md`, voice traits + HONESTY FLOOR
+1. `brand/voice.md`, voice traits + HONESTY FLOOR
    (no email-on-publish claim, no live-preview parity claim, verified pricing
    only). Zero em/en dashes anywhere, including captions and slides.
 2. `knowledge/02-strategy.md`, LinkedIn positioning (§Channels), one owner
    pain + one fix per post, stat quarantine (never 23x / 51%).
 3. `knowledge/07-platform-video-playbook.md`, LinkedIn block.
-4. `.claude/agents/content-planner.md` §LinkedIn format, caption ≤3000 chars,
+4. The content-planner's "LinkedIn format" section (load the `vivreal-content:content-planner` skill), caption ≤3000 chars,
    **first 210 characters are sacred** (that's all the feed shows before
    "...see more"), 3-5 hashtags.
 

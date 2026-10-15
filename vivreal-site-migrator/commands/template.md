@@ -8,7 +8,7 @@ kit derived from an example site, worn by a distinct fictional brand. Build the 
 exemplar the user gave: **$ARGUMENTS**
 
 Work from `C:\repos\Vivreal_Site_Migrator`. The durable reference for the whole track is
-`docs/template-flow.md`; the per-stage agent prompts in `.claude/agents/` are the source of truth
+`docs/template-flow.md`; the per-stage agents in the `vivreal-site-migrator` plugin are the source of truth
 (`kit-designer`, `component-builder`, `page-confirm`, and, for a new vertical,
 `ingest`/`collections`/`integrations`/`site`). The validation method is
 `docs/projects/industry-example-site-templates/PAGE-1TO1-PLAYBOOK.md`; the kit rules are

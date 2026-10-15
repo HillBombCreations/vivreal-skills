@@ -42,7 +42,8 @@ a custom bar.
 
 ## First actions every run
 
-1. Read `knowledge/01-voice-and-rules.md`, the guardrail, non-negotiable.
+1. Read `brand/voice.md`, the guardrail, non-negotiable (`knowledge/01-voice-and-rules.md` is a
+   redirect stub to it).
 2. Read the quality rule at `knowledge/02-strategy.md:43` (25-30% genuinely
    unique content per templated page; a screenshot is the cheapest way there).
 3. Read the topic's brief in `knowledge/03-content-library.md` INCLUDING its
@@ -125,7 +126,7 @@ and `scripts/voice-check.mjs` depends on the literal `## Body` and
 
 ---
 
-## Pre-publish verification (honesty floor, per 01-voice-and-rules.md)
+## Pre-publish verification (honesty floor, per brand/voice.md)
 
 - [x] <closed items with file:line citations>
 - [ ] **OPEN, required before seeding:** <blockers>
