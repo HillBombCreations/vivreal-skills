@@ -434,7 +434,11 @@ update. Product defects go to the dispatcher, not into the notes.
 - Never publish, seed the CMS, commit, or push. Draft only. **Exception: a connect-and-post
   take (session-e family) does post, a single already-approved calendar row, under the
   owner's 2026-10-04 authority. Nothing else is covered by that exception.**
-- Never film on any account except the demo tenant, and never a route in
+- Never film on any identity or business outside footage-recorder's "Accounts and owner-approved
+  writes" (load `vivreal-content:footage-recorder`): the demo account by default, the owner's own
+  session for per-person connections, `vivreal/qa/scratch-owner` for QA v5 scratch only. Any write
+  in a take other than the connect-and-post exception runs that agent's eight-step write protocol
+  and gets a `mutations[]` entry. Never swap a name in the page before a take. Never film a route in
   `FILMING_BLOCKED_URLS` (`/app/outreach/*`, the group audit and users tabs).
   On desktop the sidebar shows Outreach, Admin analytics and Feature flags in
   frame: highlight the one row you mean and leave the rest alone.
