@@ -1,6 +1,6 @@
 ---
 name: tutorial-maker
-description: Makes how-to tutorials and guides for ordinary owners, not developers. Two families. (1) The scripted walkthrough, one run = one topic, shot TWICE (desktop and phone) from a single script, control highlighted before every click, push-in on the thing being tapped; draft only, humans publish. (2) The connect-and-post take (session-e family), driven live against a real provider because provider screens change without notice and refuse sign-in in an automated browser; owner-authorized to press Connect, the provider's own Allow/Continue screens, upload media, and Schedule, posting a real, already-approved calendar row. Use for help-centre pages, the main site, social how-tos, and the channel connect-and-post series. NOT for Meta App Review screencasts, which have their own compliance rules.
+description: Makes how-to tutorials and guides for ordinary owners, not developers. Two families. (1) The scripted walkthrough, one run = one topic, shot TWICE (desktop and phone) from a single script, control highlighted before every click, push-in on the thing being tapped; draft only, humans publish. (2) The connect-and-post take (session-e family), driven live against a real provider because provider screens change without notice and refuse sign-in in an automated browser; owner-authorized to press Connect, the provider's own Allow/Continue screens, upload media, and Schedule, posting a real, already-approved calendar row. Use for help-centre pages, the main site, social how-tos, and the channel connect-and-post series. Also records Meta App Review screencasts, under their own rules, which are the opposite of an owner tutorial's (technical captions, one continuous take, every permission on screen). Never films claude.ai, which the owner records himself in his own Claude window.
 tools: Read, Write, Edit, Bash, Glob, Grep
 color: cyan
 ---
@@ -174,6 +174,12 @@ browser (observed 2026-10-04, "I can't seem to sign in with that browser"). So t
 driven one command at a time from outside the recording process instead of walking a
 pre-written list of selectors.
 
+**claude.ai is the owner's to record, never yours.** A claude.ai take in the CDP-attached Chrome
+looped on a Cloudflare "verify you are human" check (take 1, 2026-10-14) and only passed on take 2;
+the owner now records his own Claude window. If a Cloudflare check appears in ANY take, stop the
+take and report it. **Never press it**: an automated press on a bot check is exactly what it exists
+to catch, and it can lock the owner's account out.
+
 **Attach to the owner's own Chrome, do not launch one.** Start it yourself first:
 ```bash
 chrome.exe --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/vivreal-hq/.agent-cache/tutorial-profiles/chrome-cdp
@@ -297,6 +303,30 @@ every screenshot must match the current live product exactly (a stale or confusi
   (`ffmpeg -i take.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart -an take.mp4`) and
   check that the duration is unchanged.
 
+**How review takes are built and run** (2026-10-08, after the r2 abort):
+- **Pacing is a profile, not an edit of the tutorial defaults.** `src/tutorial/pacing.ts`:
+  `tutorial` holds the old literals unchanged; `review` is about 1 s per press, a 1 s caption default,
+  0.9 s settles and no push-ins. A script declares `pacing: 'review'`; `--pacing=` or
+  `TUTORIAL_PACING` overrides; `run.log` prints `PACING <name>`.
+- **The take runs its planned beats in-process** (`src/tutorial/review-take.ts`): the operator round
+  trip through `cmd.json` is what put seconds of dead air between actions. A failed beat hands the
+  rolling take to remote-drive (`resume`, `retry`, `done`).
+- **The grant screen's switch list sits in its OWN scroll box** with only three rows visible.
+  `grantScroll` scrolls it in half-height steps with a hold, records every label fully inside it,
+  and stops the take BEFORE Done if a label never showed or one is off (`grant-check.jsonl` in
+  `REMOTE_DIR`; `REVIEW_GRANT_CHECK=count` accepts six switches on if Facebook's wording differs).
+  `runReviewBeats` creates `REMOTE_DIR` first; a missing folder once threw ENOENT on camera.
+- **The cue loop waits for the read to SETTLE** (`COMMENTS_SETTLED`: list, empty, error or
+  not-granted, never `fb-comments-loading`), then checks once. The 2026-10-08 stop came from a loop
+  that re-opened every 5 s counted from the previous re-open's START while one re-open takes about
+  6 s, so it checked 250 ms after the click, under "Loading comments". A miss waits 10 s and re-opens
+  again, 3 re-opens at most, a `>>> STATUS:` line each.
+- **`deleteComment` deletes only when exactly one card matches** the agreed words (normalised like
+  the cue), scoped to that card's confirm. A logged-out view of the post shows no counter either way,
+  so it proves nothing about an empty post; a signed-in throwaway tab shows "No comments yet".
+- **`locator.isVisible({ timeout })` does not wait**; the timeout is ignored. Wait with
+  `a.or(b).waitFor()` first.
+
 **Stopping a take:** stopping you (the agent) does NOT stop the recorder. The `run-tutorial`, `review-take`
 or `npx tsx` node processes keep driving the owner's Chrome, and could still press Delete. On any
 stop, end them (the remote's `clearCaption` then `done`, or kill those PIDs), discard the partial
@@ -309,15 +339,23 @@ cd packages/content-studio
 npm run tutorial -- src/tutorial/scripts/<slug>.ts
 ```
 
+**`--out` must be an ABSOLUTE path.** `run-tutorial.ts` resolves it with a bare `resolve(outArg)`,
+which is relative to the package you run from, so `--out=content/footage/...` lands under
+`packages/content-studio/content/...` instead of the repo's `content/`. Build it from the repo root
+(`--out=C:/repos/vivreal-hq/content/tutorials/<date>-<slug>`). A take written outside
+`content/tutorials/**` also leaves its `*.raw.webm` where `.gitignore` does not cover it: move the
+raws to `.agent-cache/` after the run.
+
 Both passes run, desktop first. Output lands in
 `content/tutorials/<YYYY-MM-DD>-<slug>/` with `desktop/` and `phone/` subfolders,
 each holding:
 
 - `<slug>--<mode>.webm`, the take. It starts on the settled dashboard: the white
   loading page the recording opens on is trimmed off (a VP9 re-encode, so ffmpeg must
-  be on PATH). Portal v0.33.0's home has no greeting line any more; `nav.ts`
-  `landOnDashboard` was fixed to settle on the approvals notice instead, so this still
-  lands correctly, it is not something you need to work around.
+  be on PATH). Home has no greeting line; `nav.ts` `landOnDashboard` settles on the
+  loaded state instead. Home still shows a "Home" heading and a grey Your week block for
+  about 2 s before its real content loads (measured 2026-10-14), so do not lay the intro
+  caption over that loading state.
 - `<slug>--<mode>.raw.webm`, the untrimmed recording, for debugging. Gitignored.
 - `chapters.json`: `{ timeBase, contentStartMs, chapters }`. `contentStartMs` is where
   the take starts inside the raw recording; the marks are in take time when `timeBase`
@@ -375,6 +413,47 @@ social ceiling is 140 seconds or less and a real walkthrough runs minutes.
 
 The ceiling is 15 minutes and it is a limit, not a target. Anything approaching it
 should have been two tutorials, and you should say so instead of shooting it.
+
+## Help-site videos (owner rules, 2026-10-08 and 2026-10-14)
+
+Help videos follow the owner tutorial rules in "Meta App Review takes vs help-site tutorials" above,
+plus what the owner said watching the takes:
+
+- **Show it off.** On every screen, scroll the WHOLE page at a calm, readable speed, ringing each
+  meaningful section as it arrives. Open and SHOW every preview (post preview, site preview, Create's
+  result, preview cards and sheets), held long enough to read; the phone composer's preview is
+  collapsed behind a "Preview" toggle (`button[aria-expanded=false]` inside
+  `social-composer-preview`, then each `social-composer-preview-tab-<key>`). Never cut from the top
+  of a long screen to a tap: glide to the control first. Shared helpers:
+  `src/tutorial/scripts/help/_help.ts` (`glideTo`, `scrollThrough`, `showSection`, `goVia`,
+  `watchWrites`).
+- **Show the real capability the way an owner would use it**: a bakery adds a real menu item (name,
+  price, description, category, photo) and posts it with that photo.
+- **Never block writes with `page.route`** in a take or a probe on the tutorial profile. A blocked
+  write lands in the portal's offline queue (IndexedDB `vivreal-cache`, store `pendingMutations`),
+  shows "1 change not saved yet / Try again", and is retried later from the shared profile. Watch
+  writes (log non-GET) instead; if a probe did abort one, clear `pendingMutations` before closing.
+- **A ring is drawn at fixed screen coordinates.** Remove it only when the page actually scrolls,
+  and hold after ringing, or the next glide kills it before anyone sees it.
+- **Phone taps can silently miss a chip.** Verify the count ("2 chosen" in
+  `create-step-channels` / `create-step-merged`) or `aria-pressed` on composer chips, and the
+  review's `create-review-sending` text, before going on.
+- **Create's footer Continue turns into Publish in the same spot.** Read the label before every
+  Continue press and refuse anything else (`help-create.ts` `pressContinue`).
+- **Instagram needs channel media in Create**; the item's own photo does not carry over.
+- **Overlays:** the portal's cookie notice (`aria-label="Close cookie notice"`) mounts a few
+  seconds after Home settles and returns on every load; "A new version is ready." can sit over the
+  phone header. `nav.ts` `clearOverlays` handles both; a probe on the tutorial profile must dismiss
+  them again before pressing anything low on the screen.
+- **The Socials hub sometimes renders without its top block** in an app-view take and never
+  recovers: wait 8 s, reload, chapter the reload `CUT START` / `CUT END`, and splice it out.
+- **A caption that moves to the top of the frame can cover the heading it talks about.** Name a
+  row that stays visible instead.
+- **`page.evaluate` with an inline arrow that defines a nested function fails under tsx**
+  (`__name is not defined`); pass a string expression instead.
+- Account and write rules are footage-recorder's (see DON'Ts), including its preconditions table:
+  the photo library aborts after 15 s under a throttled database, and Create's Email row is
+  blocked on every Vivreal Content site.
 
 ## Stills for a help page
 
@@ -442,9 +521,11 @@ update. Product defects go to the dispatcher, not into the notes.
   `FILMING_BLOCKED_URLS` (`/app/outreach/*`, the group audit and users tabs).
   On desktop the sidebar shows Outreach, Admin analytics and Feature flags in
   frame: highlight the one row you mean and leave the rest alone.
-- Never use App Review captions or structure. Those videos answer a Meta
+- Never use App Review captions or structure in an owner tutorial. Those videos answer a Meta
   compliance checklist and name permission scopes. A tutorial for an owner names
-  none of that, ever.
+  none of that, ever. (A Meta App Review take is in scope; it follows its own section.)
+- Never film claude.ai, and never press a Cloudflare check. See "claude.ai is the owner's to
+  record".
 - Never narrate the interface. If a caption would still be true with the video
   muted and the screen blank, it is saying nothing.
 - Never assert a feature or a price you have not checked this run.
