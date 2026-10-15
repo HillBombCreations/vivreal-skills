@@ -62,7 +62,7 @@ Vivreal uses multi-tenant MongoDB. Tenant **content** lives in shared pod databa
 
 | Database | Contents | Which groups? |
 |---|---|---|
-| `Vivreal` | Control plane: `groups`, `leads`, `checkout_sessions`, **`media_files`**, **`usage_trackings`**, `domainorders`, `prospects`, `inquiries` | All (mainDb) |
+| `Vivreal` | Control plane: `groups`, `leads`, `checkout_sessions`, **`media_files`**, **`usage_trackings`**, `domainOrders`, `domains`, `inquiries`, `site_traffic_dailies`, `commerce_dailies`. List them (`list-collections`); `prospects` was dropped 2026-07-27 | All (mainDb) |
 | `pod_NN` (`pod_01`, `pod_02`, ...) | Tenant content: `collection_groups`, `collection_objects`, `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, plus `stripe_products`, `collection_templates` where used | **Whichever groups carry that `dbKey`.** Census it (`Vivreal.groups` grouped by `dbKey`), do not assume; one pod can hold a single group on purpose |
 | `outreach` | `suppressions` only (global) | service-global |
 | a slugified group name | usually only `audit_logs`, legacy or stranded per-group DB | Possibly no group at all. More than one exists. Do not rely on the pattern |
@@ -70,13 +70,13 @@ Vivreal uses multi-tenant MongoDB. Tenant **content** lives in shared pod databa
 **Collection-name corrections (live names are snake_case):** `checkoutsessions`→`checkout_sessions`
 `mediafiles`→`media_files`, `auditlogs`→`audit_logs`, `contentversions`→`content_versions`
 `usagetrackings`→`usage_trackings`. **`media_files` and `usage_trackings` live in `Vivreal`
-NOT the tenant DB.** New collections not listed in the per-field schemas below: `site_versions`
-`stripe_webhook_events`, `stripe_products`, `collection_templates`, `prospects`, `inquiries`.
+NOT the tenant DB.** Two names that are not what the code calls them: the domain orders are `Vivreal.domainOrders` (camelCase; the lowercase copy is gone), and the analytics rollup is `site_traffic_dailies` (the model is `site_traffic_daily`, so the singular name is a false zero). New collections not listed in the per-field schemas below: `site_versions`,
+`stripe_webhook_events`, `stripe_products`, `collection_templates`, `inquiries`.
 
 Tenant isolation is via the `groupID` field on every document. To find which DB holds a group's
 content: look up the group in `Vivreal.groups` and read its STORED `dbKey`. That is the database. Never
 derive it from `tier` (a pod holds free and paid groups alike, and the code that once mapped tier to
-database is deleted fleet-wide). The `key` field is **S3 bucket naming**, NOT database routing.
+database is deleted fleet-wide). The `key` field is the group's slug, NOT database routing; the S3 bucket is `bucketOf(group)` (the stored `bucket`, else `${type}-${key}`).
 
 ## Collections & Schemas
 
@@ -88,7 +88,8 @@ database is deleted fleet-wide). The `key` field is **S3 bucket naming**, NOT da
 | `_id` | ObjectId | Primary key, referenced as `groupID` on all tenant objects |
 | `owner` | String | Owner's Cognito sub or email |
 | `groupName` | String | Display name |
-| `key` | String | Used for S3 bucket naming. NOT database routing |
+| `key` | String | The group's unique slug. Half of the legacy bucket formula. NOT database routing |
+| `bucket` | String | The group's S3 bucket, STORED; read it through `bucketOf(group)`, which falls back to `${type}-${key}` when absent |
 | `dbKey` | String | **The tenant database. This field IS the routing.** Read it; never compute it from `tier` |
 | `tier` | String | The billing plan. **It does NOT determine the tenant database.** Read the current ladder from `@hillbombcreations/tier-quotas`; it has lost a member, and a stored value naming the retired one now normalises to `free` rather than erroring |
 | `type` | String | Group type identifier |
@@ -108,7 +109,15 @@ database is deleted fleet-wide). The `key` field is **S3 bucket naming**, NOT da
 | `companyInfo` | Object | `{ companyName, companySize, industry, jobTitle, website, goals }` |
 | `media` | Object | `{ logo: {name,key}, profilePicture: {name,key}, footer: {name,key} }` |
 | `profilePicture` | Object | `{ type, value, color: {text, background} }`, avatar config |
-| `createdAt` / `updatedAt` | Date | Timestamps |
+| `frozen` | Boolean | Billing-frozen (end of subscription). The site stays READABLE (VR_Client_API `frozenPolicy.js`); writes refuse. API Gateway stringifies it, so compare `=== true` or `=== 'true'` |
+| `overQuotaSinceCancellation` | Object | `{ violations, setAt }`, drives the portal over-quota banner |
+| `featureFlags` | Object | strict:false sub-schema; the writable flags are VR_Secure_API's `ALLOWED_FLAGS` |
+| `stripeCustomerId` / `stripeSubscriptionID` | String | Stripe linkage. **A paid tier with no `stripeSubscriptionID` is comped** (set by hand); count paying groups by this field, never by `tier` |
+| `subscriptionStatus` / `subscriptionCadence` / `currentPeriodEnd` | String / String / Date | Written by Secure's Stripe webhooks |
+| `overageBilling` | Object | `{ enabled, spendingCap, lastInvoice }` |
+| `scheduledTierChange` / `cancellation` / `pauseCollection` / `retentionDiscount` | Object | The billing lifecycle (period-end cancel, one pause per 12 months, retention coupon once) |
+| `billing`, `stripeAccountId`, `campaigns`, `emailUsage`, `timezone`, `showLowStock`, `recommendationsEnabled`, `prospect`, `pendingRequests` | mixed | Read `groupSchema.js` in the schemas package for their shapes |
+| `createdAt` / `updatedAt` | Date | Timestamps (applied by Mongoose; a native-driver write does not move `updatedAt`) |
 
 **Indexes:** `{ type: 1, 'users.email': 1 }`, `{ type: 1, key: 1 }`, `{ groupName: 1 }`, `{ stripeSubscriptionID: 1 }` (sparse)
 

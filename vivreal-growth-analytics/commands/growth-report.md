@@ -1,13 +1,13 @@
 ---
 name: growth-report
-description: Pull a unified growth dashboard combining GA4 traffic, PostHog funnels, and MongoDB signup data with week-over-week deltas
+description: Pull a unified growth dashboard combining consented GA4 and Clarity data, the first-party site traffic rollup, and MongoDB signup and paying-group data, with week-over-week deltas
 allowed-tools: mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, WebFetch, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections
 user-invocable: true
 ---
 
 # /growth-report: Unified Growth Dashboard
 
-Pull a comprehensive growth report by combining data from Google Analytics 4, PostHog, and Vivreal's MongoDB.
+Pull a comprehensive growth report by combining GA4 and Clarity (consented portal and vivreal.io visitors), the first-party `site_traffic_dailies` rollup, and Vivreal's MongoDB. The `growth-context` skill carries the source details; there is no PostHog.
 
 ## Arguments
 
@@ -22,43 +22,36 @@ Pull a comprehensive growth report by combining data from Google Analytics 4, Po
 - `--compare`: Include week-over-week or period-over-period comparison (default: on)
 - `--focus`: Focus on a specific area instead of the full report
   - `traffic`, GA4 traffic sources and page views only
-  - `funnel`, PostHog funnel completion rates only
-  - `signups`, MongoDB user/group creation data only
+  - `funnel`, the GA4 funnel steps only
+  - `signups`, MongoDB signup (`leads`) and group creation data only
   - `engagement`, session duration, pages/session, return visits
 
 ## Data Sources
 
-### 1. Google Analytics 4 (Traffic & Acquisition)
-Query GA4 for:
-- **Sessions & users**, total, new vs returning
-- **Traffic sources**, organic, direct, social, referral, paid (by source/medium)
-- **Top landing pages**, which pages drive the most traffic
-- **Geography**, top countries/cities
-- **Device breakdown**, desktop vs mobile vs tablet
-- **Bounce rate & avg session duration**
+### 1. Google Analytics 4 and Microsoft Clarity (portal and vivreal.io visitors)
+- Both load ONLY after the visitor accepts the cookie banner: `CookieConsent` in the portal's `src/app/layout.tsx` is the one mount that loads GA and Clarity, so every count is a CONSENTED subset, not total traffic. Say so beside any number.
+- Read them through VR_Secure_API's admin-pool routes, the ones the internal admin app (`vivreal-hq/packages/admin-app`) calls: `GET /api/admin/analytics/google-analytics/traffic` (GA4 Data API, sources, landing pages, devices; `?scope=landing|portal|combined` splits vivreal.io from `/app` by page path, and landing plus portal can exceed combined for a session that visited both), `GET /api/admin/analytics/google-analytics/funnel` (the portal-emitted funnel events, `FUNNEL_STEPS` in `getFunnelReport.js`: studio demo viewed, demo CTA, demo signup, register started, register completed, sign up; event names come from the portal's `src/lib/analytics.ts`), and `GET /api/admin/analytics/clarity/engagement`.
+- **Clarity is read from `Vivreal.clarity_daily_snapshots`**, which the `analyticsSnapshot` cron writes once a day. Never call the Clarity API directly: it allows about ten requests a day, and a missed day is a gap in the series, not an error.
+- There is **no PostHog** anywhere in the fleet (0 references in the portal and Templates on `origin/stable`), and no GA4 or PostHog MCP is part of this plugin. Do not plan a PostHog query.
 
-### 2. PostHog (Product Analytics & Funnels)
-Query PostHog for:
-- **Key events**, pageview, signup_started, signup_completed, group_created, collection_created, site_deployed, upgrade_initiated
-- **Funnel completion rates**, signup → first group → first collection → first site
-- **Feature adoption**, which features are being used (integrations, calendar, audit log)
-- **Session recordings count**, how many error sessions were captured
-- **Active users**, DAU, WAU, MAU
+### 2. First-party site traffic (every customer site, vivreal.io included)
+- Templates' cookieless `SiteBeacon` posts to `collect.vivreal.io`, and VR_Analytics_API's daily rollup writes **`Vivreal.site_traffic_dailies`** (one row per `siteId` and `date`: `pageviews`, `uniqueVisitors`, `topPages`, `referrers`, `devices`, `countries`, `groupID`). The code calls it `site_traffic_daily`; the PHYSICAL collection is plural, so the singular name is a false zero. Owners read the same data through `GET /api/analytics/site/traffic`. Detail: `vivreal-analytics-knowledge`.
 
-### 3. MongoDB (Business Metrics)
-Connect to Vivreal's mainDb and query:
-- **New groups created**, `db.groups.count({ createdAt: { $gte: <period_start> } })`
-- **New users registered**, `db.users.count({ createdAt: { $gte: <period_start> } })`
-- **Tier distribution**, `db.groups.aggregate([{ $group: { _id: "$tier", count: { $sum: 1 } } }])`
-- **Sites deployed**, `db.sites.count({ createdAt: { $gte: <period_start> } })`
-- **Groups by frozen status**, how many active vs frozen
+### 3. MongoDB (business facts; read-only, pool 1, project every read)
+- `Vivreal.groups`: `createdAt`, `tier`, `stripeSubscriptionID`, `subscriptionStatus`, `frozen`, `overageBilling`. `Vivreal.leads`: one row per signup (`signedUp`, `userId`, `createdAt`, `activated`/`activatedAt`, the lifecycle activation signal). There is **no `users` collection**: people are Cognito users plus `groups.users[]`.
+- **Sites are in the tenant databases, not `Vivreal`.** Count deployed sites per pod (`<dbKey>.sites`, `deployment.status: "live"`), resolving the pod from each group's stored `dbKey`.
+- **Paid conversion counts groups with a non-empty `stripeSubscriptionID`, never `tier != 'free'`.** Several paid-tier groups are comped by hand and pay nothing (measured 2026-10-15: 5 groups on `pro`, 0 with a Stripe subscription), so a tier count reports revenue that does not exist. Report the tier distribution and the paying count side by side.
+- Commerce for owners: `Vivreal.commerce_dailies`.
+
+### 4. Sentry
+- Error rates by runtime, to correlate an error spike with a drop. Sentry ingestion was dark from about 2026-08-24 to 2026-09-17 (quota), so silence in that window is not health.
 
 ## Report Procedure
 
 1. **Determine period**, parse the time range argument, calculate start/end dates and comparison period
-2. **Query GA4**, use GA4 MCP tools for traffic metrics with the specified date range
-3. **Query PostHog**, use PostHog MCP tools for product events and funnels
-4. **Query MongoDB**, connect to mainDb, run aggregate queries for business metrics
+2. **Read GA4 and Clarity** through the admin analytics routes (traffic, funnel, engagement) for the date range; if no admin-pool token is available in this session, skip and say so
+3. **Read `site_traffic_dailies`** for the period
+4. **Query MongoDB**, mainDb for `leads` and `groups`, each pod's `sites` for live deployments
 5. **Calculate deltas**, compare current period to previous period (e.g. this week vs last week)
 6. **Format report**, output in the structured format below
 
@@ -72,8 +65,9 @@ Generated: <timestamp>
 | Metric | Current | Previous | Delta |
 |---|---|---|---|
 | Total Sessions | X | Y | +Z% |
-| New Users (GA4) | X | Y | +Z% |
-| Signup Completions | X | Y | +Z% |
+| New Users (GA4, consented) | X | Y | +Z% |
+| Signups (`leads`) | X | Y | +Z% |
+| Paying groups (Stripe subscription) | X | Y | +Z |
 | New Groups (MongoDB) | X | Y | +Z% |
 | Sites Deployed | X | Y | +Z% |
 | Funnel Completion Rate | X% | Y% | +Z pp |
@@ -87,18 +81,17 @@ Generated: <timestamp>
 | Referral | X | Y% | arrow |
 | Paid | X | Y% | arrow |
 
-### Funnel Performance (PostHog)
+### Funnel Performance (GA4 funnel steps, consented)
 | Step | Users | Conversion | Drop-off |
 |---|---|---|---|
-| Landing page visit | X | 100% | |
-| Signup started | X | Y% | Z% |
-| Signup completed | X | Y% | Z% |
-| First group created | X | Y% | Z% |
-| First collection created | X | Y% | Z% |
-| First site deployed | X | Y% | Z% |
+| Studio demo viewed | X | 100% | |
+| Demo CTA clicked | X | Y% | Z% |
+| Register started | X | Y% | Z% |
+| Register completed | X | Y% | Z% |
+| Activated (`leads.activated`) | X | Y% | Z% |
 
 ### Tier Distribution (MongoDB)
-| Tier | Count | % | New This Period |
+| Tier | Count | Paying (Stripe subscription) | New This Period |
 |---|---|---|---|
 | Free | X | Y% | Z |
 | Basic | X | Y% | Z |
@@ -117,8 +110,8 @@ Generated: <timestamp>
 
 ## Error Handling
 
-- If GA4 MCP is not connected, skip traffic section and note: "GA4 data unavailable, configure google-analytics MCP server"
-- If PostHog MCP is not connected, skip funnel section and note: "PostHog data unavailable, configure posthog MCP server"
+- If the admin analytics routes are not reachable from this session, skip the GA4 and Clarity sections and say which route would have answered them
+- Never report a PostHog section: Vivreal does not run PostHog
 - MongoDB should always be available (existing MCP). If connection fails, report the error.
 - Always produce whatever sections ARE available, never fail entirely because one source is down
 
@@ -141,7 +134,7 @@ Follow the same safety rules as `/db-query`:
 → 30-day report with month-over-month comparison
 
 /growth-report 7d --focus=funnel
-→ PostHog funnel analysis only for the last 7 days
+→ The GA4 funnel steps only, for the last 7 days
 
 /growth-report mtd --focus=signups
 → Month-to-date MongoDB signup and group creation data

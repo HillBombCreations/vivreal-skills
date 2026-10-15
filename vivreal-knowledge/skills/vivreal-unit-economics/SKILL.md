@@ -28,6 +28,8 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 pricing-constant source of truth including the Stripe price ids. Read them there before quoting
 a single figure to anyone, internally or in copy.
 
+**Count paying customers by `stripeSubscriptionID`, never by `tier`.** Several paid-tier groups are comped by hand and pay nothing (measured read-only 2026-10-15: 5 groups on `pro`, 0 with a Stripe subscription), so MRR, ARPU and margin computed from the tier distribution report revenue that does not exist.
+
 Three specific traps this table used to walk into:
 
 1. **A tier has been retired and folded into another.** Reasoning about margin per tier from a

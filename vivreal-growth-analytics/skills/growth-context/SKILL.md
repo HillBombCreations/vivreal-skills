@@ -20,30 +20,29 @@ This skill activates when the user mentions any of:
 
 ## Available Data Sources
 
-### 1. Google Analytics 4 MCP (`google-analytics`)
-- Traffic data, user sessions, acquisition channels, geography, device breakdown
-- Use for: traffic volume questions, source attribution, landing page performance
-- Tools: `run_report`, `run_realtime_report`, `get_account_summaries`
+### 1. Google Analytics 4 and Microsoft Clarity (portal and vivreal.io visitors)
+- Both load ONLY after the visitor accepts the cookie banner: `CookieConsent` in the portal's `src/app/layout.tsx` is the one mount that loads GA and Clarity, so every count is a CONSENTED subset, not total traffic. Say so beside any number.
+- Read them through VR_Secure_API's admin-pool routes, the ones the internal admin app (`vivreal-hq/packages/admin-app`) calls: `GET /api/admin/analytics/google-analytics/traffic` (GA4 Data API, sources, landing pages, devices; `?scope=landing|portal|combined` splits vivreal.io from `/app` by page path, and landing plus portal can exceed combined for a session that visited both), `GET /api/admin/analytics/google-analytics/funnel` (the portal-emitted funnel events, `FUNNEL_STEPS` in `getFunnelReport.js`: studio demo viewed, demo CTA, demo signup, register started, register completed, sign up; event names come from the portal's `src/lib/analytics.ts`), and `GET /api/admin/analytics/clarity/engagement`.
+- **Clarity is read from `Vivreal.clarity_daily_snapshots`**, which the `analyticsSnapshot` cron writes once a day. Never call the Clarity API directly: it allows about ten requests a day, and a missed day is a gap in the series, not an error.
+- There is **no PostHog** anywhere in the fleet (0 references in the portal and Templates on `origin/stable`), and no GA4 or PostHog MCP is part of this plugin. Do not plan a PostHog query.
 
-### 2. PostHog MCP (`posthog`)
-- Product events, funnels, feature flags, session recordings, user properties
-- Use for: product usage questions, funnel completion, feature adoption
-- Tools: Analytics queries, feature flag status, error tracking
+### 2. First-party site traffic (every customer site, vivreal.io included)
+- Templates' cookieless `SiteBeacon` posts to `collect.vivreal.io`, and VR_Analytics_API's daily rollup writes **`Vivreal.site_traffic_dailies`** (one row per `siteId` and `date`: `pageviews`, `uniqueVisitors`, `topPages`, `referrers`, `devices`, `countries`, `groupID`). The code calls it `site_traffic_daily`; the PHYSICAL collection is plural, so the singular name is a false zero. Owners read the same data through `GET /api/analytics/site/traffic`. Detail: `vivreal-analytics-knowledge`.
 
-### 3. MongoDB MCP (`mongodb`): already configured
-- Business objects: groups, users, sites, collections
-- Use for: hard business metrics (signups, groups created, tier distribution, sites deployed)
-- Database: `vivreal` (mainDb) for cross-tenant data
+### 3. MongoDB (business facts; read-only, pool 1, project every read)
+- `Vivreal.groups`: `createdAt`, `tier`, `stripeSubscriptionID`, `subscriptionStatus`, `frozen`, `overageBilling`. `Vivreal.leads`: one row per signup (`signedUp`, `userId`, `createdAt`, `activated`/`activatedAt`, the lifecycle activation signal). There is **no `users` collection**: people are Cognito users plus `groups.users[]`.
+- **Sites are in the tenant databases, not `Vivreal`.** Count deployed sites per pod (`<dbKey>.sites`, `deployment.status: "live"`), resolving the pod from each group's stored `dbKey`.
+- **Paid conversion counts groups with a non-empty `stripeSubscriptionID`, never `tier != 'free'`.** Several paid-tier groups are comped by hand and pay nothing (measured 2026-10-15: 5 groups on `pro`, 0 with a Stripe subscription), so a tier count reports revenue that does not exist. Report the tier distribution and the paying count side by side.
+- Commerce for owners: `Vivreal.commerce_dailies`.
 
-### 4. Sentry MCP (`sentry`): already configured
-- Error rates, crash-free session rate, performance data
-- Use for: correlating error spikes with drop-offs
+### 4. Sentry
+- Error rates by runtime, to correlate an error spike with a drop. Sentry ingestion was dark from about 2026-08-24 to 2026-09-17 (quota), so silence in that window is not health.
 
 ## Activation Procedure
 
 1. **Identify what metric the user is asking about**, map their question to a specific data source
 2. **Pull real data first**, query the relevant MCP before answering
-3. **Cross-reference when possible**, e.g. GA4 traffic + MongoDB signups = signup conversion rate
+3. **Cross-reference when possible**, e.g. GA4 consented traffic + `Vivreal.leads` signups = a consented-visitor signup rate (label it so)
 4. **Provide context**, compare to previous period, note trends
 5. **Be honest about gaps**, if an MCP server isn't configured, say so and suggest setup
 
@@ -51,14 +50,15 @@ This skill activates when the user mentions any of:
 
 | Metric | Source | How to Calculate |
 |---|---|---|
-| Visitor → Signup rate | GA4 sessions ÷ MongoDB new users | Cross-source |
-| Signup → Activation rate | MongoDB users with group created in 24h ÷ total new users | MongoDB |
-| Activation → Deployment rate | MongoDB sites deployed ÷ groups created | MongoDB |
-| Free → Paid conversion | MongoDB groups with tier != 'free' ÷ total groups | MongoDB |
-| Tier distribution | MongoDB groups aggregated by tier | MongoDB |
-| Feature adoption | PostHog events per feature | PostHog |
-| Error impact on conversion | Sentry error rate vs PostHog funnel drop-off | Cross-source |
-| Organic vs Paid quality | GA4 source/medium + MongoDB signup-to-activation by cohort | Cross-source |
+| Visitor → Signup rate | GA4 sessions (consented only) vs `Vivreal.leads` created | Cross-source, label as consented |
+| Demo → Signup funnel | The GA4 funnel route (`FUNNEL_STEPS`) | Secure admin route |
+| Signup → Activation rate | `Vivreal.leads` with `activated: true` ÷ leads in the period | MongoDB |
+| Activation → Deployment rate | Live sites per pod ÷ groups created | MongoDB (per pod) |
+| Free → Paid conversion | Groups with a non-empty `stripeSubscriptionID` ÷ all groups | MongoDB, never by tier |
+| Tier distribution | `Vivreal.groups` grouped by `tier`, beside the paying count | MongoDB |
+| Engagement | `Vivreal.clarity_daily_snapshots` (consented portal sessions) | Clarity snapshot |
+| Customer-site traffic | `Vivreal.site_traffic_dailies` | First-party rollup |
+| Error impact on conversion | Sentry error rate vs the GA4 funnel drop-off | Cross-source |
 
 ## Common Questions & How to Answer
 
@@ -69,14 +69,15 @@ This skill activates when the user mentions any of:
 → Ask: "Which conversion? Visitor→signup, signup→activation, or free→paid?" Then query the right source.
 
 **"Why are signups down?"**
-→ Check GA4 traffic first (is traffic down or is conversion down?), then PostHog for signup funnel errors, then Sentry for crashes on the signup page.
+→ Check GA4 traffic first (is traffic down or is conversion down?), then the GA4 funnel route for where the register steps drop, then Sentry for crashes on the signup page.
 
 **"Should we invest in ads?"**
 → First check organic conversion rate (GA4 + MongoDB). If organic converts well, ads will likely work. If organic doesn't convert, fix the funnel first.
 
 ## Rules
 
-- **Never guess metrics**, always query real data. If data isn't available, say "I'd need GA4/PostHog connected to answer that accurately."
+- **Never guess metrics**, always query real data. If a source isn't reachable from this session (the admin routes need an admin-pool token), say which one and what it would answer.
+- **Every GA4 and Clarity number is a consented subset.** Say so.
 - **Always include time context**, "signups are at X" is useless without "up Y% from last week"
 - **Recommend the right command**, if the user's question would be better answered by `/growth-report` or `/funnel-analysis`, suggest that instead of doing ad-hoc queries
 - **Respect MongoDB safety rules**, read-only, no groupName queries, redact credentials

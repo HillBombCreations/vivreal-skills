@@ -5,7 +5,7 @@ Curated from June-2026 research (full source with URLs: `Vivreal_Portal_Mobile/d
 ## Layout & mobile patterns
 
 - **Mobile is the primary layout, not an afterthought**, over half of SaaS logins happen on mobile ([Devian](https://www.devian.in/blogs/saas-dashboard-design-trends)). Design the phone view first, then expand.
-- **Card/tile grids + stat tiles** are the dominant dashboard primitive: scannable KPI tiles at top, then activity feed/lists, then secondary panels. Group related tiles with **whitespace (Law of Proximity)**, not dividers. (Vivreal's `StatTile`/`ActivityFeed` already follow this.)
+- **Card/tile grids + stat tiles** are the dominant SaaS dashboard primitive elsewhere: scannable KPI tiles at top, then activity feed/lists, then secondary panels. **Vivreal does NOT do this** (owner 2026-09-18: no row of 3 or 4 summary tiles over the real content; a number lives on the thing it counts). The portal Dashboard is a today-first feed of bands instead. Still group related items with **whitespace (Law of Proximity)**, not dividers.
 - **Usage/quota panels**: current-vs-limit progress bar + plain-language "X of Y used" + a contextual upgrade CTA when near the cap. Treat "near limit" as a **peak moment** (see ux-psychology peak-end). (Vivreal's `UsagePanel` is exactly this.)
 - **Promo/announcement banners**: one at a time, dismissible, above the fold but below primary stats; auto-rotating carousels need a **Pause/Play control (WCAG 2.2.2)** ([codetheorem](https://codetheorem.co/blogs/saas-dashboard-ux/)). (Vivreal's dash `PromoBanner` follows this.)
 - **Minimal scrolling, touch-first** on mobile; use progressive disclosure, collapse secondary detail behind expanders/sheets on small screens.
@@ -23,7 +23,7 @@ Curated from June-2026 research (full source with URLs: `Vivreal_Portal_Mobile/d
 
 | Product | Borrow specifically |
 |---|---|
-| **Linear** | Quiet interface; accent rationed to a **single primary action** per view. Cards get presence from **1px inset borders + soft shadows**, not fills (Vivreal `StatTile` = `border border-black/10` + soft shadow, same DNA). Dense, instrument-panel typography. |
+| **Linear** | Quiet interface; accent rationed to a **single primary action** per view. Cards get presence from **1px inset borders + soft shadows**, not fills (Vivreal cards use the same DNA: `border border-black/10` + a soft shadow). Dense, instrument-panel typography. |
 | **Stripe** | One anchored brand typeface everywhere ("reads as considered"); measured accent on neutral grounds; **color = meaning, not decoration**. |
 | **Vercel** | High-contrast monochrome foundation; blueprint-grid structural rigor; restrained mono/sans pairing. |
 | **Height / Notion** | Calm density, generous line-height in content areas, restrained chrome so content is the hero. |

@@ -5,7 +5,7 @@ description: 'Use when working in the Vivreal public content-delivery stack, VR_
 
 # VR_Client_API + VR_Client_Auth: knowledge digest
 
-Last synced: 2026-10-04 (deployed line `stable` was v2.15.0 that day; read the tag)
+Last synced: 2026-10-15 against VR_Client_API `origin/stable` (tag v2.16.2, the v6 release; read the tag)
 
 The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth`, a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth, VR_Client_API's CLAUDE.md was refreshed 2026-10-03 and documents both CloudFront distributions, the frozen allowlist and the delivery-quote route.
 
@@ -86,6 +86,13 @@ Tenant: `GET collectionObjects` (published only), `GET integrationObjects`, `GET
 
 Media served via `media.vivreal.io` with signed URLs (unsigned → 403), this is the **media** distribution, not the `client.vivreal.io` API edge cache. `buildMediaUrl.js` builds the URL, `signCloudFrontUrl.js` signs with the CloudFront key pair (`CLOUDFRONT_SIGNING_KEY_PAIR_ID` from SSM; `CLOUDFRONT_SIGNING_PRIVATE_KEY` from Secrets Manager `vivreal/prod/client-api`, must be an RSA **private** key; public key → falls back to unsigned). `SignedUrlTtlSeconds` now defaults to **86400 (~24h)**, matching the live CI override, the old 300s default silently made non-CI deploys inert; wired to `CLOUDFRONT_SIGNED_URL_TTL_SECONDS`, decoupling signed-link TTL from cache length. The signed URL lands in `currentFile.source` on each media field, templates use it directly. Never build CDN URLs manually. **Signed srcset:** `resolveMediaUrl.js` returns `{name, source, srcset?}`, `buildSrcset` signs `${key}.${w}.${ext}` for widths `[320, 640, 1280]` (must match VR_CMS_API's `generateImageDerivatives.js`, which also writes a clamped source-resolution top rung for sources between ladder widths), emitted on collectionObjects/integrationObjects/preview/siteDetails read paths; files without derivatives degrade to `source` only. **Descriptor signing extended (2026-07):** `processSiteDetails.js` now signs previously-unsigned slots, `cta.{backgroundImage,backgroundVideo}`, media descriptors nested anywhere in `blocks[].config` (depth-bounded, cycle-safe walk), navigation `menuItems` + footer chrome media, `hero.background.slides[].{image,video,poster}` (carousel masthead, slide images stored as bare `{key,name,type}` descriptors never got `currentFile.source`, so live mastheads rendered words-only while local preview looked fine), and the top-level `emailPopup` image (its own pass, deliberately BEFORE the `mediaFields` early-return, writing `src` as well as `currentFile`); the earlier slots rendered as "no media" before because renderer consumers read only the inlined `currentFile.source`. (Infra view: `vivreal-media-cdn`.)
 
+### The site read leaves unread fields in Atlas (v6, #121)
+
+`getSiteDetails` is the hottest read in the fleet (one origin read per live site per CloudFront window), and on the shared Atlas tier every byte counts against the data-out quota. It is an `aggregate` with an EXCLUSION list, `SITE_READ_EXCLUDED_FIELDS` (the stale `siteDetails.values.favicon` mirror, `instantiation`, `deployment`, `campaignSender`), plus `pages[].collections` blanked to `[]` on every page that HAS blocks (the legacy binding mirror is read only for a block-less page). It shipped together with Vivreal_Templates #192, whose subscribe fallback became block-gated. An exclusion on purpose, so a field added later is served rather than dropped: before adding a key, prove no consumer of `GET /tenant/siteDetails` reads it.
+
+- **This repo's `errorHandler` NEVER calls `next()`, unlike the other backends' (`src/scripts/errorHandler.js`, 2026-09-23).** It only serializes the error onto `req.resData` for `handleTenantRoutes` to write. Its old trailing `next()` raced Express's deferred 404 on every 4xx (the `trackApiUsage()` await yields the loop), so callers got `Cannot GET /tenant/...` or a 502 from a double-send. A middleware that must continue the chain calls `next()` itself (only `frozenCheck`'s malformed-context pass-through does). Before that, `frozenCheck` calling the old handler from router position served frozen accounts a 200 (#69). Do not port another backend's `errorHandler` here, and test any gate by the status on the wire.
+- **A handled 4xx/5xx is a SUCCESSFUL Lambda invocation** under serverless-express, so `AWS/Lambda Errors` never moves. Alarm on a log literal the code emits on every failure exit, paired with an API Gateway 5xx alarm for throttled requests that never ran.
+
 ### frozenCheck
 
 `frozenCheck` middleware reads `frozen` from authorizer context. **A paused group is READ ONLY, not dark (H127, 2026-09-23):** the allowlist in `src/scripts/frozenPolicy.js` keeps serving the three content GETs, `preview`, `mcp.json`, `llms.txt`, `schedule.ics`, `delivery-quote` and `POST /sites/:siteId/mcp` (write tools refused inside `mcpRpc.js`), and refuses only `createCheckoutSession`, `validateCoupon`, `definedCollectionObject`, `sendContactEmail` and `sendOrderPlacedEmail` with 400 `GroupFrozen`. It used to refuse every route, which made Vivreal_Templates replace every page with a 503 interstitial. Consumers gate on the envelope's `code: 'GroupFrozen'`, never on the sentence (Client CLAUDE.md:198-205). `test/frozenPolicy.routes.test.js` fails on an unclassified route. **P0 fix (2026-07):** API Gateway stringifies authorizer context, so `frozen: false` arrived as the truthy string `"false"` and threw GroupFrozen on 18 non-frozen groups fleet-wide (triggered by the schemas 1.15.1→1.22.0 redeploy). `frozenCheck.js` now compares `=== true || === 'true'`.
@@ -103,7 +110,7 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 - **Array media-signing latent bug (fixed 2026-05-27, commit b3558ab):** the `targetField.name` pattern silently no-op'd on arrays; the bug lived in 5 duplicate copies (3 inline + 2 helpers). Galleries never signed despite appearing to work. Now one shared impl. Watch for regressions in media-signing helpers; `looksLikeMediaItem` requires `mimeType`. (Full bug class: `vivreal-media-cdn`.)
 - Responses can be very large. CORS allows credentials for customer sites; the Amplify origin is anchored to our own app ids, not to AWS's whole `amplifyapp.com` domain (`c5dd6e0`, 2026-09-27). Over-cap NEVER 402s (see "Quota gates, BOTH neutralized").
 - The old `basic/` + `ecommerce/` alternate-deploy dirs are DELETED, one deploy config now.
-- arm64-only. Sentry 100% dev / 20% prod, filters `GET /health`. (`aws-xray-sdk` in package.json is vestigial, zero code refs.)
+- arm64-only. Sentry traces sample at `SENTRY_TRACES_SAMPLE_RATE`, from the `SentryTracesSampleRate` template parameter (default `1.0`, no CI override; read `sam-template.yaml`), and filter `GET /health`. (`aws-xray-sdk` in package.json is vestigial, zero code refs.)
 - This is the **public unbounded service**, its connection-manager health is critical. Tenant databases are now `useDb` views of ONE shared client (`src/scripts/mongo.js`), 4 sockets typical and 6 at most per container whatever the tenant count (Client CLAUDE.md, Multi-Tenant Database). Saturating Atlas conns here can 500 the whole platform, it's the one capped via reserved concurrency. See `vivreal-atlas-topology` + `vivreal-lambda`.
 - **Public content GET filter-drop fix (2026-08)**: `getCollectionObjects` was silently dropping requested filter keys when a collection had >50 items or a sparse field, sampling now falls back correctly. Filter fan-out is bounded server-side: validator caps `filters` at 12 keys, existence checks sliced to 5.
 - **Media-signing completeness sweep (2026-08)**: sites with no `mediaFields` registry now get page/hero/cta/chrome media signed too, closed gaps in the cta subtree (band-variant `art[]`), the two wordmark seats (`hero.wordmark.image`, `footer.wordmark.imageKey`), `hero.collage[]`/`hero.overlays[]`, and per-binding `sectionConfig` media.
@@ -111,20 +118,6 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 - **VR_Client_Auth**: Mongo timeouts are now bounded throughout the authorizer, with a new test harness that closed 3 fail-closed defects; the deployed Lambda bundle now EXCLUDES non-runtime scripts/tests/docs (a seed script used to ship inside the authorizer zip).
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
 
-## Deploy model: release train (2026-08-15): VR_Client_API only, NOT VR_Client_Auth
+## Deploy model: release train, VR_Client_API only
 
-Merging VR_Client_API's `main` no longer deploys prod. Prod serves from the fixed `stable`
-branch. Friday 5pm PST (cron `0 1 * * 6` UTC Saturday) `release-cut.yml` cuts `release/vX.Y` from `main` and tags it; Monday
-**15:45 UTC** (`.github/workflows/promote.yml:14`) `promote.yml` force-with-lease moves `stable` to the newest tag, CMS (15:00), Secure (15:15) and Main (15:30)
-promote first, then Client, then portal last (16:00). Incremental
-release (2026-08-19): a backport mints a PATCH of the line's last tag, never a new minor.
-`backport.yml` cherry-picks main-merged commits onto the line, no tag, no bump, no deploy; ship
-now by dispatching `promote.yml` with `target=release/vX.Y` (tags `vX.Y.Z+1`), or do nothing and
-Monday's cron auto-mints the patch and ships it (the cron refuses only when the line's last tag
-is yanked). Never dispatch `release-cut.yml` for a backport, a cut forks a new minor off ALL of
-`main`. Rollback (`rollback.yml`, dispatch-only) moves `stable` back to a prior tag and yanks
-it, **but a force-push that REWINDS `stable` to an ancestor fires NO GitHub Actions push run**
-(forward re-points do fire), so rollback must ALSO manually dispatch
-`gh workflow run lambda_api.yml --ref stable` or the old build keeps serving. Full runbook:
-`VR_Client_API/docs/RELEASE.md`. **VR_Client_Auth is UNCHANGED**, it still deploys straight off
-a push to `main`, same as before.
+Prod serves `stable`, never `main`. The shared model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`. **VR_Client_Auth is not on the train**: it deploys straight off a push to `main`.

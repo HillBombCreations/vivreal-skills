@@ -63,7 +63,7 @@ They are different fields with different jobs and they look alike in a doc dump:
 | Field | Example | Drives |
 |---|---|---|
 | `dbKey` | `pod_01` or `pod_02` | Tenant DB routing (`dynamicDb[dbKey]`). Those two are the ONLY live placements |
-| `key`   | `vivrealcontent` | S3 bucket `vivreal-{key}` + `active_ctx.bucketname` (`${type}-${key}`) + profile-switch lookup |
+| `key`   | `vivrealcontent` | S3 bucket `vivreal-{key}` unless the group stores its own `bucket` (25 of 26 do, 2026-10-15; the bucket is `bucketOf(group)`, see `vivreal-db`) + `active_ctx.bucketname` (`${type}-${key}`) + profile-switch lookup |
 
 Setting `key` to a dbKey value points every media URL at a bucket that does not
 exist. It fails **SILENTLY**, the CDN URLs are still correctly signed, every

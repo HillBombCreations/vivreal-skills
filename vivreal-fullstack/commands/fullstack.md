@@ -37,7 +37,7 @@ The user wants to scaffold a new feature that spans the Vivreal stack. Generate 
 | Response pattern | `req.resData = { status, response }` | `req.resData = { status, response }` | `req.resData = { status, response }` |
 | Shared schemas | `@hillbombcreations/schemas` | Inline models | Inline models |
 
-**Critical**: CMS API expects the query param `key` for dbKey. Secure API expects `dbKey`. The portal's `injectCtxParams()` helper sets `key` and `groupID`, Secure API routes must also manually add `dbKey` if the upstream reads it that way.
+**Critical**: CMS API expects the query param `key` for dbKey. Secure API expects `dbKey`. The portal's `injectCtxParams()` helper sets `key` and `groupID`, so for a Secure route set `dbKey` (and `groupID`) manually INSTEAD OF calling `injectCtxParams()`, never in addition: Secure's Joi `.keys()` validators reject the unknown `key` param with a 400 (and a param added "ahead of" a backend release breaks production the same way, so read the deployed validator first).
 
 ## Checklist Template
 
@@ -54,7 +54,7 @@ Generate this checklist (adapt based on feature):
   - CMS: `process.env.NEXT_PUBLIC_CMS_URL || 'https://cms.vivreal.io'`
   - Secure: `process.env.NEXT_PUBLIC_SECURE_URL || 'https://secure.vivreal.io'`
   - Main: `process.env.NEXT_PUBLIC_MAIN_API || 'https://api.vivreal.io'`
-- [ ] Implement `buildPath`, for CMS routes use `injectCtxParams()` (sets `key` + `groupID`); for Secure routes also add `dbKey` manually
+- [ ] Implement `buildPath`, for CMS routes use `injectCtxParams()` (sets `key` + `groupID`); for Secure routes set `dbKey` + `groupID` manually INSTEAD of `injectCtxParams()` (an extra `key` is a 400)
 - [ ] Set `label` for logging (e.g. `'collectionObjects/create'`)
 - [ ] Default timeout is 15s, set `timeoutMs` only if you need something different
 - [ ] Add `validateBody` for input validation (return error string or null)

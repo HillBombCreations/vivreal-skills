@@ -84,6 +84,20 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if absent
   the only copy: `Vivreal.domainOrders` carries a `dbKey`, and `Vivreal.placement_weights` stores
   the placement name **as `_id`**, which is immutable and therefore cannot be repointed by a field
   update. Scan for the name rather than assuming where it lives.
+- **The domain-order copy lives in `Vivreal.domainOrders` (camelCase), and it is the live one.** The
+  lowercase `domainorders` an old model registration produced is gone (VR_Secure_API #231 plus a data
+  migration; measured absent 2026-10-15), so the "empty orphan" note older skills carried is backwards.
+  Mongoose lowercases and pluralizes a model name with no `collectionName`, which is how two copies
+  existed at all.
+- **The same site `_id` can exist in more than one database.** The live site renders the copy in the
+  group's placement (`<group.dbKey>.sites`). During the pod migration the help site existed under one
+  `_id` in two databases, and two writes went to the copy nothing reads. Before any site write, check
+  for the `_id` elsewhere and verify against the RENDERED page.
+- **An undeclared `tenant-db` model is `undefined`, not unbound.** `createLegacyMainDb` builds `DB` as
+  `{ conn }` plus one key per DECLARED model, and each Lambda declares its own narrow map, so
+  `mainDb.DB.groups` in a worker that never declared `groups` is a `TypeError`, not a connection
+  error. A mock carrying extra models hides it at 100% coverage. Read the worker's own map, and pin
+  `Object.keys(mainDb.DB)` against the real one in a test.
 - **The `group.database` legacy fallback is populated on at least one group.** The placement
   package's own source comment says this field "is already undefined on the one group anybody
   thought still needed it". That comment is wrong. Do not rely on the field being empty, and note
@@ -215,6 +229,13 @@ Two further independent reasons document count is the wrong axis, either suffici
    maximum per tier. This is the constraint that decides how many databases you can afford, and it
    is the one to do arithmetic against.
 3. **Connections**, and **operations per second**. See `vivreal-atlas-topology`.
+4. **The free tier's hard caps (the cluster is Atlas M0):** 100 databases and 500 collections for the
+   whole cluster, plus 100 operations per second and 10 GB of data out per rolling 7 days. Every pod
+   carries a full set of tenant collections and their indexes, so a new database spends a slice of the
+   500-collection budget permanently, before it holds a tenant. Count with `listDatabases` and
+   `listCollections` per database rather than trusting a remembered total. Flex (chosen 2026-10-14, switch held) removes only the data-transfer cap (unlimited
+   on Flex); the 100 databases, 500 collections and 500 connections stay, and operations above
+   100/s are billed up to 500. `vivreal-atlas-topology` carries the status.
 
 **The honest position:** the thing that matters is unmeasurable on this tier, everything measurable
 has substantial headroom, and document count is a third thing that is not a limit at all.

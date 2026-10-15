@@ -21,7 +21,12 @@ Customers can author their **navbar and footer** in Studio; the renderer falls b
 
 ### The strict-mode subdoc trap (data-loss hazard)
 
-The `navigation`/`footer` subdocs are declared as **Mixed** on `siteSchema` **explicitly** because the parent site doc is strict-mode, **undeclared `$set` paths are silently dropped**. If you add a new chrome field, declare it on the schema (`Vivreal-Schemas` `siteSchema`) or it will never persist. (`Vivreal-Schemas` 1.16.0 added these subdocs.)
+The `navigation`/`footer` subdocs are declared as **Mixed** on `siteSchema` **explicitly** because the parent site doc is strict-mode, **undeclared `$set` paths are silently dropped**. If you add a new chrome field, declare it on the schema (`Vivreal-Schemas` `siteSchema`) or it will never persist. Page fields work the other way round: `PageSchema` is strict:false, but `bulkWrite` casts against the ROOT schema, so an undeclared page key is stripped there (page reorder never persisted until the v6 schemas minor declared `order`), and VR_Secure_API's page-update allow-list is the schemas package's `pageFields`.
+
+### Writing site values from a script
+
+- **Dotted and `$` body keys never reach VR_Secure_API** (`express-mongo-sanitize`), so `updates: { 'hero.title': ... }` arrives empty and 500s. Send each touched top-level field WHOLE, from a fresh read with only the target strings changed.
+- **`updateSiteValues` MERGES `siteDetails.values`** (absent key untouched, explicit `null` clears). Its unconditional `domainInformation` `$set` is safe only because Mongoose strips `undefined`. After any write, re-read the whole document and diff it against a pre-write backup: only the intended paths and `updatedAt` may differ.
 
 ### Renderer chrome facts
 

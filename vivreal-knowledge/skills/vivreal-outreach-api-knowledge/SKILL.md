@@ -5,9 +5,9 @@ description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach bac
 
 # VR_Outreach_API: knowledge digest
 
-Last synced: 2026-10-04 (Node 22 since 2026-10-02, `60f89a7`)
+Last synced: 2026-10-15 against `origin/main` (Node 22 since 2026-10-02, `60f89a7`)
 
-The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (Node 20, AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Portal reaches it via `src/app/api/proxy/outreach/*`.
+The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (Node 22, `nodejs22.x` in `template.yaml`; AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Portal reaches it via `src/app/api/proxy/outreach/*`.
 
 Authoritative sources: `C:\repos\VR_Outreach_API\README.md` (full route table) + `docs/` + `template.yaml`, there is NO `CLAUDE.md` in this repo. For deeper read-only analysis with citations, dispatch the `outreach-api` expert agent. For driving outreach via MCP, see `vivreal-outreach-mcp-knowledge`.
 
@@ -44,7 +44,7 @@ Deploys on push to `main` only → prod stack `VR-Outreach-API` (`.github/workfl
 
 ## Prospects: RETIRED (2026-07-27)
 
-- The `/prospects` router + mount, `api/prospectStore.js`, `api/prospectSeedGate.js`, `db/schemas/prospect.js`, `utils/sanitizeText.js`, and the golden fixture + gen script are all DELETED; the operator dropped `Vivreal.prospects`. Leads live in `C:\Leads\Data\prospects.jsonl`; `C:\Leads\lib\prospectToContact.js` is now the SOLE seed-gate implementation, no twin to keep in lockstep.
+- The `/prospects` router + mount, `api/prospectStore.js`, `api/prospectSeedGate.js`, `db/schemas/prospect.js`, `utils/sanitizeText.js`, and the golden fixture + gen script are all DELETED; the operator dropped `Vivreal.prospects`. Leads live in `vivreal-hq/packages/leadgen/Data/prospects.jsonl` (gitignored); `vivreal-hq/packages/leadgen/lib/prospectToContact.js` is now the SOLE seed-gate implementation, no twin to keep in lockstep.
 - **What survived and why**: `src/api/companyImportValidation.js` (`computeDedupKey`, `validateCompanyRow`, `synthesizeWebsite`, `directoryListingHost`, FREE_MAIL_DOMAINS) stayed, it serves `POST /companies`, `POST /companies/import`, `db/resolveCompanies.js`, and `scripts/audit-contact-integrity.js`. The edan.io listing-only carve-out stayed (coverage relocated to `tests/api/companyImportValidation.test.js`), and the file is still a byte-identical mirror of C:\Leads `lib/verifyMapsSite.js`.
 - The only remaining lead-gen path into Outreach is `seed-outreach.js --emit` → `POST /companies/import` + `POST /contacts/import`. **Hookless seeding** survives on that boundary: name + website/domain is the seed bar; hooks are NOT required. Listing-only leads seed a company-only doc with a blank website. Caveat: `{{personalizationHook}}` renders as an empty string for hookless companies, pair hookless batches with hook-independent sequences.
 

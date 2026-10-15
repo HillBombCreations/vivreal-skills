@@ -63,10 +63,9 @@ The passive **`sentry-tracer`** knowledge skill (in the `vivreal-knowledge` plug
 | `vr-client-auth` | VR_Client_Auth Lambda authorizer | node | **100%** | API key validation for Client API |
 | `site-deployment` | Vivreal_EventHandler (Step Functions) | node | **100%** | Site deploy pipeline (10 steps: createGithubBranch -> markSiteLive) |
 | `vivreal-mcp-server` | VR-MCP-Server (MCP Lambda) | node | **100%** | OAuth flow, tool entry/exit, downstream CMS+Secure API breadcrumbs |
-| `vivreal-templates` | Vivreal_Templates (customer sites on Amplify compute) | javascript-nextjs | read the SDK config | Customer-site render and route errors. Slug inferred from its issue prefix (`VIVREAL-TEMPLATES-*`), confirm with `find_projects` |
+| `vivreal-templates` | Vivreal_Templates (customer sites on Amplify compute) | javascript-nextjs | **0% (errors only)**, `tracesSampleRate: 0` in `src/instrumentation.ts` and `src/instrumentation-client.ts` | Customer-site render and route errors, no tracing by design. Slug inferred from its issue prefix (`VIVREAL-TEMPLATES-*`), confirm with `find_projects` |
 
 This table is not a roster. VR_Outreach_API reports too (its DSN is `/vivreal/prod/outreach/sentry-dsn`); list the org's projects with `find_projects` before concluding a service sends nothing.
-| `vivreal-templates` | Vivreal_Templates (client sites) | javascript-nextjs | **0% (errors only)** | End-user template site errors, no tracing by design |
 
 ### Distributed Tracing Architecture (current as of 2026-05-18)
 

@@ -111,9 +111,9 @@ rule is the #1 footgun. Wrapped by **`/db-query`** and **`/db-schema`**.
 
 ## 8. Growth / analytics report
 
-> Give me a growth read on **[signups / a specific funnel stage / acquisition channel / churn]** for **[time window]**. Pull real numbers from GA4, PostHog, and MongoDB, cross-reference them, and give week-over-week deltas plus the 2 to 3 actions that would move the metric most.
+> Give me a growth read on **[signups / a specific funnel stage / acquisition channel / churn]** for **[time window]**. Pull real numbers from GA4 and Clarity (consented visitors), the site traffic rollup and MongoDB, cross-reference them, and give week-over-week deltas plus the 2 to 3 actions that would move the metric most.
 
-Naming the metric + "pull real numbers from GA4/PostHog/Mongo" triggers `growth-advisor`
+Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth-advisor`
 (quantitative) rather than the strategy-lens `growth-auditor`. Commands:
 **`/growth-report`**, **`/funnel-analysis`**.
 

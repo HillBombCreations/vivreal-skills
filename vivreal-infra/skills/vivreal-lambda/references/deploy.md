@@ -17,6 +17,27 @@ The packaging/build/deploy facet of `vivreal-lambda`. (Concurrency/scaling lives
 
 **CI/CD = GitHub Actions → CloudFormation.** Workflow is typically `.github/workflows/lambda_api.yml`. VR_Client_Auth and Vivreal_EventHandler still auto-deploy prod on push to `main`, no manual deploy needed, push the branch. **VR_CMS_API, VR_Secure_API, VR_Main_API, and VR_Client_API do NOT**, since 2026-08-15 those four ship via a release train: `lambda_api.yml`'s prod trigger is push to the `stable` branch, which only moves on a staggered Monday `promote.yml` cron or a manual promote dispatch (`target=release/vX.Y`), and since 2026-08-19 the cron auto-mints a patch tag when backports landed on the line, reaching a line via each repo's `backport.yml` (PATCH semantics; never a new cut). A push to `main` in those repos fires zero prod workflow runs; the stack names above still apply, just on the new trigger. Full runbook: each repo's `docs/RELEASE.md`.
 
+## The release train, the one copy every expert and digest points at
+
+The four backends above and `Vivreal_Portal_Mobile` share one model. Experts and knowledge digests carry a one-line
+pointer here instead of their own copy (ten copies drifted apart before this section existed).
+
+- **Prod serves `stable`.** `release-cut.yml` cuts `release/vX.Y` from `main` and tags it (Saturday 01:00 UTC, which is
+  Friday evening Pacific). `promote.yml` force-with-lease moves `stable` to the newest tag on a Monday cron. The crons
+  are staggered and the stagger is a cross-repo contract (CMS first, then Secure, Main, Client API, portal last): read
+  the `cron:` line in each repo's `promote.yml` rather than a copied time.
+- **A backport is a PATCH, never a new minor.** `backport.yml` cherry-picks a main-merged commit onto the line (no tag,
+  no bump, no deploy). Ship it now by dispatching `promote.yml` with `target=release/vX.Y`, or the Monday cron mints the
+  patch and ships it (it refuses only when the line's last tag is yanked). Never dispatch `release-cut.yml` for a
+  backport: a cut forks a new minor off ALL of `main`.
+- **Before the owner's GO, a backport or a merge to `main` is a scheduled deploy**, because the Monday cron ships
+  whatever is on the line (the batch-release rule lives in `vivreal-workflow:release-engineer`).
+- **Rollback** (`rollback.yml`, dispatch only) moves `stable` back and yanks the tag, but a force-push that REWINDS
+  `stable` fires no push-triggered run, so also run `gh workflow run lambda_api.yml --ref stable` or the old build keeps
+  serving. The portal has its own `rollback.yml`; read it before using it.
+- **Not on the train:** Vivreal_EventHandler, VR_Client_Auth, VR_Outreach_API and VR-MCP-Server deploy on push to
+  `main`, and Vivreal_Templates promotes with its own `promote-stable` workflow (see `vivreal-site-deploy-pipeline`).
+
 ## VR_Secure_API template generation (its quirk)
 
 SAM source lives in `cloudformation/` **fragments**; the deployed template `cloudYamls/allRoutes.yaml` is **generated** by `node scripts/merge-template.js` (run by `npm run build` and by CI before deploy). **Never hand-edit `allRoutes.yaml`**, edit the fragment and re-merge. Since 2026-10-13 the merge also generates the API body and one Lambda permission per function (see the resource-policy cap below), so the fragments keep their `Events:` but the deployed template has no per-route permissions. `allRoutes.yaml` IS committed/tracked (CI relies on it).
