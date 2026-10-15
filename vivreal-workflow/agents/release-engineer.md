@@ -75,13 +75,16 @@ is a portal change, confirm that sign-off exists before pushing, backporting, or
 anything; portal branches stay **unpushed**, not merely undeployed, until the walk passes. Do not
 treat a green test gate as the bar; ask if the walk has not been named explicitly in the dispatch.
 
-**Before GO, a backport is a scheduled deploy.** All five train repos run `promote.yml` on
-staggered Monday crons (read `on.schedule` in each repo's `promote.yml`; never a copied time), so
-a backport landed on a release line ships at the next cron whether or not anyone said GO. Hold
-backports until GO, or confirm the train's promote is disabled first
-(`gh workflow view promote.yml -R <owner>/<repo> --json state -q .state` reads
-`disabled_manually`). The v6 release disabled all five at its step 0 and re-enabled each one only
-after that repo's own step had passed.
+**Before GO, a backport or a merge to `main` is a scheduled deploy.** All five train repos run
+`promote.yml` on staggered Monday crons (read `on.schedule` in each repo's `promote.yml`; never a
+copied time), so a backport landed on a release line ships at the next cron whether or not anyone
+said GO. The Saturday `release-cut.yml` cron cuts a new line from `main`, so a merge to `main`
+before GO also ships the following Monday. Hold both until GO, or confirm the train's promote is
+disabled first: `gh api repos/<owner>/<repo>/actions/workflows/promote.yml -q .state` reads
+`disabled_manually` (`gh workflow view` has no `--json state` on the installed gh). The v6
+release disabled all five at its step 0, re-enabled each repo's promote IMMEDIATELY BEFORE that
+repo's own dispatch (a disabled workflow cannot be dispatched), and on any STOP disabled it again
+first, before diagnosing anything.
 
 ## The release model is not one shape fleet-wide. Derive it, never guess it
 
@@ -167,8 +170,8 @@ follows it rather than on the version and silently returns the wrong line.
 Each of these cost a correction to the runbook mid-release. None is about the change being
 released; all of them are about a check reading wrong.
 
-- **Count a stack's functions from the list, never with JMESPath `length(...)`.** The CLI
-  paginates and applies `--query` per page, so `length(...)` on `list-stack-resources` printed
+- **Count a stack's functions from the list, never with JMESPath `length(...)`.** With `--output text` the AWS
+  CLI paginates and applies `--query` to each page separately, so `length(...)` on `list-stack-resources` printed
   26 and then 6 for an EventHandler stack holding 32. List the physical ids with `--output text`,
   pipe through `tr -d '\r'` (the Windows CLI ends text output with a CR, and a loop then
   silently skips the last item), and count with `wc -w`.
@@ -178,7 +181,7 @@ released; all of them are about a check reading wrong.
   (`C:/...`), or it reads `C:` as a remote host.
 - **A tarball packed on Windows is not byte-equal to the published Linux build.** `diff -r
   --strip-trailing-cr` absorbs trailing CRs, but autocrlf also turns a newline inside a
-  multi-line string (a JSX `className`) into a CRLF escape, so a few files still differ. Classify
+  multi-line string (a JSX `className`) into a CRLF escape, so a file can still differ (one file in v6, `TeamPage.js`). Classify
   every remaining difference before raising a STOP: a CR-only difference is not content, and the
   published build on the registry is the source of truth for what consumers resolve.
 - **Assert content, never a count of lines in a file you did not write.** A robots check that

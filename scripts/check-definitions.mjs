@@ -451,8 +451,12 @@ function ruleMirrorDrift(files) {
  *   1. a `.mcp.json` in a plugin tree here, which registers as `plugin_<plugin>_<server>`;
  *   2. an official plugin the fleet enables (context7, playwright, sentry);
  *   3. a project `.mcp.json` in a fleet repository, which only exists in sessions started in
- *      that repository (the portal and VR-MCP-Server declare `mongodb` and the `awslabs.*`
- *      servers; the CMS declares `aws-documentation` and friends), or a claude.ai connector.
+ *      that repository: Vivreal_Portal_Mobile declares `mongodb`, `mongodb-write`, `github` and
+ *      five `awslabs.*` servers; VR-MCP-Server declares six `awslabs.*` servers and NO `mongodb`;
+ *      VR_CMS_API declares `aws-documentation` and its `aws-*` siblings;
+ *   4. a server the user registers by hand, named by the repo that documents it: `vivreal`, the
+ *      Vivreal MCP itself (VR-MCP-Server docs/DEPLOYMENT_RUNBOOK.md, `claude mcp add --transport
+ *      http vivreal https://mcp.vivreal.io/mcp`); or a claude.ai connector (`claude_ai_*`).
  *
  * A WARNING, not a failure: a project-scoped server is legitimate where it is declared, and
  * the fix for an unknown one is a judgement (drop the grant, or name where it comes from).
@@ -463,6 +467,7 @@ const EXTERNAL_MCP_SERVERS = new Set([
   'plugin_sentry_sentry',
 ]);
 const PROJECT_SCOPED_MCP_SERVERS = new Set([
+  'vivreal',
   'mongodb',
   'mongodb-write',
   'github',

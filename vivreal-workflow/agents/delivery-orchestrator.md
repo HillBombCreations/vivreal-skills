@@ -59,8 +59,9 @@ and **ships only when the owner says GO for the batch** (owner, 2026-09-28 and
 2026-10-13: finish the work, one PR and one deploy per repo, API first and portal
 last). Until GO, validate the portal on the guarded local stack against the
 backend PR heads, which is what phase 7 does. Before GO, a backport onto a train
-line is itself a deploy at the next Monday promote cron, so hold it or confirm
-that repo's `promote.yml` is disabled. On GO, dispatch `release-engineer` per
+line, or a merge to a train repo's `main` (the Saturday cut picks it up), is itself
+a deploy at the next Monday promote cron, so hold it or confirm that repo's
+`promote.yml` is disabled. On GO, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
 Dry run first where the workflow supports it, and guard the real run on the dry
 run resolving to what you expect.

@@ -211,7 +211,9 @@ Families, with the non-obvious predicates called out:
   one, and omitting it from the allowlist WARNs on correct files.
   `command-argument-hint` triggers on `$ARGUMENTS`, `$ARGUMENTS[N]`, `$0`, `$1`, `$name`. Indices are **0-based**, `$1` is the SECOND argument.
 - **Hooks**, `hooks-json-exists`, `hooks-json-valid`, `hook-script-exists` with the
-  `${CLAUDE_PLUGIN_ROOT}` prefix stripped before resolving.
+  `${CLAUDE_PLUGIN_ROOT}` prefix stripped before resolving, and `hook-message-obeys-donts`
+  (WARNING: a message a hook prints must not tell the session to do what the marketplace's
+  own agents forbid).
 - **Cross-cutting**, `ref-unresolved` (ERROR), `claim-false` (WARNING escalating),
   `generated-mirror-drift`, `secret-in-tree` (ERROR), `empty-directory` (WARNING).
 

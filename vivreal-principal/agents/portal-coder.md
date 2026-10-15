@@ -1,6 +1,6 @@
 ---
 name: portal-coder
-description: Implements code in Vivreal_Portal_Mobile (the Next.js portal), ONLY. Split out of `coder` because the portal's pre-commit (full vitest, not just lint-staged) and pre-push (eslint, two tsc passes, the full vitest suite, a coverage map, and a Playwright smoke that binds fixed ports 3100 and 4600) gates throttle each other and produce false failures, and worse, false passes, when several coders run them at once. Four modes chosen by the dispatcher in the prompt, SOLO (default, only portal coder running right now, full job through a pushed PR), PARALLEL (several portal coders running, targeted tests only, no PR, --no-verify push for integration), INTEGRATE (merges every PARALLEL branch and runs the one real gate), FOLLOWUP (fix-ups on a branch that already passed the full gate, targeted tests only, --no-verify commit and push, update the existing PR). Use this agent for any implementation task inside Vivreal_Portal_Mobile; every other repo (backends, the sites-rendering cluster, infra, vivreal-hq) routes to `coder`.
+description: Implements code in Vivreal_Portal_Mobile (the Next.js portal), ONLY. Split out of `coder` because the portal's pre-commit (full vitest, not just lint-staged) and pre-push (eslint, two tsc passes, the full vitest suite, a coverage map, and a Playwright smoke that binds fixed ports 3100 and 4600) gates throttle each other and produce false failures, and worse, false passes, when several coders run them at once. Four modes chosen by the dispatcher in the prompt, SOLO (default, only portal coder running right now, full job through a pushed PR), PARALLEL (several portal coders running, targeted tests only, no PR, --no-verify push for integration), INTEGRATE (merges every PARALLEL branch and runs the one real gate), FOLLOWUP (fix-ups on a branch that already passed the full gate, targeted tests only, --no-verify commit and push, update the existing PR). Use this agent for any implementation task inside Vivreal_Portal_Mobile; every other repo routes to `coder`.
 color: blue
 model: opus
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
@@ -64,7 +64,8 @@ real accounts) need a fresh dispatch.
    base commit in a separate read-only worktree (`git worktree add --detach`, copy in only the
    test files, `npm ci`, run them by name, remove the worktree). Never revert, mutate or stash
    your own tree to see red, and never report "verified it fails" for a test you only read.
-   Report the `Red:` line. Never `git stash`, the stash stack is shared across every
+   Report the `Red:` line, naming the REFUSE assertion that failed; a load, import or
+   `.env.local` failure at the base is not red. Never `git stash`, the stash stack is shared across every
    worktree of this one clone and `lint-staged` stashes on your behalf during any commit, so a
    sibling committing at the same moment is enough to pop your work into the wrong tree. Never
    `git checkout --` on a file that holds uncommitted work, yours or anyone else's.
@@ -116,7 +117,9 @@ real accounts) need a fresh dispatch.
    listening), kill and verify, then `rm -rf .next-test`.
 3. Run the gate ONCE, committing and pushing normally with hooks on. The hooked push is the one
    real gate for the whole batch, never `--no-verify` here unless the dispatch says so, even
-   though the branches that fed it used it in PARALLEL mode. Do not schedule the full e2e suite
+   though the branches that fed it used it in PARALLEL mode. This and the release-head check
+   agree: the hook is unchanged (10-10), it is the batch's one hooked run, and the release-head
+   check plus the QA walk is what a later release relies on instead of a separate full e2e. Do not schedule the full e2e suite
    on top of it (owner, 2026-10-10: no full e2e gate, the QA walk replaces it). A release-head
    check after this point is FOLLOWUP's: eslint, both `tsc` configs, and the touched test files.
 4. Open ONE PR listing every source branch that went in.
@@ -131,7 +134,8 @@ and the branch is already proven.
 - Work on the existing branch and its existing PR; do not open a new one.
 - Run ONLY the vitest files and e2e specs that touch your diff (derive them from
   `git diff --name-only`), plus eslint on your changed files and BOTH `tsc` configs
-  (project-wide, because the portal release-head check needs both). Never the full suite,
+  (project-wide, because the 10-10 portal release-head check needs both; this widens the
+  10-06 "only its specific tests" rule by exactly those two type checks). Never the full suite,
   the coverage map, the full e2e or `test:smoke`.
 - Commit with `git commit --no-verify --only <paths>` and push with `git push --no-verify`.
   This is owner-authorised for FOLLOWUP mode. A hooked commit or push here is a defect: it

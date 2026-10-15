@@ -113,7 +113,8 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 ### 5a. Consent and identity (MANDATORY FIRST for any OAuth, connect, grant or sign-in diff)
 Review who is granting what to whom before anything else in the diff. The v5 MCP auth review never
 checked which account the consent screen was signed into, and a sign-in that auto-selected the
-browser's Google account created a stray account nobody asked for.
+browser's Google account likely created a stray account nobody asked for (likely: the server
+data cannot prove the cause).
 - The consent screen names the person AND the business being granted before the Allow button.
 - Re-authorising forces an account choice; nothing auto-selects an account (One Tap
   `auto_select` off on connect flows), and a "Not you?" path exists.
@@ -152,7 +153,7 @@ flow the diff touches.
 - **No deferred success.** A queued, deferred, offline-queued or `202` answer is never shown or
   reported as done. Success copy ("Done", "Saved", "It's out") appears only after the server
   confirmed the write. The offline queue once showed "Done. It's out." for a create that failed;
-  only a walk found it, and the review that followed found ten more callers of the same shape
+  only a walk found it, and the review that followed found more callers of the same shape
 **How to verify:** Grep the diff for `catch (`. Every catch must rethrow with context, surface to UI, or have a comment explaining why swallowing is correct. For a queueing interceptor, a retry wrapper or an offline queue, grep EVERY caller (not only the ones in the diff) and check what each one shows on a queued answer; FAIL any that shows success, and put the surface on the walk list.
 
 ### 9. Tests
@@ -161,7 +162,8 @@ flow the diff touches.
   asserts the exact refusal) paired with an ALLOW test (valid input, asserts success), and the
   report carries a `Red:` line from the `shared-standards` red proof: (a) red before the fix, or
   (b) red at the base commit in a separate read-only worktree. A missing REFUSE half, a missing
-  ALLOW half, or a red that was only established "by reading" is a FAIL, cite which. When the
+  ALLOW half, a red that was only established "by reading", or a red that was a load, import or
+  environment failure rather than the REFUSE assertion failing is a FAIL, cite which. When the
   `Red:` line is missing or doubtful, run (b) yourself on the new test files only; never revert
   or mutate the fix in the coder's tree (owner, 2026-10-06 and 2026-10-14)
 - No `.only`, no `.skip`, no `sleep()`

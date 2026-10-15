@@ -70,7 +70,8 @@ valid case. Owner rule (2026-10-06): never prove this by mutating the fix back o
 test go red and then restoring it, that cycle is retired for every check. Red is established by
 the `shared-standards` red proof instead (owner, 2026-10-14): (a) the test ran red before the fix
 existed, or (b) it ran red at the base commit in a separate read-only worktree. "By reading" is
-not a proof; report the `Red:` line.
+not a proof, and a load, import or env failure at the base is not red; report the `Red:` line
+naming the REFUSE assertion that failed.
 
 ## A fix can be inert and still pass its tests
 

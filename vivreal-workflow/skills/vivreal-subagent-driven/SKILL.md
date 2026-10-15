@@ -59,10 +59,12 @@ Read plan once → note Global Constraints → create todos + ledger
        4. coder implements, tests, commits, self-reviews → reports status
        5. Package the diff → dispatch reviewer (task-reviewer-prompt.md)
        6. reviewer reports spec ✅ + quality Approved?
-            no  → dispatch coder in fix mode for Critical/Important → re-package → re-review
+            no  → dispatch coder in fix mode for Critical/Important (portal-coder in
+                  FOLLOWUP mode once its branch passed the full gate) → re-package → re-review
             yes → append "Task N: complete" to the ledger, mark todo done
   └─ all tasks done → dispatch reviewer once on the whole branch (final gate)
-       └─ findings? → ONE coder fix dispatch with the full list → re-review
+       └─ findings? → ONE coder fix dispatch with the full list (portal: FOLLOWUP
+          mode, never SOLO, on a branch that passed its gate) → re-review
   └─ offer wrap-up (commit / PR), never push to main, never commit without OK
 ```
 
@@ -248,7 +250,7 @@ on the fix, and reports results.
   executes (invoke chain skills by their full plugin-qualified names).
 - **Subagents driven:** `coder` (implementer, every repo except Vivreal_Portal_Mobile),
   `portal-coder` (same, dedicated to Vivreal_Portal_Mobile, SOLO mode here since this skill
-  runs one coder at a time), and `reviewer` (per-task + final), from the vivreal-principal
+  runs one coder at a time, FOLLOWUP for a fix-up on a branch that already passed its gate), and `reviewer` (per-task + final), from the vivreal-principal
   plugin; `tester` (optional regression coverage), from the vivreal-workflow plugin.
 - **Read-first for every dispatch:** the `shared-standards` skill.
 - **Alternatives:** `/coordinator` for production bugs (adds research + document

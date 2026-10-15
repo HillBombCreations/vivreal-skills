@@ -273,20 +273,28 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   loaded. See the `verification-discipline` skill.
 - **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
 - Sites/integrations pages serialized under parallel workers, don't break that.
-- **Red proof, the one rule every agent follows (owner, 2026-10-06 and 2026-10-14).** A guard,
-  validation or fix is proven by a direct REFUSE test (feeds the bad input or bad object, asserts
-  the exact refusal) paired with an ALLOW test (valid input, asserts success). Nothing in the
-  working tree is ever reverted, mutated or stashed to see red. Red is established one of two
-  ways, and the report names which:
-  - **(a) Test first.** The new test ran red before the fix existed, then green after it.
-  - **(b) Red at the base commit, in a separate read-only worktree.** `git worktree add --detach
-    <scratch path> <base sha>` (detached is right here: nothing is ever committed in it), copy in
-    ONLY the new or changed test files and their test-only helpers, never source, `npm ci`, run
-    those files by name, record the result, then `git worktree remove --force <scratch path>`.
+- **Red proof, the one rule every agent follows.** A guard, validation or fix is proven by a
+  direct REFUSE test (feeds the bad input or bad object, asserts the exact refusal) paired with an
+  ALLOW test (valid input, asserts success). Nothing in the working tree is ever reverted, mutated
+  or stashed to see red (owner, 2026-10-06). Red is established one of two ways, and the report
+  names which:
+  - **(b) Red at the base commit, in a separate read-only worktree** (owner decision D1,
+    2026-10-14, the standard proof). `git worktree add --detach <scratch path> <base sha>`
+    (detached is right here: nothing is ever committed in it), copy in ONLY the new or changed
+    test files and their test-only helpers, never source, `npm ci`, run those files by name,
+    record the result, then `git worktree remove --force <scratch path>`.
+  - **(a) Test first** (added by the 2026-10-14 skills audit, not by D1). The new test ran red
+    before the fix existed, then green after it. Same counting rule as (b).
 
-  "By reading" is not a proof, and a report never says "verified it fails" for it. The report
-  line is `Red: (a|b) <test files> at <sha>: <n> failed / <m> passed; green at <head sha>: <k>
-  passed`. A REFUSE test that is still green at the base commit pins nothing; rewrite it.
+  **Red counts only when the REFUSE assertion itself fails.** A load, import or environment
+  failure is not red: a test that cannot import an export the fix adds, a missing `.env.local`,
+  a fixture that does not exist at the base. Those fail on any code and prove nothing about the
+  guard; make the test load at the base (stub only what the fix ADDS, never the guard) or say red
+  could not be established. "By reading" is not a proof, and a report never says "verified it
+  fails" for it. The report line names the failing assertion:
+  `Red: (a|b) <test file> "<REFUSE test name>" at <sha>: failed on <expect line>; green at <head
+  sha>: <k> passed`. A REFUSE test that is still green at the base commit pins nothing; rewrite
+  it.
 - **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. The check is the red proof above, never an edit to the implementation: a mirroring test stays green at the base commit, so run (b) and it shows.
 - **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
