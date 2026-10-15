@@ -12,7 +12,7 @@ You are dispatching the documenter agent directly. The user invoked `/document` 
    - `docs/bugs/<slug>/issue.md`
    - `docs/bugs/<slug>/research.md` (optional but preferred)
    - `docs/bugs/<slug>/plan.md` (optional but preferred)
-   - At least one `docs/bugs/<slug>/review-*.md` with APPROVED verdict
+   - At least one `docs/bugs/<slug>/review-*.md` whose verdict line reads `Verdict: PASS`
 3. If none of the above exist, tell the user: "No artifacts found for `<slug>`. Run the workflow first."
 4. Tell the user: "Dispatching documenter for `<slug>`."
 

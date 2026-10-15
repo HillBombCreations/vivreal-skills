@@ -38,8 +38,8 @@ prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-
    | total_tokens | <from agent result> |
    | tool_calls | <from agent result> |
    | duration_ms | <from agent result> |
-   | verdict | APPROVED or REJECTED |
+   | verdict | PASS or FAIL, from the review file's `Verdict:` line |
    ```
 3. Show the user the verdict and any FAIL items
-4. If REJECTED, suggest: "Run `/code <slug>` to address the FAIL items, then `/bug-review <slug>` again."
-5. If APPROVED, suggest: "Run `/document <slug>` to generate RESOLUTION.md and PR description."
+4. If the verdict line reads `Verdict: FAIL`, suggest: "Run `/implement <slug>` to address the FAIL items, then `/bug-review <slug>` again."
+5. If it reads `Verdict: PASS`, suggest: "Run `/document <slug>` to generate RESOLUTION.md and PR description."
