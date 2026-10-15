@@ -27,30 +27,34 @@ Trace the complete user journey through Vivreal's activation funnel, identify dr
 
 ## The Vivreal Activation Funnel
 
+Every GA4 stage is a CONSENTED subset (GA loads only after the cookie banner is accepted) and is read through VR_Secure_API's admin analytics routes; the event names are the ones the portal emits (`src/lib/analytics.ts` and the auth screens; `FUNNEL_STEPS` in Secure's `getFunnelReport.js` lists the funnel). There is no PostHog. Sources in detail: the `growth-context` skill.
+
 ```
 Stage 1: AWARENESS
-  └─ Landing page visit (GA4 pageview)
+  └─ Landing page visit (GA4 traffic route; customer sites: Vivreal.site_traffic_dailies)
 
 Stage 2: SIGNUP
-  ├─ Signup page reached (GA4: /app/register pageview)
-  ├─ Signup form submitted (PostHog: signup_started)
-  └─ Signup completed (PostHog: signup_completed + MongoDB: new user doc)
+  ├─ Studio demo viewed / demo CTA clicked / demo signup submitted (GA4: studio_demo_viewed, studio_demo_cta_opened, studio_demo_signup_clicked)
+  ├─ Register started (GA4: register_start_email)
+  └─ Register completed (GA4: register_complete, sign_up; MongoDB: a Vivreal.leads row)
 
 Stage 3: ACTIVATION
-  ├─ First login after signup (PostHog: first_login)
-  ├─ First group created (MongoDB: groups.createdAt within 24h of user.createdAt)
-  └─ First collection created (MongoDB: collectiongroups created in that group's DB)
+  ├─ First group created (MongoDB: Vivreal.groups.createdAt)
+  ├─ Activated (MongoDB: Vivreal.leads.activated / activatedAt, set on the first content create)
+  └─ First content type created (MongoDB: <dbKey>.collection_groups for that groupID)
 
 Stage 4: VALUE REALIZATION
-  ├─ First collection object added (MongoDB: collectionobjects in group DB)
-  ├─ First integration connected (MongoDB: integrations in group DB)
-  └─ First site deployed (MongoDB: sites with status=live for that groupID)
+  ├─ First item added (MongoDB: <dbKey>.collection_objects for that groupID)
+  ├─ First integration connected (MongoDB: Vivreal.groups.integrations[])
+  └─ First site live (MongoDB: <dbKey>.sites with deployment.status "live" for that groupID)
 
 Stage 5: CONVERSION
-  ├─ Upgrade page visited (GA4: /app/tier-select pageview)
-  ├─ Checkout initiated (PostHog: upgrade_initiated)
-  └─ Paid subscription started (MongoDB: groups where tier != 'free' and recent update)
+  ├─ Plan page visited (GA4 traffic route: /app/tier-select)
+  ├─ Checkout started (GA4: begin_checkout)
+  └─ Paying (MongoDB: a non-empty Vivreal.groups.stripeSubscriptionID; NEVER tier != 'free', comped groups pay nothing)
 ```
+
+`<dbKey>` is each group's STORED placement (`pod_01`, `pod_02`); tenant collections are snake_case.
 
 ## Analysis Procedure
 
@@ -64,9 +68,9 @@ For each stage, collect:
 - **Median time** between stages (if timestamp data available)
 
 Data source priority:
-1. **PostHog** for event-based stages (signup_started, signup_completed, etc.)
-2. **MongoDB** for business object stages (group created, collection created, site deployed)
-3. **GA4** for page-view stages (landing, signup page, tier-select page)
+1. **MongoDB** for business object stages (lead, group, activation, content, site live, paying); it is the only unconsented source
+2. **GA4** (admin funnel and traffic routes) for event and page-view stages, labelled as consented
+3. **Clarity snapshots** (`Vivreal.clarity_daily_snapshots`) for engagement on the drop-off page
 
 ### Step 2: Identify the Biggest Drop-off
 
@@ -80,8 +84,8 @@ Calculate which stage transition has:
 For the worst stage, investigate:
 - **Time-to-complete**: How long do users who succeed take? Are slow users more likely to drop off?
 - **Segment differences**: Do mobile users drop off more than desktop? Do organic users convert better than paid?
-- **Error correlation**: Check PostHog for error events or Sentry for crashes during this stage
-- **Feature blockers**: Is there a specific feature that's confusing? Check if users attempt and fail (PostHog events)
+- **Error correlation**: Check Sentry for crashes during this stage, and Clarity's dead and rage clicks on that page
+- **Feature blockers**: Is there a specific feature that's confusing? Check Clarity engagement on that screen and the GA4 auth failure events (`login_failure`, `register_failure`)
 
 ### Step 4: Generate Recommendations
 

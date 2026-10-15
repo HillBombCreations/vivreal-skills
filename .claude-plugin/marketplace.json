@@ -67,7 +67,7 @@
     {
       "name": "vivreal-growth-analytics",
       "source": "./vivreal-growth-analytics",
-      "description": "Growth analytics and funnel analysis, the growth-advisor agent + growth-context skill + /growth-report and /funnel-analysis commands, unifying GA4, PostHog, and MongoDB user data."
+      "description": "Growth analytics and funnel analysis, the growth-advisor agent + growth-context skill + /growth-report and /funnel-analysis commands, unifying consented GA4 and Clarity, the first-party site traffic rollup, and MongoDB signup and paying-group data."
     },
     {
       "name": "vivreal-cms",
