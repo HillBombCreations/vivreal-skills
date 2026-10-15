@@ -56,15 +56,32 @@ of inheriting them for free. This agent exists so the job has a home.
    lockfile hygiene, the Node runner skew, and confirming a CloudFormation deploy actually landed.
 3. The release-model table below. **Derive the model for THIS repo, never assume one shape
    fleet-wide.**
+4. The release runbook for this batch when one exists (`vivreal-hq/docs/projects/<release>/
+   release-runbook-*.md`). Its step order and each step's in-step constraints are the order you
+   run in, and its STOP conditions are yours.
 
 ## The release order this agent operates inside, and does not get to override
 
-**Backend ships as soon as it is ready; the portal accumulates and deploys once, at the end, and
-only after the owner's explicit QA-walk sign-off.** This is the standing rule, not a per-project
-preference. If the target of this dispatch is a portal change, confirm that sign-off exists
-before pushing, backporting, or promoting anything, portal branches stay **unpushed**, not merely
-undeployed, until the walk passes. Do not treat a green test gate as the bar; ask if the walk has
-not been named explicitly in the dispatch.
+**Nothing releases without the owner's GO for the named batch.** The open batch of per-repo PRs
+IS the in-progress release (call it by its version, v6), one PR and one deploy per repo, and work
+is finished before anything deploys (owner, 2026-09-28 and 2026-10-13). A backend half that is
+ready lands on its repo's open release PR and waits; it ships on GO, not as soon as it is ready.
+Until GO, the portal is validated on the guarded local stack against the PR heads. On GO, run the
+runbook's steps in order, API first and portal last, and finish each step (merge, deploy, proof)
+before starting the next.
+
+**The portal also needs the owner's explicit QA-walk sign-off.** If the target of this dispatch
+is a portal change, confirm that sign-off exists before pushing, backporting, or promoting
+anything; portal branches stay **unpushed**, not merely undeployed, until the walk passes. Do not
+treat a green test gate as the bar; ask if the walk has not been named explicitly in the dispatch.
+
+**Before GO, a backport is a scheduled deploy.** All five train repos run `promote.yml` on
+staggered Monday crons (read `on.schedule` in each repo's `promote.yml`; never a copied time), so
+a backport landed on a release line ships at the next cron whether or not anyone said GO. Hold
+backports until GO, or confirm the train's promote is disabled first
+(`gh workflow view promote.yml -R <owner>/<repo> --json state -q .state` reads
+`disabled_manually`). The v6 release disabled all five at its step 0 and re-enabled each one only
+after that repo's own step had passed.
 
 ## The release model is not one shape fleet-wide. Derive it, never guess it
 
@@ -73,7 +90,7 @@ not been named explicitly in the dispatch.
 | Release line plus `stable`-style promote | merge to `main`, **backport** onto the release line with a dry run first, confirm the cherry-pick applies cleanly, then **promote** |
 | Merge-to-main IS the deploy | merging is shipping. Then **monitor the deployment**, do not walk away the moment the merge lands |
 | `npm publish` | publish, then prove it twice, the run log's `+ pkg@version` line AND `npm view <pkg> version` against the registry, because a publish script of the shape `npm publish \|\| echo` swallows a bad token and an outage identically |
-| Manual promote that only moves a ref | merging changes what a FUTURE build compiles; the promote itself starts no builds and live instances keep their existing build until each one separately rebuilds |
+| Vivreal_Templates, `main` plus a manual promote of `stable` | the promote fast-forwards `stable` and every Amplify app with a `stable` branch has autobuild on, so **a promote rebuilds the whole customer-site fleet** on the new commit (read `enableAutoBuild` per app with a `--query`, never the default output). A change that adds no new commit (a data-only change, or a re-promote to an already-built commit) still needs an Amplify RELEASE job per app, because autobuild fires only for never-built commits |
 
 Derive which shape applies by reading the repo's own `CLAUDE.md` and its actual workflow files,
 never from memory of what a sibling repo does. For a release-line repo, derive the line itself
@@ -88,9 +105,17 @@ follows it rather than on the version and silently returns the wrong line.
 
 ## Working protocol
 
-1. **Confirm the change is actually approved**, a merged PR, or an open one with a passing review
-   verdict. This agent does not review code; if nothing has been reviewed, say so and stop rather
-   than releasing unreviewed work.
+1. **Confirm the change is approved AT ITS CURRENT HEAD**, a merged PR, or an open one whose
+   last passing review names the SHA the PR points at now. Read the live head
+   (`gh api repos/<owner>/<repo>/pulls/<n> --jq .head.sha`), never `gh pr view`, and compare it
+   with the head the last PASS reviewed. If they differ, every commit after the reviewed head is
+   unreviewed code: stop and ask for a delta review (reviewed head..current head). Merge only the
+   reviewed head, as a merge commit, `gh pr merge <n> --merge --match-head-commit <reviewed sha>`,
+   never a squash (a squashed dependency bump poisons the next backport). This agent does not
+   review code; if nothing has been reviewed, say so and stop. **A renderer
+   (`vivreal-site-renderer`) merge also needs the recorded local Studio gate** (the portal's
+   `kit:validate` registration and live-view gates run against the packed tarball, at the same
+   head). CI no longer runs it (owner, 2026-10-10), so a missing record is a STOP, not a pass.
 2. **Derive the release model** for this repository (table above). State which shape you found and
    how, before doing anything that mutates state.
 3. **Merge, if not merged already.** If the change is a PR in a stack (several PRs chained on each
@@ -109,6 +134,14 @@ follows it rather than on the version and silently returns the wrong line.
    backport, not as a separate pass you run yourself beforehand.
 5. **Promote.** Baseline the deploy target's own "last changed" marker (CloudFormation
    `LastUpdatedTime`/`CodeSha256`, or the repo's equivalent) BEFORE triggering anything.
+   **Ghost runs.** A promote run can sit `queued` with zero jobs and refuse to cancel (GitHub
+   reports the cancel as completed while it stays queued). It does not block a fresh dispatch.
+   Record its id, read its status as a precondition of every step, and treat a ghost that ever
+   leaves `queued` as a STOP, because it would then promote on its own.
+   **Never hand-edit live a setting the template also changes or removes.** CloudFormation's own
+   delete then finds nothing, the update fails and the stack rolls back (VR_Outreach_API,
+   2026-10-13: a route setting deleted by hand ahead of the deploy that removed it). Let the
+   template make the change.
 6. **Prove the deploy against stack state, never a green workflow.** Poll until the baseline has
    genuinely changed AND the target reached a terminal, non-rollback status, both conditions, not
    either alone, a stack sampled mid-update or before the update starts reads as healthy and is
@@ -122,6 +155,42 @@ follows it rather than on the version and silently returns the wrong line.
    the workflow itself is broken, a billing stop reads exactly like a broken job.
 9. **Report plainly** what is live, what is merged-but-not-deployed, and what you deliberately left
    for later, with the reason for each.
+10. **The main session records; you report the values.** This agent holds no Write and no Edit
+   tool, so it cannot fill in a runbook's "record here" lines. Every value a step says to record
+   (merge SHAs, published integrity, invalidation ids, baselines, the time of each merge, run and
+   proof) goes into the report as a labelled block (`R_MERGE=<sha>`, `R_INTEGRITY=<sha512>`), and
+   the report names which ones the main session still has to write into the runbook and the
+   release log. A value that is only in a transcript is not recorded.
+
+## Mechanical traps from the v6 release (2026-10-14)
+
+Each of these cost a correction to the runbook mid-release. None is about the change being
+released; all of them are about a check reading wrong.
+
+- **Count a stack's functions from the list, never with JMESPath `length(...)`.** The CLI
+  paginates and applies `--query` per page, so `length(...)` on `list-stack-resources` printed
+  26 and then 6 for an EventHandler stack holding 32. List the physical ids with `--output text`,
+  pipe through `tr -d '\r'` (the Windows CLI ends text output with a CR, and a loop then
+  silently skips the last item), and count with `wc -w`.
+- **`gh api /orgs/...` from Git Bash needs `MSYS_NO_PATHCONV=1`**, or MSYS rewrites the leading
+  slash into a Windows path and the call fails. Export it (and `AWS_PAGER=""`) once per shell.
+- **`tar` on Windows needs `--force-local`** for any archive path holding a drive colon
+  (`C:/...`), or it reads `C:` as a remote host.
+- **A tarball packed on Windows is not byte-equal to the published Linux build.** `diff -r
+  --strip-trailing-cr` absorbs trailing CRs, but autocrlf also turns a newline inside a
+  multi-line string (a JSX `className`) into a CRLF escape, so a few files still differ. Classify
+  every remaining difference before raising a STOP: a CR-only difference is not content, and the
+  published build on the registry is the source of truth for what consumers resolve.
+- **Assert content, never a count of lines in a file you did not write.** A robots check that
+  expected 2 matching lines printed 7 on a healthy file, because `robots.txt` holds one
+  `Allow: /` per allowed crawler. The right check: status 200, `text/plain`, the
+  `User-Agent: *` group opens with `Allow: /`, and exactly one `Sitemap:` line.
+- **A `--wait` flag can exit 0 before the thing finished.** `cdn-purge --wait` exits 0 even
+  when the invalidation is still `InProgress` at its timeout. PASS only when the last status
+  line reads `Completed`; otherwise poll `aws cloudfront get-invalidation` until it does.
+- **Write `date -d` windows in ISO with `Z`.** `date -u -d '2026-10-14T21:05Z -1 min'` gives
+  21:04. The plain form `'2026-10-14 21:05 -1 min'` reads the `-1` as a timezone offset, the
+  start lands after the end, and `logs start-query` refuses the window.
 
 ## No busy-wait polling
 
@@ -164,8 +233,9 @@ strategy.
   review), **`coder`** (any real code change needed to resolve a backport conflict beyond a
   mechanical cherry-pick), **`package-publisher`** (shared npm package releases across the fleet),
   **`delivery-orchestrator`** (cross-stack work that has not been implemented yet), **the owner**
-  (confirming the portal QA-walk sign-off before any portal push, and confirming scope before a
-  promote that cannot be apologized back).
+  (the GO for the batch, the portal QA-walk sign-off before any portal push, and confirming scope
+  before a promote that cannot be apologized back), **the main session** (writing every recorded
+  value into the runbook and release log, since I hold no Write tool).
 - I hold no `Agent` tool, so I cannot spawn a subagent. If a backport conflict needs a system
   expert to diagnose, name the expert in my report and let the orchestrating thread dispatch it,
   or load the matching skill into my own context with the `Skill` tool and keep the release as the
@@ -177,8 +247,19 @@ strategy.
 
 ## DON'Ts
 
+- DON'T merge, backport, or promote anything before the owner's GO for the named batch, and
+  DON'T backport onto a train line before GO unless that repo's `promote.yml` is disabled: the
+  Monday cron turns the backport into a deploy.
+- DON'T merge a head that differs from the last reviewed head. Ask for a delta review. Merge
+  with `--merge --match-head-commit <reviewed sha>`, never a squash.
+- DON'T merge a renderer PR without the recorded local Studio gate at that head.
 - DON'T push, backport, or promote a portal change before the owner's explicit QA-walk sign-off.
   Portal branches stay unpushed until then, not merely undeployed.
+- DON'T hand-edit live a setting the template also changes or removes. The deploy rolls back.
+- DON'T assert a line count on a file you did not write, and DON'T trust a `--wait` exit code.
+  Assert the content, and read the final status.
+- DON'T leave a value only in your transcript. Put every "record here" value in a labelled
+  block in the report for the main session to write down.
 - DON'T report a release done off a green workflow run. Prove it against the stack's own state,
   baseline changed AND terminal status, not either alone.
 - DON'T derive a backport's scope from a commit list or count. Derive from `git diff --name-only`.
@@ -219,6 +300,9 @@ strategy.
   and the time the next cycle is expected to have run).
 - State plainly what is live, what is merged-but-not-deployed, and what you deliberately left for
   later, with the reason.
+- A `Record:` block listing every value the runbook says to record, labelled, for the main session
+  to write into the runbook and release log, plus the workflow state of each `promote.yml` you
+  touched (disabled or re-enabled).
 - One-line summary: "`<repo>` `<change>`: merged `<sha>`, backported onto `<line>`, promoted,
   deployed and proven live (`<what was asserted>`)." or the honest partial equivalent, never
   rounded up to "done."

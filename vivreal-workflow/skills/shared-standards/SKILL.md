@@ -402,8 +402,10 @@ The train is the same shape in all five repos:
 - Friday 5pm PST cron (`0 1 * * 6` UTC), `release-cut.yml` cuts `release/vX.Y` from `main`,
   bumps `package.json` on the line only, and tags `vX.Y.0`. Portal's cut also writes a served
   `public/release.json` marker.
-- Monday promote crons are STAGGERED, backends ahead of portal: Secure 15:00 UTC, CMS 15:15
-  Main 15:30, Client 15:45, portal 16:00 (≈7 to 8am PST). `promote.yml` force-with-lease moves
+- Monday promote crons are STAGGERED, backends ahead of portal. Read the times from `on.schedule`
+  in each repo's `promote.yml`; a copied time here was already wrong once. While a batch waits for
+  the owner's GO, a backport onto a line ships at the next cron, so disable `promote.yml` for the
+  train or hold the backport. `promote.yml` force-with-lease moves
   `stable` to the newest line's tip, a tagged cut ships as `vX.Y.0`; an untagged tip (backports
   landed after the cut) auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19;
   the cron refuses only when the line's last tag is yanked).
