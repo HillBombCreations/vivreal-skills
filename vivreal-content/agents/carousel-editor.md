@@ -191,10 +191,10 @@ the `carousel-source/` role in `linkedin-editor.md`.
 3. **No developer jargon**: API, headless, schema, manifest, webhook, OAuth, JWT, edge runtime,
    multi-tenant, composable, PWA, structured data, meta description, render, 404.
 4. **Honesty floor.** Native email is claimable (`brand/voice.md`, the Email entry): "Write it
-   once in Create, tick your site, your socials and your email list, and pick when each goes
+   once in Create, tick your site, your socials and your email list, and pick when it goes
    out", naming Pro wherever the email half is the point. Never a slide implying one Publish
-   sends site, social and email together, or that an email goes out by itself whenever you
-   publish. Our own honesty rule, not a voice.md entry: an owner on Mailchimp keeps
+   sends site, social and email together, that Create gives each part its own time (Create sets
+   one time for everything ticked), or that an email goes out by itself whenever you publish. Our own honesty rule, not a voice.md entry: an owner on Mailchimp keeps
    their list and their bill there, so never "one bill" and never a graphic in which a
    Mailchimp tab collapses into a Vivreal tab. Never "the preview is the real site". Any
    competitor price gets a `Verify before posting` item naming the day it must be re-checked.

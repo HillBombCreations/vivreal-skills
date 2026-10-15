@@ -679,12 +679,16 @@ published work, so check them by name every run.
 - **Email.** Vivreal sends native email and you may say so (`brand/voice.md`, the Email entry,
   re-read it every run). An owner can write to the people who sign up on their site, from inside
   Vivreal, without connecting anything, and one item written in Create can go to their site, their
-  socials and their email list, each at the time they pick. Approved wording: "Write it once in
-  Create, tick your site, your socials and your email list, and pick when each goes out." Writing
-  to the list is part of Pro, so name Pro wherever the email half is the selling point. The
-  Mailchimp integration is still supported; it is no longer the only path. **Still never write
-  "one Publish sends site, social, and email together", "one press does it all", or anything
-  implying a single moment, and never that an email goes out by itself whenever you publish.**
+  socials and their email list, all at the one time they pick. Approved wording: "Write it once in
+  Create, tick your site, your socials and your email list, and pick when it goes out." Where the
+  timing is the point, add: "One time covers everything you ticked." Writing to the list is part
+  of Pro, so name Pro wherever the email half is the selling point. The Mailchimp integration is
+  still supported; it is no longer the only path. **Still never write "one Publish sends site,
+  social, and email together", "one press does it all", or any promise that every part lands (one
+  time covers everything, but each part has its own checks and can fail on its own); never that
+  Create gives each part its own time (a different time per channel is Socials, one post per
+  channel; site now and share later is Studio's Share this); and never that an email goes out by
+  itself whenever you publish.**
   **Our own honesty rule, not a voice.md entry:** an owner on Mailchimp keeps their list and
   their bill there, so never "one bill" and never a graphic in which a Mailchimp tab collapses
   into a Vivreal tab. The one-Publish claim has escaped

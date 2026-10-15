@@ -21,7 +21,7 @@ Key points to internalize:
 
 ### What Makes a Great Outreach Angle
 BAD: "Vivreal could help you manage your website content better than WordPress."
-GOOD: "You're posting to Instagram, updating your Squarespace menu, and emailing through Mailchimp. Three tools for one launch. With Vivreal you write it once, tick your site, your Instagram and your email list, and pick when each goes out."
+GOOD: "You're posting to Instagram, updating your Squarespace menu, and emailing through Mailchimp. Three tools for one launch. With Vivreal you write it once, tick your site, your Instagram and your email list, and pick when it goes out. One time covers all three."
 
 The angle should make the prospect think: "Wait, I DO that. That IS annoying. This would actually save me time."
 

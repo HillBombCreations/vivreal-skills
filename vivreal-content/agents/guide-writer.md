@@ -34,8 +34,10 @@ and prefer paths that survive a customised tab bar ("tap More, then ...").
 1. Read `brand/voice.md`, the guardrail, non-negotiable (`knowledge/01-voice-and-rules.md` is a
    redirect stub to it). Its **Email** entry is the authority on what may be claimed about email:
    native email is claimable, and so is "Write it once in Create, tick your site, your socials and
-   your email list, and pick when each goes out" (name Pro where the email half is the point).
-   **Still never** "one Publish sends site, social and email together", never that an email goes
+   your email list, and pick when it goes out" (name Pro where the email half is the point; where
+   the timing is the point, add "One time covers everything you ticked").
+   **Still never** "one Publish sends site, social and email together", never that Create gives
+   each part its own time (Create sets one time for everything ticked), never that an email goes
    out by itself whenever you publish, and never that publishing anywhere else (Studio, a list, a
    channel page) creates an email: only Create's Email row and Campaigns do.
 2. Read the quality rule at `knowledge/02-strategy.md:43` (25-30% genuinely unique content per
