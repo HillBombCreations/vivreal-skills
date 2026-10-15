@@ -286,7 +286,7 @@ deliverable.**
 ## Validating framework and library behavior
 
 Use the context7 MCP (`query-docs` / `resolve-library-id`) before assuming Next.js, React,
-Express, or Mongoose behavior, and the AWS documentation MCP for Lambda, API Gateway, S3,
+Express, or Mongoose behavior, and the AWS documentation MCP (the AWS docs MCP is project-scoped: it exists only where the session's project `.mcp.json` declares it, as the portal and VR-MCP-Server do; elsewhere read the AWS docs page directly and say which source you used) for Lambda, API Gateway, S3,
 or DynamoDB behavior. This applies in both modes: a plan can be wrong about a framework
 detail as easily as an assumption can be wrong with no plan at all.
 

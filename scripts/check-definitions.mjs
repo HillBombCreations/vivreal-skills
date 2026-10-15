@@ -432,6 +432,77 @@ function ruleMirrorDrift(files) {
   }
 }
 
+/**
+ * Every `mcp__<server>__` prefix an agent is granted, or told to call, must name a server
+ * something actually declares. A grant that resolves to nothing is dropped in silence; an
+ * agent whose ONLY entries for a capability are unresolvable has no way to reach it, and the
+ * prose telling it to "use the X MCP" sends it after a tool that is not there.
+ *
+ * A server comes from one of three places, and each is listed so a new prefix is a decision:
+ *   1. a `.mcp.json` in a plugin tree here, which registers as `plugin_<plugin>_<server>`;
+ *   2. an official plugin the fleet enables (context7, playwright, sentry);
+ *   3. a project `.mcp.json` in a fleet repository, which only exists in sessions started in
+ *      that repository (the portal and VR-MCP-Server declare `mongodb` and the `awslabs.*`
+ *      servers; the CMS declares `aws-documentation` and friends), or a claude.ai connector.
+ *
+ * A WARNING, not a failure: a project-scoped server is legitimate where it is declared, and
+ * the fix for an unknown one is a judgement (drop the grant, or name where it comes from).
+ */
+const EXTERNAL_MCP_SERVERS = new Set([
+  'plugin_context7_context7',
+  'plugin_playwright_playwright',
+  'plugin_sentry_sentry',
+]);
+const PROJECT_SCOPED_MCP_SERVERS = new Set([
+  'mongodb',
+  'mongodb-write',
+  'github',
+  'awslabs_aws-documentation-mcp-server',
+  'awslabs_aws-api-mcp-server',
+  'awslabs_cfn-mcp-server',
+  'awslabs_cloudwatch-mcp-server',
+  'awslabs_lambda-tool-mcp-server',
+  'awslabs_ccapi-mcp-server',
+  'aws-documentation',
+]);
+const MCP_PREFIX = /mcp__([A-Za-z0-9-]+(?:_[A-Za-z0-9-]+)*)__/g;
+
+function ruleMcpPrefixes(files) {
+  const known = new Set([...EXTERNAL_MCP_SERVERS, ...PROJECT_SCOPED_MCP_SERVERS]);
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    const m = rel.match(/^([^/]+)\/\.mcp\.json$/);
+    if (!m) continue;
+    try {
+      const j = JSON.parse(readFileSync(abs, 'utf8'));
+      for (const name of Object.keys(j.mcpServers || j)) known.add(`plugin_${m[1]}_${name}`);
+    } catch {
+      // ruleParse reports an unparseable JSON file; nothing to add here.
+    }
+  }
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (!isPluginFile(rel) || !rel.endsWith('.md')) continue;
+    const seen = new Set();
+    readFileSync(abs, 'utf8').split('\n').forEach((line, i) => {
+      MCP_PREFIX.lastIndex = 0;
+      let m;
+      while ((m = MCP_PREFIX.exec(line))) {
+        const server = m[1];
+        if (known.has(server) || server.startsWith('claude_ai_') || seen.has(server)) continue;
+        seen.add(server);
+        warn(
+          'mcp-prefix',
+          `${rel}:${i + 1}`,
+          `"mcp__${server}__" names no MCP server a plugin here, an enabled official plugin, or a fleet project ` +
+            'declares. The grant resolves to nothing and the tool is silently absent. Drop it, or add the server ' +
+            'to the list in check-definitions.mjs with where it is declared.',
+        );
+      }
+    });
+  }
+}
+
 // ------------------------------------------------- rule 4: no copied values
 // Each entry is a shape this repo has already shipped wrong. The point is not to
 // list every possible mechanical value; it is that a value of one of these shapes
@@ -644,6 +715,7 @@ function runAll(files) {
   ruleAgentDispatch(files);
   ruleCrossReferences(files);
   ruleMirrorDrift(files);
+  ruleMcpPrefixes(files);
   ruleCopiedValues(files);
   ruleDashes(files);
   ruleDeletedBehaviour(files);
@@ -782,6 +854,17 @@ function selfTest() {
       ].join('\n'),
     },
     {
+      // A warning rule still has to be able to fire. A grant naming a server nothing
+      // declares; `kind: 'warn'` makes the control look in the warnings, not failures.
+      rule: 'mcp-prefix',
+      kind: 'warn',
+      label: 'mcp-prefix: a grant naming no declared server',
+      path: join(tmp, 'agents', 'ghost-mcp.md'),
+      body:
+        '---\nname: ghost-mcp\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\n' +
+        'tools: Read, mcp__nosuchserver__find\n---\n\nbody\n',
+    },
+    {
       // The silent one. Five values in this repo were being truncated this way and
       // nothing anywhere reported it.
       rule: 'parse',
@@ -804,7 +887,12 @@ function selfTest() {
       // same code path the real run does. Nothing is reimplemented here.
       runAll(walk(ROOT));
 
-      const tripped = failures.some((f) => f.rule === c.rule);
+      // A warning rule may already be firing on real files, so its control must find the
+      // hit IN THE FIXTURE, or it would read red with the poison absent.
+      const tripped =
+        c.kind === 'warn'
+          ? warnings.some((w) => w.rule === c.rule && w.where.startsWith(FIXTURE_PLUGIN + '/'))
+          : failures.some((f) => f.rule === c.rule);
       console.log(
         `  ${tripped ? 'RED   ' : 'GREEN '} ${(c.label || c.rule).padEnd(34)} ` +
           (tripped ? '(correct)' : '(THIS CHECK CANNOT FAIL)'),

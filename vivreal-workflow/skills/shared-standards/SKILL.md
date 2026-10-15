@@ -92,7 +92,7 @@ three searches returned three different incomplete answers.
 | `src/app/api/proxy/*` (any portal proxy route) | "The three-tier API rule" + "Proxy route factory" |
 | `active_ctx`, `dbKey`, `groupID`, multi-tenant routing | "Auth & multi-tenancy" |
 | MongoDB queries, indexes, write concerns | "Optimization principles" + read `docs/ecosystem/mongo_queries.md` |
-| About to use the `mcp__mongodb__*` tools (query Mongo via MCP) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
+| About to use the Mongo MCP tools (`mcp__plugin_vivreal-db-explorer_mongodb__*` from the vivreal-db-explorer plugin, or `mcp__mongodb__*` where a project `.mcp.json` declares `mongodb`) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
 | `useAuth()` in app layout, hydration, SSR | "Hydration & SSR rules" |
 | Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + read `docs/ecosystem/aws-lambda-inventory.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
@@ -530,7 +530,7 @@ When justifying technical decisions, reference these public standards. The revie
 - AWS Lambda best practices: https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html
 - API Gateway WebSocket: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-websocket-api.html
 - Cognito best practices: https://docs.aws.amazon.com/cognito/latest/developerguide/security-best-practices.html
-- Use the AWS docs MCP server (`mcp__awslabs_aws-documentation-mcp-server__*`) to fetch up-to-date docs
+- Use the AWS docs MCP server (`mcp__awslabs_aws-documentation-mcp-server__*`, project-scoped: it exists only where the session's project `.mcp.json` declares it, as the portal and VR-MCP-Server do) to fetch up-to-date docs
 
 **Web platform**
 - MDN Web Docs (https://developer.mozilla.org), authoritative source for web platform APIs

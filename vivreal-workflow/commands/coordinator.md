@@ -481,8 +481,8 @@ The coordinator now accepts three input forms in Phase 0. Detection is done in t
    - `mcp__plugin_sentry_sentry__get_sentry_resource` with the URL (fetches the canonical issue resource)
    - Fallback: `mcp__plugin_sentry_sentry__search_issues` with the issue ID
 3. Pull additional context:
-   - Latest event: `mcp__plugin_sentry_sentry__search_issue_events` (top 1), for the stack trace, breadcrumbs, request context
-   - Tag values: `mcp__plugin_sentry_sentry__get_issue_tag_values` for browser, OS, release, environment distribution
+   - Latest event: `mcp__plugin_sentry_sentry__search_errors` filtered to the issue (top 1), or `get_sentry_resource` on its latest event, for the stack trace, breadcrumbs, request context
+   - Tag values: `get_issue_tag_values` is a catalog tool now, reached through `mcp__plugin_sentry_sentry__search_sentry_tools` then `mcp__plugin_sentry_sentry__execute_sentry_tool`, for browser, OS, release, environment distribution
 4. Generate slug from the issue title (kebab-case, max 50 chars). If the title is too generic ("TypeError"), append a short discriminator from the issue's culprit/file.
 5. Write `docs/bugs/<slug>/issue.md` with this structure:
 

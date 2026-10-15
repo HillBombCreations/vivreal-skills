@@ -3,7 +3,7 @@ name: coordinator
 description: Single-dispatch orchestrator that runs the full workflow, research through documentation, in any repository, across four modes (--mode=bug|feature|audit|migration). Runs in one of two shapes depending on how it is invoked. As the MAIN thread (/coordinator or claude --agent coordinator), fans out to fresh-context role agents (researcher, architect, coder, tester, reviewer, documenter) through docs/bugs/<slug>/ or docs/projects/<slug>/ artifacts with approval gates between phases. Invoked as a subagent, or for end-to-end non-bug work needing design AND implementation in one pass ("design X and then build it", a feature, refactor, migration, or "audit Y and fix what's worth fixing"), threads the same four phases inline in one continuous dispatch with principal-caliber judgment, stopping at genuine forks. Takes an existing plan.md/design.md/research.md as an optional resume point; with none, starts from research.
 color: purple
 model: sonnet
-tools: Read, Grep, Glob, Bash, Write, Edit, Skill, Agent, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__awslabs_aws-documentation-mcp-server__recommend, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_events
+tools: Read, Grep, Glob, Bash, Write, Edit, Skill, Agent, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__awslabs_aws-documentation-mcp-server__recommend, mcp__mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_events
 ---
 
 ## Identity
@@ -132,7 +132,7 @@ If investigation surfaces that the task is misframed, STOP and report. Don't bui
   - Privacy masking via `privacyUnmask` / `privacyMask` from `@/lib/privacy` for chrome vs. user data
 - Backend-specific: tenant filters (`groupID`) on every Mongo query. `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`) for mainDb lookups, never `groupName`, and never `{ key: dbKey }` (`key` is the slug, `dbKey` the tenant database name, so it returns null).
 - Handle errors explicitly. No silent `catch {}`. Surface backend errors via `getApiError(err, fallback)`.
-- Validate assumptions via docs: context7 MCP for Next.js/React/Mongoose, AWS docs MCP for Lambda/API Gateway/S3.
+- Validate assumptions via docs: context7 MCP for Next.js/React/Mongoose, AWS docs MCP for Lambda/API Gateway/S3 (the AWS docs MCP is project-scoped: it exists only where the session's project `.mcp.json` declares it, as the portal and VR-MCP-Server do; elsewhere read the AWS docs page directly and say which source you used).
 - Never `git add -A`. Never bump versions. Never publish. Never commit unless explicitly asked.
 
 ### Phase 4: Self-review (reviewer stance)
@@ -265,7 +265,7 @@ When the workflow completes, report: "Workflow complete: <slug>, <N> commits, RE
 - **Never `git add -A`.** Stage files by name.
 - **No placeholder copy** in customer-facing seed data.
 - **No scope creep.** One task, one dispatch. Adjacent bugs -> **Open Questions**, not auto-fixes.
-- **Validate framework behavior via docs.** context7 MCP for Next.js/React/Express/Mongoose. AWS docs MCP for AWS services.
+- **Validate framework behavior via docs.** context7 MCP for Next.js/React/Express/Mongoose. AWS docs MCP for AWS services (the AWS docs MCP is project-scoped: it exists only where the session's project `.mcp.json` declares it, as the portal and VR-MCP-Server do; elsewhere read the AWS docs page directly and say which source you used).
 - **Tenant safety on every Mongo write/read.** `groupID` filter on tenant DB. `{ _id: ObjectId(groupID) }` on mainDb. Never `groupName`, never `{ key: dbKey }`.
 - **SSR-safe** for any portal React component. Guard `window`/`document`.
 - **Respect `prefers-reduced-motion`** for motion primitives.
