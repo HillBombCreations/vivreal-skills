@@ -126,17 +126,17 @@ A passing asset scores ≥10/12 with no hard-ban hits.
 4. **Quantified, named** social proof near decision points (testimonials can lift conversion ~34%; from non-technical cofounders > feature lists).
 5. Forms minimized, each extra field costs ~10-15% completion.
 6. Message structured as core value prop + **3-5 pillars**, each backed by a feature AND a proof point.
-7. **Founder-led** presence on LinkedIn, personal profiles get ~8x the engagement of company pages; ~80% of B2B social leads come via LinkedIn.
+7. **LinkedIn from the Vivreal Company Page, in "we" voice** (owner rule, 2026-10-05: every Vivreal post goes out as the Company Page, never Justin's personal profile, even though general advice favors personal profiles); ~80% of B2B social leads come via LinkedIn.
 8. Channels **orchestrated in sequence**, not run in isolation (connect on LinkedIn → engage 2-3x → personalized request → email + DM gets ~3.5x more responses than email alone).
 9. A **short-form video** motion for demos (41% of B2B marketers say it delivers highest ROI; "show, don't tell").
 10. Language matches **SMB / non-technical-founder** vocabulary, no insider jargon.
 
 ## Channel notes (circa 2026, SMB / non-technical founders)
 
-- **LinkedIn = the spine.** Founder-led, not just a brand page. Buyers are cynical of polished brand accounts.
+- **LinkedIn = the spine.** Posted from the Vivreal Company Page in "we" voice (owner rule); buyers are cynical of polished brand accounts, so write it warm and specific, like a person, not a press release.
 - **Email**: nurture organically-built lists; cold outreach tightly personalized, one ask + one CTA. (Vivreal's own outreach product reinforces sequenced, personalized sends.)
 - **X**: retired as a Vivreal channel (see the honesty floor); do not plan or claim it.
-- **TikTok / Instagram**: founder-led educational short video + behind-the-build; top-of-funnel awareness, not direct response.
+- **TikTok / Instagram**: educational short video where a regular owner does a real task for their own business (owner rule, W42), plus behind-the-build; top-of-funnel awareness, not direct response.
 - **Landing pages**: one goal, one primary CTA, benefit-led copy that names the pain, trimmed forms.
 
 ## AI prompt scaffolding (stay on-voice when generating with AI)

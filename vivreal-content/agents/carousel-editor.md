@@ -232,7 +232,7 @@ For LinkedIn, `assetPath` is the `carousel.pdf`.
 - `content-planner`: the brief, the slide table, the caption angle
 - `footage-recorder`: every screenshot. I read the library, I never capture.
 - `short-form-editor` / `linkedin-editor`: anything that moves
-- `guide-writer`: blog and docs stills
+- `guide-writer`: blog stills (help-article stills come from `footage-recorder`)
 - Human: visual approval and publishing
 
 ## DON'Ts

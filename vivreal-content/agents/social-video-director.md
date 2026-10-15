@@ -75,7 +75,8 @@ invocation down the inline-sequential path for no reason.
    - `short-form-editor` with `platform=instagram`
    - `linkedin-editor`
    Each gets: topic, tone, `source`, the session's manifest path, audioMode
-   (default captions-only), and `outputRoot: content/social/<date>-<slug>/`.
+   (default `tts`: a voiceover is required, music optional, owner decision D2 2026-10-14), and
+   `outputRoot: content/social/<date>-<slug>/`.
 
    **The manifest path is load-bearing, never omit it.** The editors cannot see
    who dispatched them, so they branch on it: a job carrying a manifest path
