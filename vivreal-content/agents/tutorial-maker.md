@@ -452,7 +452,8 @@ plus what the owner said watching the takes:
   profile must dismiss them again before pressing anything low on the screen. The update bar can
   also land MID-take (2026-10-15: a whole bookings reshoot was filmed under it and rejected), so
   `src/tutorial/update-bar-watch.ts` now stops the take the moment it appears. Run the take again;
-  if it keeps coming back, the profile's cached app is stale, so record on a fresh profile.
+  if it keeps coming back, record on a fresh profile (capture pass 2 used one per shot set and saw
+  no bar).
 - **The Socials hub sometimes renders without its top block** in an app-view take and never
   recovers: wait 8 s, reload, chapter the reload `CUT START` / `CUT END`, and splice it out.
 - **A caption that moves to the top of the frame can cover the heading it talks about.** Name a
@@ -487,15 +488,18 @@ cleanup has a live page; it must not write anything new. The pieces, all in
 
 - `script-race.ts` races the script against the guards, sets `Recorder.stopReason`, and waits for
   the script to settle before the page closes.
-- `assertTakeNotStopped(r, action)` throws before a write once the take is stopped. Call it with
-  no await between it and the press.
+- `assertTakeNotStopped(r, action)` throws before a write once the take is stopped. Call it on
+  the line directly before the press (the sweep reads only that line), with no await between
+  them.
 - `r.click(target, { guard: '<what this press does>' })` runs that same check directly before
   the press and logs `PRESSING` or `REFUSED`.
-- `waitForHuman` stops polling once the take is stopped.
+- `waitForHuman` refuses before it asks for the press once the take is stopped, and if a guard
+  stops the take while it waits, it tells the human not to press and rejects.
 
 **Every new press that writes to a real account (Save, Schedule, Publish, Connect, Delete) uses
 the click guard or `assertTakeNotStopped`.** The sweep test
-(`tests/tutorial-help-script-guards.test.ts`) fails on an unguarded one; it is a tripwire, not
+(`tests/tutorial-help-script-guards.test.ts`) fails on an unguarded one, or a reviewed entry in
+the sweep's `ALLOWED` list; it is a tripwire, not
 proof, so guard the press even where the sweep would miss it.
 
 ## Before you hand it over

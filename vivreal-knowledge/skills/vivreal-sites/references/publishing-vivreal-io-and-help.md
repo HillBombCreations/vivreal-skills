@@ -14,12 +14,14 @@ marketing agents point here rather than keeping their own copy.
   Compare it as a set, or sorted.
 - **`objectValue.mediaFields` is keyed by FILE NAME, not by field.** The CMS rebuilds it on save
   as `mediaFields[<file name>] = "<field key>"`. Two media fields on one item that share a file
-  name collapse to one entry, and VR_Client_API then returns only one of them. That is why the
+  name collapse to one entry, and VR_Client_API then resolves only one of them. That is why the
   six vivreal.io home flip-tile fronts showed blank: each front shared its file name with the
   back. Give every media field on an item its own file name. (Product fix is a v7 item.)
-- **`promoteMedia` re-encodes the image.** A PNG comes back lossless, so its decoded pixels
-  match; a JPEG comes back re-encoded lossily. Never prove an upload by comparing bytes or
-  hashes. Decode both and compare pixels (exact for PNG, a PSNR threshold for JPEG). It can also
+- **`promoteMedia` re-encodes the image.** A PNG is re-encoded losslessly, so its decoded
+  pixels match only if it was no wider than the cap (2000 px through the batch promote, 512 px
+  by default), wider ones are downscaled; anything else that is not SVG (JPEG, WebP, GIF) comes
+  back as a JPEG at quality 80. Never prove an upload by comparing bytes or
+  hashes. Decode both and compare pixels (exact for a PNG within the cap, a PSNR threshold otherwise). It can also
   hand back an earlier upload of the same file, with that upload's old signed URL stored as the
   value, so check a reused upload's URL has no baked `Expires=` before trusting it.
 - **`media_files` rows live in the main Vivreal database**, not the tenant database (`pod_01`

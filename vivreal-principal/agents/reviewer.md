@@ -160,11 +160,12 @@ flow the diff touches.
 - Tests cover the regression path AND at least one edge case
 - A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
   asserts the exact refusal) paired with an ALLOW test (valid input, asserts success), and the
-  report carries a `Red:` line from the `shared-standards` red proof: (a) red before the fix, or
-  (b) red at the base commit in a separate read-only worktree. A missing REFUSE half, a missing
+  report carries a `Red:` line from the `shared-standards` red proof: (b) red at the base commit in a
+  read-only worktree, or (a) red before any fix code existed. A missing REFUSE half, a missing
   ALLOW half, a red that was only established "by reading", or a red that was a load, import or
   environment failure rather than the REFUSE assertion failing is a FAIL, cite which. The red
-  proof is the coder's job (owner, 2026-10-15): confirm the recorded red-at-base evidence fails
+  proof is the coder's job (reconciled 2026-10-15 on the owner's delegation, memory
+  `one-full-suite-run-per-change`): confirm the recorded red-at-base evidence fails
   on the REFUSE assertion for the stated reason, read the tests, and run each relevant test file
   at most once at the head. Do not rerun the base-commit cycle yourself; a missing or doubtful
   `Red:` line is a FAIL that goes back to the coder. Never revert or mutate the fix in the

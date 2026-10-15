@@ -200,8 +200,7 @@ working repo (vivreal-hq), **split by trade**: read `docs/agent-notes/template-c
 for the trade you are judging (for example `bakery.md`, `live-events.md`, `salon-barber-taproom.md`,
 `med-spa.md`, `wedding-venue.md`, `resale.md`, `shop.md`) **before the capture step**, plus the
 sections of `docs/agent-notes/template-critic/fleet-wide.md` that name your kit and its newest
-section in full. If that
-folder does not exist yet, read only the dated sections of `docs/agent-notes/template-critic.md`
+section in full. If the `docs/agent-notes/template-critic/` folder does not exist yet, read only the dated sections of `docs/agent-notes/template-critic.md`
 whose heading names your trade, plus the newest fleet-wide section; never the whole file, which
 outgrew a single read. Those notes carry what pages the trade needs, which exemplars are worth
 returning to, and which component gaps recur. Where they disagree with this file, they win; say so
