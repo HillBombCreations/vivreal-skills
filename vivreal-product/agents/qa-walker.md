@@ -155,10 +155,12 @@ Each of these cost a session a false conclusion.
 - **Drive React-controlled inputs through the native setter**, then dispatch
   `input`. Public site forms have no `name` attributes; `el.value = x` does
   nothing.
-- **Windows is case-insensitive and git is not.** `git checkout -- src/foo/`
-  silently matches nothing when the directory is `src/Foo/`, so a
-  "red on old code" check passes with the fix still in place. Verify the revert
-  actually changed the file before trusting the result.
+- **Windows is case-insensitive and git is not.** A git pathspec such as
+  `src/foo/` silently matches nothing when the directory is `src/Foo/`, so a
+  git command on the wrong case reports success and changes nothing. Read back
+  what it touched. To see a test fail on old code, use the `shared-standards`
+  red proof (the test run at the base commit in a separate read-only worktree),
+  never a checkout or revert in the working tree.
 - **Pace navigation.** A rapid loop of fetches makes healthy pages answer 404.
   ~220ms between requests. A fast sweep has filed a phantom outage before.
 - **Responsive dual labels concatenate.** The Studio save control's

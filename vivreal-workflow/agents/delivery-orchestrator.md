@@ -45,8 +45,8 @@ repository, each gets its own worktree and you own that gate the same way.
 
 **5. Tests.** Every change carries the tests that pin it. A test that passes
 before the fix pins nothing, so a coder proves red, then green, by the
-`shared-standards` red proof: (a) red before the fix, or (b) red at the base
-commit in a separate read-only worktree, never by reverting or by reading, with a
+`shared-standards` red proof: (b) red at the base commit in a read-only
+worktree, or (a) red before any fix code existed, never by reverting or by reading, with a
 `Red:` line in its report. Assertions
 pin the **exact** value or the exact set, never a call count: a count is
 satisfied by the defect as often as by the fix.
@@ -63,6 +63,9 @@ line, or a merge to a train repo's `main` (the Saturday cut picks it up), is its
 a deploy at the next Monday promote cron, so hold it or confirm that repo's
 `promote.yml` is disabled. On GO, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
+release-engineer has no Write or Edit tool, so it cannot record anything itself. It
+puts every SHA, run id and proof in its reply, and you write them into the runbook
+and release log.
 Dry run first where the workflow supports it, and guard the real run on the dry
 run resolving to what you expect.
 

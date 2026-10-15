@@ -408,7 +408,7 @@ scheduling lives; nothing in this agent schedules.
 
 | Identity | How | Use it for |
 |---|---|---|
-| The demo account, `vivreal-content-demo` | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every shoot.** It reaches the Vivreal Content business and the Vivreal business |
+| The demo account, `vivreal-content-demo` | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every shoot.** It reaches the Vivreal Content business and the Vivreal business. Its display name is "Cobalt Crumb", so "Signed in as Cobalt Crumb" is expected: it is the account's name, not a person, so never caption it as one |
 | `vivreal/qa/scratch-owner` | Secrets Manager, read in process, never printed, logged, passed on a command line or written to a file | **The QA v5 scratch business only** (owner, 2026-10-14), for example a site that has to be hidden from search. `agent-walk-user` cannot reach that business. Delete any saved session state file it produced at the end of the run |
 | The owner's own session | The owner signs in and drives, or records | Frames that need the owner's own connections. **Connections are per person**: the AI agent and Connected apps screens show the signed-in person's connections, so the demo account films an empty or different list |
 | Anything else | | Ask the owner first. Never `justin@vivreal.io`, which reaches real customers |
@@ -423,8 +423,9 @@ scheduling lives; nothing in this agent schedules.
 write: list it in `mutations[]` and switch back at the end. **Each browser context carries its own
 business cookie**, so a phone window and a desktop context each switch, and switch back, on their
 own. Phone: `[data-testid=mobile-header-avatar]`, then `[data-testid=mobile-header-switch-to-<key>]`.
-Desktop: `button[aria-label="Open business menu"]:visible` (the phone avatar carries the same label),
-then the row. Chain the restore inside the same script and read the LAST `switch-profile` response;
+Desktop: `button[aria-label="Open business menu"]:visible`, then the row. The portal renders TWO
+buttons with that label (the phone avatar carries it too), so a bare selector matches both: read
+and click only the visible one, in every session script. Chain the restore inside the same script and read the LAST `switch-profile` response;
 restores crashed mid-run more than once on 2026-10-13. Never film the business list itself (see
 filming-hygiene.md).
 
@@ -495,6 +496,29 @@ Help stills for help.vivreal.io are a mode of this agent, not a separate tool.
   `scanRules`.
 - **Never select by loose text in "Edit page structure".** That sheet holds `Hide <Name>` buttons
   beside the rows you mean; scope every selector to the row.
+
+### Stills for vivreal.io marketing slots (learned 2026-10-15, the screenshot swap)
+
+This section is the one home for these rules; any agent that captures or swaps a marketing still
+follows it.
+
+- **Pair a still to a slot by what the slot's copy says, never by filename.** S58 was paired to
+  the "On your own web address (domain)" card because the filenames matched, and the new frame
+  showed search settings instead. For every pairing, read the card's heading and body, then
+  confirm the frame shows that thing.
+- **No demo site has its own web address.** Every demo site lives on a `*.vivreal.io` subdomain,
+  so no demo frame can show "your own web address" connected. For a custom-domain slot, use the
+  connect-your-address flow (for example `point-your-address-computer.png`) or change the card's
+  copy; never present a subdomain as an owned domain.
+- **Mask the demo account's comped plan figures.** The demo business is on a hand-comped plan, so
+  its screens say things a prospect reads as our pricing: "You are on Pro, at no charge",
+  "Websites 15 of 40" (Pro is five websites), and storage figures that are not on /pricing. Check
+  every figure against vivreal.io/pricing. Mask in the still itself (crop it out or cover it, and
+  record the mask in the manifest), never by editing the page (see "Never swap names in the page").
+- **The A19 home flip tiles have two images each.** The T1 to T6 swap keys are the tile BACKS
+  (the hover screenshot). Each front is that tile's own image field in the CMS, so a front is
+  changed by a CMS image write, not by overwriting a T key. The CMS publishing traps that go
+  with it live in `vivreal-knowledge:vivreal-sites`, "Publishing to vivreal.io and the help site".
 
 Note that the published site is a **separate origin** from the portal. To film
 it, pass an absolute URL as `goto.path`, because `resolveTarget` (`portal-capture.ts:138`)
