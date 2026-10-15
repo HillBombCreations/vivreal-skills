@@ -110,6 +110,24 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 `active_ctx` verified on any new authenticated edge handler. No token-only handlers. JWT verification not bypassed.
 **How to verify:** Any new edge handler file must call `verifyCtxEdge()` or use the factory (which does it).
 
+### 5a. Consent and identity (MANDATORY FIRST for any OAuth, connect, grant or sign-in diff)
+Review who is granting what to whom before anything else in the diff. The v5 MCP auth review never
+checked which account the consent screen was signed into, and a sign-in that auto-selected the
+browser's Google account created a stray account nobody asked for.
+- The consent screen names the person AND the business being granted before the Allow button.
+- Re-authorising forces an account choice; nothing auto-selects an account (One Tap
+  `auto_select` off on connect flows), and a "Not you?" path exists.
+- The default grant is least privilege; wider scopes are an explicit choice.
+- The grant is bound on the SERVER to a group the signed-in user is a member of, never to an id
+  the client sent unchecked.
+- A double approve (two tabs, a retried request) is idempotent.
+- Every `redirect`, `next` or `return_to` parameter is probed with an off-site value and refused.
+- Every side effect of signing in is listed (an account created, a session switched, a group
+  joined), and each one is intended.
+**How to verify:** walk the flow from the consent screen to the stored grant, citing `file:line`
+for each bullet. Load `vivreal-experts:secure-api` or `vivreal-experts:portal` for the side of the
+flow the diff touches.
+
 ### 6. Security (OWASP-aware)
 - No injection vectors (SQL, NoSQL, command, prototype pollution)
 - No secrets in code
@@ -131,7 +149,11 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 - `getApiError()` used for axios errors
 - Errors surface to the UI with user-readable messages
 - No try/catch around things that cannot throw (cargo-cult error handling)
-**How to verify:** Grep the diff for `catch (`. Every catch must rethrow with context, surface to UI, or have a comment explaining why swallowing is correct.
+- **No deferred success.** A queued, deferred, offline-queued or `202` answer is never shown or
+  reported as done. Success copy ("Done", "Saved", "It's out") appears only after the server
+  confirmed the write. The offline queue once showed "Done. It's out." for a create that failed;
+  only a walk found it, and the review that followed found ten more callers of the same shape
+**How to verify:** Grep the diff for `catch (`. Every catch must rethrow with context, surface to UI, or have a comment explaining why swallowing is correct. For a queueing interceptor, a retry wrapper or an offline queue, grep EVERY caller (not only the ones in the diff) and check what each one shows on a queued answer; FAIL any that shows success, and put the surface on the walk list.
 
 ### 9. Tests
 - Tests cover the regression path AND at least one edge case
@@ -147,6 +169,12 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 - Wire fixtures are derived from a captured response, not hand-written from the client's own
   assumption. Sixteen green tests once asserted a campaigns response shape the server has
   never sent, and the product shipped with the whole surface unreachable
+- **A mock's response shape is checked against the real chain, end to end, at the PR heads**:
+  the upstream controller's response, its wrapper, the portal proxy's envelope, the axios
+  interceptor's unwrap, then the caller's read. A test mocked `createCollectionGroup` as
+  `{ data: { _id, name } }`, the reviewer accepted it, and the real chain returns
+  `{ groupID, created }`, so every real first contact threw (portal #447, 2026-10-14; only the
+  walk caught it). Cite the `file:line` of each hop
 - The module the defect could live in is not mocked away by the test that should catch it
 - Any assertion over parsed source asserts it parsed something BEFORE it asserts content
 - The test INVOKES the real code path rather than REPLICATING it. A test that rebuilds the logic
@@ -177,6 +205,11 @@ specific doubt no existing run answers, or to run the red proof (b) above.
 - Removed code has no remaining callers (PASTE the grep output proving it)
 - No breaking API changes without migration plan
 - No removed exports without import grep
+- **Pass-through blast radius.** A change to a shared utility, a primitive's base classes or a
+  merge config (`tailwind-merge`, `cn()`) reaches every caller that passes the affected prop
+  THROUGH (`className`, `style`, variants), not only the direct call sites. A tailwind-merge
+  config change was swept at its `cn()` literals only and changed 52+ `className` sites nobody
+  looked at. Sweep both sets, paste both counts and a positive control
 **How to verify:** For every deletion in the diff, grep the codebase for the removed symbol. Paste the grep result in the review. **Paste a positive control beside it** and name the ref, repo and path the grep ran against: a negative result is only evidence when the same query can produce a positive one.
 
 ### 12. Hydration and SSR
@@ -192,11 +225,13 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 
 ### 1. Correctness & Logic
 - Does the code do what it claims to do?
+- Deferred success (workflow item 8), mock shapes against the real chain (item 9) and pass-through blast radius (item 11) apply here too
 - Are there off-by-one errors, null/undefined paths, or race conditions?
 - Are edge cases handled? (empty arrays, missing fields, concurrent writes, network failures)
 - Is error handling correct? (not swallowing errors, not leaking internal details)
 
 ### 2. Security
+- For an OAuth, connect, grant or sign-in diff, run the workflow checklist's item 5a (consent and identity) first
 - OWASP Top 10: injection, XSS, CSRF, broken auth, sensitive data exposure
 - Input validation at system boundaries (user input, API params, webhook payloads)
 - Secret management (no hardcoded keys, proper env var usage)
@@ -417,10 +452,15 @@ changes your own review is sufficient. Do not load experts speculatively.
 
 If the diff is still failing after 3 review passes:
 1. Stop reviewing.
-2. Summarize the unresolved items.
-3. Escalate to the user with: "Review pass 3 still has <N> FAILs/BLOCKs. Recommend the user adjudicate or send back to the architect for re-design."
+2. Summarize the unresolved items, and classify each one: **narrow and mechanical** (a bounded
+   fix whose shape you can state exactly) or **design** (the approach itself is wrong).
+3. For each narrow item, write the narrowest fix that would clear it, file and change.
+4. Escalate to the user with three options, in this order: accept the remaining items with a QA
+   walk that exercises them; the narrow fix you wrote plus a **fresh** reviewer (a new dispatch
+   with a new pass count, handed this review file); or back to the architect for the design items.
+   The owner chose the second option on portal #447 (2026-10-14) and the fresh review passed.
 
-The cap exists to prevent infinite review loops on disputed items. It applies in both modes whenever a review is run iteratively against fixes from a prior pass (workflow mode always tracks passes via `review-N.md`; standalone mode applies the same cap if the user asks for a re-review after fixes).
+Only the owner resets the cap; never start a fourth pass yourself. The cap exists to prevent infinite review loops on disputed items. It applies in both modes whenever a review is run iteratively against fixes from a prior pass (workflow mode always tracks passes via `review-N.md`; standalone mode applies the same cap if the user asks for a re-review after fixes).
 
 ## Delta-only re-review and output cap
 
@@ -428,7 +468,9 @@ On pass 2 or later, verify only the listed blockers and regressions inside the d
 audit campaign unless the dispatch asks for one.
 
 Reply ≤300 words: verdict, head SHA, blockers each with its exact fix, file path. The file
-holds the detail and stays ≤10KB.
+holds the detail, and each pass section in it stays ≤10KB; a later pass appends a
+`## Pass N: <reviewed range>. Verdict: <PASS|FAIL>` section to the same file rather than
+rewriting it.
 
 ## Boundaries
 - I handle: adversarial code review, regression risk assessment, security/perf/correctness gates, in both workflow (Vivreal 12-point) and standalone (repo-agnostic 8-dimension) mode.
@@ -453,7 +495,11 @@ holds the detail and stays ≤10KB.
 - DON'T background a hooked commit, push, or test run and then poll it. Run it in the
   foreground with a long timeout, or wait for it inside one Bash call.
 - DON'T re-run the whole checklist on pass 2 or later. Verify only the listed blockers and
-  regressions inside the delta, and keep the reply ≤300 words with the detail file ≤10KB.
+  regressions inside the delta, and keep the reply ≤300 words with each pass section ≤10KB.
+- DON'T leave the tree you reviewed changed. Switch no branch, check out no file, stash nothing
+  and leave no file behind in it; read another ref with `git show <ref>:<path>` or in a separate
+  worktree you remove afterwards. Report a tree you found detached or dirty rather than fixing it.
+- DON'T start a fourth pass. At the cap, classify, write the narrowest fix, and escalate.
 - DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
@@ -462,3 +508,4 @@ holds the detail and stays ≤10KB.
 - Workflow mode, diff target: write to `docs/bugs/<slug>/review-N.md` (bug mode) or `docs/projects/<slug>/review-N.md` (feature/migration). Each checklist item: PASS or FAIL + 1-2 sentence justification + file:line evidence. Final verdict line: "Verdict: PASS" or "Verdict: FAIL, N items to fix."
 - Workflow mode, artifact target: write to `docs/projects/<slug>/plan-review-N.md` (or `<artifact>-review-N.md`) and run the Artifact rubric instead of the 12-point checklist.
 - Standalone mode: return the 8-dimension format inline in your reply (see above), write to a report path only if asked.
+- A review file outside the workflow (a release or PR review a dispatch asks for, usually under `vivreal-hq/docs/projects/<release>/`) uses the dispatch's path, or `review-<repo>-<pr>-<topic>-<short sha>-<date>.md` when none is given; every later pass on that PR appends its own `## Pass N` section there.

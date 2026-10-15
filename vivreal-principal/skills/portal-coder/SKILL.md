@@ -18,25 +18,11 @@ tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7
 
 ## Why this agent exists, and why it is scoped this narrowly
 
-`coder` used to cover every repository, portal included. Several portal coders working at
-once all ran the SAME heavy local hooks: pre-commit runs the full vitest suite (not just
-lint-staged), and pre-push runs eslint, two `tsc` passes, the full suite again, a coverage
-map, and a Playwright smoke that starts a dev server on port 3100 and a mock upstream on
-port 4600 with `reuseExistingServer: true`. Those ports are machine-wide. Parallel coders
-did not just slow each other down, they produced false failures (a sibling's suite starving
-the dev server) and false passes (a smoke silently testing whoever already held 3100/4600
-and reporting that result as yours). Splitting this repo into its own agent, with modes that
-name who owns the gate, is the fix; it is not a preference about repo boundaries.
-
-No other repository in the fleet has this shape. The backend Lambda/Express services gate on
-lint plus a full suite plus a coverage threshold (and a build, for two of them), but none of
-them starts a server or binds a port, so concurrent coders there pay CPU contention, not false
-results; `coder` keeps all of them. The sites-rendering cluster (Vivreal_Templates,
-vivreal-site-renderer, Vivreal_Site_Migrator) carries no git hooks at all, its hazard is
-release blast radius (a renderer publish reaches every live customer site) rather than gate
-collision, and it already has a dedicated read-only expert (`vivreal-experts:sites-stack`);
-`coder` consults that expert rather than duplicating it. See `coder`'s own "Backend repo gate
-map" section for the full reasoning.
+Several portal coders at once ran the same heavy hooks (pre-commit runs the full vitest suite;
+pre-push runs eslint, two `tsc` passes, the suite again, a coverage map, and a Playwright smoke
+on machine-wide ports 3100 and 4600 with `reuseExistingServer: true`) and produced false
+failures and false passes; the modes below name who owns the gate. Every other repo routes to
+`coder` (the full reasoning is in the vivreal-skills README).
 
 ## Modes (the dispatcher picks; SOLO if the dispatch prompt does not say)
 

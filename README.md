@@ -70,6 +70,28 @@ agent DOES rather than what it knows:
 | **`vivreal-leadgen`** | Vivreal's lead-generation pipeline fleet, migrated from `vivreal-hq`'s local `.claude/` (`packages/leadgen`): `prompt`, `coordinator`, `lead-scout`, `runner`, `profiler`, `owner-researcher`, `contact-enricher`. | ⚠️ `vivreal-hq`-specific. Enable when running lead-gen campaigns. |
 | **`vivreal-site-migrator`** | The `Vivreal_Site_Migrator` agent fleet, migrated from that repo's local `.claude/`: `ingest`, `collections`, `integrations`, `site`, `kit-designer`, `component-builder`, `page-confirm`, `studio-confirm`, `studio-registrar`, `migration-estimator`, and the USER-GATED `cutover`, plus the `/migrate` and `/template` commands. | ⚠️ `Vivreal_Site_Migrator`-specific. Enable when migrating or templating a site. |
 
+### Why the portal has its own coder, and nothing else does
+
+`coder` used to cover every repository. Several portal coders working at once all ran the
+portal's heavy local hooks: pre-commit runs the full vitest suite (not just lint-staged), and
+pre-push runs eslint, two `tsc` passes, the full suite again, a coverage map, and a Playwright
+smoke that starts a dev server on port 3100 and a mock upstream on port 4600 with
+`reuseExistingServer: true`. Those ports are machine-wide, so parallel coders produced false
+failures (a sibling's suite starving the dev server) and false passes (a smoke silently testing
+whoever already held the ports). `portal-coder` and its SOLO, PARALLEL, INTEGRATE and FOLLOWUP
+modes exist to name who owns that gate.
+
+No other repository has that shape. The Lambda/Express services (VR_Secure_API, VR_CMS_API,
+VR_Main_API, VR_Client_API, VR_Outreach_API, Vivreal_EventHandler, VR_Client_Auth) gate on a
+pre-push of lint plus the full suite under a coverage threshold, and VR_Secure_API and
+VR-MCP-Server add a build, but none of them starts a server or binds a port: two coders pushing in
+the same one pay CPU contention, which is slower, not a false result, and `fleet-concurrency`
+already covers it (serialize the gate within a repo, parallelise across repos). The sites cluster
+(Vivreal_Templates, vivreal-site-renderer, Vivreal_Site_Migrator) carries no git hooks; its hazard
+is release blast radius, which the read-only `vivreal-experts:sites-stack` consultant covers.
+Infra/CFN, vivreal-hq and this repository carry no hooks either. If a repo ever grows a gate shaped
+like the portal's (fixed ports, a browser, a dev server), split it out the same way.
+
 ### Recommended setup
 - Enable **`vivreal-principal`**, **`vivreal-workflow`**, **`vivreal-knowledge`**, and **`vivreal-infra`** globally, these are the "works in any repo" generalist agents plus passively-loaded knowledge (per-repo + cross-cutting infrastructure + design-system / unit-economics / brand-voice).
 - Enable **`vivreal-product`** for product/business reviews, the `finance-auditor` / `marketing-auditor` / `ux-critic` audit agents (the `ux-critic` browser walkthrough needs the Playwright MCP).
