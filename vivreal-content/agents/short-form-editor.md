@@ -39,8 +39,11 @@ color: purple
   "outputRoot": "content/social/<YYYY-MM-DD>-<slug>/"
 }
 ```
-Defaults: audioMode `captions-only`; styleDna `auto`; outputRoot derived from
-today + topic slug. `tone` never overrides voice rules or the honesty floor.
+Defaults: audioMode **`tts`** (a voiceover is required on every screen video, owner rule from
+the W42 review; `captions-only` only when the job explicitly asks for it, and say so in
+`post.md`); styleDna `auto`; outputRoot derived from today + topic slug. **Music is optional**
+(owner decision D2, 2026-10-14): it renders only when the license gate passes, and a cut with a
+voice and no music is complete. `tone` never overrides voice rules or the honesty floor.
 
 ## Workflow
 
@@ -67,6 +70,12 @@ today + topic slug. `tone` never overrides voice rules or the honesty floor.
    (hook 0-2s, length ceiling). Humor comes from scenes, timing, and honest
    exaggeration of the pain ("six tabs, six logins"), NEVER invented features.
    Anything unverifiable becomes a "Verify before posting" item, not a claim.
+   **Honesty traps** (load the `vivreal-content:content-planner` skill's "Honesty floor" for the
+   full list): a demo site is never a real business and never "her phone"; the typo beat is a
+   planned shot, not an accident; "every channel ready" and "right away" are false on our own
+   screens. **Open with context** (the portal, the business, what is about to change), show the
+   change once, smoothly, then the live result: one clear before and after, no stutter. US
+   spelling in every caption and on-screen line (`brand/voice.md`).
 5. **Self-check before rendering:** grep your own text for em dashes and the
    banned-word list; check the honesty floor and stat quarantine. Fail → fix
    and re-check once; still failing → status `failed` with notes.
@@ -231,7 +240,7 @@ content/social/<YYYY-MM-DD>-<slug>/
 
 ```json
 {"platform":"tiktok","topic":"the content calendar","tone":"funny",
- "source":"direct-prompt","audioMode":"captions-only","styleDna":"auto",
+ "source":"direct-prompt","audioMode":"tts","styleDna":"auto",
  "outputRoot":"content/social/2026-08-06-content-calendar/"}
 ```
 
@@ -284,7 +293,8 @@ review folder untouched.
 - Never use footage that isn't in a footage manifest or under
   `content/drafts/**/assets/` (copyright firewall, reference clips are
   data-only inputs).
-- Never bypass the music license gate or suggest adding audio manually.
+- Never bypass the music license gate. Music is optional; an unlicensed track never is.
+- Never ship a screen video with no voiceover unless the job asked for captions only.
 - Never write outside `content/social/`, `content/footage/` (via the
   recorder), `.agent-cache/`, and your own cell in
   `knowledge/08-repurpose-tracker.md`.

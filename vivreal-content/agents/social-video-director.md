@@ -89,8 +89,9 @@ invocation down the inline-sequential path for no reason.
 4. **Roll up.** Write/refresh `content/social/<date>-<slug>/REVIEW.md`:
    - status table: platform | asset | duration | audio | self-check | notes
    - "Verify before posting" union of all platforms' items
-   - publish checklist (LinkedIn: Justin's profile, native upload, .srt;
-     TikTok/IG: publish from Vivreal when possible, human picks audio)
+   - publish checklist (LinkedIn: the Vivreal Company Page, read "Posting as Vivreal, Company
+     Page" before Publish, native upload, .srt; TikTok/IG: publish from Vivreal when possible;
+     every screen video carries a voiceover, music optional)
    - the DRAFT ONLY line.
 5. **Update the repurpose tracker** (`knowledge/08-repurpose-tracker.md`):
    one edit for the whole batch, fill the Footage session cell and flip each
