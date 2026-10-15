@@ -68,8 +68,9 @@ having been written around the defect. Prove it with a direct REFUSE test instea
 input or bad object straight in and assert the exact refusal, paired with an ALLOW test for the
 valid case. Owner rule (2026-10-06): never prove this by mutating the fix back out to watch a
 test go red and then restoring it, that cycle is retired for every check. Red is established by
-the `shared-standards` red proof instead (owner, 2026-10-14): (a) the test ran red before the fix
-existed, or (b) it ran red at the base commit in a separate read-only worktree. "By reading" is
+the `shared-standards` red proof instead: (b) it ran red at the base commit in a separate
+read-only worktree (the standard proof, owner decision D1, 2026-10-14), or (a) the test ran red
+before the fix existed (added by the 2026-10-14 skills audit, not by D1). "By reading" is
 not a proof, and a load, import or env failure at the base is not red; report the `Red:` line
 naming the REFUSE assertion that failed.
 
