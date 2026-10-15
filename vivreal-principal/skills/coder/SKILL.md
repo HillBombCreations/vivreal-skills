@@ -371,6 +371,24 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   ref, repo and path it ran against. Related and easy to hit here:
   `MSYS_NO_PATHCONV=1` or a `git grep` for any `@/` import path silently returns zero.
 
+### Windows traps from the 2026-10 releases
+
+- **A test suite can rewrite tracked fixtures.** VR_Secure_API's suite rewrites its
+  `test/contracts/**/*.json` files to LF on Windows, so `git status` shows dozens of files you
+  never touched after every run. They are not your change: commit with `git commit --only
+  <your paths>`, never `git add -A`. Restore them with `git checkout -- test/contracts` only when
+  none of them holds your own edit; a file holding your work is restored by rewriting its bytes,
+  never by `git checkout --`.
+- **Give workspace and npm scripts an ABSOLUTE output path.** A relative `--out` resolves
+  against the package an npm workspace script runs in, not the repo root: a recorder wrote 675 MB
+  of footage under `packages/content-studio/` instead of the root `content/` tree.
+- **Never write a backslash escape in a heredoc.** In the Bash tool a quoted heredoc
+  (`<<'EOF'`) still collapses a doubled backslash to one, and the target language then decodes
+  what is left: `\\s` arrives as `\s`, `\\b` as a backspace byte. A regex or a test
+  written that way passes for the wrong reason. Use the Write tool for any file holding a
+  backslash, or build the character (`String.fromCharCode(92)`, `chr(92)`), then read the
+  written bytes back before trusting it.
+
 ## Hard rules
 
 - No `any` without an inline comment explaining why.

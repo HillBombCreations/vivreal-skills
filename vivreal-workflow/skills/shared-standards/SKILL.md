@@ -668,13 +668,19 @@ The architect should flag any review that introduces an `Optional` render-prop w
 ### Proxy-route guard hook (deterministic)
 The old prompt-based PreToolUse Write hook (which sometimes mis-fired on non-proxy files) was replaced by the deterministic `vivreal-proxy-factory/hooks/proxy-route-guard.cjs`, it exits 0 immediately for any path outside `src/app/api/proxy/**/route.ts` and never interferes with other writes. If it blocks a legitimate manual proxy route, add the route to its allowlist; do NOT route around the Write tool with heredocs or temp scripts.
 
-### Bash heredoc quoting failures on Windows Git Bash
-Bash heredocs (`<< 'EOF'`) break when the content contains:
-- **Unmatched single quotes** (e.g. contractions like "doesn't", possessives, or code with apostrophes)
-- **Triple-quoted strings** (Python `"""..."""` inside a heredoc)
-- The shell tries to match quotes across the entire heredoc, causing `unexpected EOF` errors
+### Bash heredocs decode backslash escapes, even quoted
+The trap that actually bites here is silent, not a syntax error. In the Bash tool a quoted
+heredoc (`<<'EOF'`) still collapses a doubled backslash to a single one, and the target
+language then runs its own escape processing on what is left. A JS character class written
+`[^"'\\s<>)]` arrived as `[^"'\s<>)]` and excluded the LETTER s; a Python `\\b` became a
+backspace byte inside a regex, so a guard matched a control character and passed for the wrong
+reason. Neither failed loudly.
 
-**Fix:** For large multi-line content with potential quote issues, write a Python script to a temp file first, then execute it. Or use the Write tool after a Read.
+**Fix:** never write a backslash escape in a heredoc. Use the Write tool (it does not decode),
+or build the character in code (`String.fromCharCode(92)`, `chr(92)`), or use bracket forms that
+need no backslash (`[.]`, `[?]`, an explicit character set instead of `\s`). Then read the written
+bytes back. A heredoc whose body holds an apostrophe or a triple-quoted string can also end in
+`unexpected EOF`; the same fix applies.
 
 ### Subagent file write verification
 Subagents (researcher, architect, etc.) sometimes claim they wrote a file but did NOT actually write it. The coordinator MUST verify every artifact exists after each agent dispatch:

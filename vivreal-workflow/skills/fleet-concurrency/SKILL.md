@@ -1,5 +1,5 @@
 ---
-description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the shared ports and the shared stash, and keeping the machine at a healthy load rather than pegged."
+description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, how many agents to run and the shared session budget, one publisher per shared target, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
 ---
 
 Parallelism here is limited by the machine and by a handful of shared resources,
@@ -130,6 +130,50 @@ that is still running minutes later as a bug rather than as thoroughness.
 **Prefer fewer, longer-lived agents to many short ones** when they contend for
 the same repository. The coordination cost is real and it is paid in wall clock
 either way.
+
+## Budget and collisions
+
+**Pacing (owner, 2026-10-14).** Run about five agents at once. When about six are
+running, stop dispatching until three or four have finished, then refill to about
+five. Restarting an agent that crashed (a login error, a dropped connection) is not
+a new dispatch. Prefer handing new work of the same kind to an agent about to finish
+in the same repository over a fresh dispatch.
+
+**The session budget is shared, and it kills every agent at once.** Nine agents
+fanned out on 2026-10-04 drained it and seven died together mid-work, two with code
+uncommitted and one holding a live security fix. Disjoint files are a correctness
+argument, never a capacity one. So: priority order (security and live breakage
+first, then deadlines, then the rest), tell every agent to commit early and often,
+and keep a recovery snapshot current so a budget death costs a status check, not
+the work.
+
+**Collision decides which agents may run together; the budget decides how many.**
+Hold an agent back when it would share a working tree, a Playwright session or
+storage state, a fixed dev-server port, or the same live document with a running
+agent. Agents in different repositories, databases and buckets run together freely.
+
+**One publisher per shared target.** The template registry (`site_templates` plus
+the template bucket), the live vivreal.io CMS, and any npm publish are single shared
+targets. Exactly one agent publishes to each at a time, and it publishes from merged
+`master`, never from a feature branch while sibling PRs are unmerged; a cleanup
+agent once republished three kits from its own branch and the registry served
+already-removed content for four minutes.
+
+**Namespace the scratchpad.** It is shared by every agent and session. Write
+`scratchpad/<task-slug>/<file>`, never a generic name (`count.py`, `out.txt`,
+`after.json`), and treat a scratch helper as untrusted between invocations: a
+sibling can overwrite it with different code that still prints a plausible number.
+
+**Never `git reset --hard`, `git stash`, `git checkout --` or `git restore` a file
+you did not write.** An unexpected change in a repository you share is someone
+else's uncommitted work, not your debris. Commit with an explicit pathspec
+(`git commit --only <paths>`): a bare commit also sweeps a peer's already-staged
+files into yours.
+
+**Tell the FIRST agent too.** When a second agent is dispatched into a repository
+that already has one, send the coexistence rules above, and each agent's owned file
+list, to the agent already running. A rule that reaches half the participants
+prevents nothing; the agent dispatched first is the one that did the damage.
 
 ## Sizing a batch
 
