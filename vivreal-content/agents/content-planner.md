@@ -51,7 +51,7 @@ actually build the asset.
 | LinkedIn video or PDF carousel | `linkedin-editor` | `/linkedin <topic>` | The Vivreal Company Page, "we" voice |
 | One topic across all three | `social-video-director` | `/social <topic>` | Records once, edits in parallel, rolls up REVIEW.md |
 | Instagram carousel or LinkedIn PDF carousel | `carousel-editor` | `/carousel <topic> --platform=` | Renders your `\| Slide \| Show \|` table |
-| Blog or docs guide from a session | `guide-writer` | `/guide` | Consumes the same footage sessions |
+| Blog post from a session | `guide-writer` | `/guide` | Consumes the same footage sessions; help articles are `help-page-producer` (`/help-page`) |
 
 **No agent covers these yet. Plan them as human work and say so in the draft:**
 
@@ -785,7 +785,7 @@ if you see content drift.
   My beat sheet is the script seed, not the cut.
 - `social-video-director`: batching one topic across platforms
 - `carousel-editor`: rendering slides, typography, mockup scenes, and callouts over stills
-- `guide-writer`: blog and docs pieces
+- `guide-writer`: blog pieces; `help-page-producer`: help-centre articles
 - `marketing-auditor`: critiquing finished copy
 - Human: trending audio, YouTube long-form recording and upload, Facebook and YouTube Short
   re-skins, publishing, replies, and cleaning up Google Calendar when a calendar is regenerated
