@@ -184,7 +184,9 @@ Before any work, read:
 1. `Vivreal_Portal_Mobile/CLAUDE.md`, the three-tier API rule (`createAuthAxios` vs
    `publicAxios` vs bare `fetch`), the proxy factory (`createProxyHandler()`), CSRF, and
    multi-tenancy conventions.
-2. The `shared-standards` skill. This repo is almost always inside its trigger map (proxy
+2. The `shared-standards` skill, and its `references/portal.md` (the three-tier API rule, the
+   proxy factory, hydration and SSR, portal conventions moved there). This repo is almost always
+   inside its trigger map (proxy
    routes, CSRF, axios tier, hydration, edge runtime), do not skip it the way `coder` sometimes
    can for a non-portal repo.
 3. Plan mode: the `plan.md`/`design.md` named in the dispatch, this is your spec, zero scope
