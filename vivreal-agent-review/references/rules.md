@@ -348,6 +348,13 @@ is a generated mirror **iff** a sibling source exists and the two are byte-ident
 `"cmd-" + <Y>`. Byte-identity is the right test because the sync writes the source
 through unmodified, with no transform.
 
+**In this marketplace the `cmd-` half no longer lives in a plugin tree** (2026-10-14): `sync-to-agy.js`
+writes the command mirrors to the gitignored `.agy/<plugin>/skills/`, because Claude Code already lists
+every command as a skill and an in-tree `skills/cmd-<Y>/` listed each command twice. A `skills/cmd-*`
+directory inside a plugin here is therefore a stale generated copy: report it as a WARNING, and check
+first that `<plugin>/commands/<Y>.md` exists, because a mirror with no source is the only copy of
+that command.
+
 ### secret-in-tree
 
 `[quality]` · **ERROR** · stays ON regardless of policy posture.

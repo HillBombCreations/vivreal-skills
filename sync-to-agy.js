@@ -47,16 +47,22 @@ marketplace.plugins.forEach(plugin => {
     });
   }
 
-  // Process commands -> skills (prefixed with cmd- to avoid naming clashes)
+  // Process commands -> skills (prefixed with cmd- to avoid naming clashes).
+  // These mirrors are written OUTSIDE the plugin tree, under the gitignored
+  // .agy/<plugin>/skills/, because Claude Code already lists every command as a
+  // skill: a cmd-* copy inside the plugin's skills/ listed each command twice
+  // (vivreal-workflow:reviewer AND vivreal-workflow:cmd-reviewer).
   // Commands that must NOT get a cmd-* skill mirror (promptify ships as a
   // command only, see commit 9168979)
   const EXCLUDED_COMMANDS = new Set(['promptify']);
+  const agyCommandSkillsDir = path.join(vivrealSkillsDir, '.agy', plugin.name, 'skills');
+  let hasCommandMirrors = false;
   if (fs.existsSync(commandsDir)) {
     const commands = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'))
       .filter(f => !EXCLUDED_COMMANDS.has(path.basename(f, '.md')));
     commands.forEach(file => {
       const name = 'cmd-' + path.basename(file, '.md');
-      const targetSkillDir = path.join(skillsDir, name);
+      const targetSkillDir = path.join(agyCommandSkillsDir, name);
       
       if (!fs.existsSync(targetSkillDir)) {
         fs.mkdirSync(targetSkillDir, { recursive: true });
@@ -64,7 +70,7 @@ marketplace.plugins.forEach(plugin => {
       
       const sourceContent = fs.readFileSync(path.join(commandsDir, file), 'utf8');
       fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), sourceContent, 'utf8');
-      hasCopiedAgentsOrCommands = true;
+      hasCommandMirrors = true;
     });
   }
 
@@ -73,7 +79,11 @@ marketplace.plugins.forEach(plugin => {
     const relativeSkillsPath = path.relative(vivrealSkillsDir, skillsDir).replace(/\\/g, '/');
     const absoluteSkillsPath = path.join(vivrealSkillsDir, relativeSkillsPath).replace(/\\/g, '/');
     skillsPaths.push(absoluteSkillsPath);
-    console.log(`✅ Synced ${plugin.name} skills (${hasCopiedAgentsOrCommands ? 'compiled agents/commands' : 'native skills'})`);
+    console.log(`✅ Synced ${plugin.name} skills (${hasCopiedAgentsOrCommands ? 'compiled agents' : 'native skills'})`);
+  }
+  if (hasCommandMirrors) {
+    skillsPaths.push(agyCommandSkillsDir.replace(/\\/g, '/'));
+    console.log(`✅ Synced ${plugin.name} command mirrors to .agy/${plugin.name}/skills`);
   }
 });
 

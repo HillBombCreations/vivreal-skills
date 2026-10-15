@@ -32,6 +32,11 @@
  *   8. A reference to behaviour that has been deleted from the product.
  *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
  *      buys a reader nothing that a profile name and a region do not.
+ *  10. A command mirror (`skills/cmd-*`) inside a plugin tree. They are generated into the
+ *      gitignored `.agy/`; in a plugin they list every command twice.
+ *
+ * It warns (without failing) on a description over the documented length, an agent and its
+ * skill mirror that have drifted, and an `mcp__<server>__` prefix no known server declares.
  *
  * Run:  node scripts/check-definitions.mjs
  * Self-test (the must-pass control):  node scripts/check-definitions.mjs --self-test
@@ -148,8 +153,7 @@ function ruleParse(files) {
     // What is actually required. An agent is identified by its `name`, so a missing
     // one is a load problem. For a skill every field is optional and identity falls
     // back to the directory, so a missing `name` is not a defect and several skills
-    // here deliberately carry a name that differs from their directory (the command
-    // mirrors are invoked as `plugin:db-query`, not `plugin:cmd-db-query`). What
+    // here deliberately carry a name that differs from their directory. What
     // breaks discovery in every case is an empty or absent description, because the
     // description is the whole of how the main loop decides to load the thing.
     if (isAgent && !keys.name) fail('parse', rel, 'agent frontmatter has no name, which is how it is identified');
@@ -231,7 +235,12 @@ function ruleCrossReferences(files) {
   const known = new Set();
   for (const abs of files) {
     const rel = norm(relative(ROOT, abs));
-    const m = rel.match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/);
+    // A command is listed and invoked as a skill too (`plugin:db-query` for
+    // `<plugin>/commands/db-query.md`), so it is a valid target in its own right. Before
+    // the cmd-* mirrors moved out of the plugin trees, these references resolved only
+    // through a mirror's `name:` line.
+    const m =
+      rel.match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/) || rel.match(/^([^/]+)\/commands\/([^/]+)\.md$/);
     if (!m) continue;
     known.add(`${m[1]}:${m[2]}`);
     const keys = frontmatter(readFileSync(abs, 'utf8'), rel);
@@ -503,6 +512,29 @@ function ruleMcpPrefixes(files) {
   }
 }
 
+/**
+ * Command mirrors (`skills/cmd-<name>/`) belong in the gitignored `.agy/` tree, never inside a
+ * plugin. Claude Code already lists every command as a skill, so an in-tree mirror listed each
+ * command twice (`vivreal-workflow:reviewer` and `vivreal-workflow:cmd-reviewer`), and two of the
+ * old mirrors had no command behind them at all, so they were the only copy of `/deliver` and
+ * `/write-docs`. An older `sync-to-agy.js` run puts them back; this is what notices.
+ */
+function ruleNoInTreeCommandMirrors(files) {
+  const flagged = new Set();
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    const m = rel.match(/^([^/]+)\/skills\/(cmd-[^/]+)\//);
+    if (!m || flagged.has(`${m[1]}/${m[2]}`)) continue;
+    flagged.add(`${m[1]}/${m[2]}`);
+    fail(
+      'cmd-mirror-in-tree',
+      `${m[1]}/skills/${m[2]}`,
+      'a command mirror inside a plugin tree lists the command twice. sync-to-agy.js writes these to .agy/. ' +
+        'Delete it, after checking ' + m[1] + '/commands/' + m[2].slice(4) + '.md exists (a mirror with no source is the only copy).',
+    );
+  }
+}
+
 // ------------------------------------------------- rule 4: no copied values
 // Each entry is a shape this repo has already shipped wrong. The point is not to
 // list every possible mechanical value; it is that a value of one of these shapes
@@ -716,6 +748,7 @@ function runAll(files) {
   ruleCrossReferences(files);
   ruleMirrorDrift(files);
   ruleMcpPrefixes(files);
+  ruleNoInTreeCommandMirrors(files);
   ruleCopiedValues(files);
   ruleDashes(files);
   ruleDeletedBehaviour(files);
@@ -852,6 +885,12 @@ function selfTest() {
         'Assume `arn:aws:iam::' + '123456' + '789012' + ':role/Example`.',
         '',
       ].join('\n'),
+    },
+    {
+      rule: 'cmd-mirror-in-tree',
+      label: 'cmd-mirror-in-tree: a command mirror inside a plugin',
+      path: join(tmp, 'skills', 'cmd-poison', 'SKILL.md'),
+      body: '---' + String.fromCharCode(10) + 'description: fixture' + String.fromCharCode(10) + '---' + String.fromCharCode(10),
     },
     {
       // A warning rule still has to be able to fire. A grant naming a server nothing
