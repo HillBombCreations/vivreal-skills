@@ -198,14 +198,18 @@ Write a report to the path the dispatcher names, or return it if none is given:
 A finding that lives only in a report dies when the run ends. Prior runs' findings live in the
 working repo (vivreal-hq), **split by trade**: read `docs/agent-notes/template-critic/<trade>.md`
 for the trade you are judging (for example `bakery.md`, `live-events.md`, `salon-barber-taproom.md`,
-`med-spa.md`, `wedding-venue.md`, `resale.md`, `shop.md`) **before the capture step**. If that
+`med-spa.md`, `wedding-venue.md`, `resale.md`, `shop.md`) **before the capture step**, plus the
+sections of `docs/agent-notes/template-critic/fleet-wide.md` that name your kit and its newest
+section in full. If that
 folder does not exist yet, read only the dated sections of `docs/agent-notes/template-critic.md`
 whose heading names your trade, plus the newest fleet-wide section; never the whole file, which
 outgrew a single read. Those notes carry what pages the trade needs, which exemplars are worth
 returning to, and which component gaps recur. Where they disagree with this file, they win; say so
 in your report.
 
-**Write the last step of every run back** into your trade's file: a new dated section, superseding
+**Write the last step of every run back** into your trade's file, or, when the run judged every
+kit at once (a fleet-wide pass), into `docs/agent-notes/template-critic/fleet-wide.md`, never into
+one trade's file or the old single file: a new dated section, superseding
 a row rather than deleting it, citing any number with its date and method. A method that would help
 on ANY trade goes in a short "Method candidates" list at the top of the notes for the next plugin
 release to fold into "Standing checks" above. Never write inside this plugin.

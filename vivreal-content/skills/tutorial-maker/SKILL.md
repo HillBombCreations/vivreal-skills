@@ -206,6 +206,11 @@ the ring and the eased cursor. Password fields are handled for you: the driver c
 "REDACT START" the moment one becomes visible and "REDACT END" the moment it is gone, so the
 edit cuts that stretch, and you never fill one.
 
+**`TUTORIAL_INTRO` overrides the opening caption** (a post-only take, the AI agent take). It is
+voice-checked before filming by `introProblem` in `remote-drive.ts` (no dashes, no "Claude", not
+empty; added in vivreal-hq 5edf4e37). If `git grep introProblem` finds nothing on your branch,
+that check is not there yet, so check the intro against `brand/voice.md` by hand.
+
 **Authority (owner, 2026-10-04), this is the one exception to "draft only":** you press
 Connect, the provider's own Allow/Continue screens, the media upload, and Schedule. The owner
 only ever types a username and password, off camera, signing each provider in beforehand via
@@ -443,8 +448,11 @@ plus what the owner said watching the takes:
 - **Instagram needs channel media in Create**; the item's own photo does not carry over.
 - **Overlays:** the portal's cookie notice (`aria-label="Close cookie notice"`) mounts a few
   seconds after Home settles and returns on every load; "A new version is ready." can sit over the
-  phone header. `nav.ts` `clearOverlays` handles both; a probe on the tutorial profile must dismiss
-  them again before pressing anything low on the screen.
+  phone header. `nav.ts` `clearOverlays` handles both before the take; a probe on the tutorial
+  profile must dismiss them again before pressing anything low on the screen. The update bar can
+  also land MID-take (2026-10-15: a whole bookings reshoot was filmed under it and rejected), so
+  `src/tutorial/update-bar-watch.ts` now stops the take the moment it appears. Run the take again;
+  if it keeps coming back, the profile's cached app is stale, so record on a fresh profile.
 - **The Socials hub sometimes renders without its top block** in an app-view take and never
   recovers: wait 8 s, reload, chapter the reload `CUT START` / `CUT END`, and splice it out.
 - **A caption that moves to the top of the frame can cover the heading it talks about.** Name a
@@ -465,6 +473,30 @@ or the still shows the PREVIOUS beat's caption sitting over the frame. Draw a hi
 in their place that stays on screen (the animated ring is capture-video-only and would not
 show in a single frame), screenshot, then restore visibility. Reuse this rather than
 reinventing a highlight-and-hide for every new script that needs stills.
+
+**Phone stills of Connected apps (the AI agent connections) come from the owner's own installed
+iPhone app, never from the recording window.** A connection belongs to the one person who made it,
+and the recording window is signed in as the demo account, so it shows that account's connections
+or none. Ask the owner for those frames.
+
+## Guarded presses on a real account (2026-10-15)
+
+A take that a guard stopped (the leak guard, the update-bar watch) keeps running only so its own
+cleanup has a live page; it must not write anything new. The pieces, all in
+`packages/content-studio/src/tutorial/`:
+
+- `script-race.ts` races the script against the guards, sets `Recorder.stopReason`, and waits for
+  the script to settle before the page closes.
+- `assertTakeNotStopped(r, action)` throws before a write once the take is stopped. Call it with
+  no await between it and the press.
+- `r.click(target, { guard: '<what this press does>' })` runs that same check directly before
+  the press and logs `PRESSING` or `REFUSED`.
+- `waitForHuman` stops polling once the take is stopped.
+
+**Every new press that writes to a real account (Save, Schedule, Publish, Connect, Delete) uses
+the click guard or `assertTakeNotStopped`.** The sweep test
+(`tests/tutorial-help-script-guards.test.ts`) fails on an unguarded one; it is a tripwire, not
+proof, so guard the press even where the sweep would miss it.
 
 ## Before you hand it over
 
