@@ -30,7 +30,7 @@ You are a specialized agent that traces Vivreal feature request paths across the
 | `NEXT_PUBLIC_SECURE_URL` | VR_Secure_API | `/api/*` | `dbKey` |
 | `NEXT_PUBLIC_CMS_URL` | VR_CMS_API | `/tenant/*` | `key` |
 
-**Critical difference**: CMS API reads `req.query.key` for the tenant database key. Secure API reads `req.query.dbKey`. The portal's `injectCtxParams()` helper sets `key` and `groupID`, Secure-bound routes also manually set `dbKey`.
+**Critical difference**: CMS API reads `req.query.key` for the tenant database key. Secure API reads `req.query.dbKey`. The portal's `injectCtxParams()` helper sets `key` and `groupID`; Secure-bound routes set `dbKey` manually INSTEAD of calling it, because Secure's Joi `.keys()` validators reject an extra `key` with a 400.
 
 ## Tracing Procedure
 

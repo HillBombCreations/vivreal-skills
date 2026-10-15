@@ -15,18 +15,18 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | Repo | Path | CLAUDE.md | Purpose |
 |---|---|---|---|
 | Vivreal Portal (frontend) | `C:\repos\Vivreal_Portal_Mobile` | `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` | Next.js 16 portal, proxy routes, components, auth |
-| VR_Main_API | `C:\repos\VR_Main_API` | `C:\repos\VR_Main_API\CLAUDE.md` | Auth, signup, email, Slack/Discord, Stripe products |
+| VR_Main_API | `C:\repos\VR_Main_API` | `C:\repos\VR_Main_API\CLAUDE.md` | Auth, signup, transactional + lifecycle email, the demo-account claim flow, campaign sends, Meta data-deletion callbacks |
 | VR_Secure_API | `C:\repos\VR_Secure_API` | `C:\repos\VR_Secure_API\CLAUDE.md` | Group mgmt, site creation, billing, profile switching |
 | VR_CMS_API | `C:\repos\VR_CMS_API` | `C:\repos\VR_CMS_API\CLAUDE.md` | Collections, objects, integrations, media, audit, versioning |
 | VR_Client_API | `C:\repos\VR_Client_API` | `C:\repos\VR_Client_API\CLAUDE.md` | Public content delivery API for end-user sites |
 | VR_Client_Auth | `C:\repos\VR_Client_Auth` | `C:\repos\VR_Client_Auth\CLAUDE.md` | Lambda authorizer for Client API |
-| VR_Outreach_API | `C:\repos\VR_Outreach_API` | `C:\repos\VR_Outreach_API\CLAUDE.md` | Email outreach, sequences, contacts/companies, booking, SES |
-| VR_Analytics_API | `C:\repos\VR_Analytics_API` | N/A (README.md) | First-party analytics ingest + rollup pipeline |
+| VR_Outreach_API | `C:\repos\VR_Outreach_API` | N/A (no CLAUDE.md; `README.md` + `docs/`) | Email outreach, sequences, contacts/companies, booking, SES |
+| VR_Analytics_API | `C:\repos\VR_Analytics_API` | `C:\repos\VR_Analytics_API\CLAUDE.md` | First-party analytics ingest + rollup pipeline |
 | Vivreal_EventHandler | `C:\repos\Vivreal_EventHandler` | `C:\repos\Vivreal_EventHandler\CLAUDE.md` | Step Functions site deployment pipeline |
-| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Universal site template (`main` = the single template; other branches = per-customer sites) |
+| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Universal site template: every customer site's Amplify app builds the shared `stable` branch (per-customer branches are dead); releases go out through `promote-stable` |
 | vivreal-site-renderer | `C:\repos\vivreal-site-renderer` | `C:\repos\vivreal-site-renderer\CLAUDE.md` | `@hillbombcreations/site-renderer` rendering engine |
 | VR-MCP-Server | `C:\repos\VR-MCP-Server` | `C:\repos\VR-MCP-Server\CLAUDE.md` | OAuth 2.1 MCP server (~the CMS tool roster) |
-| VR-Outreach-MCP-Server | `C:\repos\VR-Outreach-MCP-Server` | `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` | Internal outreach MCP server (50 tools) |
+| VR-Outreach-MCP-Server | `C:\repos\VR-Outreach-MCP-Server` | `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` | Internal outreach MCP server (count its tools from the registry) |
 | Vivreal-Schemas | `C:\repos\Vivreal-Schemas` | N/A | Shared Mongoose schemas (npm package `@hillbombcreations/schemas`) |
 
 ## Upstream URL Mapping
