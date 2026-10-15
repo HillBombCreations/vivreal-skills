@@ -20,7 +20,7 @@ against a lowercased collection name returns zero rows against a database that h
 > either old name returns ZERO documents with no error, so a hardcoded `general_shared` in a script
 > or a memory note is a false not-found, not missing data.
 
-> **Topology, collection names, indexes and the join rules below were verified against live Mongo on 2026-06-19.** Read this before touching the `mcp__mongodb__*` tools. For an interactive helper, use the `/db-query` and `/db-schema` commands (`vivreal-db-explorer` plugin), this skill is the passive knowledge those commands assume.
+> **Topology, collection names and the join rules below were re-verified read-only against live Mongo on 2026-10-15; indexes are read from the schemas package.** Read this before touching the `mcp__mongodb__*` tools. For an interactive helper, use the `/db-query` and `/db-schema` commands (`vivreal-db-explorer` plugin), this skill is the passive knowledge those commands assume.
 
 ## Getting connected (sourcing the connection string)
 
@@ -46,7 +46,7 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
    (e.g. `${VIVREAL_REPOS}/VR_CMS_API/.env`) carries `CLUSTER_URL=mongodb+srv://…`.
 
 **Then connect:** the `vivreal-db-explorer` plugin registers a **read-only** MongoDB
-MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`, `MDB_MCP_READ_ONLY=true`).
+MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`). Its launcher, not `.mcp.json`, sets `MDB_MCP_READ_ONLY=true` (`scripts/launch-mongo-mcp.cjs`).
 Its launcher (`scripts/launch-mongo-mcp.cjs`) sources `vivreal/prod/main-api` itself when
 `MDB_MCP_CONNECTION_STRING` isn't already exported, and appends
 `maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer` to whichever string it
@@ -88,7 +88,7 @@ equally wrong to say there are exactly three. The shape, which is stable:
 
 | Database | Role | Holds | Which groups |
 |---|---|---|---|
-| `Vivreal` | **Control plane (mainDb)** | `groups`, `leads` (+ lifecycle `activated`/`activatedAt`), `checkout_sessions`, `media_files`, `usage_trackings`, `domainorders`, `prospects`, `inquiries`, `emailEvents`, `suppressions` (lifecycle-email), `dataDeletionRequests`, `site_traffic_daily` (first-party analytics rollup), analytics caches, push subs, oauth verifiers | ALL groups (registry) |
+| `Vivreal` | **Control plane (mainDb)** | `groups`, `leads` (+ lifecycle `activated`/`activatedAt`), `checkout_sessions`, `media_files`, `usage_trackings`, `domainOrders`, `domains`, `inquiries`, `emailEvents`, `suppressions` (lifecycle-email), `dataDeletionRequests`, `site_traffic_dailies` (first-party analytics rollup; code and docs call it `site_traffic_daily`, but VR_Analytics_API pins `collectionName: 'site_traffic_dailies'`, so a query on the singular name is a false zero), `commerce_dailies`, `product_search_terms`/`product_search_dailies`, analytics caches, push subs, oauth verifiers. List them with `listCollections`; `prospects` is gone (dropped 2026-07-27, absent 2026-10-15) | ALL groups (registry) |
 | `pod_01` (was `general_shared` until 2026-09-23) | **Tenant content** | `collection_groups`, `collection_objects` (incl. the SIX Outreach system groups, sequences/enrollments/contacts/senders/companies/segments, with `calls[]` + bookings on senders/companies), `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events`, `square_webhook_events`, `metaWebhookEvents`, `instagram_comments`/`instagram_conversations`/`instagram_messages` | **Whichever groups carry `dbKey: "pod_01"`**: every customer group and the Vivreal group, across several tiers |
 | `pod_02` (was `pro_plus` until 2026-09-23) | **Tenant content**, same shape as `pod_01` (the old `pro_plus` also carried a `stripe_products` collection holding ZERO documents, dead storage nothing reads, CMS CLAUDE.md:228-232) | same shape as `pod_01` | **Only the Vivreal Content group** (`6a68169fe1457c2f3fd04530`), placed there deliberately. NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here**, see below. | service-global |
@@ -131,9 +131,11 @@ From the `active_ctx` JWT in the portal:
 |---|---|---|---|
 | `groupID` | `6795c1358b97114840265e65` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc, tenant scoping |
 | `dbKey` | `pod_01`, `pod_02`, or another placement name (`general_shared`/`pro_plus` are retired and refused) | The **stored** tenant database name, read back by `resolvePlacement(group)`. Never computed | Selecting the tenant database; passed as the `key` query param to CMS API |
-| `bucketname` / `group.key` | `exodussalescollective` → bucket `vivreal-exodussalescollective` | The group's URL **slug** | S3 bucket naming, CDN media paths, NOT database routing |
+| `group.key` (`bucketname` in `active_ctx`) | `exodussalescollective` | The group's URL **slug** | Half of the S3 bucket formula, CDN media paths, NOT database routing |
 
-`dbKey` is the database name. `group.key` is the S3 slug. They are different values.
+`dbKey` is the database name. `group.key` is the slug. They are different values.
+
+**The S3 bucket is `bucketOf(group)`** (VR_Secure_API `src/shared/groupBucket.js`, VR_CMS_API `@shared/bucketOf`): the stored `group.bucket` wins, else `${group.type}-${group.key}`. Never build it from a `vivreal-` prefix by hand: the type half is not guaranteed, and a group with neither field must throw rather than touch `undefined-undefined`. Measured 2026-10-15: 25 of 26 groups store `bucket`.
 
 ## Linking collections together (the ER map)
 
@@ -159,7 +161,7 @@ that equal the *string form* of a target document's **ObjectId `_id`**.
 | `audit_logs.entityId` (+ `entityType`) | the named entity's `_id` | within tenant DB |
 | `sites.collectionGroups[]`, `sites.collectionObjIds[]`, `sites.pages[].collectionId` | embedded id refs | within tenant DB |
 
-`group.key` (slug) → S3 bucket `vivreal-{key}`; it is NOT a join key for Mongo.
+`group.key` (slug) is NOT a join key for Mongo; the bucket comes from `bucketOf(group)` (above).
 
 ## Cross-collection query recipes
 
@@ -167,16 +169,16 @@ that equal the *string form* of a target document's **ObjectId `_id`**.
 A naive `localField/foreignField` lookup fails (string vs ObjectId). Convert in a pipeline:
 ```js
 db.collection_objects.aggregate([
-  { $match: { groupID: "<gid>", archived: { $ne: true } } }
+  { $match: { groupID: "<gid>", archived: { $ne: true } } },
   { $lookup: {
-      from: "collection_groups"
+      from: "collection_groups",
       let: { gref: { $toObjectId: "$collectionObj.refID" } },   // string -> ObjectId
       pipeline: [
-        { $match: { $expr: { $eq: ["$_id", "$$gref"] } } }
+        { $match: { $expr: { $eq: ["$_id", "$$gref"] } } },
         { $project: { name: 1, type: 1 } }
-      ]
+      ],
       as: "group"
-  } }
+  } },
   { $unwind: { path: "$group", preserveNullAndEmptyArrays: true } }
 ])
 ```
@@ -191,7 +193,7 @@ Alternatively convert the foreign side with `{ $toString: "$_id" }`, but that sc
 **Recipe C, a group's whole content footprint (counts per collection):**
 ```js
 db.collection_objects.aggregate([
-  { $match: { groupID: gid, archived: { $ne: true } } }
+  { $match: { groupID: gid, archived: { $ne: true } } },
   { $group: { _id: "$collectionObj.name", count: { $sum: 1 } } }
 ])
 ```
@@ -205,6 +207,7 @@ db.collection_objects.aggregate([
 **Recipe F, group → everything (cross-DB):** there is no cross-database `$lookup`. To go
 from `Vivreal.groups` to tenant content you must issue separate queries against the
 tenant DB resolved from the group document. **Read `group.dbKey` first**, then query that
+database with `groupID` in every filter. `media_files` and `usage_trackings` stay in `Vivreal`.
 
 **MCP note:** the `mcp__mongodb__find` `_id` filter uses extended JSON `{"$oid":"..."}`;
 tenant string refs (`groupID`, `collectionObj.refID`, `collectionObjID`, `entityId`) use
@@ -213,27 +216,40 @@ plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
 ## Collection field shapes (verified live, tenant DB)
 
 - **`collection_groups`**, `_id`, `name`, `type`, `groupID`(str), `archived`, `linked`,
-  `tags[]`, `schema`(strict:false), `widget`, `tableConfig`, `label`, `author{name,email}`
-  `hasMedia`, `useAsTemplate`, `system`, `skipAudit`, `skipVersioning`, `siteRole`
-  `variantKeys`, `approvalRequired`, timestamps. **Indexes: none declared**, the schema
-  defines only the default `_id` index (no `groupID` or `groupID+type` secondary index).
-  `siteRole` is a constrained enum (`subscribers|reviews|reservations|quote-requests|contact|testimonials|null`)
-  - the stable discriminator for built-in site forms, orthogonal to both `type` and `system`
-  (three orthogonal discriminators). `_id` is referenced as a **string**
+  `tags[]`, `schema`(strict:false), `widget`, `tableConfig`, `label`, `author{name,email}`,
+  `hasMedia`, `useAsTemplate`, `system`, `skipAudit`, `skipVersioning`, `siteRole`,
+  `scope`, `commerce`, `variantKeys`, `approvalRequired`, timestamps. **Indexes: none declared**
+  beyond `_id`. `siteRole` is a plain String (not an enum), documented as `subscribers |
+  reviews | reservations | quote-requests | contact | testimonials | bookings | group-subscribers | null`;
+  measured 2026-10-15 both pods carry every value except `group-subscribers`. It is the stable
+  discriminator for built-in site forms, orthogonal to `type` and `system`. `bookings` is not
+  `reservations` (a booking is a committed appointment with a top-level `bookingStart`; a
+  reservation is a request with free-text time), and `group-subscribers` is deliberately not
+  `subscribers` (the portal's site resolver falls back to the first `subscribers` collection, so
+  the group-wide store would hijack every site). `scope: 'group'` marks a collection owned by the
+  group and bound to no site (the parked-domain subscriber store); absent means site-scoped, and a
+  `scope: 'group'` collection must never be resolved as one site's. `commerce { state: selling |
+  paused | moving, provider, moveId, movedAt }` is on product lists only, NO default, absent means
+  selling (the payments move, `vivreal-cms-api-knowledge`). `_id` is referenced as a **string**
   `collectionObj.refID` on objects.
 - **`collection_objects`**, `collectionObj{name, refID(str)}`, `groupID`(str),
-  `objectValue`(strict:false), `integrationInfo`, `archived`, `publishDate`(**Date**|null)
-  `approvalStatus`(enum: draft/pending_review/approved/rejected), `approvalRequestedAt`/`approvalRequestedBy`
-  `approvalDecidedAt`/`approvalDecidedBy`, `approvalNote`, `usingVariant`, `author`
-  `embedding`/`embeddingModel` (both `select:false`). Schema indexes: `collectionObj.refID`
-  `publishDate`, `approvalStatus` (collectionObjectSchema.js). The only genuinely missing
-  index is `groupID`.
+  `objectValue`(strict:false), `integrationInfo`, `archived`, `publishDate`(**Date**|null),
+  `approvalStatus`(enum: draft/pending_review/approved/rejected), `approvalRequestedAt`/`approvalRequestedBy`,
+  `approvalDecidedAt`/`approvalDecidedBy`, `approvalNote`, `usingVariant`, `author`,
+  `embedding`/`embeddingModel` (both `select:false`), plus the subscriber fields
+  (`subscriberEmail` and friends, on subscriber rows only) and the booking fields
+  (`bookingStart`, `bookingStatus`, on booking rows only). Read `collectionObjectSchema.js` for
+  the full list. **Declared indexes:** `collectionObj_refID_1`, `publishDate_1`, `approvalStatus_1`,
+  `collectionObj_refID_subscriberEmail_1` (sparse on a COMPOUND, which is a no-op: every row has
+  `refID`, so every row is indexed), `collectionObj_refID_bookingStart_1` (compound +
+  `partialFilterExpression`, the option that actually restricts it), and
+  `groupID_objectValue_mediaKeys_1`. Read the `.index(` calls, not this list.
 - **`integration_objects`**, `id`(str), `platform`(str, e.g. `stripe`), `collectionGroup{name,refID(str)}`,
   `groupID`(str), `author`, `usingVariant`, `accountId`(**ObjectId**), `accountHandle`
   `publishDate`, `scheduledTaskId`, `sourceRef{objectID,collectionName,collectionID}`
   `embedding`/`embeddingModel`, `objectValue`(strict:false). Schema is `strict:false`, so social
-  docs also persist `accountType`/`status`/`errorMessage`. Indexes: single-field `platform` and
-  `accountHandle` only (integrationSchema.js), there is **no** `groupID+platform` compound index.
+  docs also persist `accountType`/`status`/`errorMessage`. Indexes: read `integrationSchema.js`;
+  it declares `groupID_platform_1` (`{ groupID: 1, platform: 1 }`).
 - **`sites`**, `groupID`(str), `key`(site slug), `collectionGroups[]`, `collectionObjIds[]`,
   `integrationIds[]`, `pages[]`, `navigation{}`, `footer{}`, `deployment{status...}`
   `siteDetails{schema,values}`, `domainInformation`. Index: `groupID`.
@@ -243,11 +259,10 @@ plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
   Indexes: `{groupID:1, createdAt:-1}`, `{groupID:1, entityType:1, entityId:1, createdAt:-1}`
   (auditLogSchema.js).
 
-Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tier`
-`owner`, usage counters), **`leads`** (`email` unique, `attribution.first/last`)
-**`media_files`** (groupID-scoped), **`usage_trackings`** (`groupID+docKey` unique)
-**`domainorders`** (active; `dbKey`, `siteId`, stripe/route53/amplify state)
-**`prospects`** (outreach prospecting pool, `domain` unique), **`inquiries`** (contact forms).
+Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tier`,
+`owner`, `dbKey`, `bucket`, usage counters), **`leads`** (`email` unique, `attribution.first/last`),
+**`media_files`** (groupID-scoped; `size` is a STRING), **`usage_trackings`** (`groupID+docKey` unique),
+**`domainOrders`** (active; `dbKey`, `siteId`, stripe/route53/amplify state), **`inquiries`** (contact forms).
 
 ## Query safety rules (read-only by default)
 
@@ -267,6 +282,15 @@ Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tie
 7. **Limit**, default 10, cap ~50. Sample ≤5 groups for cross-tenant questions.
 8. **Redact secrets** in output: `apiKey`, `credentials`, `secret`, `accessToken`, `refreshToken`
    `stripeKey`, `integrationKey`, anything matching `password|secret|token`. Show `[REDACTED]`.
+
+## Write and schema traps (read before any script that writes)
+
+- **Strict schemas drop undeclared fields silently.** A field the Mongoose schema does not declare is discarded on write with no error (a webhook claim's `state` was never stored until the schema declared it). And `strict` resolves three ways: a `strict: false` SUB-schema lets a path through only while the QUERY leaves `strict` unset; a query that sets `strict: true` drops the ENTIRE update. Assert a new field survives a round trip through the real schema, with a control proving an undeclared one vanishes.
+- **A native-driver write skips Mongoose.** `timestamps: true`, defaults, setters, validators and strict stripping are all Mongoose, so an ops-script correction through the driver does not move `updatedAt` (a sort on it cannot find the corrected rows) and can store a field the schema would drop. Set `updatedAt` explicitly if you need it, and record the correction outside the document.
+- **`sparse` on a compound index is a no-op here, and a built index cannot be re-optioned.** MongoDB indexes a document under a compound sparse index if it carries ANY indexed key, and every `collection_objects` row carries `refID`. Use `partialFilterExpression`. Re-declaring a built index name with different options fails `IndexKeySpecsConflict` on every cold start (tenant DBs run `autoIndex`), silently; so measure a new index's key count against a single-field control BEFORE the schemas package publishes.
+- **The same site `_id` can exist in more than one database.** The live site renders the copy in the group's placement (`<group.dbKey>.sites`). During the pod migration the help site existed under one `_id` in two databases and two writes went to the copy nothing reads. Before any site write, check for the `_id` elsewhere, say which copy you chose, and verify against the RENDERED page, never the document you wrote.
+- **A collection-object update that omits `publishDate` UNPUBLISHES the item.** The portal proxy sends `publishDate: body?.publishDate ?? null`, CMS writes the null, and the public read gates on `publishDate <= now`. A scripted edit sends the item's existing `publishDate` (and `__v`, for the optimistic-concurrency check) every time.
+- **Heavy reads spend the production data-out budget.** On the M0 cluster a prod walk or an unprojected exploration loop competes with live sites for the weekly 10 GB, and connection-hungry runs can saturate the cluster. Project every read, keep `maxPoolSize: 1`, and close the client.
 
 ## The publishDate storefront gate: the #1 "missing content" cause
 
@@ -289,16 +313,11 @@ artifacts, not schema-backed. The `outreach` database holds only the global `sup
 So to find a tenant's outreach contacts: resolve the Contacts system `collection_group` `_id`
 then query `collection_objects` by `collectionObj.refID` (string), same pattern as any content.
 
-## Known drift / data bugs (as of 2026-06-19)
+## Known drift (measured 2026-10-15; re-measure before relying on it)
 
-- **`Vivreal.domainOrders` (camelCase) is an orphan duplicate** of `Vivreal.domainorders`
-  (lowercase, the active one). The camelCase collection has 0 docs and non-partial unique
-  indexes; the lowercase has the real data. Likely a Mongoose model-name mismatch, flag to
-  the domain-orders owner; query `domainorders` (lowercase).
-- **`media_files` / `usage_trackings` are in `Vivreal`, not the tenant DB** (older docs/skills
-  said tenant DB, they were wrong).
-- **`justinceccarelligroup`** is a stray per-group DB containing only `audit_logs`; don't
-  generalize a per-group-DB model from it.
+- **The domain orders live in `Vivreal.domainOrders` (camelCase).** The lowercase `domainorders` the old model name produced is gone after VR_Secure_API #231 and its data migration. This is the mongoose collection-name lowercasing trap: always pass `collectionName`, and suspect it whenever a query returns zero rows against a database you believe has data.
+- **`media_files` / `usage_trackings` are in `Vivreal`, not the tenant DB.**
+- **A slugified per-group database holding only `audit_logs`** is legacy drift; don't generalize a per-group-DB model from it.
 
 ## When NOT to use this skill
 
