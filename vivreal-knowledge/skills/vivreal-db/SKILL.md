@@ -249,7 +249,8 @@ Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tie
 2. **Always scope tenant queries by `groupID`.** Every doc in any tenant database
    (and `media_files`/`usage_trackings` in Vivreal) carries `groupID`. Omitting it crosses tenants.
 3. **Never query mainDb by `groupName`.** `active_ctx` carries no `groupName`. Use
-   `{ _id: <ObjectId(groupID)> }` or `{ key: <group.key> }`. `groupName` is display-only.
+   `{ _id: <ObjectId(groupID)> }` (shell form; in Node write `new ObjectId(groupID)`, bson 6
+   throws without `new`) or `{ key: <group.key> }`. `groupName` is display-only.
 4. **String refs vs ObjectId**, `groupID`, `collectionObj.refID`,
    `collectionObjID`, `entityId` are **strings** on tenant docs. To filter them, pass strings.
    To JOIN them to an `_id`, cast `ObjectId(ref)` (see the linking section). Mixing these up

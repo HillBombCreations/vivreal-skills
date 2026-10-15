@@ -294,8 +294,10 @@ its Amplify build passed.
    like a signing bug. Read it from the branch, projected to that one field and
    into a variable, never printed:
    `S=$(aws amplify get-branch --app-id <id> --branch-name stable --query 'branch.environmentVariables.REVALIDATE_WEBHOOK_SECRET' --output text)`,
-   then check `${#S}` (length only; `None` or 0 means it is not set there, try
-   the same projection on `get-app --query 'app.environmentVariables.REVALIDATE_WEBHOOK_SECRET'`).
+   then test it without printing it: `[ -n "$S" ] && [ "$S" != "None" ] && echo set || echo not-set`.
+   Compare against the literal `None`, never the length: `None` is four characters, so a length
+   check reads an unset secret as set. If it is not set there, try the same projection on
+   `get-app --query 'app.environmentVariables.REVALIDATE_WEBHOOK_SECRET'`.
    Never echo `$S` and never run `get-app` / `get-branch` unprojected: their
    default output prints every env value and `basicAuthCredentials`.
    Note the revalidate clears the DATA tag, not the rendered HTML, re-read with

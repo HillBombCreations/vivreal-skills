@@ -266,7 +266,7 @@ When the workflow completes, report: "Workflow complete: <slug>, <N> commits, RE
 - **No placeholder copy** in customer-facing seed data.
 - **No scope creep.** One task, one dispatch. Adjacent bugs -> **Open Questions**, not auto-fixes.
 - **Validate framework behavior via docs.** context7 MCP for Next.js/React/Express/Mongoose. AWS docs MCP for AWS services (the AWS docs MCP is project-scoped: it exists only where the session's project `.mcp.json` declares it, as the portal and VR-MCP-Server do; elsewhere read the AWS docs page directly and say which source you used).
-- **Tenant safety on every Mongo write/read.** `groupID` filter on tenant DB. `{ _id: ObjectId(groupID) }` on mainDb. Never `groupName`, never `{ key: dbKey }`.
+- **Tenant safety on every Mongo write/read.** `groupID` filter on tenant DB. `{ _id: ObjectId(groupID) }` on mainDb (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). Never `groupName`, never `{ key: dbKey }`.
 - **SSR-safe** for any portal React component. Guard `window`/`document`.
 - **Respect `prefers-reduced-motion`** for motion primitives.
 - **Never approve your own code you don't understand.** If self-review (or the dispatched reviewer's pass) finds something you can't explain, stop and investigate.
