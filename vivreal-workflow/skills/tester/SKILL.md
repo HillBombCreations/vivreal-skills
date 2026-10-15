@@ -67,12 +67,14 @@ Before you change any assertion that is in your way, answer two questions in the
 having been written around the defect. Prove it with a direct REFUSE test instead: feed the bad
 input or bad object straight in and assert the exact refusal, paired with an ALLOW test for the
 valid case. Owner rule (2026-10-06): never prove this by mutating the fix back out to watch a
-test go red and then restoring it, that cycle is retired for every check. Red is established by
-the `shared-standards` red proof instead: (b) it ran red at the base commit in a separate
-read-only worktree (the standard proof, owner decision D1, 2026-10-14), or (a) the test ran red
-before the fix existed (added by the 2026-10-14 skills audit, not by D1). "By reading" is
-not a proof, and a load, import or env failure at the base is not red; report the `Red:` line
-naming the REFUSE assertion that failed.
+test go red and then restoring it, that cycle is retired for every check, and a "mutation
+check" that deletes one line of the fix and puts it back is the same cycle. Red is established
+by the `shared-standards` red proof instead: (b) it ran red at the base commit in a separate
+read-only worktree, then passes on the fix (the standard proof, owner decision D1, 2026-10-14,
+reconciled with the no-revert rule 2026-10-15), or (a) the test ran red before any fix code
+existed. "By reading" is not a proof, and a load, import or env failure at the base is not red;
+report the `Red:` line naming the REFUSE assertion that failed, so the reviewer can check the
+record instead of repeating the cycle.
 
 ## A fix can be inert and still pass its tests
 

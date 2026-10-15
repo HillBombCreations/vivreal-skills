@@ -152,9 +152,12 @@ Enabled is not the same as capable. Four live shapes, all of which reported gree
 > **Istanbul covers evaluation, not truth.** A line can be executed by a test that asserts
 > nothing about it. Full branch coverage can sit on top of a behaviour no test pins.
 
-**The check for all four:** delete the behaviour and watch for red. If removing the thing the
-gate exists to protect does not break the gate, the gate is decoration. Do this on a scratch
-branch, one arm at a time.
+**The check for all four:** feed the gate the thing it exists to catch and require red. Hand it
+a fixture that breaks the rule (the banned character, the uncovered branch, the wrong value)
+rather than editing the code or config it guards. If the bad input does not break the gate, the
+gate is decoration. For a guard in code, that proof is the `shared-standards` red proof: the new
+test run at the base commit in a separate read-only worktree, never a line deleted from the
+working tree and restored.
 
 ---
 

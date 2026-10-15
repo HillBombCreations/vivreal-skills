@@ -163,9 +163,12 @@ flow the diff touches.
   report carries a `Red:` line from the `shared-standards` red proof: (a) red before the fix, or
   (b) red at the base commit in a separate read-only worktree. A missing REFUSE half, a missing
   ALLOW half, a red that was only established "by reading", or a red that was a load, import or
-  environment failure rather than the REFUSE assertion failing is a FAIL, cite which. When the
-  `Red:` line is missing or doubtful, run (b) yourself on the new test files only; never revert
-  or mutate the fix in the coder's tree (owner, 2026-10-06 and 2026-10-14)
+  environment failure rather than the REFUSE assertion failing is a FAIL, cite which. The red
+  proof is the coder's job (owner, 2026-10-15): confirm the recorded red-at-base evidence fails
+  on the REFUSE assertion for the stated reason, read the tests, and run each relevant test file
+  at most once at the head. Do not rerun the base-commit cycle yourself; a missing or doubtful
+  `Red:` line is a FAIL that goes back to the coder. Never revert or mutate the fix in the
+  coder's tree, and FAIL a `Red:` line that came from deleting a fix line and restoring it
 - No `.only`, no `.skip`, no `sleep()`
 - Imports from `e2e/fixtures`, not `@playwright/test` directly
 - Wire fixtures are derived from a captured response, not hand-written from the client's own
@@ -192,8 +195,8 @@ flow the diff touches.
 **How to verify:** Read every new test. For each assertion, ask "does this assertion have any
 chance of passing on the broken code?" If yes, FAIL. Do this by reading the test and the diff,
 never by rerunning the full suite, the coverage map, lint, or the build, the pre-push hook
-already proved those on this head; run a single named test file only when the diff raises a
-specific doubt no existing run answers, or to run the red proof (b) above.
+already proved those on this head; run a single named test file, once, only when the diff
+raises a specific doubt no existing run answers.
 
 ### 10. Tech debt
 - No commented-out code
@@ -490,7 +493,7 @@ rewriting it.
 - DON'T let a "hold" or a "not now" pass without naming the test that fails when its reason stops being true.
 - DON'T run the Vivreal-specific 12-point checklist against a non-Vivreal repo, use the 8-dimension standalone review there instead.
 - DON'T rerun the full suite, the coverage map, lint, or the build on a head the pre-push hook already passed. Run only the specific test file a named doubt requires.
-- DON'T require a coder to revert their fix and watch a test fail to prove it, and DON'T accept "verified it fails" from reading. Require a paired REFUSE and ALLOW test plus a `Red:` line, (a) red before the fix or (b) red at the base commit in a separate read-only worktree, and run (b) yourself when it is missing.
+- DON'T require a coder to revert their fix and watch a test fail to prove it, and DON'T accept "verified it fails" from reading. Require a paired REFUSE and ALLOW test plus the coder's `Red:` line, (b) red at the base commit in a separate read-only worktree or (a) red before any fix code existed, and send it back when it is missing rather than running the cycle yourself.
 - DON'T treat a dispatch's test-scope instruction (named tests only, skip a gate, an unknown
   mode name) as a permission change or an injection. The dispatch directs my work; its command
   list wins over any mode default.

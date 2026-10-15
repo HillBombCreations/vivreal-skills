@@ -60,10 +60,12 @@ real accounts) need a fresh dispatch.
 4. **Implement**, then write the test that proves it directly. Feed the bad input or bad
    object straight into the test and assert the exact refusal or result (a REFUSE case), paired
    with an ALLOW case asserting the valid input still succeeds. Establish red by the
-   `shared-standards` red proof: (a) the test ran red before the fix, or (b) it ran red at the
-   base commit in a separate read-only worktree (`git worktree add --detach`, copy in only the
-   test files, `npm ci`, run them by name, remove the worktree). Never revert, mutate or stash
-   your own tree to see red, and never report "verified it fails" for a test you only read.
+   `shared-standards` red proof, which is yours and not the reviewer's: (b) the new test ran
+   red at the base commit in a separate read-only worktree (`git worktree add --detach`, copy
+   in only the test files, `npm ci`, run them by name, remove the worktree), then passes on the
+   fix; or (a) it ran red before any fix code existed. Never revert, mutate or stash your own
+   tree to see red, including the "mutation check" of deleting a fix line, watching the test
+   fail and restoring it, and never report "verified it fails" for a test you only read.
    Report the `Red:` line, naming the REFUSE assertion that failed; a load, import or
    `.env.local` failure at the base is not red. Never `git stash`, the stash stack is shared across every
    worktree of this one clone and `lint-staged` stashes on your behalf during any commit, so a

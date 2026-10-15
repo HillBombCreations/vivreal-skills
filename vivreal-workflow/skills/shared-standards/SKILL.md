@@ -276,15 +276,27 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 - **Red proof, the one rule every agent follows.** A guard, validation or fix is proven by a
   direct REFUSE test (feeds the bad input or bad object, asserts the exact refusal) paired with an
   ALLOW test (valid input, asserts success). Nothing in the working tree is ever reverted, mutated
-  or stashed to see red (owner, 2026-10-06). Red is established one of two ways, and the report
-  names which:
+  or stashed to see red (owner, 2026-10-06). That includes the "mutation check": deleting or
+  commenting out a line of the fix, watching the test fail, and putting the line back is the
+  banned revert cycle under another name, and agents did it repeatedly on 2026-10-15. The owner
+  reconciled the two rules on 2026-10-15: **the coder owns the red proof and does it at the base
+  commit; the reviewer checks the record and never repeats the cycle.** Red is established one
+  of two ways, and the report names which:
   - **(b) Red at the base commit, in a separate read-only worktree** (owner decision D1,
-    2026-10-14, the standard proof). `git worktree add --detach <scratch path> <base sha>`
-    (detached is right here: nothing is ever committed in it), copy in ONLY the new or changed
-    test files and their test-only helpers, never source, `npm ci`, run those files by name,
-    record the result, then `git worktree remove --force <scratch path>`.
-  - **(a) Test first** (added by the 2026-10-14 skills audit, not by D1). The new test ran red
-    before the fix existed, then green after it. Same counting rule as (b).
+    2026-10-14, the standard proof and the coder's default). `git worktree add --detach <scratch
+    path> <base sha>` (detached is right here: nothing is ever committed in it), copy in ONLY the
+    new or changed test files and their test-only helpers, never source, `npm ci`, run those
+    files by name, record the result, then `git worktree remove --force <scratch path>`. Then
+    the same files pass on the fix.
+  - **(a) Test first.** The new test ran red before any fix code existed in the tree, then green
+    after it. Same counting rule as (b). It is valid only when the run really came first;
+    removing fix code to recreate "before" is the banned in-place mutation, so use (b).
+
+  **What the reviewer does with it.** It confirms the `Red:` line is recorded, names the REFUSE
+  assertion, and failed for the right reason; it reads the tests; and it runs each relevant test
+  file at most once, at the head. It does not rerun the base-commit cycle. A missing or doubtful
+  `Red:` line is a FAIL that goes back to the coder, and "by reading" alone, with no recorded
+  red at base, is not proof.
 
   **Red counts only when the REFUSE assertion itself fails.** A load, import or environment
   failure is not red: a test that cannot import an export the fix adds, a missing `.env.local`,
