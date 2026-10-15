@@ -345,7 +345,9 @@ npm run tutorial -- src/tutorial/scripts/<slug>.ts
 
 **Give `--out` an ABSOLUTE path** (`--out=C:/repos/vivreal-hq/content/tutorials/<date>-<slug>`).
 With vivreal-hq #23, `run-tutorial.ts` resolves a relative `--out` from the vivreal-hq repo root
-(`resolveFromRepoRoot` in `src/repo-root.ts`). On a branch without it (`git grep
+(`resolveOutDir` in `src/repo-root.ts`), and a relative `--out` that resolves outside the repo
+root, or onto the root itself, is refused with exit 1 before any script loads; an absolute path
+is used as given. On a branch without it (`git grep
 resolveFromRepoRoot` finds nothing), a relative `--out` resolves from the package you run in, so
 `--out=content/footage/...` lands under `packages/content-studio/content/...` instead of the
 repo's `content/`. An absolute path is right either way. The `*.raw.webm` raws are
