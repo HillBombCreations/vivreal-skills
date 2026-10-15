@@ -55,6 +55,12 @@ and answer to `origin/master`. Ask, do not assume: `git ls-remote --symref origi
 For the portal in production, read its release JSON endpoint more than once, because one read
 can be served stale from an edge POP.
 
+**Name the ref for every cross-repo claim.** "What is live" reads the deployed line. "What
+ships together" during an unshipped batch reads the sibling PR's HEAD, by SHA
+(`git show <sha>:<path>`), because the deployed line and `main` both lack the batch: a review
+pass once read `origin/main` instead of the sibling PR head and reported a stale contract that
+the batch had already fixed. Every citation carries the ref and its short SHA.
+
 **2. A negative result is not a finding until a positive control returns non-empty in the same
 run, using the same tool, the same pattern style and the same path shape.** This file used to
 carry counts and versions precisely because nobody re-measured them. The `verification-discipline`
@@ -66,7 +72,7 @@ empty output even through a Python argument list. Use `git cat-file -e` for exis
 versions, quotas and rosters are stated as the command that produces them. If you find a bare
 number below that a command could have produced, that is a defect in this file. Report it.
 
-**Where the system is described in depth:** `vivreal-hq/docs/dev-docs/INDEX.md` indexes a
+**Where the system is described in depth:** `vivreal-hq/docs/dev-docs/README.md` indexes a
 reference set (architecture, operations, AWS estate, decision records) and a numbered set of
 use-case walkthroughs, each ending in "how this breaks, and the first thing to check".
 Navigate it by filename from the index. Do not keyword-search it; the index exists because
@@ -83,16 +89,16 @@ three searches returned three different incomplete answers.
 
 | If the task touches… | Read these sections |
 |---|---|
-| `src/app/api/proxy/*` (any portal proxy route) | "The three-tier API rule" + "Proxy route factory" |
+| `src/app/api/proxy/*` (any portal proxy route) | [references/portal.md](references/portal.md): "The three-tier API rule" + "Proxy route factory" |
 | `active_ctx`, `dbKey`, `groupID`, multi-tenant routing | "Auth & multi-tenancy" |
 | MongoDB queries, indexes, write concerns | "Optimization principles" + read `docs/ecosystem/mongo_queries.md` |
-| About to use the `mcp__mongodb__*` tools (query Mongo via MCP) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
-| `useAuth()` in app layout, hydration, SSR | "Hydration & SSR rules" |
+| About to use the Mongo MCP tools (`mcp__plugin_vivreal-db-explorer_mongodb__*` from the vivreal-db-explorer plugin, or `mcp__mongodb__*` where a project `.mcp.json` declares `mongodb`) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
+| `useAuth()` in app layout, hydration, SSR | [references/portal.md](references/portal.md): "Hydration & SSR rules" |
 | Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + read `docs/ecosystem/aws-lambda-inventory.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
 | AWS or Amplify reads (`get-app`, `get-function-configuration`, `get-secret-value`, `ssm get-parameter`), env vars, secrets | "Security non-negotiables" |
 | Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
-| Integration manifests (`src/data/manifests/`) | "Conventions you'll see" |
+| Integration manifests (`src/data/manifests/`), portal component patterns, shared sheet/dialog renderers | [references/portal.md](references/portal.md): "Conventions you'll see" + "Default-renderer fallbacks" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
 | Dispatching a deploy workflow, or claiming a stack updated | "Reading and verifying a CloudFormation deploy" |
@@ -108,31 +114,16 @@ If a task obviously spans multiple trigger areas, read each relevant section onc
 This file is read by every bug-fix subagent BEFORE doing any work. It encodes the non-negotiable rules. If anything here conflicts with the project CLAUDE.md, CLAUDE.md wins.
 
 ## Tech stack quick ref
-- Next.js 16 App Router, React 19, TypeScript 5 strict
-- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking, the `outreach/*` proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
-- Public content delivery: VR_Client_API (read-only, applies publishDate/archived filters)
-- All proxy routes at `src/app/api/proxy/*` run on edge runtime
-- MongoDB multi-tenant, each group has its own DB identified by `dbKey`
+
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
 ## The three-tier API rule (NEVER VIOLATE)
-| Context | Tool |
-|---|---|
-| Authenticated proxy routes (`/app/api/proxy/*`) | `createAuthAxios()` from `@/lib/api/axiosInstance` |
-| Public main API (`NEXT_PUBLIC_MAIN_API`) | `publicAxios` from `@/lib/api/axiosInstance` |
-| S3 presigned, service worker, AuthContext login | Native `fetch()` |
 
-NEVER use native `fetch()` for proxy routes. Any 401/419 from a proxy route MUST redirect to login, only `createAuthAxios` does this automatically.
-
-Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/helpers`, extracts the backend's `error.response.data.error` before falling back.
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
 ## Proxy route factory
-- Most proxy routes use the `createProxyHandler()` factory in `src/app/api/proxy/_helpers/`, the **filesystem is the count reference** (CLAUDE.md's route table is a self-described "core snapshot, not exhaustive"). Classify factory-vs-manual by the `_helpers/createProxyHandler` **module path**, never a string grep, manual routes may import a single helper (e.g. `extractUpstreamError`) from that same module path without using the `createProxyHandler()` factory itself.
-- Manual routes only justified for: cookie-setting, httpOnly cookie reads, heavy body transforms, complex param handling, **public no-`active_ctx` routes** (the factory 401s without `active_ctx`, `outreach/book/[slug]` ×3, `outreach/studio-demo/visit`, `outreach/demo-link/[code]`, `marketing/sandbox-lead`, `claim/verify`, `claim/complete`), **raw-header/idempotency forwarding** (`sites/instantiateTemplate`, `ProxyContext` exposes no raw request), **body-preserving error responses** (`user/delete-account`, a 409's body carries the blocker list the UI renders, and the factory collapses any non-2xx into a bare `apiError(message, status)`, same reason `user/update-email` is manual), and **non-envelope responses** (`media/share-image` streams bytes; the factory always terminates in `apiSuccess()`)
-- Manual routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read, VR_Main_API sends bare-JSON-string error bodies, and a hand-rolled read against a string silently returns `undefined`. That was the exact bug that killed the login error branches in prod.
-- All authenticated proxy routes MUST verify `active_ctx` via `verifyCtxEdge()`
-- Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`. `injectCtxParams()` sets **`key`** (CMS convention) + `groupID`; Secure endpoints whose Joi validator names the tenant key `dbKey` reject `key` as unknown, set `dbKey`/`groupID` manually **instead** for those
-- New portal surfaces ship "live but dark" behind `group.featureFlags.<flag>`, written only by operators at `/admin/flags`; the only live flag is `aiActionsEnabled` (`templatePicker` + `squareStorefront` retired 2026-07-29, both GA). Gated entry points **hide, never disable** (`useAgentAccess()` is the single gate). Absence of AI in a group's UI is the expected default, not a bug
-- The portal is **light-only**, a bare `dark:` Tailwind utility is a regression (no `@custom-variant dark`; it resolves against the OS scheme)
+
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
 ## Auth & multi-tenancy (CRITICAL)
 - `active_ctx` JWT contains: `groupID`, `dbKey`, `bucketname`, `exp`
@@ -243,10 +234,8 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - Edge runtime is constrained, no Node-only APIs in proxy routes
 
 ## Hydration & SSR rules
-- Any `useAuth()` in app layout MUST use `useHydrated()` guard
-- No `Date.now()` / `Math.random()` in initial render path
-- `force-dynamic` preserved on dashboard routes
-- Server vs client: default to Server Components, mark `'use client'` only for interactivity
+
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
 ## Dependencies, lockfiles and the CI runner
 
@@ -284,12 +273,29 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   loaded. See the `verification-discipline` skill.
 - **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
 - Sites/integrations pages serialized under parallel workers, don't break that.
-- A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
-  asserts the exact refusal) paired with an ALLOW test (valid input, asserts success). Owner
-  rule (2026-10-06): never prove this by reverting the fix to watch the test fail and restoring
-  it, that cycle is retired for every check; judge coverage by reading whether both halves exist
-  and assert the right thing.
-- **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. Quick check: delete a whole comparison from the implementation and re-run. If the suite stays green, the test is mirroring, not invoking.
+- **Red proof, the one rule every agent follows.** A guard, validation or fix is proven by a
+  direct REFUSE test (feeds the bad input or bad object, asserts the exact refusal) paired with an
+  ALLOW test (valid input, asserts success). Nothing in the working tree is ever reverted, mutated
+  or stashed to see red (owner, 2026-10-06). Red is established one of two ways, and the report
+  names which:
+  - **(b) Red at the base commit, in a separate read-only worktree** (owner decision D1,
+    2026-10-14, the standard proof). `git worktree add --detach <scratch path> <base sha>`
+    (detached is right here: nothing is ever committed in it), copy in ONLY the new or changed
+    test files and their test-only helpers, never source, `npm ci`, run those files by name,
+    record the result, then `git worktree remove --force <scratch path>`.
+  - **(a) Test first** (added by the 2026-10-14 skills audit, not by D1). The new test ran red
+    before the fix existed, then green after it. Same counting rule as (b).
+
+  **Red counts only when the REFUSE assertion itself fails.** A load, import or environment
+  failure is not red: a test that cannot import an export the fix adds, a missing `.env.local`,
+  a fixture that does not exist at the base. Those fail on any code and prove nothing about the
+  guard; make the test load at the base (stub only what the fix ADDS, never the guard) or say red
+  could not be established. "By reading" is not a proof, and a report never says "verified it
+  fails" for it. The report line names the failing assertion:
+  `Red: (a|b) <test file> "<REFUSE test name>" at <sha>: failed on <expect line>; green at <head
+  sha>: <k> passed`. A REFUSE test that is still green at the base commit pins nothing; rewrite
+  it.
+- **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. The check is the red proof above, never an edit to the implementation: a mirroring test stays green at the base commit, so run (b) and it shows.
 - **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
@@ -308,7 +314,14 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   that the comparison between them means anything.
 - No `.only`, no `sleep()`, use `waitFor()`.
 - **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
-- **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`, except inside a NAMED portal-coder mode that authorises it (PARALLEL, or FOLLOWUP on a branch that already passed the full gate) or a dispatch that says so. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **Portal release-head check (owner, 2026-10-10): no full e2e, walk instead.** Before a portal
+  release, the check is eslint, BOTH `tsc` configs, and every unit test file the release added
+  or changed, all green. Do not schedule the full e2e suite, the full vitest run or the
+  Playwright smoke as a separate "one full gate". The local QA walks on the guarded stack
+  (APIs, the portal installed app and desktop, the Templates sites the release touched) are not
+  optional; they replace the confidence the e2e run gave. Fix-ups after a branch passed the full
+  gate are dispatched to portal-coder in FOLLOWUP mode, never SOLO.
 - **The pre-push hook is the one full run, owner rule (2026-10-06).** While iterating, run only
   the test files for what you're changing. Don't manually run the full suite, the coverage map,
   lint, or the build before a push, the hook already runs all of it once; a manual run duplicates
@@ -386,8 +399,10 @@ The train is the same shape in all five repos:
 - Friday 5pm PST cron (`0 1 * * 6` UTC), `release-cut.yml` cuts `release/vX.Y` from `main`,
   bumps `package.json` on the line only, and tags `vX.Y.0`. Portal's cut also writes a served
   `public/release.json` marker.
-- Monday promote crons are STAGGERED, backends ahead of portal: Secure 15:00 UTC, CMS 15:15
-  Main 15:30, Client 15:45, portal 16:00 (≈7 to 8am PST). `promote.yml` force-with-lease moves
+- Monday promote crons are STAGGERED, backends ahead of portal. Read the times from `on.schedule`
+  in each repo's `promote.yml`; a copied time here was already wrong once. While a batch waits for
+  the owner's GO, a backport onto a line ships at the next cron, so disable `promote.yml` for the
+  train or hold the backport. `promote.yml` force-with-lease moves
   `stable` to the newest line's tip, a tagged cut ships as `vX.Y.0`; an untagged tip (backports
   landed after the cut) auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19;
   the cron refuses only when the line's last tag is yanked).
@@ -506,7 +521,7 @@ When justifying technical decisions, reference these public standards. The revie
 - AWS Lambda best practices: https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html
 - API Gateway WebSocket: https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-websocket-api.html
 - Cognito best practices: https://docs.aws.amazon.com/cognito/latest/developerguide/security-best-practices.html
-- Use the AWS docs MCP server (`mcp__awslabs_aws-documentation-mcp-server__*`) to fetch up-to-date docs
+- Use the AWS docs MCP server (`mcp__awslabs_aws-documentation-mcp-server__*`, project-scoped: it exists only where the session's project `.mcp.json` declares it, as the portal and VR-MCP-Server do) to fetch up-to-date docs
 
 **Web platform**
 - MDN Web Docs (https://developer.mozilla.org), authoritative source for web platform APIs
@@ -540,18 +555,14 @@ When justifying technical decisions, reference these public standards. The revie
 When making a non-trivial decision, the architect/coder MUST cite the relevant standard. The reviewer MUST verify citations exist for non-obvious choices.
 
 ## Conventions you'll see and must respect
-- Component pattern per feature: `Client.tsx` (interactive) / `Loader.tsx` (skeleton) / `Dialog.tsx` (modals)
-- Route groups: `(app)` protected, `(public)` unauthenticated
-- Base path `/app` set in `next.config.ts`, affects links and API routes
-- Theme CSS vars injected at runtime in `Providers/index.tsx` `useEffect` from `siteData`
-- Onboarding state in cookies (`src/lib/cookies/onboarding.ts`)
-- Integration manifests in `src/data/manifests/` drive the integration UI, never hardcode integration logic
+
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
 ## Bug-fix workflow rules (binding for all phases)
 1. Research before planning. Plan before coding. Approve before implementing. Always.
 2. Fix the **root cause**, not the symptom.
 3. **Zero scope creep.** Diff size matters. Drive-by refactors are forbidden inside a bug fix.
-4. Tests must FAIL on the unfixed code (verifiable, not asserted).
+4. Tests must FAIL on the unfixed code, shown by a red proof (a) or (b) from "Testing rules", never by reading.
 5. Reviewer is adversarial by design. Accept that. Disagreement is escalated to the user, not negotiated away.
 6. Every claim about code behavior cites `file:line`.
 7. Documentation outlives the fix, write it for the engineer who finds this in 2027.
@@ -614,8 +625,7 @@ These skills are available via the Skill tool and SHOULD be invoked when relevan
 | `vivreal-db-explorer:db-query` | Safe MongoDB queries with built-in dbKey routing, safety guards, multi-tenant boundaries. ALWAYS prefer this over raw `mcp__mongodb__find` calls. |
 | `vivreal-db-explorer:db-schema` | Pulls Mongoose schema, indexes, sample doc for any collection. Use during research to understand data shape before reasoning about queries. |
 | `vivreal-proxy-factory:proxy-route` | Generate a new factory-based proxy route. Use when adding a new proxy route is part of the fix. |
-| `superpowers:systematic-debugging` | Use when the bug's root cause is unclear after initial research. |
-| `superpowers:test-driven-development` | Use when writing the test FIRST is the right move (e.g. fix has multiple possible implementations and the test pins behavior). |
+| `vivreal-workflow:verification-discipline` | Before a negative result, a PASS or a merge becomes a finding: the false-zero mechanisms and the positive control. |
 | `code-review:code-review` | Optional secondary review pass, coordinator may use this in addition to reviewer if a fix is high-risk. |
 
 ## Cross-stack removal ordering (consumer → producer)
@@ -626,15 +636,8 @@ When a fix REMOVES code that crosses repos (shared package + backend + frontend)
 Researcher and architect default to the addition order out of habit, flag the inversion explicitly when the bug is a removal, not an addition.
 
 ## Default-renderer fallbacks for shared UI components
-<!-- learned from bug: collection-object-initial-view-polish on 2026-04-10 -->
 
-Shared sheet, dialog, drawer, and card components MUST NOT fall back to `JSON.stringify(obj)` (or any raw object dump) as developer-facing UI when a render-prop is omitted. These dev-only fallbacks ship to production the moment a new caller forgets the prop, and they look like a bug to users.
-
-Pick one:
-- Make the renderer prop **required** in TypeScript so the compiler forces every caller to either pass a renderer or explicitly opt out via a default re-export.
-- Or supply a **real** default renderer that produces a label/value layout, narrows types via `typeof`/`instanceof` (never `as`), and hides internal metadata keys (`_id`, `__v`, timestamps) into a footer block.
-
-The architect should flag any review that introduces an `Optional` render-prop with a `JSON.stringify` fallback.
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
 **Skill invocation rule:** When an agent needs functionality covered by a skill, it should invoke the skill via the Skill tool rather than reimplementing. The reviewer will flag any agent that bypassed an applicable skill.
 
@@ -642,15 +645,22 @@ The architect should flag any review that introduces an `Optional` render-prop w
 <!-- learned from observability-logging-audit on 2026-04-14 -->
 
 ### Proxy-route guard hook (deterministic)
-The old prompt-based PreToolUse Write hook (which sometimes mis-fired on non-proxy files) was replaced by the deterministic `vivreal-proxy-factory/hooks/proxy-route-guard.cjs`, it exits 0 immediately for any path outside `src/app/api/proxy/**/route.ts` and never interferes with other writes. If it blocks a legitimate manual proxy route, add the route to its allowlist; do NOT route around the Write tool with heredocs or temp scripts.
 
-### Bash heredoc quoting failures on Windows Git Bash
-Bash heredocs (`<< 'EOF'`) break when the content contains:
-- **Unmatched single quotes** (e.g. contractions like "doesn't", possessives, or code with apostrophes)
-- **Triple-quoted strings** (Python `"""..."""` inside a heredoc)
-- The shell tries to match quotes across the entire heredoc, causing `unexpected EOF` errors
+Portal-only, moved to [references/portal.md](references/portal.md). Read it there.
 
-**Fix:** For large multi-line content with potential quote issues, write a Python script to a temp file first, then execute it. Or use the Write tool after a Read.
+### Bash heredocs decode backslash escapes, even quoted
+The trap that actually bites here is silent, not a syntax error. In the Bash tool a quoted
+heredoc (`<<'EOF'`) still collapses a doubled backslash to a single one, and the target
+language then runs its own escape processing on what is left. A JS character class written
+`[^"'\\s<>)]` arrived as `[^"'\s<>)]` and excluded the LETTER s; a Python `\\b` became a
+backspace byte inside a regex, so a guard matched a control character and passed for the wrong
+reason. Neither failed loudly.
+
+**Fix:** never write a backslash escape in a heredoc. Use the Write tool (it does not decode),
+or build the character in code (`String.fromCharCode(92)`, `chr(92)`), or use bracket forms that
+need no backslash (`[.]`, `[?]`, an explicit character set instead of `\s`). Then read the written
+bytes back. A heredoc whose body holds an apostrophe or a triple-quoted string can also end in
+`unexpected EOF`; the same fix applies.
 
 ### Subagent file write verification
 Subagents (researcher, architect, etc.) sometimes claim they wrote a file but did NOT actually write it. The coordinator MUST verify every artifact exists after each agent dispatch:

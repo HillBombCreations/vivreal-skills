@@ -1,5 +1,5 @@
 ---
-description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the shared ports and the shared stash, and keeping the machine at a healthy load rather than pegged."
+description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, how many agents to run and the shared session budget, one publisher per shared target, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
 ---
 
 Parallelism here is limited by the machine and by a handful of shared resources,
@@ -10,8 +10,15 @@ to be redone.
 ## The commit gate, when agents run in parallel
 
 The standing rule is that the local hooks are the only thing that reads code
-before it lands, and **you never bypass them**. That rule is not suspended here.
-What changes is **who runs the gate**, not whether it runs.
+before it lands, and **you never bypass them outside a named mode that authorises
+it**: `portal-coder`'s PARALLEL mode, or its FOLLOWUP mode on a branch that already
+passed the full gate (owner, 2026-10-06). That rule is not suspended here. What
+changes is **who runs the gate**, not whether it runs.
+
+**The portal has no full e2e gate (owner, 2026-10-10).** A portal release-head
+check is eslint, both `tsc` configs, and every test file the release added or
+changed; the local QA walks replace the full e2e run. Never schedule the full e2e
+suite, the full vitest run or the smoke as a separate batch gate for the portal.
 
 The pre-commit hook runs lint-staged, the unit suite and the coverage map. The
 pre-push hook runs the repo lint, both type configs, the unit suite, the coverage
@@ -22,15 +29,18 @@ outcome is not a slow pass, it is a hang.
 So, when more than one agent is working the same repository as part of one
 coordinated batch:
 
-- **The orchestrator owns the gate.** It runs the full suite once, at the end,
-  over the accumulated diff.
-- **Each agent writes the tests its change needs and does not run them.** That is
-  deliberate, not laziness. The one sweep at the end covers all of it, and a test
-  written and not run is still the artefact that makes the sweep meaningful.
+- **The orchestrator owns the gate.** It runs the one gate once, at the end, over
+  the accumulated diff: the hooked push for a backend, the release-head check above
+  for the portal.
+- **Each agent writes the tests its change needs and runs only those files, by
+  name.** Never the whole suite, the coverage map or the smoke: those are the
+  contended runs. A targeted run of your own test files is cheap and is how you
+  establish red (the `shared-standards` red proof).
 - **Each agent still runs lint and the type check on its own files.** Those are
   cheap, local and do not contend.
 - An individual agent may skip the commit hook **only** when an orchestrator has
-  explicitly taken ownership of the gate for that batch. That is the whole
+  explicitly taken ownership of the gate for that batch and dispatched it in a
+  mode that says so (PARALLEL or FOLLOWUP for the portal). That is the whole
   exception. An agent working alone never skips it, and "I was in a hurry" is not
   an orchestrator.
 - **The orchestrator must actually run it.** A gate nobody ends up running is
@@ -120,6 +130,50 @@ that is still running minutes later as a bug rather than as thoroughness.
 **Prefer fewer, longer-lived agents to many short ones** when they contend for
 the same repository. The coordination cost is real and it is paid in wall clock
 either way.
+
+## Budget and collisions
+
+**Pacing (owner, 2026-10-14).** Run about five agents at once. When about six are
+running, stop dispatching until three or four have finished, then refill to about
+five. Restarting an agent that crashed (a login error, a dropped connection) is not
+a new dispatch. Prefer handing new work of the same kind to an agent about to finish
+in the same repository over a fresh dispatch.
+
+**The session budget is shared, and it kills every agent at once.** Nine agents
+fanned out on 2026-10-04 drained it and seven died together mid-work, two with code
+uncommitted and one holding a live security fix. Disjoint files are a correctness
+argument, never a capacity one. So: priority order (security and live breakage
+first, then deadlines, then the rest), tell every agent to commit early and often,
+and keep a recovery snapshot current so a budget death costs a status check, not
+the work.
+
+**Collision decides which agents may run together; the budget decides how many.**
+Hold an agent back when it would share a working tree, a Playwright session or
+storage state, a fixed dev-server port, or the same live document with a running
+agent. Agents in different repositories, databases and buckets run together freely.
+
+**One publisher per shared target.** The template registry (`site_templates` plus
+the template bucket), the live vivreal.io CMS, and any npm publish are single shared
+targets. Exactly one agent publishes to each at a time, and it publishes from merged
+`master`, never from a feature branch while sibling PRs are unmerged; a cleanup
+agent once republished three kits from its own branch and the registry served
+already-removed content for four minutes.
+
+**Namespace the scratchpad.** It is shared by every agent and session. Write
+`scratchpad/<task-slug>/<file>`, never a generic name (`count.py`, `out.txt`,
+`after.json`), and treat a scratch helper as untrusted between invocations: a
+sibling can overwrite it with different code that still prints a plausible number.
+
+**Never `git reset --hard`, `git stash`, `git checkout --` or `git restore` a file
+you did not write.** An unexpected change in a repository you share is someone
+else's uncommitted work, not your debris. Commit with an explicit pathspec
+(`git commit --only <paths>`): a bare commit also sweeps a peer's already-staged
+files into yours.
+
+**Tell the FIRST agent too.** When a second agent is dispatched into a repository
+that already has one, send the coexistence rules above, and each agent's owned file
+list, to the agent already running. A rule that reaches half the participants
+prevents nothing; the agent dispatched first is the one that did the damage.
 
 ## Sizing a batch
 

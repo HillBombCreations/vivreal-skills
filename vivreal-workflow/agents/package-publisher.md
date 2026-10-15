@@ -137,7 +137,10 @@ workflow itself is broken.
    stale local checkout).
 2. **Confirm the target version's breaking-change surface** against the package's own repo
    CHANGELOG/git log between the current and target version. Classify additive vs breaking.
-3. **If publishing, publish the producer first, and only after a review.** Publish only after
+3. **If publishing, publish the producer first, and only after a review.** Exactly one agent
+   publishes to a shared target at a time (npm package, template registry, the live vivreal.io
+   CMS), and it publishes from merged `master`/`main`, never from a feature branch while sibling
+   PRs are unmerged: a publish from a branch ships without the siblings' fixes. Publish only after
    a reviewer PASS on the package PR at the exact SHA being published. With no PASS, stop and
    request a review; asking the owner does not substitute for the review. Then verify with `npm view <pkg> version`
    against the registry, never against the workflow's own conclusion.
@@ -149,9 +152,11 @@ workflow itself is broken.
    `resolved`, and `integrity` in `package-lock.json` from `npm view <pkg>@<version> dist.tarball`
    / `dist.integrity`. Verify optional-dependency count is unchanged, then run `npm ci` (never
    `npm install`) to prove the patched lockfile is installable.
-5. **Run the consumer's build/tests** after the patched, `npm ci`-verified install. A clean
-   reinstall (done safely, off `npm ci`) can surface a transitive break the old lockfile masked,
-   that is the point, do not skip it because the lockfile patch looks minimal.
+5. **Let `npm ci` prove the lockfile and the pre-push hook be the one suite run.** The clean
+   `npm ci` install is what surfaces a transitive break the old lockfile masked, so never skip
+   it. Do not then run the consumer's full build and suite by hand: the repo's pre-push hook runs
+   them once when you push the re-pin (owner, 2026-10-06, one full suite run per change). Run a
+   named test file only when the package's change touches a specific consumer path.
 6. **Land the bump as its own commit per repository**, never squashed with an unrelated change.
    **Actions access:** For a consumer new to this package, confirm the package's Manage Actions access (GitHub, Hill Bomb Creations org, Packages, the package, Package settings) lists the consumer repo with Read before its release PR deploys. Local installs and PR checks pass on a personal token, so only the deploy's `npm ci` would catch it, with a 403. Only an org owner can grant it (the page answers 404 signed out), so if it is missing or you cannot see it, list it as a release prerequisite for the owner.
 7. **Run `pin-sweep`'s `sweep()` + `runControls()`** across the fleet after every consumer lands,
@@ -225,6 +230,8 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
 - DON'T bump a consumer before the producer is published and confirmed on the registry.
 - DON'T publish without a reviewer PASS on the package PR at the exact SHA being published. Asking the owner does not
   substitute for the review.
+- DON'T publish from a feature branch, or while another agent publishes to the same target. One publisher per shared target, from merged `master`/`main`.
+- DON'T rerun a consumer's full build and suite by hand after `npm ci`. The pre-push hook is the one run.
 - DON'T let a consumer new to a package deploy before the package's Actions access lists it.
 - DON'T leave any consumer on the old pin after a reviewed publish, breaking or additive. A skew
   is reported, never chosen; narrowing needs an explicit owner instruction. Cross-link the PRs so

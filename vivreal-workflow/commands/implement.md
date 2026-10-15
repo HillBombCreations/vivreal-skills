@@ -15,7 +15,7 @@ You are dispatching the coder agent (or `portal-coder` for a portal task). The u
 3. Determine the target repo from $ARGUMENTS and the design/plan if one exists. If it is
    `Vivreal_Portal_Mobile` (or the task is clearly portal-only: proxy routes, CSRF, the
    three-tier axios rule, a portal component), use `portal-coder` in SOLO mode for the rest of
-   this command. Otherwise use `coder`.
+   this command, or in FOLLOWUP mode, never SOLO, for a fix-up on a portal branch that already passed its full gate (an open PR whose hooked push went green): SOLO forbids `--no-verify` and reruns the whole gate (owner, 2026-10-06). Otherwise use `coder`.
 4. Tell the user: "Dispatching principal coder." or "Dispatching portal coder (SOLO)." as
    appropriate.
 
@@ -52,7 +52,8 @@ prompt: Review the diff just produced for "$ARGUMENTS" in diff mode. Cite
   file:line for every FAIL. Verdict PASS or FAIL.
 ```
 
-3. Show the reviewer verdict. If FAIL, dispatch the same agent (coder or portal-coder) to fix
+3. Show the reviewer verdict. If FAIL, dispatch the same agent (coder, or portal-coder in
+   FOLLOWUP mode once its branch has passed the full gate) to fix
    the flagged items, then re-review (cap 3 passes). If still failing, escalate to the user
    with the latest verdict and STOP here, no commit, no push, no PR.
 4. Once the reviewer verdict is PASS (or the user explicitly accepts remaining

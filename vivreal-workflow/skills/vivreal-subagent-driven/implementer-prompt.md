@@ -3,12 +3,13 @@
 Use this when dispatching a `coder` subagent to implement one task. Fill every
 placeholder. Hand requirements over as the brief file, do not paste the plan.
 If `[REPO]` is `Vivreal_Portal_Mobile`, use `subagent_type: portal-coder` instead
-(SOLO mode, this skill drives one coder at a time, never PARALLEL), its
-dedicated split for that one repo's heavy pre-commit/pre-push gates.
+(SOLO mode for a new task, this skill drives one coder at a time, never PARALLEL;
+FOLLOWUP mode for a fix-up on a branch that already passed its full gate, never SOLO),
+its dedicated split for that one repo's heavy pre-commit/pre-push gates.
 
 ```
 Agent tool:
-  subagent_type: coder   # or portal-coder (SOLO mode) if [REPO] is Vivreal_Portal_Mobile
+  subagent_type: coder   # or portal-coder if [REPO] is Vivreal_Portal_Mobile: SOLO for a new task, FOLLOWUP for a fix-up on a gated branch
   description: "Implement Task N: [task name]"
   model: [MODEL, REQUIRED: haiku for transcription / single-file mechanical,
           sonnet for prose-spec or multi-file, opus for judgment. An omitted

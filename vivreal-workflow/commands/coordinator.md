@@ -186,7 +186,8 @@ When user responds:
 ## Phase 4: Implementation
 
 If the plan touches `Vivreal_Portal_Mobile`, dispatch `portal-coder` (SOLO mode by default;
-PARALLEL plus a single INTEGRATE pass only when deliberately running several at once) instead
+PARALLEL plus a single INTEGRATE pass only when deliberately running several at once;
+FOLLOWUP mode, never SOLO, for a fix-up on a portal branch that already passed its full gate (an open PR whose hooked push went green): SOLO forbids `--no-verify` and reruns the whole gate (owner, 2026-10-06)) instead
 of `coder`, its dedicated split for that one repo's heavy gates. Otherwise dispatch `coder`:
 ```
 description: Implement <slug> fix
@@ -222,14 +223,16 @@ prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-
 
 Read `docs/bugs/<slug>/review-<N>.md`.
 
-- If verdict = **APPROVED** → break out of loop, proceed to Phase 6
-- If verdict = **REJECTED**:
+Match the reviewer's own verdict line, `Verdict: PASS` or `Verdict: FAIL, N items to fix.` (the reviewer never writes APPROVED or REJECTED, so matching those words loops forever or never).
+
+- If the verdict line reads **`Verdict: PASS`** → break out of loop, proceed to Phase 6
+- If it reads **`Verdict: FAIL`**:
   - If `N >= 3`: HALT. Tell the user: "3 review passes failed. Latest verdict at docs/bugs/<slug>/review-3.md. Please review and decide whether to override, refactor, or abort."
   - Otherwise:
     - Dispatch the same agent from Phase 4 (coder or portal-coder) in fix mode:
       ```
       description: Address review-<N> for <slug>
-      subagent_type: coder   # or portal-coder, matching Phase 4
+      subagent_type: coder   # or portal-coder: FOLLOWUP mode if its branch already passed the full gate, else Phase 4's mode
       prompt: Fix mode. Read the shared-standards skill, docs/bugs/<slug>/plan.md, and docs/bugs/<slug>/review-<N>.md. Address every FAIL item with the precise fix the reviewer asked for. ZERO new scope. Re-run lint. Report files modified. Skip your auto-review, the coordinator re-runs the reviewer (pass <N+1>) after your fix.
       ```
     - If reviewer flagged test issues, also dispatch `tester` to update tests
@@ -243,7 +246,7 @@ Dispatch `documenter`:
 ```
 description: Document <slug>
 subagent_type: documenter
-prompt: Document the fix for bug <slug>. Read docs/bugs/<slug>/issue.md, research.md, plan.md (final), and the latest review-N.md (APPROVED). Run git log to get commit SHAs. Write docs/bugs/<slug>/RESOLUTION.md (playbook entry) and docs/bugs/<slug>/pr-description.md (for GitHub PR). Be honest about severity. "How we'd catch this earlier" must be specific (lint rule, contract test, alert, CI check), no vague platitudes.
+prompt: Document the fix for bug <slug>. Read docs/bugs/<slug>/issue.md, research.md, plan.md (final), and the latest review-N.md (`Verdict: PASS`). Run git log to get commit SHAs. Write docs/bugs/<slug>/RESOLUTION.md (playbook entry) and docs/bugs/<slug>/pr-description.md (for GitHub PR). Be honest about severity. "How we'd catch this earlier" must be specific (lint rule, contract test, alert, CI check), no vague platitudes.
 ```
 
 Wait for completion. Verify both files exist.
@@ -257,10 +260,19 @@ Wait for completion. Verify both files exist.
 3. WAIT for user response.
 4. On `pr`:
    - Show `git status` and `git diff --stat` to the user
-   - Stage relevant files (NEVER `git add -A`; stage by name)
+   - Work in the worktree the fix was made in, never the main checkout (most main checkouts are
+     parked on another branch or hold another agent's work). The fix belongs on the repo's open
+     release branch for the in-progress release, one PR and one deploy per repo per release:
+     `git fetch origin`, then `git -C <wt> switch <release branch>`; only when the repo has no
+     open release PR, `git worktree add -b bug/<slug> --no-track <path> origin/main`.
+   - Print `git branch --show-current` and `git rev-parse HEAD` before committing; an empty
+     branch name is a detached HEAD, attach it first.
+   - Stage relevant files (NEVER `git add -A`; stage by name), `git commit --only <paths>`
    - Commit using HEREDOC format from CLAUDE.md commit conventions, with bug slug in commit message
-   - Push branch (create new branch if currently on main: `bug/<slug>`)
-   - `gh pr create` with `--body` from pr-description.md
+   - Push the named branch (`git push -u origin <branch>`, never `HEAD:<branch>`)
+   - Add the commit to that repo's open release PR and update its body; `gh pr create` with
+     `--body` from pr-description.md only when the repo has no open release PR. A commit added
+     to a PR after its last review needs a delta review before anyone merges it
    - Return the PR URL
    - Update `docs/bugs/<slug>/RESOLUTION.md` PR field with the URL
 5. On `commit`: commit only, no push, no PR
@@ -433,10 +445,9 @@ If RESOLUTION.md lists changes in multiple repos, you open PRs in DEPENDENCY ORD
 3. Portal last (so it can consume the deployed backend changes)
 
 For each repo:
-- `cd ${VIVREAL_REPOS}\<repo>`
-- Verify clean working tree, then create branch `bug/<slug>`
-- Stage and commit the relevant files for that repo only
-- Push and `gh pr create` with the per-repo PR description from documenter
+- Work in that repo's worktree on its open release branch (Phase 7 step 4), never `${VIVREAL_REPOS}\<repo>` itself
+- Print the branch and HEAD, then stage and commit the relevant files for that repo only (`git commit --only <paths>`)
+- Push the named branch and add the commit to the repo's open release PR (one PR per repo per release); `gh pr create` with the per-repo PR description from documenter only when none is open
 - Capture the URL
 - Update RESOLUTION.md "Related" section with the URL
 
@@ -480,8 +491,8 @@ The coordinator now accepts three input forms in Phase 0. Detection is done in t
    - `mcp__plugin_sentry_sentry__get_sentry_resource` with the URL (fetches the canonical issue resource)
    - Fallback: `mcp__plugin_sentry_sentry__search_issues` with the issue ID
 3. Pull additional context:
-   - Latest event: `mcp__plugin_sentry_sentry__search_issue_events` (top 1), for the stack trace, breadcrumbs, request context
-   - Tag values: `mcp__plugin_sentry_sentry__get_issue_tag_values` for browser, OS, release, environment distribution
+   - Latest event: `mcp__plugin_sentry_sentry__search_errors` filtered to the issue (top 1), or `get_sentry_resource` on its latest event, for the stack trace, breadcrumbs, request context
+   - Tag values: `get_issue_tag_values` is a catalog tool now, reached through `mcp__plugin_sentry_sentry__search_sentry_tools` then `mcp__plugin_sentry_sentry__execute_sentry_tool`, for browser, OS, release, environment distribution
 4. Generate slug from the issue title (kebab-case, max 50 chars). If the title is too generic ("TypeError"), append a short discriminator from the issue's culprit/file.
 5. Write `docs/bugs/<slug>/issue.md` with this structure:
 

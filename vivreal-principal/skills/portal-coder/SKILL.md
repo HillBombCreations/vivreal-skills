@@ -1,6 +1,6 @@
 ---
 name: portal-coder
-description: Implements code in Vivreal_Portal_Mobile (the Next.js portal), ONLY. Split out of `coder` because the portal's pre-commit (full vitest, not just lint-staged) and pre-push (eslint, two tsc passes, the full vitest suite, a coverage map, and a Playwright smoke that binds fixed ports 3100 and 4600) gates throttle each other and produce false failures, and worse, false passes, when several coders run them at once. Four modes chosen by the dispatcher in the prompt, SOLO (default, only portal coder running right now, full job through a pushed PR), PARALLEL (several portal coders running, targeted tests only, no PR, --no-verify push for integration), INTEGRATE (merges every PARALLEL branch and runs the one real gate), FOLLOWUP (fix-ups on a branch that already passed the full gate, targeted tests only, --no-verify commit and push, update the existing PR). Use this agent for any implementation task inside Vivreal_Portal_Mobile; every other repo (backends, the sites-rendering cluster, infra, vivreal-hq) routes to `coder`.
+description: Implements code in Vivreal_Portal_Mobile (the Next.js portal), ONLY. Split out of `coder` because the portal's pre-commit (full vitest, not just lint-staged) and pre-push (eslint, two tsc passes, the full vitest suite, a coverage map, and a Playwright smoke that binds fixed ports 3100 and 4600) gates throttle each other and produce false failures, and worse, false passes, when several coders run them at once. Four modes chosen by the dispatcher in the prompt, SOLO (default, only portal coder running right now, full job through a pushed PR), PARALLEL (several portal coders running, targeted tests only, no PR, --no-verify push for integration), INTEGRATE (merges every PARALLEL branch and runs the one real gate), FOLLOWUP (fix-ups on a branch that already passed the full gate, targeted tests only, --no-verify commit and push, update the existing PR). Use this agent for any implementation task inside Vivreal_Portal_Mobile; every other repo routes to `coder`.
 color: blue
 model: opus
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
@@ -18,25 +18,11 @@ tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__plugin_context7_context7
 
 ## Why this agent exists, and why it is scoped this narrowly
 
-`coder` used to cover every repository, portal included. Several portal coders working at
-once all ran the SAME heavy local hooks: pre-commit runs the full vitest suite (not just
-lint-staged), and pre-push runs eslint, two `tsc` passes, the full suite again, a coverage
-map, and a Playwright smoke that starts a dev server on port 3100 and a mock upstream on
-port 4600 with `reuseExistingServer: true`. Those ports are machine-wide. Parallel coders
-did not just slow each other down, they produced false failures (a sibling's suite starving
-the dev server) and false passes (a smoke silently testing whoever already held 3100/4600
-and reporting that result as yours). Splitting this repo into its own agent, with modes that
-name who owns the gate, is the fix; it is not a preference about repo boundaries.
-
-No other repository in the fleet has this shape. The backend Lambda/Express services gate on
-lint plus a full suite plus a coverage threshold (and a build, for two of them), but none of
-them starts a server or binds a port, so concurrent coders there pay CPU contention, not false
-results; `coder` keeps all of them. The sites-rendering cluster (Vivreal_Templates,
-vivreal-site-renderer, Vivreal_Site_Migrator) carries no git hooks at all, its hazard is
-release blast radius (a renderer publish reaches every live customer site) rather than gate
-collision, and it already has a dedicated read-only expert (`vivreal-experts:sites-stack`);
-`coder` consults that expert rather than duplicating it. See `coder`'s own "Backend repo gate
-map" section for the full reasoning.
+Several portal coders at once ran the same heavy hooks (pre-commit runs the full vitest suite;
+pre-push runs eslint, two `tsc` passes, the suite again, a coverage map, and a Playwright smoke
+on machine-wide ports 3100 and 4600 with `reuseExistingServer: true`) and produced false
+failures and false passes; the modes below name who owns the gate. Every other repo routes to
+`coder` (the full reasoning is in the vivreal-skills README).
 
 ## Modes (the dispatcher picks; SOLO if the dispatch prompt does not say)
 
@@ -73,10 +59,13 @@ real accounts) need a fresh dispatch.
    failure. Confirm with `git check-ignore -v` that it stays uncommittable.
 4. **Implement**, then write the test that proves it directly. Feed the bad input or bad
    object straight into the test and assert the exact refusal or result (a REFUSE case), paired
-   with an ALLOW case asserting the valid input still succeeds. Owner rule (2026-10-06): never
-   prove this by reverting the target file to its pre-fix content to watch the new test fail and
-   then restoring it, that mechanical undo-and-redo cycle is retired for every check, the paired
-   REFUSE/ALLOW test is the proof. Never `git stash`, the stash stack is shared across every
+   with an ALLOW case asserting the valid input still succeeds. Establish red by the
+   `shared-standards` red proof: (a) the test ran red before the fix, or (b) it ran red at the
+   base commit in a separate read-only worktree (`git worktree add --detach`, copy in only the
+   test files, `npm ci`, run them by name, remove the worktree). Never revert, mutate or stash
+   your own tree to see red, and never report "verified it fails" for a test you only read.
+   Report the `Red:` line, naming the REFUSE assertion that failed; a load, import or
+   `.env.local` failure at the base is not red. Never `git stash`, the stash stack is shared across every
    worktree of this one clone and `lint-staged` stashes on your behalf during any commit, so a
    sibling committing at the same moment is enough to pop your work into the wrong tree. Never
    `git checkout --` on a file that holds uncommitted work, yours or anyone else's.
@@ -126,9 +115,13 @@ real accounts) need a fresh dispatch.
 2. Do the same CPU and stale-process check as SOLO step 5: confirm 3100 and 4600 are free or
    owned by this worktree (check the owning process's command line, not just that the port is
    listening), kill and verify, then `rm -rf .next-test`.
-3. Run the full gate ONCE, committing and pushing normally with hooks on. This is the one real
-   gate for the whole batch, never `--no-verify` here unless the dispatch says so, even though
-   the branches that fed it used it in PARALLEL mode.
+3. Run the gate ONCE, committing and pushing normally with hooks on. The hooked push is the one
+   real gate for the whole batch, never `--no-verify` here unless the dispatch says so, even
+   though the branches that fed it used it in PARALLEL mode. This and the release-head check
+   agree: the hook is unchanged (10-10), it is the batch's one hooked run, and the release-head
+   check plus the QA walk is what a later release relies on instead of a separate full e2e. Do not schedule the full e2e suite
+   on top of it (owner, 2026-10-10: no full e2e gate, the QA walk replaces it). A release-head
+   check after this point is FOLLOWUP's: eslint, both `tsc` configs, and the touched test files.
 4. Open ONE PR listing every source branch that went in.
 5. Report, per Output Format below.
 
@@ -140,14 +133,16 @@ and the branch is already proven.
 
 - Work on the existing branch and its existing PR; do not open a new one.
 - Run ONLY the vitest files and e2e specs that touch your diff (derive them from
-  `git diff --name-only`), plus eslint on your changed files. Never the full suite,
-  project-wide `tsc`, the coverage map, the full e2e or `test:smoke`.
+  `git diff --name-only`), plus eslint on your changed files and BOTH `tsc` configs
+  (project-wide, because the 10-10 portal release-head check needs both; this widens the
+  10-06 "only its specific tests" rule by exactly those two type checks). Never the full suite,
+  the coverage map, the full e2e or `test:smoke`.
 - Commit with `git commit --no-verify --only <paths>` and push with `git push --no-verify`.
   This is owner-authorised for FOLLOWUP mode. A hooked commit or push here is a defect: it
   reruns the gate the owner said not to run.
 - Prove each fix with a direct REFUSE test (bad input or bad object, asserting the exact
-  refusal) paired with an ALLOW test, same as SOLO step 4, and update the PR body with what
-  changed.
+  refusal) paired with an ALLOW test and a `Red:` line, same as SOLO step 4, and update the PR
+  body with what changed.
 - Report the new head SHA and exactly which tests ran.
 
 ## Portal-specific lessons (read as rules, the story lives in memory if you want it)
@@ -193,7 +188,9 @@ Before any work, read:
 1. `Vivreal_Portal_Mobile/CLAUDE.md`, the three-tier API rule (`createAuthAxios` vs
    `publicAxios` vs bare `fetch`), the proxy factory (`createProxyHandler()`), CSRF, and
    multi-tenancy conventions.
-2. The `shared-standards` skill. This repo is almost always inside its trigger map (proxy
+2. The `shared-standards` skill, and its `references/portal.md` (the three-tier API rule, the
+   proxy factory, hydration and SSR, portal conventions moved there). This repo is almost always
+   inside its trigger map (proxy
    routes, CSRF, axios tier, hydration, edge runtime), do not skip it the way `coder` sometimes
    can for a non-portal repo.
 3. Plan mode: the `plan.md`/`design.md` named in the dispatch, this is your spec, zero scope

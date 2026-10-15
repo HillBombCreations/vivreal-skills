@@ -32,6 +32,11 @@
  *   8. A reference to behaviour that has been deleted from the product.
  *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
  *      buys a reader nothing that a profile name and a region do not.
+ *  10. A command mirror (`skills/cmd-*`) inside a plugin tree. They are generated into the
+ *      gitignored `.agy/`; in a plugin they list every command twice.
+ *
+ * It warns (without failing) on a description over the documented length, an agent and its
+ * skill mirror that have drifted, and an `mcp__<server>__` prefix no known server declares.
  *
  * Run:  node scripts/check-definitions.mjs
  * Self-test (the must-pass control):  node scripts/check-definitions.mjs --self-test
@@ -148,8 +153,7 @@ function ruleParse(files) {
     // What is actually required. An agent is identified by its `name`, so a missing
     // one is a load problem. For a skill every field is optional and identity falls
     // back to the directory, so a missing `name` is not a defect and several skills
-    // here deliberately carry a name that differs from their directory (the command
-    // mirrors are invoked as `plugin:db-query`, not `plugin:cmd-db-query`). What
+    // here deliberately carry a name that differs from their directory. What
     // breaks discovery in every case is an empty or absent description, because the
     // description is the whole of how the main loop decides to load the thing.
     if (isAgent && !keys.name) fail('parse', rel, 'agent frontmatter has no name, which is how it is identified');
@@ -231,7 +235,12 @@ function ruleCrossReferences(files) {
   const known = new Set();
   for (const abs of files) {
     const rel = norm(relative(ROOT, abs));
-    const m = rel.match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/);
+    // A command is listed and invoked as a skill too (`plugin:db-query` for
+    // `<plugin>/commands/db-query.md`), so it is a valid target in its own right. Before
+    // the cmd-* mirrors moved out of the plugin trees, these references resolved only
+    // through a mirror's `name:` line.
+    const m =
+      rel.match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/) || rel.match(/^([^/]+)\/commands\/([^/]+)\.md$/);
     if (!m) continue;
     known.add(`${m[1]}:${m[2]}`);
     const keys = frontmatter(readFileSync(abs, 'utf8'), rel);
@@ -428,6 +437,105 @@ function ruleMirrorDrift(files) {
       `agent body is ${a.length} bytes and its skill mirror is ${s.length} bytes. ` +
         'They are copies of one thing and they have diverged. Decide which is authoritative, ' +
         'then sync, rather than editing one of them again.',
+    );
+  }
+}
+
+/**
+ * Every `mcp__<server>__` prefix an agent is granted, or told to call, must name a server
+ * something actually declares. A grant that resolves to nothing is dropped in silence; an
+ * agent whose ONLY entries for a capability are unresolvable has no way to reach it, and the
+ * prose telling it to "use the X MCP" sends it after a tool that is not there.
+ *
+ * A server comes from one of three places, and each is listed so a new prefix is a decision:
+ *   1. a `.mcp.json` in a plugin tree here, which registers as `plugin_<plugin>_<server>`;
+ *   2. an official plugin the fleet enables (context7, playwright, sentry);
+ *   3. a project `.mcp.json` in a fleet repository, which only exists in sessions started in
+ *      that repository: Vivreal_Portal_Mobile declares `mongodb`, `mongodb-write`, `github` and
+ *      five `awslabs.*` servers; VR-MCP-Server declares six `awslabs.*` servers and NO `mongodb`;
+ *      VR_CMS_API declares `aws-documentation` and its `aws-*` siblings;
+ *   4. a server the user registers by hand, named by the repo that documents it: `vivreal`, the
+ *      Vivreal MCP itself (VR-MCP-Server docs/DEPLOYMENT_RUNBOOK.md, `claude mcp add --transport
+ *      http vivreal https://mcp.vivreal.io/mcp`); or a claude.ai connector (`claude_ai_*`).
+ *
+ * A WARNING, not a failure: a project-scoped server is legitimate where it is declared, and
+ * the fix for an unknown one is a judgement (drop the grant, or name where it comes from).
+ */
+const EXTERNAL_MCP_SERVERS = new Set([
+  'plugin_context7_context7',
+  'plugin_playwright_playwright',
+  'plugin_sentry_sentry',
+]);
+const PROJECT_SCOPED_MCP_SERVERS = new Set([
+  'vivreal',
+  'mongodb',
+  'mongodb-write',
+  'github',
+  'awslabs_aws-documentation-mcp-server',
+  'awslabs_aws-api-mcp-server',
+  'awslabs_cfn-mcp-server',
+  'awslabs_cloudwatch-mcp-server',
+  'awslabs_lambda-tool-mcp-server',
+  'awslabs_ccapi-mcp-server',
+  'aws-documentation',
+]);
+const MCP_PREFIX = /mcp__([A-Za-z0-9-]+(?:_[A-Za-z0-9-]+)*)__/g;
+
+function ruleMcpPrefixes(files) {
+  const known = new Set([...EXTERNAL_MCP_SERVERS, ...PROJECT_SCOPED_MCP_SERVERS]);
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    const m = rel.match(/^([^/]+)\/\.mcp\.json$/);
+    if (!m) continue;
+    try {
+      const j = JSON.parse(readFileSync(abs, 'utf8'));
+      for (const name of Object.keys(j.mcpServers || j)) known.add(`plugin_${m[1]}_${name}`);
+    } catch {
+      // ruleParse reports an unparseable JSON file; nothing to add here.
+    }
+  }
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (!isPluginFile(rel) || !rel.endsWith('.md')) continue;
+    const seen = new Set();
+    readFileSync(abs, 'utf8').split('\n').forEach((line, i) => {
+      MCP_PREFIX.lastIndex = 0;
+      let m;
+      while ((m = MCP_PREFIX.exec(line))) {
+        const server = m[1];
+        if (known.has(server) || server.startsWith('claude_ai_') || seen.has(server)) continue;
+        seen.add(server);
+        warn(
+          'mcp-prefix',
+          `${rel}:${i + 1}`,
+          `"mcp__${server}__" names no MCP server a plugin here, an enabled official plugin, or a fleet project ` +
+            'declares. The grant resolves to nothing and the tool is silently absent. Drop it, or add the server ' +
+            'to the list in check-definitions.mjs with where it is declared.',
+        );
+      }
+    });
+  }
+}
+
+/**
+ * Command mirrors (`skills/cmd-<name>/`) belong in the gitignored `.agy/` tree, never inside a
+ * plugin. Claude Code already lists every command as a skill, so an in-tree mirror listed each
+ * command twice (`vivreal-workflow:reviewer` and `vivreal-workflow:cmd-reviewer`), and two of the
+ * old mirrors had no command behind them at all, so they were the only copy of `/deliver` and
+ * `/write-docs`. An older `sync-to-agy.js` run puts them back; this is what notices.
+ */
+function ruleNoInTreeCommandMirrors(files) {
+  const flagged = new Set();
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    const m = rel.match(/^([^/]+)\/skills\/(cmd-[^/]+)\//);
+    if (!m || flagged.has(`${m[1]}/${m[2]}`)) continue;
+    flagged.add(`${m[1]}/${m[2]}`);
+    fail(
+      'cmd-mirror-in-tree',
+      `${m[1]}/skills/${m[2]}`,
+      'a command mirror inside a plugin tree lists the command twice. sync-to-agy.js writes these to .agy/. ' +
+        'Delete it, after checking ' + m[1] + '/commands/' + m[2].slice(4) + '.md exists (a mirror with no source is the only copy).',
     );
   }
 }
@@ -644,6 +752,8 @@ function runAll(files) {
   ruleAgentDispatch(files);
   ruleCrossReferences(files);
   ruleMirrorDrift(files);
+  ruleMcpPrefixes(files);
+  ruleNoInTreeCommandMirrors(files);
   ruleCopiedValues(files);
   ruleDashes(files);
   ruleDeletedBehaviour(files);
@@ -782,6 +892,23 @@ function selfTest() {
       ].join('\n'),
     },
     {
+      rule: 'cmd-mirror-in-tree',
+      label: 'cmd-mirror-in-tree: a command mirror inside a plugin',
+      path: join(tmp, 'skills', 'cmd-poison', 'SKILL.md'),
+      body: '---' + String.fromCharCode(10) + 'description: fixture' + String.fromCharCode(10) + '---' + String.fromCharCode(10),
+    },
+    {
+      // A warning rule still has to be able to fire. A grant naming a server nothing
+      // declares; `kind: 'warn'` makes the control look in the warnings, not failures.
+      rule: 'mcp-prefix',
+      kind: 'warn',
+      label: 'mcp-prefix: a grant naming no declared server',
+      path: join(tmp, 'agents', 'ghost-mcp.md'),
+      body:
+        '---\nname: ghost-mcp\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\n' +
+        'tools: Read, mcp__nosuchserver__find\n---\n\nbody\n',
+    },
+    {
       // The silent one. Five values in this repo were being truncated this way and
       // nothing anywhere reported it.
       rule: 'parse',
@@ -804,7 +931,12 @@ function selfTest() {
       // same code path the real run does. Nothing is reimplemented here.
       runAll(walk(ROOT));
 
-      const tripped = failures.some((f) => f.rule === c.rule);
+      // A warning rule may already be firing on real files, so its control must find the
+      // hit IN THE FIXTURE, or it would read red with the poison absent.
+      const tripped =
+        c.kind === 'warn'
+          ? warnings.some((w) => w.rule === c.rule && w.where.startsWith(FIXTURE_PLUGIN + '/'))
+          : failures.some((f) => f.rule === c.rule);
       console.log(
         `  ${tripped ? 'RED   ' : 'GREEN '} ${(c.label || c.rule).padEnd(34)} ` +
           (tripped ? '(correct)' : '(THIS CHECK CANNOT FAIL)'),

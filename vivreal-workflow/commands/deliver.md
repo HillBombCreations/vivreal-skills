@@ -1,5 +1,5 @@
 ---
-description: "Run a change end to end across the portal and a backend, from research to checked in, shipping the backend first so the portal can be validated against it, then validating in a browser and getting owner-level feedback before the portal PR. Not /orchestrate, which is the phase gated planning workflow with approval stops: this one carries the release steps and the validation through to done."
+description: "Run a change end to end across the portal and a backend, from research to checked in, validating the portal on the guarded local stack against the backend PR heads and shipping the backend on the owner's GO, then validating in a browser and getting owner-level feedback before the portal PR. Not /orchestrate, which is the phase gated planning workflow with approval stops: this one carries the release steps and the validation through to done."
 argument-hint: <what to build or fix, and whether to promote the portal or just check it in>
 ---
 
@@ -38,8 +38,9 @@ prompt: |
   Portal disposition: <promote | check in only>.
 
   Run the phases in order and do not advance past a gate that only looks done.
-  Ship the backend half and PROVE it live before validating the portal, because
-  the portal cannot be validated against an API that has not deployed.
+  The backend half lands on its repo's open release PR and ships only on the
+  owner's GO for the batch, API first, portal last, and is PROVEN live from stack
+  state before the portal lands. Before GO, validate against the backend PR heads.
 
   Validate against a LOCAL build carrying the portal changes, assembled from
   every portal branch in this batch, then freeze the tree while validation runs.
@@ -50,9 +51,11 @@ prompt: |
 
 ## The instruction to restate every time
 
-**Portal coders write the tests their change needs and run none.** They run lint
-and the type check on their own files, and nothing else. The suite runs once, at
-the end, over the accumulated diff, by the orchestrator.
+**Portal coders write the tests their change needs and run only those files, by
+name.** They run lint and the type check on their own files, and never the whole
+suite, the coverage map or the smoke. The one gate runs once, at the end, over the
+accumulated diff, owned by the orchestrator; for the portal there is no full e2e
+gate (owner, 2026-10-10), the QA walk replaces it.
 
 Restate it even though the agent definition carries it. It is the instruction
 most often lost in a long brief, and losing it is expensive in a specific way:

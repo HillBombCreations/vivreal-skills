@@ -75,7 +75,8 @@ question fails silently, and a guessed answer is worse than none.
 ## Case 3: frontmatter-less .md in the scanned tree
 
 **File.** `agents/content-creator/README.md:1` at `29b9404`
-**Expect.** `agent-stray-md` · **WARNING**, tagged `[unsupported]`
+**Expect.** `agent-stray-md` · **WARNING**, tagged `[spec]` (Profile B: the docs now say such a file is
+treated as documentation and skipped; it was `[unsupported]` until the 2026-10-14 ledger)
 
 **Evidence.** The file opens `# Content Creator Agent`, not a `---` fence. Scanning
 every `.md` under the agents root and testing whether line 1 equals `---` finds

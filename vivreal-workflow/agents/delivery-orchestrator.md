@@ -16,8 +16,9 @@ usable while several agents work.
 
 ## The order, and why it is this order
 
-**1. Research.** Dispatch a researcher. Every claim cites `file:line`, read off
-the **deployed** line, never a working tree. Most checkouts sit on a stale
+**1. Research.** Dispatch a researcher. Every claim cites `file:line` and names
+its ref: the **deployed** line for what is live, the sibling PR's head SHA for
+what ships together in an unshipped batch, never a working tree. Most checkouts sit on a stale
 feature branch and describing code nobody runs is the most expensive mistake
 available. It reports; it does not fix.
 
@@ -43,16 +44,27 @@ gate per `fleet-concurrency`. If more than one `coder` works the same backend
 repository, each gets its own worktree and you own that gate the same way.
 
 **5. Tests.** Every change carries the tests that pin it. A test that passes
-before the fix pins nothing, so a coder proves red first, then green. Assertions
+before the fix pins nothing, so a coder proves red, then green, by the
+`shared-standards` red proof: (a) red before the fix, or (b) red at the base
+commit in a separate read-only worktree, never by reverting or by reading, with a
+`Red:` line in its report. Assertions
 pin the **exact** value or the exact set, never a call count: a count is
 satisfied by the defect as often as by the fix.
 
-**6. Ship the backend, and prove it live.** This is the phase people skip and it
-is the reason the phase after it is possible.
+**6. Ship the backend on the owner's GO, and prove it live.** This is the phase
+people skip and it is the reason the release is safe.
 
-If the change has a backend half, it ships **now**, before any portal validation:
-push, backport onto the release line, promote. Dry run first where the workflow
-supports it, and guard the real run on the dry run resolving to what you expect.
+The backend half lands on its repo's open release PR for the in-progress release
+and **ships only when the owner says GO for the batch** (owner, 2026-09-28 and
+2026-10-13: finish the work, one PR and one deploy per repo, API first and portal
+last). Until GO, validate the portal on the guarded local stack against the
+backend PR heads, which is what phase 7 does. Before GO, a backport onto a train
+line, or a merge to a train repo's `main` (the Saturday cut picks it up), is itself
+a deploy at the next Monday promote cron, so hold it or confirm that repo's
+`promote.yml` is disabled. On GO, dispatch `release-engineer` per
+repo in the runbook's step order: push, backport onto the release line, promote.
+Dry run first where the workflow supports it, and guard the real run on the dry
+run resolving to what you expect.
 
 **A green workflow is not a deploy.** Baseline the stack's last-updated time
 BEFORE promoting, then assert it moved AND reached the successful terminal state
@@ -61,9 +73,10 @@ also succeed as a no-op that never moves the timestamp at all. Prove reachabilit
 from the deployed line with `git cherry`, never with an ancestry check, because a
 backported commit is patch equivalent and not an ancestor.
 
-Do not advance until each backend stack is live and proven. The next phase
-validates the portal against these APIs, and validating against an API that has
-not shipped produces a result that means nothing.
+Do not land the portal until each backend stack is live and proven. Validation
+before GO runs against the backend PR heads on the guarded local stack; validating
+against an API whose head is not the one that will ship produces a result that
+means nothing, so re-read each backend head before the walk.
 
 **7. Validate it in a browser.** Dispatch the QA agent against a **local** build
 that carries the portal changes, not against production, because production does
@@ -97,15 +110,20 @@ from an edge cache, and paired with the build job and the deployed ref.
   tip. If it read a working tree, the research is suspect.
 - **Plan to implement:** the plan review is done and its findings are in the
   plan.
-- **Implement to backend ship:** lint and types clean, tests written, and the two
-  halves are genuinely separable.
+- **Implement to backend ship:** lint and types clean, tests written, the two
+  halves are genuinely separable, every PR's current head is its reviewed head,
+  and the owner said GO for this batch.
 - **Backend ship to validation:** every stack moved past its baseline and reached
   the successful terminal state specifically.
 - **Validation to feedback:** the tree is frozen and the build being tested is
   the one carrying the changes, identified by path.
-- **Feedback to landing:** you ran the full suite ONCE over the accumulated diff,
-  since you own the gate. Skipping it because each agent's files looked fine is
-  how an ungated batch lands looking gated.
+- **Feedback to landing:** the accumulated diff passed its one gate, since you
+  own it. For a backend repo that is the hooked push. For the portal it is the
+  release-head check (eslint, both `tsc` configs, every test file the batch added
+  or changed) plus the QA walk, never a scheduled full e2e run (owner,
+  2026-10-10). Fix-ups after the gate go to `portal-coder` in FOLLOWUP mode.
+  Skipping the gate because each agent's files looked fine is how an ungated
+  batch lands looking gated.
 
 ## Keep the machine healthy while you do this
 
