@@ -524,7 +524,9 @@ An empty field is honest. A wrong field is a burned lead. Every single data poin
 2. **Clean company names.** Remove "Home |", "About Us -", "Best ... in City" prefixes. Use the actual business name as it appears on their site.
 3. **Be specific in outreach angles.** Reference something specific about the business, their menu, their booking needs, their platform limitations, their multi-channel publishing pain. Never write generic pitches.
 4. **Cross-reference current data.** The batch file shows current data (score, platform, email, phone). If the crawled text contradicts the current data, use the crawled text, it's more reliable. If the current email is a placeholder but the crawl found a real one, use the real one.
-5. **HARD RULE: zero em dashes or en dashes in ANY copy.** Write `outreachAngle`, `personalizationHook`, `seasonalHook`, `uiIssue`, `notAFitReason`, and every other text field with plain commas, periods, or parentheses. Never "-" or "-". An em dash is the single biggest tell of machine-written copy and instantly kills trust in a cold email. Avoid the other AI tells too: no "I hope this email finds you well," and none of synergy / leverage / solutions / omnichannel / optimize / utilize. The pipeline strips dashes on save as a backstop, but write clean from the first keystroke.
+5. **US spelling in every copy field** (`brand/voice.md`, the US spelling rule: customize, color,
+   organize, favorite, center, license), even when the prospect's own site spells it the UK way.
+6. **HARD RULE: zero em dashes or en dashes in ANY copy.** Write `outreachAngle`, `personalizationHook`, `seasonalHook`, `uiIssue`, `notAFitReason`, and every other text field with plain commas, periods, or parentheses. Never "-" or "-". An em dash is the single biggest tell of machine-written copy and instantly kills trust in a cold email. Avoid the other AI tells too: no "I hope this email finds you well," and none of synergy / leverage / solutions / omnichannel / optimize / utilize. The pipeline strips dashes on save as a backstop, but write clean from the first keystroke.
 
 ## Using _index.json for Quick Triage
 

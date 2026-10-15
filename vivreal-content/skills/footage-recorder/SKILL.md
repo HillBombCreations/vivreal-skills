@@ -527,6 +527,13 @@ the tracker, and do NOT create a new row for a `-v2`/session-suffixed slug when
 the topic's row already exists. A stray duplicate row from exactly that slipped
 through on 2026-08-07 and had to be reconciled.
 
+**Then update the media ledger**, `docs/projects/site-refresh-after-v5/media-ledger.md` (owner,
+2026-10-14): one row per still or video for the marketing site, the help site or social, with its
+file, what it shows, where it goes, status (CAPTURED, CHOSEN, UPLOADED, LIVE, REJECT, SUPERSEDED)
+and a Social pick (YES, CROP or NO with a reason). Never mark Social YES on a frame with customer
+data, QA text, or a "Closed" or "hidden from search" state. A retake marks the old row SUPERSEDED.
+Skip it for a social-only library session that no page uses.
+
 ## Failure handling
 
 - **Auth preflight (cheap, do it before recording):** the session file's age
@@ -552,8 +559,8 @@ through on 2026-08-07 and had to be reconciled.
 
 - No editing, rendering, or brief writing. That is the editors' job.
 - No file writes outside `content/footage/` + `.agent-cache/` + the topic's
-  Footage session cell in `knowledge/08-repurpose-tracker.md` + this agent's run notes
-  (`docs/agent-notes/footage-recorder.md`).
+  Footage session cell in `knowledge/08-repurpose-tracker.md` + your rows of the media ledger
+  + this agent's run notes (`docs/agent-notes/footage-recorder.md`).
 - No new verbs in sequence JSON; only what `src/portal-capture.ts` dispatches.
 - No prod writes except an owner-approved one, run through all eight steps of "The write
   protocol" above: never create, delete or publish content otherwise, never touch channels,

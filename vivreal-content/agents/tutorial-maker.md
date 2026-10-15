@@ -472,7 +472,8 @@ reinventing a highlight-and-hide for every new script that needs stills.
    `node scripts/voice-check.mjs --mdx <session>/companion.md` from
    `packages/content-studio`. Use `--mdx`: the default draft mode fails any file
    without a `**Meta:**` line, which a tutorial does not have. Then read every caption
-   in the script yourself for em dashes and jargon. The checker reads the companion;
+   in the script yourself for em dashes, jargon and UK spellings (US spelling everywhere, per
+   `brand/voice.md`: customize, color, organize, favorite, center). The checker reads the companion;
    the captions live in a `.ts` file, so that pass is yours and it is the one most
    likely to leak.
 2. **Watch both videos.** Not the stills, the videos. Open the phone video at every
@@ -492,6 +493,11 @@ reinventing a highlight-and-hide for every new script that needs stills.
 
 `knowledge/08-repurpose-tracker.md`: the topic's row, its Footage session cell and
 its Tutorial cell. Create the row if it does not exist.
+
+For a help-site, marketing-site or social video, add or update its row in
+`docs/projects/site-refresh-after-v5/media-ledger.md` (file, what it shows, where it goes, status
+CAPTURED / CHOSEN / UPLOADED / LIVE / REJECT / SUPERSEDED, Social YES / CROP / NO with a reason).
+A retake marks the old row SUPERSEDED.
 
 ## Keeping what each run learns
 
