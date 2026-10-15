@@ -63,6 +63,8 @@ line, or a merge to a train repo's `main` (the Saturday cut picks it up), is its
 a deploy at the next Monday promote cron, so hold it or confirm that repo's
 `promote.yml` is disabled. On GO, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
+It holds no Write and no Edit tool, so it reports values and you record them: write
+every SHA, run id and proof it reports into the runbook and release log yourself.
 Dry run first where the workflow supports it, and guard the real run on the dry
 run resolving to what you expect.
 
