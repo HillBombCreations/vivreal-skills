@@ -68,7 +68,8 @@ appears on the AWS invoice.
 
 | Tier | ~Monthly | Connections | ~Concurrent users* | Vector search? |
 |---|---|---|---|---|
-| **M0 free / M2 / M5 shared (current tier; owner decision 2026-09-15: staying here)** | **$0 / ~$9 / ~$25** | **500** | ~150 | No |
+| **M0 Free (current tier, confirmed 2026-10-13; also capped at 10 GB out per rolling 7 days)** | **$0** | **500** | ~150 | No |
+| Flex (owner chose 2026-10-14, switch held; unlimited transfer) | $8 base to $30 cap | 500 | ~150 | not checked |
 | M10 (modelled upgrade only, not the plan) | ~$60 | 1,500 | ~500 | Yes |
 | M20 | ~$150 | 3,000 | ~1,000 | Yes |
 | M30 | ~$400+ | higher | higher | Yes |
