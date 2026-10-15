@@ -12,6 +12,9 @@
  *          The file STILL LOADS, with its name taken from the filename and every
  *          other field silently dropped, `tools` included. An agent deliberately
  *          built without Write comes back with the default tool set.
+ *        - a quoted scalar with an unescaped quote inside it (an apostrophe in a
+ *          single-quoted description), which `claude plugin validate` rejects and which
+ *          loads the skill with EMPTY metadata.
  *        - a plain scalar containing " #", which starts a YAML comment and discards
  *          the rest of the value. Nothing reports this at all. One skill here was
  *          losing 277 characters that way, including its entire "Triggers on:" list,
@@ -196,7 +199,35 @@ function ruleParse(files) {
       const first = v.trimStart()[0];
       const quoted = first === '"' || first === "'";
       const block = first === '|' || first === '>';
-      if (quoted || block || v.trim() === '') continue;
+      // A QUOTED scalar fails the other way: a quote character inside it closes the
+      // scalar early, the rest is a YAML parse error, and the skill loads with EMPTY
+      // metadata (`claude plugin validate` reports it; this script did not until an
+      // apostrophe in "surface's" inside a single-quoted description shipped in a PR).
+      // Single-quoted: `''` is the only escape, so strip it and any `'` left before the
+      // closing quote is a defect. Double-quoted: strip `\\` first, then `\"`, and any
+      // `"` left is a defect. Either way the value must END on its closing quote.
+      if (quoted) {
+        const t = v.trim();
+        const inner = t.length >= 2 && t.endsWith(first) ? t.slice(1, -1) : null;
+        const rest =
+          inner === null
+            ? null
+            : first === "'"
+              ? inner.replace(/''/g, '')
+              : inner.replace(/\\\\/g, '').replace(/\\"/g, '');
+        if (rest === null || rest.includes(first)) {
+          fail(
+            'parse',
+            rel,
+            `frontmatter key "${k}" is a ${first === "'" ? 'single' : 'double'}-quoted YAML scalar with an ` +
+              `unescaped ${first} inside it (or no closing quote), so the YAML does not parse and the file loads ` +
+              `with empty metadata. Escape it (${first === "'" ? "write '' for an apostrophe" : 'write \\" for a quote'}) ` +
+              'or reword.',
+          );
+        }
+        continue;
+      }
+      if (block || v.trim() === '') continue;
       if (/:\s/.test(v)) {
         fail(
           'parse',
@@ -916,6 +947,20 @@ function selfTest() {
       path: join(tmp, 'skills', 'hash-truncation', 'SKILL.md'),
       body:
         '---\nname: hash-truncation\ndescription: the #1 source of bugs, and everything after this is discarded\n---\n\nbody\n',
+    },
+    {
+      // The shape that shipped in PR #38: an apostrophe inside a single-quoted
+      // description. claude plugin validate caught it; this script passed it.
+      rule: 'parse',
+      label: "yaml: an apostrophe that closes a single-quoted scalar",
+      path: join(tmp, 'skills', 'quote-break', 'SKILL.md'),
+      body: "---\nname: quote-break\ndescription: 'it's broken'\n---\n\nbody\n",
+    },
+    {
+      rule: 'parse',
+      label: 'yaml: a bare quote inside a double-quoted scalar',
+      path: join(tmp, 'skills', 'dquote-break', 'SKILL.md'),
+      body: '---\nname: dquote-break\ndescription: "say "hi" here"\n---\n\nbody\n',
     },
   ];
 
