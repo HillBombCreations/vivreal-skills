@@ -36,10 +36,13 @@ and prefer paths that survive a customised tab bar ("tap More, then ...").
    native email is claimable, and so is "Write it once in Create, tick your site, your socials and
    your email list, and pick when it goes out" (name Pro where the email half is the point; where
    the timing is the point, add "One time covers everything you ticked").
-   **Still never** "one Publish sends site, social and email together", never that Create gives
+   **Still never** "one Publish sends site, social and email together", or any promise that every
+   part lands (each part has its own checks and can fail on its own), never that Create gives
    each part its own time (Create sets one time for everything ticked), never that an email goes
    out by itself whenever you publish, and never that publishing anywhere else (Studio, a list, a
-   channel page) creates an email: only Create's Email row and Campaigns do.
+   channel page) creates an email by itself: only Create's Email row, the Email row in Studio's
+   Share this, and Campaigns send one, and only when the owner chooses to. A Share this email
+   goes the moment you tap Send; it cannot be scheduled.
 2. Read the quality rule at `knowledge/02-strategy.md:43` (25-30% genuinely unique content per
    templated page; a screenshot is the cheapest way there).
 3. Read the topic's brief in `knowledge/03-content-library.md` INCLUDING its dated amendment

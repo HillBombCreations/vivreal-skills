@@ -193,8 +193,11 @@ the `carousel-source/` role in `linkedin-editor.md`.
 4. **Honesty floor.** Native email is claimable (`brand/voice.md`, the Email entry): "Write it
    once in Create, tick your site, your socials and your email list, and pick when it goes
    out", naming Pro wherever the email half is the point. Never a slide implying one Publish
-   sends site, social and email together, that Create gives each part its own time (Create sets
-   one time for everything ticked), or that an email goes out by itself whenever you publish. Our own honesty rule, not a voice.md entry: an owner on Mailchimp keeps
+   sends site, social and email together, or any promise that every part lands (each part has its
+   own checks and can fail on its own); never that Create gives each part its own time (Create
+   sets one time for everything ticked); never that an email goes out by itself whenever you
+   publish; and never a scheduled email from Studio's Share this (its email goes the moment you
+   tap Send). Our own honesty rule, not a voice.md entry: an owner on Mailchimp keeps
    their list and their bill there, so never "one bill" and never a graphic in which a
    Mailchimp tab collapses into a Vivreal tab. Never "the preview is the real site". Any
    competitor price gets a `Verify before posting` item naming the day it must be re-checked.

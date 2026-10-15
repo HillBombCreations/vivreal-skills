@@ -688,7 +688,8 @@ published work, so check them by name every run.
   time covers everything, but each part has its own checks and can fail on its own); never that
   Create gives each part its own time (a different time per channel is Socials, one post per
   channel; site now and share later is Studio's Share this); and never that an email goes out by
-  itself whenever you publish.**
+  itself whenever you publish.** Studio's Share this can also send an email from a live item, but
+  that email goes the moment you tap Send; it cannot be scheduled.
   **Our own honesty rule, not a voice.md entry:** an owner on Mailchimp keeps their list and
   their bill there, so never "one bill" and never a graphic in which a Mailchimp tab collapses
   into a Vivreal tab. The one-Publish claim has escaped
