@@ -156,10 +156,10 @@ time.** SAM emits one `AWS::Lambda::Permission` per `Api` event, on the alias th
 with no switch to merge them (overriding the logical id raises `DuplicateLogicalIdException`).
 A function behind many routes therefore grows one statement per route until a deploy fails with
 "The final policy size (N) is bigger than the limit (20480)" and the stack rolls back. VR_Secure_API
-hit it on UpdateGroupFunction (the first v6 deploy attempt, 2026-10-13); the fix generates one API-wide permission per
+hit it on UpdateGroupFunction (the v5 release's first Secure deploy, #343, 2026-10-13); the fix generates one API-wide permission per
 function in `scripts/merge-template.js`. Two things to carry: CloudFormation ADDS the new
 permission before cleanup removes the old ones, so the cutover peak is old policy plus new
-statement (UpdateGroup's peak was 11 bytes under the cap), and Lambda's own byte count runs above
+statement (UpdateGroup's projected peak was about 11 bytes under the cap), and Lambda's own byte count runs above
 the compact JSON length of the same policy, so leave margin. Before adding routes to a function,
 read its alias policy (`aws lambda get-policy --function-name <fn> --qualifier live --query Policy
 --output text`) and count statements and bytes.
@@ -178,7 +178,7 @@ controls** (the support@ account removal, 2026-10-14, owner-approved step by ste
    sealed tokens and refresh-token bodies). Baseline the controls you will re-read: a sibling
    record that must stay unchanged, and Atlas `connections.current`.
 2. Every delete re-asserts identity in the same call: a DynamoDB `--condition-expression` on the
-   owning user, a Mongo filter on `_id` AND the identifying field, a guard re-read of email and
+   owning user (planned there; the product disconnect had already removed those rows), a Mongo filter on `_id` AND the identifying field, a guard re-read of email and
    subject in the same command before `admin-delete-user`. Delete by exact key; when a key must
    come from a scan, read it in-process without echoing it and assert the count first.
 3. Run the script's dry run TWICE with the identical command and diff the outputs (timestamps and
