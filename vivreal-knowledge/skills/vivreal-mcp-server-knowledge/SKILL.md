@@ -43,7 +43,7 @@ neither is the module list itself. Alongside the tools there are guided **prompt
 
 ## Session model: set-active-group is the linchpin
 
-Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is sticky for the session; on cache miss it transparently re-fetches the user's groups once then retries. `get-session-context` is a pure read; `refresh-session-context` re-fetches (use after the user creates a group mid-session). Sessions persist to DynamoDB after each tool call. Bootstrap loads groups from Secure API `/api/groupInfo` (`VR_SECURE_GROUPS_PATH` is unset in production, so the `config.ts` default applies). **Not `/api/allUsersGroups`**: that path is declared in VR_Secure_API's gateway template but has no Express handler, so pointing the server at it would 404 every bootstrap.
+Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is sticky for the session; on cache miss it transparently re-fetches the user's groups once then retries. `get-session-context` is a pure read; `refresh-session-context` re-fetches (use after the user creates a group mid-session). Sessions persist to DynamoDB after each tool call. Bootstrap loads groups from Secure API `/api/groupInfo` (the `config.ts` default when `VR_SECURE_GROUPS_PATH` is unset; no template sets it, but the live Lambda env was not read, so treat "unset in production" as unverified). **Not `/api/allUsersGroups`**: that path is declared in VR_Secure_API's gateway template but has no Express handler, so pointing the server at it would 404 every bootstrap.
 
 ## Critical implementation gotchas
 

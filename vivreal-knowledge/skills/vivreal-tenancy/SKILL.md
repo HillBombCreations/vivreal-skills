@@ -233,8 +233,9 @@ Two further independent reasons document count is the wrong axis, either suffici
    whole cluster, plus 100 operations per second and 10 GB of data out per rolling 7 days. Every pod
    carries a full set of tenant collections and their indexes, so a new database spends a slice of the
    500-collection budget permanently, before it holds a tenant. Count with `listDatabases` and
-   `listCollections` per database rather than trusting a remembered total. The tier change (Flex
-   chosen 2026-10-14, switch held) lifts these; `vivreal-atlas-topology` carries the status.
+   `listCollections` per database rather than trusting a remembered total. Flex (chosen 2026-10-14, switch held) removes only the data-transfer cap (unlimited
+   on Flex); the 100 databases, 500 collections and 500 connections stay, and operations above
+   100/s are billed up to 500. `vivreal-atlas-topology` carries the status.
 
 **The honest position:** the thing that matters is unmeasurable on this tier, everything measurable
 has substantial headroom, and document count is a third thing that is not a limit at all.
