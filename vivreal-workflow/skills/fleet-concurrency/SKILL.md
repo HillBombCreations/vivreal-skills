@@ -10,8 +10,15 @@ to be redone.
 ## The commit gate, when agents run in parallel
 
 The standing rule is that the local hooks are the only thing that reads code
-before it lands, and **you never bypass them**. That rule is not suspended here.
-What changes is **who runs the gate**, not whether it runs.
+before it lands, and **you never bypass them outside a named mode that authorises
+it**: `portal-coder`'s PARALLEL mode, or its FOLLOWUP mode on a branch that already
+passed the full gate (owner, 2026-10-06). That rule is not suspended here. What
+changes is **who runs the gate**, not whether it runs.
+
+**The portal has no full e2e gate (owner, 2026-10-10).** A portal release-head
+check is eslint, both `tsc` configs, and every test file the release added or
+changed; the local QA walks replace the full e2e run. Never schedule the full e2e
+suite, the full vitest run or the smoke as a separate batch gate for the portal.
 
 The pre-commit hook runs lint-staged, the unit suite and the coverage map. The
 pre-push hook runs the repo lint, both type configs, the unit suite, the coverage
@@ -22,15 +29,18 @@ outcome is not a slow pass, it is a hang.
 So, when more than one agent is working the same repository as part of one
 coordinated batch:
 
-- **The orchestrator owns the gate.** It runs the full suite once, at the end,
-  over the accumulated diff.
-- **Each agent writes the tests its change needs and does not run them.** That is
-  deliberate, not laziness. The one sweep at the end covers all of it, and a test
-  written and not run is still the artefact that makes the sweep meaningful.
+- **The orchestrator owns the gate.** It runs the one gate once, at the end, over
+  the accumulated diff: the hooked push for a backend, the release-head check above
+  for the portal.
+- **Each agent writes the tests its change needs and runs only those files, by
+  name.** Never the whole suite, the coverage map or the smoke: those are the
+  contended runs. A targeted run of your own test files is cheap and is how you
+  establish red (the `shared-standards` red proof).
 - **Each agent still runs lint and the type check on its own files.** Those are
   cheap, local and do not contend.
 - An individual agent may skip the commit hook **only** when an orchestrator has
-  explicitly taken ownership of the gate for that batch. That is the whole
+  explicitly taken ownership of the gate for that batch and dispatched it in a
+  mode that says so (PARALLEL or FOLLOWUP for the portal). That is the whole
   exception. An agent working alone never skips it, and "I was in a hurry" is not
   an orchestrator.
 - **The orchestrator must actually run it.** A gate nobody ends up running is

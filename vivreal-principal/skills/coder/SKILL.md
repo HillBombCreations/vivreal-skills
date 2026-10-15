@@ -150,7 +150,7 @@ If the change touches a different repo, also read that repo's `CLAUDE.md` before
 5. **Use existing utilities.** `getApiError()`, `createAuthAxios()`, `snackbar.error()`, factory route helpers. Don't reinvent.
 6. **Run lint and type-check** before reporting done. `npm run lint` and `tsc --noEmit` (or equivalent). Report exit codes honestly.
 7. **Commit per logical change**, not per file. The plan says what's atomic; in standalone mode, group by what a reviewer would want to see as one diff. Stage by name, `git commit --only <paths>`, never `git add -A`. In Vivreal_Portal_Mobile, and any repo whose pre-commit runs the full suite, make intermediate commits with `--no-verify --only <paths>`, then make ONE final hooked push, the pre-push is the single full run.
-8. **Write the REFUSE and ALLOW tests for every guard I add or change.** The tester agent is for test-only tasks, not a reason to ship a guard with no proof of its own.
+8. **Write the REFUSE and ALLOW tests for every guard I add or change, and establish red.** The tester agent is for test-only tasks, not a reason to ship a guard with no proof of its own. Red is the `shared-standards` red proof: (a) the test ran red before the fix, or (b) it ran red at the base commit in a separate read-only worktree (`git worktree add --detach <scratch> <base sha>`, copy in only the test files, `npm ci`, run them by name, remove the worktree). Never revert, mutate or stash my own tree to see red, and never write "verified it fails" for a test I only read. The report carries the `Red:` line.
 
 ## Auto-review (before reporting done)
 

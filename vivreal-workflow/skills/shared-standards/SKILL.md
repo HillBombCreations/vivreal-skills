@@ -284,12 +284,21 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   loaded. See the `verification-discipline` skill.
 - **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
 - Sites/integrations pages serialized under parallel workers, don't break that.
-- A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
-  asserts the exact refusal) paired with an ALLOW test (valid input, asserts success). Owner
-  rule (2026-10-06): never prove this by reverting the fix to watch the test fail and restoring
-  it, that cycle is retired for every check; judge coverage by reading whether both halves exist
-  and assert the right thing.
-- **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. Quick check: delete a whole comparison from the implementation and re-run. If the suite stays green, the test is mirroring, not invoking.
+- **Red proof, the one rule every agent follows (owner, 2026-10-06 and 2026-10-14).** A guard,
+  validation or fix is proven by a direct REFUSE test (feeds the bad input or bad object, asserts
+  the exact refusal) paired with an ALLOW test (valid input, asserts success). Nothing in the
+  working tree is ever reverted, mutated or stashed to see red. Red is established one of two
+  ways, and the report names which:
+  - **(a) Test first.** The new test ran red before the fix existed, then green after it.
+  - **(b) Red at the base commit, in a separate read-only worktree.** `git worktree add --detach
+    <scratch path> <base sha>` (detached is right here: nothing is ever committed in it), copy in
+    ONLY the new or changed test files and their test-only helpers, never source, `npm ci`, run
+    those files by name, record the result, then `git worktree remove --force <scratch path>`.
+
+  "By reading" is not a proof, and a report never says "verified it fails" for it. The report
+  line is `Red: (a|b) <test files> at <sha>: <n> failed / <m> passed; green at <head sha>: <k>
+  passed`. A REFUSE test that is still green at the base commit pins nothing; rewrite it.
+- **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. The check is the red proof above, never an edit to the implementation: a mirroring test stays green at the base commit, so run (b) and it shows.
 - **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
@@ -308,7 +317,14 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   that the comparison between them means anything.
 - No `.only`, no `sleep()`, use `waitFor()`.
 - **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
-- **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`, except inside a NAMED portal-coder mode that authorises it (PARALLEL, or FOLLOWUP on a branch that already passed the full gate) or a dispatch that says so. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **Portal release-head check (owner, 2026-10-10): no full e2e, walk instead.** Before a portal
+  release, the check is eslint, BOTH `tsc` configs, and every unit test file the release added
+  or changed, all green. Do not schedule the full e2e suite, the full vitest run or the
+  Playwright smoke as a separate "one full gate". The local QA walks on the guarded stack
+  (APIs, the portal installed app and desktop, the Templates sites the release touched) are not
+  optional; they replace the confidence the e2e run gave. Fix-ups after a branch passed the full
+  gate are dispatched to portal-coder in FOLLOWUP mode, never SOLO.
 - **The pre-push hook is the one full run, owner rule (2026-10-06).** While iterating, run only
   the test files for what you're changing. Don't manually run the full suite, the coverage map,
   lint, or the build before a push, the hook already runs all of it once; a manual run duplicates
@@ -551,7 +567,7 @@ When making a non-trivial decision, the architect/coder MUST cite the relevant s
 1. Research before planning. Plan before coding. Approve before implementing. Always.
 2. Fix the **root cause**, not the symptom.
 3. **Zero scope creep.** Diff size matters. Drive-by refactors are forbidden inside a bug fix.
-4. Tests must FAIL on the unfixed code (verifiable, not asserted).
+4. Tests must FAIL on the unfixed code, shown by a red proof (a) or (b) from "Testing rules", never by reading.
 5. Reviewer is adversarial by design. Accept that. Disagreement is escalated to the user, not negotiated away.
 6. Every claim about code behavior cites `file:line`.
 7. Documentation outlives the fix, write it for the engineer who finds this in 2027.

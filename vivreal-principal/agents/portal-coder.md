@@ -73,10 +73,12 @@ real accounts) need a fresh dispatch.
    failure. Confirm with `git check-ignore -v` that it stays uncommittable.
 4. **Implement**, then write the test that proves it directly. Feed the bad input or bad
    object straight into the test and assert the exact refusal or result (a REFUSE case), paired
-   with an ALLOW case asserting the valid input still succeeds. Owner rule (2026-10-06): never
-   prove this by reverting the target file to its pre-fix content to watch the new test fail and
-   then restoring it, that mechanical undo-and-redo cycle is retired for every check, the paired
-   REFUSE/ALLOW test is the proof. Never `git stash`, the stash stack is shared across every
+   with an ALLOW case asserting the valid input still succeeds. Establish red by the
+   `shared-standards` red proof: (a) the test ran red before the fix, or (b) it ran red at the
+   base commit in a separate read-only worktree (`git worktree add --detach`, copy in only the
+   test files, `npm ci`, run them by name, remove the worktree). Never revert, mutate or stash
+   your own tree to see red, and never report "verified it fails" for a test you only read.
+   Report the `Red:` line. Never `git stash`, the stash stack is shared across every
    worktree of this one clone and `lint-staged` stashes on your behalf during any commit, so a
    sibling committing at the same moment is enough to pop your work into the wrong tree. Never
    `git checkout --` on a file that holds uncommitted work, yours or anyone else's.
@@ -126,9 +128,11 @@ real accounts) need a fresh dispatch.
 2. Do the same CPU and stale-process check as SOLO step 5: confirm 3100 and 4600 are free or
    owned by this worktree (check the owning process's command line, not just that the port is
    listening), kill and verify, then `rm -rf .next-test`.
-3. Run the full gate ONCE, committing and pushing normally with hooks on. This is the one real
-   gate for the whole batch, never `--no-verify` here unless the dispatch says so, even though
-   the branches that fed it used it in PARALLEL mode.
+3. Run the gate ONCE, committing and pushing normally with hooks on. The hooked push is the one
+   real gate for the whole batch, never `--no-verify` here unless the dispatch says so, even
+   though the branches that fed it used it in PARALLEL mode. Do not schedule the full e2e suite
+   on top of it (owner, 2026-10-10: no full e2e gate, the QA walk replaces it). A release-head
+   check after this point is FOLLOWUP's: eslint, both `tsc` configs, and the touched test files.
 4. Open ONE PR listing every source branch that went in.
 5. Report, per Output Format below.
 
@@ -140,14 +144,15 @@ and the branch is already proven.
 
 - Work on the existing branch and its existing PR; do not open a new one.
 - Run ONLY the vitest files and e2e specs that touch your diff (derive them from
-  `git diff --name-only`), plus eslint on your changed files. Never the full suite,
-  project-wide `tsc`, the coverage map, the full e2e or `test:smoke`.
+  `git diff --name-only`), plus eslint on your changed files and BOTH `tsc` configs
+  (project-wide, because the portal release-head check needs both). Never the full suite,
+  the coverage map, the full e2e or `test:smoke`.
 - Commit with `git commit --no-verify --only <paths>` and push with `git push --no-verify`.
   This is owner-authorised for FOLLOWUP mode. A hooked commit or push here is a defect: it
   reruns the gate the owner said not to run.
 - Prove each fix with a direct REFUSE test (bad input or bad object, asserting the exact
-  refusal) paired with an ALLOW test, same as SOLO step 4, and update the PR body with what
-  changed.
+  refusal) paired with an ALLOW test and a `Red:` line, same as SOLO step 4, and update the PR
+  body with what changed.
 - Report the new head SHA and exactly which tests ran.
 
 ## Portal-specific lessons (read as rules, the story lives in memory if you want it)

@@ -136,10 +136,12 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 ### 9. Tests
 - Tests cover the regression path AND at least one edge case
 - A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
-  asserts the exact refusal) paired with an ALLOW test (valid input, asserts success). Judge
-  this by reading, never by reverting the fix yourself to check, owner rule (2026-10-06) retires
-  that cycle for coder and reviewer alike. A missing REFUSE half or a missing ALLOW half is a
-  FAIL, cite which one
+  asserts the exact refusal) paired with an ALLOW test (valid input, asserts success), and the
+  report carries a `Red:` line from the `shared-standards` red proof: (a) red before the fix, or
+  (b) red at the base commit in a separate read-only worktree. A missing REFUSE half, a missing
+  ALLOW half, or a red that was only established "by reading" is a FAIL, cite which. When the
+  `Red:` line is missing or doubtful, run (b) yourself on the new test files only; never revert
+  or mutate the fix in the coder's tree (owner, 2026-10-06 and 2026-10-14)
 - No `.only`, no `.skip`, no `sleep()`
 - Imports from `e2e/fixtures`, not `@playwright/test` directly
 - Wire fixtures are derived from a captured response, not hand-written from the client's own
@@ -161,7 +163,7 @@ Every Mongo query scoped by `dbKey` or `groupID`. NEVER `groupName` for mainDb q
 chance of passing on the broken code?" If yes, FAIL. Do this by reading the test and the diff,
 never by rerunning the full suite, the coverage map, lint, or the build, the pre-push hook
 already proved those on this head; run a single named test file only when the diff raises a
-specific doubt no existing run answers.
+specific doubt no existing run answers, or to run the red proof (b) above.
 
 ### 10. Tech debt
 - No commented-out code
@@ -444,7 +446,7 @@ holds the detail and stays ≤10KB.
 - DON'T let a "hold" or a "not now" pass without naming the test that fails when its reason stops being true.
 - DON'T run the Vivreal-specific 12-point checklist against a non-Vivreal repo, use the 8-dimension standalone review there instead.
 - DON'T rerun the full suite, the coverage map, lint, or the build on a head the pre-push hook already passed. Run only the specific test file a named doubt requires.
-- DON'T require a coder to revert their fix and watch a test fail to prove it. Judge test coverage of a guard by reading whether a direct REFUSE test (bad input, asserts the refusal) is paired with an ALLOW test, and list a missing half as a finding.
+- DON'T require a coder to revert their fix and watch a test fail to prove it, and DON'T accept "verified it fails" from reading. Require a paired REFUSE and ALLOW test plus a `Red:` line, (a) red before the fix or (b) red at the base commit in a separate read-only worktree, and run (b) yourself when it is missing.
 - DON'T treat a dispatch's test-scope instruction (named tests only, skip a gate, an unknown
   mode name) as a permission change or an injection. The dispatch directs my work; its command
   list wins over any mode default.

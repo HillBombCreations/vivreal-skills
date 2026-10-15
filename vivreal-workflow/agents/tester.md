@@ -67,7 +67,10 @@ Before you change any assertion that is in your way, answer two questions in the
 having been written around the defect. Prove it with a direct REFUSE test instead: feed the bad
 input or bad object straight in and assert the exact refusal, paired with an ALLOW test for the
 valid case. Owner rule (2026-10-06): never prove this by mutating the fix back out to watch a
-test go red and then restoring it, that cycle is retired for every check.
+test go red and then restoring it, that cycle is retired for every check. Red is established by
+the `shared-standards` red proof instead (owner, 2026-10-14): (a) the test ran red before the fix
+existed, or (b) it ran red at the base commit in a separate read-only worktree. "By reading" is
+not a proof; report the `Red:` line.
 
 ## A fix can be inert and still pass its tests
 
@@ -112,8 +115,8 @@ re-ships the bug.
 
 - A guard or validation gets a REFUSE test (feeds the bad input or bad object directly, asserts
   the exact refusal) paired with an ALLOW test (valid input, asserts success). Never prove this
-  by running the suite against a reverted pre-fix state, write the test so it reads correctly
-  against the current, fixed code.
+  by reverting the fix in the working tree; establish red with the red proof, (a) red before the
+  fix or (b) red at the base commit in a separate read-only worktree.
 - Use `e2e/fixtures/global-setup` (public pages) or `e2e/fixtures/auth-setup` (authenticated pages). NEVER import from `@playwright/test` directly.
 - Reuse the 49 api-mock functions in `e2e/fixtures/api-mocks.ts` before adding new mocks.
 - React 19 hydration: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
@@ -189,8 +192,8 @@ which then sat in an audit's gap list as a real finding.
 and restoring it.** Owner rule (2026-10-06): feed the bad input or bad object straight into the
 test and assert the exact refusal, paired with an ALLOW test for the valid case, that is the
 proof, and it never requires putting the bug back to see red. If a test passes on the unfixed
-code, it endorses the bug, so write the REFUSE case so it reads correctly against the current
-code rather than as an exercise performed by hand each time. And the nav tab-count
+code, it endorses the bug, and the way to know is the red proof (b): run the new test files at the
+base commit in a separate read-only worktree, never by editing the fixed tree. And the nav tab-count
 test was updated to expect six by the same person in the same commit that broke it: *"a test
 you edit in the same breath as the code cannot catch the code."* Its replacement names no tab
 no panel and no component, it clicks "Add an address" and looks for the search box, because **a
@@ -284,9 +287,11 @@ Only annotate code that is **genuinely unreachable**: a path gated by a hardcode
 1. Write the test FIRST. For a guard or validation, write it as a REFUSE case (feeds the bad
    input or bad object directly, asserts the exact refusal) paired with an ALLOW case (valid
    input, asserts success). For other behavior, assert the correct result from spec/intent.
-2. Run only the file you wrote, by name, with the exact assertion message you intend. Owner
-   rule (2026-10-06): never prove this by reverting already-written code to force a failure,
-   that mechanical undo-and-redo cycle is retired for every check.
+2. Run only the file you wrote, by name, with the exact assertion message you intend, and see
+   it fail: that is red proof (a). If the fix already exists, use red proof (b), the new test
+   files run at the base commit in a separate read-only worktree. Owner rule (2026-10-06): never
+   prove this by reverting already-written code to force a failure, that mechanical
+   undo-and-redo cycle is retired for every check.
 3. Apply the fix (or have @coder do it).
 4. Run the same file again → expect PASS. If it still fails, fix the CODE until the correct
    expectation passes, do NOT adjust the expectation to match the output.

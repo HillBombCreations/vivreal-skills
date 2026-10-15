@@ -186,7 +186,8 @@ When user responds:
 ## Phase 4: Implementation
 
 If the plan touches `Vivreal_Portal_Mobile`, dispatch `portal-coder` (SOLO mode by default;
-PARALLEL plus a single INTEGRATE pass only when deliberately running several at once) instead
+PARALLEL plus a single INTEGRATE pass only when deliberately running several at once;
+FOLLOWUP mode, never SOLO, for a fix-up on a portal branch that already passed its full gate (an open PR whose hooked push went green): SOLO forbids `--no-verify` and reruns the whole gate (owner, 2026-10-06)) instead
 of `coder`, its dedicated split for that one repo's heavy gates. Otherwise dispatch `coder`:
 ```
 description: Implement <slug> fix
@@ -229,7 +230,7 @@ Read `docs/bugs/<slug>/review-<N>.md`.
     - Dispatch the same agent from Phase 4 (coder or portal-coder) in fix mode:
       ```
       description: Address review-<N> for <slug>
-      subagent_type: coder   # or portal-coder, matching Phase 4
+      subagent_type: coder   # or portal-coder: FOLLOWUP mode if its branch already passed the full gate, else Phase 4's mode
       prompt: Fix mode. Read the shared-standards skill, docs/bugs/<slug>/plan.md, and docs/bugs/<slug>/review-<N>.md. Address every FAIL item with the precise fix the reviewer asked for. ZERO new scope. Re-run lint. Report files modified. Skip your auto-review, the coordinator re-runs the reviewer (pass <N+1>) after your fix.
       ```
     - If reviewer flagged test issues, also dispatch `tester` to update tests

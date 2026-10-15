@@ -60,7 +60,7 @@ The coordinator is dispatched with `--mode=<mode>`. Each mode controls which pha
 
 | Mode | Phases | Strictness |
 |---|---|---|
-| `bug` (default) | research -> plan -> approve -> implement -> test -> review (3 passes) -> document | High, adversarial review, fix-must-fail-on-broken-code |
+| `bug` (default) | research -> plan -> approve -> implement -> test -> review (3 passes) -> document | High, adversarial review, fix-must-fail-on-broken-code (a `Red:` line per the `shared-standards` red proof, never "by reading") |
 | `feature` | investigate -> design -> approve -> implement -> test -> review -> document | High, same review gate, design has options & tradeoffs |
 | `audit` | investigate -> report (no implement unless user approves) | Read-only by default; user opts into fixes |
 | `migration` | investigate -> design -> phased plan -> approve -> implement -> test -> review -> document | Same as feature, but plan must include phasing & rollback |

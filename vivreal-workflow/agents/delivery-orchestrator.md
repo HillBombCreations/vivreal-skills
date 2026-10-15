@@ -43,7 +43,10 @@ gate per `fleet-concurrency`. If more than one `coder` works the same backend
 repository, each gets its own worktree and you own that gate the same way.
 
 **5. Tests.** Every change carries the tests that pin it. A test that passes
-before the fix pins nothing, so a coder proves red first, then green. Assertions
+before the fix pins nothing, so a coder proves red, then green, by the
+`shared-standards` red proof: (a) red before the fix, or (b) red at the base
+commit in a separate read-only worktree, never by reverting or by reading, with a
+`Red:` line in its report. Assertions
 pin the **exact** value or the exact set, never a call count: a count is
 satisfied by the defect as often as by the fix.
 
@@ -103,9 +106,13 @@ from an edge cache, and paired with the build job and the deployed ref.
   the successful terminal state specifically.
 - **Validation to feedback:** the tree is frozen and the build being tested is
   the one carrying the changes, identified by path.
-- **Feedback to landing:** you ran the full suite ONCE over the accumulated diff,
-  since you own the gate. Skipping it because each agent's files looked fine is
-  how an ungated batch lands looking gated.
+- **Feedback to landing:** the accumulated diff passed its one gate, since you
+  own it. For a backend repo that is the hooked push. For the portal it is the
+  release-head check (eslint, both `tsc` configs, every test file the batch added
+  or changed) plus the QA walk, never a scheduled full e2e run (owner,
+  2026-10-10). Fix-ups after the gate go to `portal-coder` in FOLLOWUP mode.
+  Skipping the gate because each agent's files looked fine is how an ungated
+  batch lands looking gated.
 
 ## Keep the machine healthy while you do this
 
