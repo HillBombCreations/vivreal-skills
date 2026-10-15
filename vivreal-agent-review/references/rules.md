@@ -56,7 +56,7 @@ is a WARNING that says so; and an `[unsupported]` finding caps at WARNING.
 ## Policy posture
 
 Every Profile-A-only ERROR rule in the kit is an Agency `[policy]` rule, and every
-one of them mis-fires outside Agency. `readme-exists` false-ERRORs on all 13 plugins
+one of them mis-fires outside Agency. `readme-exists` false-ERRORs on every plugin
 in this repo, none of which ships a README. `--author-domain` defaults to
 `microsoft.com`.
 
@@ -398,10 +398,10 @@ makes an empty `skills/` directory a load failure, so ERROR overstates it.
 | `manifest-version-semver` | quality | WARNING | `^\d+\.\d+\.\d+$`. Omitting `version` entirely is valid upstream; Claude Code then falls back to the git commit SHA. |
 | `manifest-description-length` | quality | WARNING | `description` at most 200 chars. A much tighter budget than the 1,024 that governs agent and skill descriptions, do not confuse them. |
 | `manifest-homepage` | quality | WARNING | consider a `homepage` for support |
-| `manifest-unknown-field` | spec | WARNING | flag top-level keys outside the 24 documented ones. Claude Code ignores them and `--strict` promotes the warning to an error. |
+| `manifest-unknown-field` | spec | WARNING | flag top-level keys outside the documented set (ledger section E; never hard-code a count, it grew between ledger dates). Claude Code strips them and `--strict` promotes the warning to an error. An unknown key inside a strict object (`userConfig` option, `channels` entry, `lspServers` config, `monitors` entry) is not this rule: it is a load failure, ERROR. |
 | `manifest-author-emails` | policy | ERROR | two or more distinct `@<author-domain>` addresses. Purely an Agency support rule. OFF by default. |
 | `agency-valid-json` / `agency-valid-engine` | policy | ERROR | OFF by default. |
-| `readme-exists` / `readme-length` | policy | ERROR / WARNING | OFF by default. Would false-ERROR on all 13 plugins in this repo. |
+| `readme-exists` / `readme-length` | policy | ERROR / WARNING | OFF by default. Would false-ERROR on every plugin in this repo. |
 
 ## Agent rules
 
@@ -414,22 +414,22 @@ identifier.
 |---|---|---|---|
 | `agent-frontmatter-parses` | spec | ERROR | see the cross-cutting rule above |
 | `agent-frontmatter-present` | spec | ERROR | file must open with a `---` fence |
-| `agent-field-name` | spec | ERROR | `name` required, non-empty |
+| `agent-field-name` | spec | ERROR | `name` required, non-empty. In Profile B a file with no `name` is skipped as documentation; in Profile A a plugin agent with no `name` still loads under its filename, so the ERROR text says which happened. |
 | `agent-field-description` | spec | ERROR | `description` required, non-empty. It is the sole routing signal, it tells Claude when to delegate. |
-| `agent-name-format` | spec | **ERROR for `:` only** | A `:` is rejected at load and the file is **not loaded**, with an error in the debug log. This is the only documented agent load failure. A **digit** in the name is a `[quality]` **WARNING**, not an error, the docs say "lowercase letters and hyphens", but that phrasing is descriptive, not exhaustive, and ERRORing on it would be asserting doc support we do not hold. |
+| `agent-name-format` | spec | ERROR | a `name` that starts with `-`, contains `:`, or is longer than 256 characters: the file is skipped with an error in the debug log (ledger section C). A **digit** is valid, the docs' own example is `reviewer-v2`, so it is not a finding (re-verified 2026-10-14; the older ledger read the charset as letters and hyphens). |
 | `agent-name-filename-match` | quality | WARNING | `name` should match the filename stem. Not required, but a mismatch makes a fleet hard to navigate. |
-| `agent-model-valid` | spec | WARNING | `sonnet`, `opus`, `haiku`, `fable`, `inherit`, or a full model id. Defaults to `inherit`. |
+| `agent-model-valid` | spec | WARNING | `sonnet`, `opus`, `haiku`, `fable`, `inherit`, or a full model id. When omitted, Claude Code follows its documented subagent model order; do not assert a default of `inherit`. |
 | `agent-color-valid` | spec | WARNING | one of `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan` |
 | `agent-tools-resolve` | spec | ERROR | every `tools` entry should resolve to a real tool. If no entry resolves the subagent usually fails to launch. Treat `mcp__*` as always valid for THIS rule, those resolve at runtime; `agent-mcp-server-declared` below checks the server half. |
 | `agent-mcp-server-declared` | quality | WARNING | every `mcp__<server>__` prefix in `tools`, `allowed-tools` or the body names a server something declares: a plugin `.mcp.json` (registers as `plugin_<plugin>_<server>`), an official plugin the target enables, a project `.mcp.json` in a repo the agent runs in, or a claude.ai connector (`claude_ai_*`). An undeclared one is dropped in silence, and prose telling the agent to "use the X MCP" sends it after a tool that is not there. A project-scoped server is legitimate; say so in the finding and ask the file to name where it is declared. In this marketplace `node scripts/check-definitions.mjs` reports the same shape as `mcp-prefix`. |
-| `agent-tools-never-available` | spec | WARNING | `tools` names a tool removed from every subagent, foreground and background alike, **except a conversation fork**, a fork skips both filters and receives the main conversation's exact tool pool. The set is `AskUserQuestion`, `EndConversation`, `EnterPlanMode`, `ScheduleWakeup`, `TaskOutput`, `WaitForMcpServers`, `Workflow`. Also `ExitPlanMode` unless `permissionMode` is `plan`, and `Agent` at the depth limit. **WARNING, not ERROR, because the right fix is usually to document the invocation rather than drop the tool.** Escalate when the agent's purpose depends on it and no main-thread path is documented. |
-| `agent-tools-background-filter` | spec | WARNING | subagents run in the background by default, and a background subagent keeps only the 19 built-ins plus every MCP tool. Anything else in `tools` is silently dropped. |
+| `agent-tools-never-available` | spec | WARNING | `tools` names a tool removed from every subagent, foreground and background alike, **except a conversation fork**, a fork skips both filters and receives the main conversation's exact tool pool. The set is `AskUserQuestion`, `EndConversation`, `EnterPlanMode`, `ScheduleWakeup`, `WaitForMcpServers`, `Workflow` (`TaskOutput` left it before 2026-10-14). Also `ExitPlanMode` unless `permissionMode` is `plan`, and `Agent` at the depth limit. **WARNING, not ERROR, because the right fix is usually to document the invocation rather than drop the tool.** Escalate when the agent's purpose depends on it and no main-thread path is documented. |
+| `agent-tools-background-filter` | spec | WARNING | subagents run in the background by default, and a background subagent keeps only the listed built-ins (ledger section B; no count) plus every MCP tool. Anything else in `tools` is silently dropped. |
 | `agent-tools-precedence` | spec | WARNING | a tool listed in **both** `tools` and `disallowedTools` is removed; `disallowedTools` applies first. Listing a tool in both is a self-contradiction. |
-| `agent-unknown-field` | spec | WARNING | flag keys outside the 16 documented ones |
-| `agent-plugin-ignored-field` | spec | WARNING | Profile A only. `hooks`, `mcpServers`, and `permissionMode` are ignored for plugin subagents, dead config. |
+| `agent-unknown-field` | spec | WARNING | flag keys outside the documented set in ledger section C (never a hard-coded count). Claude Code ignores an unknown field without an error. |
+| `agent-plugin-ignored-field` | spec | WARNING | Profile A only. `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt` are ignored for plugin subagents, dead config. |
 | `agent-plugin-nested-identity` | spec | WARNING | an agent file in a **plugin** subfolder registers as `<plugin>:<subfolder>:<name>`, three segments. Not a defect in itself; a defect when the file or its callers assume two. |
 | `agent-output-format` | quality | WARNING | the file should state its **purpose**, its **procedure**, and the **shape** of what it returns. A heading-only regex is a proxy, not the property, a section titled "How to report" that describes what to say but never the shape of the return value still fails this rule, and a file mentioning "CSV format" in passing still passes a naive keyword scan. Require an output-family heading **plus** a template, fenced block, field list, or schema. |
-| `agent-stray-md` | **unsupported** | WARNING | a `.md` file under the agents tree with no frontmatter. **Re-tagged from `[quality]`**: the docs are silent on what happens to such a file, so report it as hygiene, never as a load-failure claim. Corroboration worth citing in Profile A, `claude plugin validate` does warn on it (`No frontmatter block found`), which is observed first-party behavior, still not a documented one. Scope strictly to the `.md` extension; a deliberate `README.txt` in an agents tree is not a finding, and any widening re-flags it. |
+| `agent-stray-md` | spec | **ERROR in Profile A, WARNING in Profile B** | a `.md` file under an agents tree with no frontmatter. **Re-tagged from `[unsupported]` on 2026-10-14**, the docs now say what happens (ledger section C): in a project, user or managed directory it is treated as documentation and skipped (hygiene, WARNING); in a **plugin** `agents/` directory it LOADS as an agent named after the file, with every field ignored, the default tool set, and the description `Agent from <plugin> plugin` (a live, misrouted agent, ERROR). Scope strictly to the `.md` extension; a deliberate `README.txt` in an agents tree is not a finding. |
 
 ## Skill rules
 
@@ -501,3 +501,5 @@ Custom commands have been merged into skills. `.claude/commands/deploy.md` and
 | 16 | `ref-unresolved` clause 3 gains **3b**, a closed-TLD bare-hostname reject on the first segment | kills the `instagram.com/p/` false-positive class |
 | 17 | Clause 6 defines "four-space indented block" as a CommonMark indented code block, with **list continuation never a block** | removed an ambiguity that flipped a token between ERROR and NOTE |
 | 18 | The worked-example corollary is given an explicit tiebreak over the output-path verb test | two rules pointed opposite ways on the same token with no stated winner |
+| 19 | Ledger re-verified 2026-10-14: `agent-name-format` drops the digit warning and adds the leading `-` and 256-character skips; `agent-stray-md` re-tagged `[spec]` (ERROR in Profile A); `TaskOutput` leaves `agent-tools-never-available`; `initialPrompt` joins the plugin-ignored set; key and tool counts removed | the docs changed under the old ledger; 23 of its 40 quoted passages no longer matched |
+| 20 | `agent-mcp-server-declared` and `hook-message-obeys-donts` added (WARNING) | a grant to a server nothing declares, and a hook nudge that contradicted five agents, both shipped here |
