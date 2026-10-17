@@ -280,12 +280,14 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 | **Vivreal** | Admin surfaces, and surfaces Vivreal Content hides | A real live business: read only. Its nav carries entries a customer never sees |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
-or written to a file): Vivreal Content `vivreal/prod/agent-walk-user`; QA v5 scratch
-`vivreal/qa/scratch-owner`; scratch-2 to scratch-4 `vivreal/qa/scratch2-owner`, `scratch3-owner`,
-`scratch4-owner`; plus `vivreal/qa/canlook`, `canedit`, `free-walker`, `empty-owner`,
-`square-sandbox` and `admin-operator` (TOTP) for the role and plan cases the matrix names. List
-them by name only (`aws secretsmanager list-secrets --filters Key=name,Values=vivreal/qa/ --query
-'SecretList[].Name'`). `agent-walk-user` cannot reach the scratch businesses. Delete any saved
+or written to a file): Vivreal Content `vivreal/prod/agent-walk-user` (its own secret, never bundled). The QA
+logins `canlook`, `empty-owner`, `scratch-owner` (QA v5 scratch) and `scratch2-owner` (scratch-2) are KEYS of one
+secret, `vivreal/qa/walk-accounts` (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
+`JSON.parse(...)[key]`, or the e2e harness resolver `vivreal/qa/walk-accounts#<key>`), never `--output text` on
+the bundle, which would print all four. `vivreal/qa/square-sandbox` and `admin-operator` (TOTP) stay separate
+secrets. `scratch3-owner`, `scratch4-owner`, `canedit` and `free-walker` were retired with their businesses
+(2026-10-16). List secrets by name only (`aws secretsmanager list-secrets --filters Key=name,Values=vivreal/qa/
+--query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`. `agent-walk-user` cannot reach the scratch businesses. Delete any saved
 session state file a walk produced at the end of the run.
 
 **Admin tenants carry extra entries.** A matrix written against one tenant
