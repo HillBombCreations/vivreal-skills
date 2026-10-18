@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.23.0"
+    "version": "1.23.1"
   },
   "plugins": [
     {
@@ -97,7 +97,7 @@
     {
       "name": "vivreal-ads",
       "source": "./vivreal-ads",
-      "description": "Vivreal's paid-ads knowledge and workflow, starting with Google Ads. An auto-invoked knowledge skill capturing the account's real structure (campaigns, conversion actions, GA4/GTM linkage), the conversion-tracking gotchas that silently block a test from measuring anything real (a populated conversion-action list that measures nothing real, the GA4-key-event-then-import-delay path, why a GTM shortcut only works if the event actually flows through GTM), and the creative conventions learned running the account (AI image generation via Google Flow, geo-matched representation in ad imagery, never faking product UI in a generated image). Grows with each campaign run."
+      "description": "Vivreal's paid-ads knowledge and workflow, starting with Google Ads. An auto-invoked knowledge skill capturing the account's real structure (conversion actions, GA4/GTM linkage), the campaign-wizard traps (account-default conversion goals, Publish goes live, AI Max defaults), the conversion-tracking gotchas that silently block a test from measuring anything real (a populated conversion-action list that measures nothing real, the GA4-key-event-then-import-delay path, why a GTM shortcut only works if the event actually flows through GTM), and the creative conventions learned running the account (AI image generation via Google Flow, geo-matched representation in ad imagery, never faking product UI in a generated image). Grows with each campaign run."
     }
   ]
 }
