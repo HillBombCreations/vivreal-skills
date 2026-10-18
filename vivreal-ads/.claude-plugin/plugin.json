@@ -1,0 +1,19 @@
+{
+  "name": "vivreal-ads",
+  "version": "0.1.0",
+  "description": "Vivreal's paid-ads knowledge and workflow, starting with Google Ads. Captures the account's real structure (campaigns, conversion actions, GA4/GTM linkage), the conversion-tracking gotchas that block a test from measuring anything real, and the creative conventions (image generation via Google Flow, representation rules for geo-targeted creative, never faking product UI) learned while running the account. Grows as more campaigns are run and more channels are added.",
+  "author": {
+    "name": "Vivreal",
+    "email": "justin@vivreal.io"
+  },
+  "homepage": "https://github.com/HillBombCreations/vivreal-skills",
+  "keywords": [
+    "vivreal",
+    "ads",
+    "google-ads",
+    "ga4",
+    "marketing",
+    "paid-acquisition",
+    "conversion-tracking"
+  ]
+}
