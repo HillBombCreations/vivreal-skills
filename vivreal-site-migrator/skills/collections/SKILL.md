@@ -42,7 +42,7 @@ displays, is a **DEFECT**, not a stylistic choice.
   order) AND its **FULL weekly `hours`** (every day the site lists, e.g. `Mon,
   Closed / Tue-Sun, 7am-2pm` as a 7-line richtext), NOT a condensed one-liner. A
   location card that renders `description` (not `hours`) will clamp, put the full
-  hours where the layout shows them. (JL Patisserie shipped with empty `image` +
+  hours where the layout shows them. (patisserie.example shipped with empty `image` +
   condensed hours, both parity defects.)
 - Only the platform's rendering STYLE may differ; the DATA must be 1:1.
 
@@ -331,7 +331,7 @@ page's rich-content section at its H2 boundaries, one object per section, in ord
 un-headed intro (when present) is object 0 with `heading` omitted. Attach each section's
 inline image to ITS object and each section's booking/action link as that object's
 `ctaLabel`/`ctaLink`. This replaces the "everything in one `labels.content` blob" defect
-(abakeshop.com /pages/weddings + /pages/elevated-tea-time), a page-shaped wall of prose
+(acmebakery.example /pages/weddings + /pages/elevated-tea-time), a page-shaped wall of prose
 is ALWAYS decomposed, never carried flat.
 
 **Job-application form (A Bakeshop feedback round, a careers page whose source embeds an
@@ -489,7 +489,7 @@ subscribe popup work, so the Site/Loader stage must (1) register it in the site'
 `emailPopup.collectionId` = this collection's `_id`. The popup only SHOWS when
 `emailPopup.enabled` is true OR a `siteRole:'subscribers'` collection is registered, and it
 only CAPTURES when `collectionId` resolves, setting `enabled` alone yields a dialog that
-fails every submit with a blank collectionId. (insideOUT 2026-07-05: a "Newsletter
+fails every submit with a blank collectionId. (examplebistro.example 2026-07-05: a "Newsletter
 Subscribers" collection existed with `siteRole:'subscribers'` + `email`, but it was NOT in
 `site.collectionGroups` and `emailPopup.enabled`/`collectionId` were unset, so the popup was
 silently disabled.)

@@ -148,7 +148,7 @@ interactive login at seed time if the outreach token is expired.
 
      **First, the deterministic layer already ran for free.** `lib/prospectToContact.js` →
      `resolveDmChannels()` auto-pairs an on-domain email whose local-part name-matches the
-     owner (`dakota@herlittlecakery.com` → Dakota). So a lead is only a recovery candidate if
+     owner (`dana@littlecakery.example` → Dana). So a lead is only a recovery candidate if
      it is STILL contactless after that, don't re-research what the code already recovered.
 
      **Build the recovery list:** every profiled, in-target lead whose `contacts[]` still has no
@@ -174,7 +174,7 @@ interactive login at seed time if the outreach token is expired.
         company-word/wrong-person slug FAILS). There is no phone rung, phone is not a seedable
         channel (removed 2026-07-27); no email and no LinkedIn ⇒ the lead stays company-only
         (its `reachEmail` keeps it emailable). REJECT role inboxes, off-domain freemail as
-        "personal", builder junk (`contact@sansoxygen.com`), and wrong-person handles.
+        "personal", builder junk (`contact@buildersite.example`), and wrong-person handles.
      After the scout reports, persist its findings with
      `node commands/import-leads.js <rescue.csv> --merge-contacts`, the recovery WRITE path
      (plain re-import cannot add a contact to an existing lead).

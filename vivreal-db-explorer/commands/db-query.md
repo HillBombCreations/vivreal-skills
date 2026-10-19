@@ -316,15 +316,15 @@ database is deleted fleet-wide). The `key` field is the group's slug, NOT databa
 /db-query Vivreal groups {"key": "mygroup"}
 → Looks up a group in the mainDb by group key
 
-/db-query pod_01 collection_groups {"groupID": "68f27fec..."}
+/db-query pod_01 collection_groups {"groupID": "01234567..."}
 → Finds all non-archived collection groups for a group whose stored `dbKey` is `pod_01`, limit 10
 
 /db-query pod_01 collection_objects {"collectionObj.refID": "68f94f0a..."} --limit=5 --sort=createdAt:desc
 → Finds latest 5 objects in a specific collection
 
-/db-query <the database in that group dbKey> sites {"groupID": "68f27fec..."}
+/db-query <the database in that group dbKey> sites {"groupID": "01234567..."}
 → All sites for a group, in whichever pod its stored `dbKey` names
 
-/db-query pod_01 audit_logs {"groupID": "68f27fec..."} --limit=20 --sort=createdAt:desc
+/db-query pod_01 audit_logs {"groupID": "01234567..."} --limit=20 --sort=createdAt:desc
 → Latest 20 audit log entries for a group
 ```

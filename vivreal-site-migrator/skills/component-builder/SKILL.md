@@ -182,7 +182,7 @@ Report every affected binding and get a per-binding decision (accept the new ren
 **part** (`captures/<x>/site.part.json`), never at `blueprint.json` or
 `publish-out/*/blueprint.canonical.json`, both of which are regenerated.
 
-> Worked example (wrinsy, 2026-08-07): fixing the `FULL_BLEED \ SELF_HEADED` header dead zone
+> Worked example (firstmigration.example, 2026-08-07): fixing the `FULL_BLEED \ SELF_HEADED` header dead zone
 > was correct and fleet-safe by the usual test, but the sweep found one live binding
 > (`motelsaturn` `postcard-strip`) whose `edgeLabel` ALREADY showed the same string, so the
 > fix would have rendered "Postcards" **twice** on a live demo. One binding out of 35. The

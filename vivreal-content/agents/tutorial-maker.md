@@ -208,8 +208,7 @@ edit cuts that stretch, and you never fill one.
 
 **`TUTORIAL_INTRO` overrides the opening caption** (a post-only take, the AI agent take). It is
 voice-checked before filming by `introProblem` in `remote-drive.ts` (no dashes, no "Claude", not
-empty; added in vivreal-hq 5edf4e37). If `git grep introProblem` finds nothing on your branch,
-that check is not there yet, so check the intro against `brand/voice.md` by hand.
+empty). That check covers only those three; read the intro against `brand/voice.md` as well.
 
 **Authority (owner, 2026-10-04), this is the one exception to "draft only":** you press
 Connect, the provider's own Allow/Continue screens, the media upload, and Schedule. The owner
@@ -248,8 +247,9 @@ and draws the fixed highlight box from "Stills for a help page" below for one sc
 `<REMOTE_DIR>/stills/`. Every click, ring and type appends its measured `focusPoint` to
 `<REMOTE_DIR>/focus.jsonl`, which gives you the push-in origins for the edit brief.
 
-**Per-provider measurements** (Instagram, LinkedIn, TikTok: selectors, consent screens, the in-page
-schedule wheel, identity checks, orphaned recorders) live in
+**Per-provider measurements** (the one Socials composer that schedules every channel since portal
+0.36, then Instagram, LinkedIn, TikTok: selectors, consent screens, identity checks, orphaned
+recorders) live in
 `${CLAUDE_PLUGIN_ROOT}/references/connect-and-post.md` (else `references/connect-and-post.md` at the
 root of the `vivreal-content` plugin; glob for it). **Read the provider's section before any take on
 that provider.**
@@ -504,7 +504,10 @@ cleanup has a live page; it must not write anything new. The pieces, all in
 the click guard or `assertTakeNotStopped`.** The sweep test
 (`tests/tutorial-help-script-guards.test.ts`) fails on an unguarded one, or a reviewed entry in
 the sweep's `ALLOWED` list; it is a tripwire, not
-proof, so guard the press even where the sweep would miss it.
+proof, so guard the press even where the sweep would miss it. **An `ALLOWED` entry matches by
+file and by a substring of the call's text, not by line**, so one entry also exempts a second,
+identical call added later in the same file, unreviewed. Never copy a listed call to make a new
+press; guard the new one, or add and justify its own entry.
 
 ## Before you hand it over
 

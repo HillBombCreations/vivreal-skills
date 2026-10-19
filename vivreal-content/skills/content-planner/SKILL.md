@@ -323,7 +323,7 @@ clean for meetings.
 
 | Field | Value |
 |---|---|
-| `calendarId` | `c_68625c497a18303d35f93545886fcbe12b41e96467aad34e057ee7d4ecfea531@group.calendar.google.com` |
+| `calendarId` | `<vivreal-content-calendar-id>` (the real id is in vivreal-hq `docs/agent-notes/content-planner.md`) |
 | Default `timeZone` | `America/Los_Angeles` |
 | Post event duration | 30 minutes |
 | Shoot block duration | 2 hours |
@@ -708,7 +708,7 @@ published work, so check them by name every run.
   Check every hook, caption, slide and on-screen line for each:
   - A demo site is never a real business. Motel Saturn, Halo Blow Dry Bar, Fernbrook Gardens, Vesper
     Brewing, Cobalt and Crumb and the other demo-tenant sites are demos: never "a real venue", never
-    "her phone" (clips are captures). The Comedy Collective is a real customer.
+    "her phone" (clips are captures). The comedy club customer (comedyclub.example in these files) is a real customer.
   - The typo-and-fix beat is a planned shot; never caption it as an accident.
   - "Every channel ready to post" is false: the share dialog says Instagram and TikTok still need
     media. "Right away" is false: the Saved notice says the site update "can take a little while".

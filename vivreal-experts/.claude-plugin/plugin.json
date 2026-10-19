@@ -1,6 +1,6 @@
 {
   "name": "vivreal-experts",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "description": "Read-only system-expert consultants for the Vivreal ecosystem, cms-api, secure-api, main-api, client-stack, event-handler, outreach-api, the portal, and the customer-site stack (sites-stack: renderer, Templates, migrator and site-loader). Proactively dispatched when working inside a Vivreal repo and you need that system's architecture and gotchas.",
   "author": {
     "name": "Vivreal",

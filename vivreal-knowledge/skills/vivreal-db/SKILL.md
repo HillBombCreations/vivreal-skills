@@ -90,16 +90,19 @@ equally wrong to say there are exactly three. The shape, which is stable:
 |---|---|---|---|
 | `Vivreal` | **Control plane (mainDb)** | `groups`, `leads` (+ lifecycle `activated`/`activatedAt`), `checkout_sessions`, `media_files`, `usage_trackings`, `domainOrders`, `domains`, `inquiries`, `emailEvents`, `suppressions` (lifecycle-email), `dataDeletionRequests`, `site_traffic_dailies` (first-party analytics rollup; code and docs call it `site_traffic_daily`, but VR_Analytics_API pins `collectionName: 'site_traffic_dailies'`, so a query on the singular name is a false zero), `commerce_dailies`, `product_search_terms`/`product_search_dailies`, analytics caches, push subs, oauth verifiers. List them with `listCollections`; `prospects` is gone (dropped 2026-07-27, absent 2026-10-15) | ALL groups (registry) |
 | `pod_01` (was `general_shared` until 2026-09-23) | **Tenant content** | `collection_groups`, `collection_objects` (incl. the SIX Outreach system groups, sequences/enrollments/contacts/senders/companies/segments, with `calls[]` + bookings on senders/companies), `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events`, `square_webhook_events`, `metaWebhookEvents`, `instagram_comments`/`instagram_conversations`/`instagram_messages` | **Whichever groups carry `dbKey: "pod_01"`**: every customer group and the Vivreal group, across several tiers |
-| `pod_02` (was `pro_plus` until 2026-09-23) | **Tenant content**, same shape as `pod_01` (the old `pro_plus` also carried a `stripe_products` collection holding ZERO documents, dead storage nothing reads, CMS CLAUDE.md:228-232) | same shape as `pod_01` | **Only the Vivreal Content group** (`6a68169fe1457c2f3fd04530`), placed there deliberately. NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
+| `pod_02` (was `pro_plus` until 2026-09-23) | **Tenant content**, same shape as `pod_01` (the old `pro_plus` also carried a `stripe_products` collection holding ZERO documents, dead storage nothing reads, CMS CLAUDE.md:228-232) | same shape as `pod_01` | **Only the Vivreal Content group** (`<_id: look up group key vivrealcontent>`), placed there deliberately. NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here**, see below. | service-global |
 | a slugified group name | **Legacy or stranded per-group DB** | usually only `audit_logs`, sometimes `content_versions` | Possibly no group at all. At least one such database has no group pointing at it. Do not rely on this pattern, and do not assume there is only one |
 
-**The cluster is Atlas M0 Free, and its limits bite query work.** 10 GB out per rolling 7 days
-(over it, every read slows to about 90 KB/s with no error), 100 ops/s, 100 databases, 500
-collections. Project your reads (`find` with a projection, never whole site documents in a loop),
-because a heavy exploration session spends the same weekly byte budget production sites live on.
-Slow reads with ~0 ms server time are the data-out throttle, not your query. Diagnosis, levers and
-the pending tier change (Flex chosen 2026-10-14, switch held): `vivreal-atlas-topology`.
+**The cluster is Atlas M10 (since 2026-10-17), and query work still shares it with production.**
+The M0 Free tier before it capped data out at 10 GB per rolling 7 days (over it, every read slowed
+to about 90 KB/s with no error); M10 has no such quota, but it is one small primary with 2 GB of RAM
+and a limit of 15 new connections per second per node. Project your reads (`find` with a projection,
+never whole site documents in a loop), because a heavy exploration session competes with the
+production sites for the same node. Limits and the live tier: `vivreal-atlas-topology`.
+On M0 (history, before 2026-10-17), slow reads with ~0 ms server time were the data-out throttle,
+not your query. On M10, look at the connection creation rate and the 2 GB node instead. Diagnosis
+and levers: `vivreal-atlas-topology`.
 
 **Routing rule: read the stored placement. NEVER compute one from the tier.**
 
@@ -129,9 +132,9 @@ From the `active_ctx` JWT in the portal:
 
 | Field | Example | What it is | Used for |
 |---|---|---|---|
-| `groupID` | `6795c1358b97114840265e65` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc, tenant scoping |
+| `groupID` | `0123456789abcdef01234567` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc, tenant scoping |
 | `dbKey` | `pod_01`, `pod_02`, or another placement name (`general_shared`/`pro_plus` are retired and refused) | The **stored** tenant database name, read back by `resolvePlacement(group)`. Never computed | Selecting the tenant database; passed as the `key` query param to CMS API |
-| `group.key` (`bucketname` in `active_ctx`) | `exodussalescollective` | The group's URL **slug** | Half of the S3 bucket formula, CDN media paths, NOT database routing |
+| `group.key` (`bucketname` in `active_ctx`) | `examplesalesco` | The group's URL **slug** | Half of the S3 bucket formula, CDN media paths, NOT database routing |
 
 `dbKey` is the database name. `group.key` is the slug. They are different values.
 
@@ -290,7 +293,7 @@ Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tie
 - **`sparse` on a compound index is a no-op here, and a built index cannot be re-optioned.** MongoDB indexes a document under a compound sparse index if it carries ANY indexed key, and every `collection_objects` row carries `refID`. Use `partialFilterExpression`. Re-declaring a built index name with different options fails `IndexKeySpecsConflict` on every cold start (tenant DBs run `autoIndex`), silently; so measure a new index's key count against a single-field control BEFORE the schemas package publishes.
 - **The same site `_id` can exist in more than one database.** The live site renders the copy in the group's placement (`<group.dbKey>.sites`). During the pod migration the help site existed under one `_id` in two databases and two writes went to the copy nothing reads. Before any site write, check for the `_id` elsewhere, say which copy you chose, and verify against the RENDERED page, never the document you wrote.
 - **A collection-object update that omits `publishDate` UNPUBLISHES the item.** The portal proxy sends `publishDate: body?.publishDate ?? null`, CMS writes the null, and the public read gates on `publishDate <= now`. A scripted edit sends the item's existing `publishDate` (and `__v`, for the optimistic-concurrency check) every time.
-- **Heavy reads spend the production data-out budget.** On the M0 cluster a prod walk or an unprojected exploration loop competes with live sites for the weekly 10 GB, and connection-hungry runs can saturate the cluster. Project every read, keep `maxPoolSize: 1`, and close the client.
+- **Heavy reads compete with production.** A prod walk or an unprojected exploration loop competes with live sites for the same primary (on the old M0 tier it also spent the weekly 10 GB data-out budget), and connection-hungry runs eat the connection-creation rate. Project every read, keep `maxPoolSize: 1`, and close the client.
 
 ## The publishDate storefront gate: the #1 "missing content" cause
 

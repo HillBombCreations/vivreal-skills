@@ -112,9 +112,9 @@ Every event emitted from backend services now carries the following tags. Use th
 | Tag | Source | Example values | When to filter by it |
 |---|---|---|---|
 | `environment` | CFN `SentryEnvironment` param (CI-set) | `production`, `staging` | First filter, never investigate without scoping to prod vs staging |
-| `groupID` | `handleHBRoutes`/`handleTenantRoutes` middleware + `setTag` after resolved | `68f27fec32e7acbb755c087e` | Tenant-scoped triage. Empty on pre-auth routes. |
+| `groupID` | `handleHBRoutes`/`handleTenantRoutes` middleware + `setTag` after resolved | `0123456789abcdef01234567` | Tenant-scoped triage. Empty on pre-auth routes. |
 | `dbKey` | Same middleware | `pod_01`, `pod_02` | DB-routing-scoped triage: which tenant pod served the request. `general_shared` and `pro_plus` appear only on events from before the September 2026 pod rename; those databases no longer exist. |
-| `bucketname` | Client API errorHandler (authorizer ctx) | `collection-thecomedycollective` | S3-pipeline issues; ties events to specific media tenant |
+| `bucketname` | Client API errorHandler (authorizer ctx) | `collection-examplecomedyclub` | S3-pipeline issues; ties events to specific media tenant |
 | `requestId` / `request_id` | Header `x-request-id`, generated at portal edge | `a1b2c3d4...` | **Critical fallback** when trace propagation breaks, see Playbook 7 |
 | `lambda` | `process.env.AWS_LAMBDA_FUNCTION_NAME` | `VR-Secure-API-UserAndAuth-...` | Which Lambda fired the event |
 | `route` | `req.originalUrl` | `/api/profileSwitch`, `/tenant/collectionObject` | Endpoint-scoped triage |
@@ -206,7 +206,7 @@ When reading an issue with `level: error`: scroll to **Breadcrumbs**. The most r
 With 100% tracing and header propagation, every portal HTTP request now creates a distributed trace that spans portal → backend → database. The Trace ID is shared across all layers via the `sentry-trace` header. Use `get_sentry_resource` with `resourceType: 'trace'` to see the full waterfall, or query individual projects by Trace ID to see their contribution.
 
 **Tenant-scoped queries (new post-audit):**
-- `search_events(projectSlug='vr-cms-api', naturalLanguageQuery='all errors for groupID:68f27fec32e7acbb755c087e in the last 24 hours')`
+- `search_events(projectSlug='vr-cms-api', naturalLanguageQuery='all errors for groupID:0123456789abcdef01234567 in the last 24 hours')`
 - `search_events(projectSlug='vr-secure-api', naturalLanguageQuery='all events tagged dbKey:pod_02 from the last 1 hour')`
 - `search_events(naturalLanguageQuery='all events tagged groupID:X across all projects in the last 12 hours')`, cross-service tenant view
 
@@ -363,10 +363,10 @@ Always produce a **timeline table** as the primary output. Include tenant contex
 
 | Time (UTC) | Service | Event | Trace ID | Request ID | Tenant | Details |
 |---|---|---|---|---|---|---|
-| 20:41:14 | vivreal-portal | Page load /app/dash | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | 6 HTTP client spans |
-| 20:41:33 | vr-cms-api | Request received | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | POST /tenant/collectionObject |
-| 20:41:33 | vr-cms-api | service.collectionObjects:before-create | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | breadcrumb |
-| 20:41:33 | vr-cms-api | Socket sent | e276790e... | a1b2c3d4 | 68f27fec / pod_01 | newCollectionObject -> group 68f27fec |
+| 20:41:14 | vivreal-portal | Page load /app/dash | e276790e... | a1b2c3d4 | 01234567 / pod_01 | 6 HTTP client spans |
+| 20:41:33 | vr-cms-api | Request received | e276790e... | a1b2c3d4 | 01234567 / pod_01 | POST /tenant/collectionObject |
+| 20:41:33 | vr-cms-api | service.collectionObjects:before-create | e276790e... | a1b2c3d4 | 01234567 / pod_01 | breadcrumb |
+| 20:41:33 | vr-cms-api | Socket sent | e276790e... | a1b2c3d4 | 01234567 / pod_01 | newCollectionObject -> group 01234567 |
 
 ## Trace Health
 - Trace ID continuity: ✓ (single trace across portal + backend) | ✗ (split, fell back to request_id correlation)

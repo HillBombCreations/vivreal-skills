@@ -45,8 +45,8 @@ Facts:
 ## Other drift themes (non-campaign, since 08-06)
 
 - **VR_CMS_API**: new dashboard-insights aggregate endpoint (stock thresholds, signup dedup, cadence windows) + supporting index; Atlas teardown fix.
-- **vivreal-site-renderer** 1.46→1.50.0: section-photo/hero.meta/full-bleed layouts, wrinsy parity kits, CTA band variants, RESALE-1/"Marlowe & Kept" kit, coordinated-products fix. CLAUDE.md stale (2026-07-27).
-- **Vivreal_Site_Migrator**: RESALE-1 template kit + site-loader 0.3.5→0.3.9 schema/capability manifests; wrinsy migration cutover; verify-live gate hardening.
+- **vivreal-site-renderer** 1.46→1.50.0: section-photo/hero.meta/full-bleed layouts, firstmigration.example parity kits, CTA band variants, RESALE-1/"Marlowe & Kept" kit, coordinated-products fix. CLAUDE.md stale (2026-07-27).
+- **Vivreal_Site_Migrator**: RESALE-1 template kit + site-loader 0.3.5→0.3.9 schema/capability manifests; firstmigration.example migration cutover; verify-live gate hardening.
 - **Vivreal_EventHandler**: site registration at creation (analytics ingest phase 0), subdomainCleanup Mongo pool-leak fix, Sentry env tagging.
 - **VR-MCP-Server**: dbKey-routing/tier-gating fixes (bucket-slug routing, Pro Plus misreport), help-center docs tools.
 - **Portal (non-campaign)**: dash simplification merged 08-11 (PR #271); dash-insights phase 1 ("Your week" sentences, dashboard-insights proxy route → CMS).

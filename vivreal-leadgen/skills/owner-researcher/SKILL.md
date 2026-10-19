@@ -40,9 +40,9 @@ So the whole job is: **research, then prove it is the same person.**
 | value | means | example evidence |
 |---|---|---|
 | `company-name` | the page names the business | "bio reads 'founder of a Bakeshop in Phoenix'" |
-| `domain` | the page links or names the domain | "profile links abakeshop.com" |
-| `verified-channel` | the page carries a channel we already verified | "lists info@abakeshop.com, which the crawl also found" |
-| `slug` | the URL slug carries the business token | "url is /abakeshop", **machine re-checked, don't fake it** |
+| `domain` | the page links or names the domain | "profile links acmebakery.example" |
+| `verified-channel` | the page carries a channel we already verified | "lists info@acmebakery.example, which the crawl also found" |
+| `slug` | the URL slug carries the business token | "url is /acmebakery", **machine re-checked, don't fake it** |
 
 If you cannot honestly pick one of those, the mention does not go in `mentions`.
 Put it in `notes` instead. A dropped mention costs us nothing; a wrong one costs
@@ -83,7 +83,7 @@ us the lead.
    you research.
 
    Run **at most 2 queries per subject**:
-   - `"@<domain>"`, e.g. `"@abakeshop.com"`, surfaces any page quoting an address at the
+   - `"@<domain>"`, e.g. `"@acmebakery.example"`, surfaces any page quoting an address at the
      lead's own domain.
    - `"<Company Name>" email` (or `contact`), surfaces directory/press pages that publish a
      contact address for the business.
@@ -134,7 +134,7 @@ us the lead.
 ```json
 [
   {
-    "domain": "abakeshop.com",
+    "domain": "acmebakery.example",
     "subjects": [
       {
         "name": "Andrea Tuck",

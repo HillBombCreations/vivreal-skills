@@ -40,7 +40,7 @@ on push to `main` (unchanged): VR_Outreach_API, VR_Client_Auth, and everything e
 1. **Amplify autobuild fires only for never-built commits** (portal drill): a rollback (or
    re-promote to an already-built commit) repoints `stable` but NO build fires, prod keeps
    serving the old build. Mandatory after portal rollback:
-   `aws amplify start-job --app-id d2e6e3kdfrrxak --branch-name stable --job-type RELEASE`.
+   `aws amplify start-job --app-id <portal-amplify-app-id> --branch-name stable --job-type RELEASE`.
 2. **GitHub Actions creates NO push run for a force-push that REWINDS a branch to an
    ancestor** (Client drill), which is every backend rollback. Forward re-points (even of
    already-pushed commits) DO fire. Mandatory after backend rollback:
@@ -55,8 +55,8 @@ on push to `main` (unchanged): VR_Outreach_API, VR_Client_Auth, and everything e
    everything looks green. Positive proof = CFN `LastUpdatedTime` on the PROD stack.
 5. Escape hatch (backends): reverting the re-scope commit on `main` self-heals, that very
    merge push production-deploys under the reverted config.
-6. Portal prod path: CloudFront E39DUKXYGXCX8Q origin = `stable.d2e6e3kdfrrxak.amplifyapp.com`
-   (swapped from `main.`, distro NOT CFN-managed).
+6. Portal prod path: CloudFront `<vivreal-io-distribution-id>` origin = `stable.<portal-amplify-app-id>.amplifyapp.com`
+   (swapped from `main.`, distro NOT CFN-managed). The real ids live in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`.
 
 ## Corrections to make in the skills repo (map)
 

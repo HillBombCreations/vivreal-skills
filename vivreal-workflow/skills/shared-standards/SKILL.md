@@ -136,8 +136,8 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 | Field | Source | Value example | Used for |
 |---|---|---|---|
 | `dbKey` | `resolvePlacement(group)` from `@hillbombcreations/tenant-db/placement`, which returns the stored `group.dbKey` | `pro_plus` or a per-pod placement name (`general_shared` is retired, no longer a real database) | **Database routing**: `dynamicDb[dbKey]` selects the tenant MongoDB database. This is the `key` query param passed to CMS API. |
-| `group.key` | Stored on the group document in mainDb | `thecomedycollective` | **S3 bucket naming**, bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
-| `bucketname` | `${group.type}-${group.key}`, unless the group stores its own `bucket` (25 of 26 do, 2026-10-15); the bucket is `bucketOf(group)`, see `vivreal-db` | `collection-thecomedycollective` | **S3 object path prefix**, used in media upload/retrieval paths. |
+| `group.key` | Stored on the group document in mainDb | `examplecomedyclub` | **S3 bucket naming**, bucket is `vivreal-{group.key}`. Also used for display/URL slugs. NOT the database key. |
+| `bucketname` | `${group.type}-${group.key}`, unless the group stores its own `bucket` (25 of 26 do, 2026-10-15); the bucket is `bucketOf(group)`, see `vivreal-db` | `collection-examplecomedyclub` | **S3 object path prefix**, used in media upload/retrieval paths. |
 
 **There is no `deriveDbKey()` any more.** A function by that name used to live separately in six repos (`VR_Secure_API`, `VR_CMS_API`, `VR_Main_API`, `Vivreal_EventHandler`, `VR_Client_Auth`, plus a `databaseDict[group.tier]` variant in `oauthCallback.js`), and four of the six copies had drifted from each other, misrouting real tenant writes. All six are deleted. The only way to get a tenant database name now is:
 
@@ -370,9 +370,9 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 | Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md, `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
 | vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Count its agents and commands from `.claude/`; do not quote a number. |
 | vivreal-content | `${VIVREAL_REPOS}/vivreal-content\` | **DEAD SOURCE.** Consolidated into `vivreal-hq` on 2026-08-03 and frozen: its last commit is that same day, while the hq content tree has moved repeatedly since. The checkout still exists and still holds its own agents and commands, which is exactly why it gets read by mistake. Read and edit content work in `vivreal-hq`, never here. |
-| Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `E39DUKXYGXCX8Q`, whose default origin is the Vivreal_Templates Amplify app `vivreal` (`d1gukor54gwnrj`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
+| Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`), whose default origin is the Vivreal_Templates Amplify app `vivreal` (`<vivreal-io-amplify-app-id>`, real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
-| Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | **DEAD SOURCE.** `help.vivreal.io` is the Vivreal_Templates app `vivreal-help` (`d3j2nl4ojlmhy7`) rendering the Vivreal group's CMS; `vivreal.io/help*` and `/docs*` answer 301 to it, and the old Docs Amplify origin (`dy2e1mdkduwx7`) no longer exists (2026-09-16). |
+| Vivreal_Docs | `${VIVREAL_REPOS}/Vivreal_Docs\` | **DEAD SOURCE.** `help.vivreal.io` is the Vivreal_Templates app `vivreal-help` (`<vivreal-help-amplify-app-id>`, real id in vivreal-hq `docs/projects/aws-cleanup-inventory.md`) rendering the Vivreal group's CMS; `vivreal.io/help*` and `/docs*` answer 301 to it, and the old Docs Amplify origin (`<old-docs-amplify-app-id>`, real id in vivreal-hq `docs/projects/aws-cleanup-inventory.md`) no longer exists (2026-09-16). |
 | Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas` | Shared Mongoose schemas, `@hillbombcreations/schemas`. Read the published version from its `package.json` and each consumer pin from the consumer `package.json`. Consumers do not all sit on the same major, and that disagreement is the interesting fact, not the numbers |
 | Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas` | Shared `@hillbombcreations/tier-quotas`. Owns every tier quota. Sentinel scheme: `-1` unlimited, `0` no access, `>0` a cap. **Read `src/tierQuotas.ts` for the current ladder before asserting any tier name or any quota value.** The ladder has lost a tier and the package has dropped its alias table, so a remembered tier name now normalises to `free` rather than erroring |
 
@@ -438,14 +438,14 @@ The train is the same shape in all five repos:
 1. **Amplify autobuild fires only for never-built commits** (portal). A rollback, or a
    re-promote to an already-built commit, repoints `stable` but triggers NO build, prod keeps
    serving the old build. Mandatory after a portal rollback:
-   `aws amplify start-job --app-id d2e6e3kdfrrxak --branch-name stable --job-type RELEASE`.
+   `aws amplify start-job --app-id <portal-amplify-app-id> --branch-name stable --job-type RELEASE`.
 2. **GitHub Actions fires NO push run for a force-push that REWINDS a branch to an ancestor**
    (Client drill), which is every backend rollback (forward re-points, even of already-pushed
    commits, DO fire). Mandatory after any backend rollback:
    `gh workflow run lambda_api.yml --ref stable`.
 
-Portal's prod path: CloudFront distribution E39DUKXYGXCX8Q's origin is
-`stable.d2e6e3kdfrrxak.amplifyapp.com` (swapped from `main.`, the distro is NOT CFN-managed).
+Portal's prod path: CloudFront distribution `<vivreal-io-distribution-id>`'s origin is
+`stable.<portal-amplify-app-id>.amplifyapp.com` (swapped from `main.`, the distro is NOT CFN-managed). The real ids live in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`.
 
 ### Proving a fix reached a line: `git cherry`, never `merge-base --is-ancestor`
 

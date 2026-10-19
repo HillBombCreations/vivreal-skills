@@ -30,7 +30,7 @@ production cutover (test.vivreal.io, 2026-07-02), do not skip steps.
 exists to validate, demo, smoke, or showcase a TEMPLATE (not a client migration)
 is created on the standing **Vivreal Content** group:
 `groupName "Vivreal Content"` · key `vivrealcontent` ·
-`_id 6a68169fe1457c2f3fd04530` · tier `pro` · **dbKey `pod_02`** (read from the
+`_id <look up by key vivrealcontent>` · tier `pro` · **dbKey `pod_02`** (read from the
 group doc 2026-09-27. It is the ONLY group in `pod_02`, placed there
 deliberately by the owner to keep Vivreal's own content tenant off the shared
 placement, so ONE tenant in a placement is intent and not an abandoned
@@ -70,7 +70,7 @@ exist. It fails **SILENTLY**, the CDN URLs are still correctly signed, every
 backend still returns 200, and the only symptom is blank images across the
 portal, the Studio, and the live site. It also breaks profile switching, which
 looks the group up BY `key` (`VR_Secure_API/.../profileSwitch.js:18`).
-Incident 2026-08-04, group `6a68169fe1457c2f3fd04530`.
+Incident 2026-08-04, group `<_id: look up group key vivrealcontent>`.
 
 **Use `$set` on the exact field. NEVER paste a full document back.**
 ```js
@@ -97,7 +97,7 @@ prospect-owned demo account (DEFAULT)**, the demo-account-handoff flow
 since 2026-07-15). The platform deliberately has **NO account-transfer step**:
 ownership sits with the prospect from creation, so the demo must be cut over INTO
 their group from day one, never "built in ours, moved later." The shared
-migration group (`pod_01` `69f558d797324603aafd3e90`, read from the group doc
+migration group (`pod_01` `<_id: look up group key vivreal>`, read from the group doc
 2026-09-27, key `vivreal`, tier `pro`) is for **internal test migrations only** (and carries the collision hazard below).
 
 1. **Provision** (ops CLI in VR_Main_API; its `.env` carries the prod env):
@@ -190,8 +190,8 @@ unrelated collection of the same name).
 
 ⚠️ **SHARED GROUP collision (internal-test cutovers only, a provisioned prospect
 group is fresh and collision-free).** The internal migration group is
-SHARED, the `pod_01` migration group `69f558d797324603aafd3e90` holds
-**Test + Inside Out + Classic House** in one group. Collections are group-scoped, so
+SHARED, the `pod_01` migration group `<_id: look up group key vivreal>` holds
+**Test + Example Bistro + Example Supper Club** in one group. Collections are group-scoped, so
 a name match makes the seeder REUSE (and a later delete-sweep DELETE) *another live
 site's* collection. Before seeding, cross-check the blueprint's collection names
 against the OTHER sites' bound collections (`sites.pages[].collections[].collectionId`

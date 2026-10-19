@@ -52,13 +52,13 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
      first miss (skipping a rung is what dumps a lead to company-only):**
      1. A **published, on-domain, person-named email** (`firstname@theirdomain.com`). These hide
         on the OWNER'S BIO / TEAM page, the site's contact/booking page, and the **Facebook
-        About/Contact** section, check all three (that is where `michael@silverrosebakery.com`,
-        `stevewilbur@piesnob.com`, `dakota@herlittlecakery.com` live). Never invent one; a
+        About/Contact** section, check all three (that is where addresses shaped like `maria@rosewoodbakery.example`,
+        `tomreyes@pieshop.example` or `dana@littlecakery.example` live). Never invent one; a
         cross-domain personal address (`owner@theirpersonalsite.com` on a `theirbakery.com` lead)
         is rejected by the seeder, so it's worse than useless.
      2. **When you have the owner's NAME but no on-domain email, do the LinkedIn name-match, a
         REQUIRED step, not optional.** Find THAT person's LinkedIn at THAT company and emit it
-        ONLY if the slug carries their surname (`/in/kendra-lewinson`, `/in/jin-hee-sonu-…`). A
+        ONLY if the slug carries their surname (`/in/jane-doakes`, `/in/mei-lin-park-…`). A
         company-word or wrong-person slug (`/in/purple-elephant`) FAILS the seeder and must be
         left blank. This single step recovers a large share of otherwise-company-only leads.
      3. **There is no rung 3. Phone is NOT a seedable channel** (removed 2026-07-27,
@@ -94,8 +94,8 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
      4. **Raw-HTML config mining**, on the recovery pass (2026-08-04) fetching the raw page
         source directly recovered 4 names/emails the rendered-page path missed: chat-widget
         configs, Square/Weebly site configs, and Hotplate storefront configs embed the owner's
-        support email (`carri@thebiscottibox.com` lived in a chat-widget config; a Hotplate
-        config's person-named support email both named Hailey Burts AND verified her tie).
+        support email (one owner's first-name address lived only in a chat-widget config; a
+        Hotplate config's person-named support email both named the owner AND verified the tie).
         Especially productive on Square/Weebly/Ecwid sites where the visible page is only a
         cart overlay.
    - **Cloudflare-masked emails:** a "[email protected]" placeholder or a blocked agent fetch
@@ -103,10 +103,16 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
      `data-cfemail` / plain-text addresses out of the source before concluding a site hides its
      email.
    - **ALSO capture `reachEmail`**, the single best REACHABLE email even when no person-named
-     one exists: a general inbox (`info@`/`hello@`/`orders@`) or a business gmail. Do NOT discard
-     it, low-touch/intro sequences email the general inbox (addressed to the owner by first
-     name), so a company-only lead still gets a way in. Priority: on-domain owner email >
-     general inbox > business gmail. Emit it in the `reachEmail` column.
+     one exists: a general inbox (`info@`/`hello@`/`orders@`) or a business gmail they
+     published themselves. Do NOT discard it. On the Company it is NOT auto-sent (sequences
+     enroll contacts, not companies; it makes a company-only lead reachable by the operator).
+     It IS sent to in one case (V7.173, owner adopted 2026-10-16): the lead has exactly ONE
+     named, owner-titled person on an owner-operated business with no address of their own,
+     and then that owner is greeted by name at the inbox (`resolveDmChannels` and
+     `reachEmailFor` in `lib/prospectToContact.js`). So naming the owner and their title is
+     what turns an inbox into a send; a staff member's personal-looking address is refused
+     there. Priority: on-domain owner email > general inbox > business gmail. Emit it in the
+     `reachEmail` column.
    - **Where reachable emails hide (high-yield, routinely missed):** the Facebook page
      **About/Contact** section (bakeries very often list an email there the website omits),
      Google Business, the Instagram bio "email" button, and the site's own contact/booking page.
