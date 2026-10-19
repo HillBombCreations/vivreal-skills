@@ -180,6 +180,13 @@ and the branch is already proven.
 - **Owner-visible copy is almost always JSX text between tags, not a quoted string literal.**
   Account for that shape in anything you write or sweep, a check that only matches string
   literals misses most of it.
+- **A commit the plan gates on a later check stays LAST on its branch, and stays droppable.** The
+  CRM removal (V7.193 commit C1 on `feat/v7-portal-crm`) merges only after gate G3a; if G3a fails,
+  the branch ships without it. So it is one self-contained commit at the tip: nothing after it,
+  and nothing on any other branch, may build on what it removes or adds. A later fix that must
+  land on that branch goes on its own branch first; if it truly must be on that branch, rebase it
+  BELOW C1 (that rewrite needs `git push --force-with-lease` on that feature branch only, and a
+  delta review, since every SHA from there up changes; report both new SHAs). Never on top. Check `git log -1` names the gated commit at report time.
 - **An e2e run has three clocks**, the runner's `process.env.TZ`, the dev server's
   `webServer.env.TZ`, and the browser's `use.timezoneId`. Pinning two of three is worse than
   pinning none; state the zone explicitly in any test that asserts a rendered date or time.
@@ -270,7 +277,11 @@ This applies to SOLO and INTEGRATE; PARALLEL mode already never opens a PR on it
 **Never `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not
 write.** Concurrent agents share worktrees of this clone less than they look like they do, but
 the common `.git` directory still means a shared stash and a shared index lock; an unexpected
-modification in a file outside your own list is somebody else's uncommitted work.
+modification in a file outside your own list is somebody else's uncommitted work. **Your own
+edits are not an exception: never `git checkout --` or `git restore` a file to undo your own
+change either.** It discards every uncommitted change in that file, not just the one you meant,
+and a PARALLEL coder did exactly this on 2026-10-18 (no loss that time, by luck). Undo your own
+edit by rewriting it with the Edit tool, then read the diff.
 
 ## No busy-wait polling
 
@@ -341,6 +352,8 @@ have saved roughly a quarter of that usage.
   list wins over any mode default.
 - DON'T background a hooked commit, push, or test run and then poll it. Run it in the
   foreground with a long timeout, or wait for it inside one Bash call.
+- DON'T `git checkout --` or `git restore` to undo your own edit. Rewrite it with Edit.
+- DON'T put a commit on top of a gated, droppable commit (C1 and its kind); it stays last.
 - DON'T `git stash`, ever, in this repo, the stash stack is shared across every worktree of
   the clone and `lint-staged` stashes on your behalf during commits you don't control.
 - DON'T trust a gate result (red or green) without confirming your own worktree owns ports
