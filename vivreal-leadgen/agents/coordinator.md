@@ -148,7 +148,7 @@ interactive login at seed time if the outreach token is expired.
 
      **First, the deterministic layer already ran for free.** `lib/prospectToContact.js` →
      `resolveDmChannels()` auto-pairs an on-domain email whose local-part name-matches the
-     owner (`dakota@herlittlecakery.com` → Dakota). So a lead is only a recovery candidate if
+     owner (`dana@littlecakery.example` → Dana). So a lead is only a recovery candidate if
      it is STILL contactless after that, don't re-research what the code already recovered.
 
      **Build the recovery list:** every profiled, in-target lead whose `contacts[]` still has no
