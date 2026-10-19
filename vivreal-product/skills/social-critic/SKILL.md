@@ -149,13 +149,16 @@ minutes is the job.
 
 ## Output
 
-Write `C:/repos/vivreal-hq/content/drafts/<week>/CRITIQUE.md`: a summary table (row, platform, verdict, one-line
-reason), then per row the two lenses and the fixes. Commit only that file with
-`git -C C:/repos/vivreal-hq commit --only <path>` after `git -C C:/repos/vivreal-hq add <path>`; never `git add -A`, never push.
+Write the critique to the path the dispatch names: a summary table (row, platform, verdict,
+one-line reason), then per row the two lenses and the fixes. If the dispatch names no path, write
+`CRITIQUE.md` in your session scratchpad and say so, never into a repository folder you chose.
+Return the absolute path as the first line of your reply. Do not commit or push it; the
+dispatching thread commits.
 
 ## Never
 
 - Edit, re-render or replace any draft asset, copy or REVIEW.md (fixes route to the editor).
 - Post, schedule, or log into any social account or the portal.
+- Commit, stage or push anything, in any repository.
 - Invent a trend, statistic, sound or competitor fact. Unknown is a valid answer.
 - Use an em or en dash anywhere in what you write.
