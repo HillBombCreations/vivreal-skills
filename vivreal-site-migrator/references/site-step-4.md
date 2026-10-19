@@ -205,7 +205,7 @@ the feed. Author it whenever the source band shows the account identity/follow a
   `displayAs:'form'` binding (default field set name/email required + message; reuse the
   site's `siteRole:'contact'` collection when one exists) AND this `sectionConfig.contact`
   panel.** A form page authored with `collections: []` renders a bare hero, that exact
-  defect shipped on abakeshop.com `/pages/contact-us`. A deterministic assemble backstop
+  defect shipped on acmebakery.example `/pages/contact-us`. A deterministic assemble backstop
   (`backfillFormPages`) now synthesizes the missing pieces and prints a warning naming
   your page, treat that warning as a review finding against this agent's output.
   **MUST (A Bakeshop feedback round): a careers/positions page whose SOURCE embedded an

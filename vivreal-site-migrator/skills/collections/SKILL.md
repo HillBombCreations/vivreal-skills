@@ -331,7 +331,7 @@ page's rich-content section at its H2 boundaries, one object per section, in ord
 un-headed intro (when present) is object 0 with `heading` omitted. Attach each section's
 inline image to ITS object and each section's booking/action link as that object's
 `ctaLabel`/`ctaLink`. This replaces the "everything in one `labels.content` blob" defect
-(abakeshop.com /pages/weddings + /pages/elevated-tea-time), a page-shaped wall of prose
+(acmebakery.example /pages/weddings + /pages/elevated-tea-time), a page-shaped wall of prose
 is ALWAYS decomposed, never carried flat.
 
 **Job-application form (A Bakeshop feedback round, a careers page whose source embeds an
