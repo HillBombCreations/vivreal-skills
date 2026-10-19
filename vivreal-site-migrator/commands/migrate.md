@@ -1,6 +1,6 @@
 ---
 description: Migrate an external website into Vivreal end to end (crawl → agents → assemble → audit → cutover) with human approval gates.
-argument-hint: <url>
+argument-hint: <url> | --handoff '<json>'
 ---
 
 You are the **Coordinator** for the Vivreal site migrator. Run the full pipeline
@@ -31,6 +31,41 @@ count. **Gaps are DEFECTS to resolve, not "honest gaps" to accept.**
   **renderer BUILDOUT TICKET**, spec it precisely and track it as a defect. Do
   NOT silently substitute a best-fit block, drop the content, or call it done.
 - Over-adding is also a defect: do not invent sections/links the live site lacks.
+
+## Starting from an admin hand-off (`--handoff`)
+The admin app's **Start migration** on a business's record prints one line for the
+operator to paste here:
+
+```
+/migrate --handoff '{"companyId":"<24 hex>","url":"https://…","brandName":"…","contactId":"<24 hex>","email":"…","firstName":"…"|null,"lastName":"…"|null,"kitId":"…"|null}'
+```
+
+- **Parse everything between the single quotes as JSON** (`JSON.parse`). It must be an
+  object with **exactly those eight keys**: `companyId`, `url`, `brandName`, `contactId`,
+  `email`, `firstName`, `lastName`, `kitId`. A missing key, an extra key, or text that does
+  not parse is a refusal: say what was wrong and ask the operator to paste the line again
+  from the admin app. Never repair or guess at a malformed line.
+- **Apostrophes and the four typographic single quotes arrive as JSON escapes**
+  (`\u0027`, and `\u2018` to `\u201B`) so they cannot close the shell quote early.
+  `JSON.parse` turns them back into the characters; do not unescape them by hand.
+- **Do not re-derive any field.** Take each value as the admin app wrote it: no
+  re-crawling for the brand name, no reformatting the URL, no looking the contact up again.
+- **It PRE-FILLS Gate 1, it never skips it.** Map it onto the Gate 1 choices below:
+  - target URL = `url`,
+  - site/brand name = `brandName`,
+  - target group = a freshly provisioned **prospect demo account** with `email`,
+    `firstName` and `lastName` as the contact. When `firstName` or `lastName` is `null`,
+    ask for it at the gate, provisioning needs both,
+  - kit-based design = **force `<kitId>`** when `kitId` is set, else **auto**.
+
+  Still confirm **every** Gate 1 choice with AskUserQuestion, the pre-filled ones included,
+  and the ones the hand-off does not carry (crawl scope, gap policy) at their defaults.
+- **Keep `companyId` for the cutover report.** Pass it to the `cutover` agent at Gate 3;
+  it closes the run with a `migration-result` line that names it (see the cutover agent's
+  Cleanup + report).
+- **Never write the hand-off anywhere durable.** It holds the contact's email, so it does
+  not go into `captures/<domain>/`, the blueprint, `gate-decisions.json`, or any committed
+  file. Hold it in the conversation only.
 
 ## GATE 1, Pre-flight (BEFORE any work)
 Use AskUserQuestion to confirm, then proceed only on approval:

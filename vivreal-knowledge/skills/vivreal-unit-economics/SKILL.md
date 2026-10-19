@@ -3,7 +3,7 @@ name: vivreal-unit-economics
 description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS: gross margin per customer, the cost stack (AWS, MongoDB Atlas, AI), overage revenue, infra cost at scale, runway, or whether a change dents the ~80% margin floor. Teaches where the real numbers live: tier-quotas pricing, the AWS bill as a decomposition (tax plus an untaxed Registrar pass-through), Amplify build minutes, Atlas by cluster rung, overage and spending caps, and that DB tier tracks PEAK CONCURRENCY not signups. Customer inference is RETIRED as a cost axis. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, AWS bill, AWS tax, Cost Explorer, Amplify build minutes, Amazon Registrar, domain cost, pass-through, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. Grounds the `finance-auditor` agent; for GTM/funnel economics use the growth agents.'
 ---
 
-Last synced: 2026-09-23. **A stamp only means anything if every hand-patch moves it.** This one
+Last synced: 2026-10-19. **A stamp only means anything if every hand-patch moves it.** This one
 sat at 2026-07-30 while facts were edited in underneath it, so it stopped meaning "everything
 before this date, nothing after" and became decoration. Bump it whenever you touch a fact here,
 or delete the line rather than leaving a date nobody can rely on.
@@ -15,7 +15,7 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 > **Sources of truth, and the order to trust them in.** Pricing and quota constants:
 > `@hillbombcreations/tier-quotas` `src/tierQuotas.ts`, which is authoritative and which also
 > holds the Stripe price ids. Live customer mix and counts: query `Vivreal.groups`. Live Atlas
-> headroom: `db.adminCommand({serverStatus: 1})`, which is permitted on the shared tier and
+> headroom: `db.adminCommand({serverStatus: 1})`, which is permitted on M10 (and was on M0) and
 > returns `connections.current` and `connections.available` directly. Infrastructure spend: the
 > AWS bill and the MongoDB invoice, which are two separate bills. **Everything below is
 > reasoning and magnitude. Where a number is pinnable, this file points at the pin rather than
@@ -46,14 +46,14 @@ Three specific traps this table used to walk into:
 
 - The blended figure and the tier mix are estimates that move with the customer base. **Recompute the mix from `Vivreal.groups` before using it in an argument**, and take the prices from the package. Annual plans exist as real Stripe prices in `TIER_DISPLAY`.
 - **AI capability flags.** AI was gated in two dimensions. The metered `agentActions` quota is now `0` everywhere, so what remains live is the binary capability flags. `TIER_FLAGS` in `src/tierQuotas.ts` carries `aiSiteEditing` and `aiComponentGen`. **Read which tier gets which from the file.** Helpers mirror `canHidePoweredBy`, plus `lowestTierWithFlag()` so consumers derive the required tier rather than hardcoding one. `ENFORCEMENT_MANIFEST` entries are mandatory: it is a total Record over the flags, so omitting one fails the build and the tests. **A manifest row is only true if the path the product actually calls runs the gate**, so check the caller before believing a row.
-- **Gross margin ~84-90%** today and it *improves with scale*, fixed infra is tiny and amortizes; the dominant per-customer cost is payment processing. Model inference is no longer a per-customer cost at all.
+- **Gross margin improves with scale** because fixed infra amortizes, but do not quote a blended ~84-90% without re-deriving it: the 2026-10-17 margin check put the top paid tier above the ~80% floor at typical use and the entry paid tier below it, because per-site rebuilds (Amplify build minutes) are the largest per-customer cost. Payment processing is the other per-customer cost that matters. Model inference is no longer a per-customer cost at all.
 
 ## The cost stack (three bills, two off the AWS invoice)
 
 1. **AWS is a DECOMPOSITION, not a constant, and it is NOT flat.** Measured from Cost Explorer
    (`UnblendedCost`, the prod payer account), the bill ran **$37.46, $30.27, $36.58, $62.13,
-   $167.45, $170.37** for 2026-04 through 2026-09. Any answer built on "about $35 a month,
-   flat" is low by roughly 4.6x. Model it as:
+   $167.45, $206.37** for 2026-04 through 2026-09. Any answer built on "about $35 a month,
+   flat" is low several times over. Model it as:
 
    ```
    monthly_bill = usage * 1.091 + domain_registrations
@@ -69,7 +69,7 @@ Three specific traps this table used to walk into:
      tax over usage reads 9.12 per cent like every other month. **Group by `RECORD_TYPE`
      before reasoning about the rate at all.**
    - **The usage line that moves is Amplify, and it is BUILD minutes.** $11.32 (2026-04) to
-     $42.19 (2026-09), peaking at $56.88 in 2026-08, of which **67 to 81 per cent is build
+     $57.05 (2026-09), level with $56.88 in 2026-08, of which **66 to 81 per cent is build
      duration rather than hosting**. Builds are billed per minute, so this line tracks
      **DEPLOYS**, not customer count and not traffic. A redeploy sweep across customer sites
      is a real and immediate bill.
@@ -101,7 +101,7 @@ Three specific traps this table used to walk into:
 
 The Atlas cost lever is driven by **simultaneous in-flight backend requests**, not how many customers exist. Each warm Lambda container holds ~6-15 Mongo connections, so the connection cap converts into a ceiling on concurrent requests:
 
-- **The shared tier has a hard connection cap, and a production walk has hit it.** Read the live headroom with `serverStatus` before reasoning about it; do not quote a remembered ceiling. The conversion that matters: each warm Lambda container holds a handful of Mongo connections, so the cap becomes a ceiling on concurrent in-flight requests, and a rule of thumb of about three connections per concurrent user is close enough for planning.
+- **The cluster has a per-node connection cap and a connection-creation rate limit** (M10 since 2026-10-17; read `ConnectionsCap`, and see `vivreal-infra:vivreal-atlas-topology`). Read the live headroom with `serverStatus` before reasoning about it; do not quote a remembered ceiling. The conversion that matters: each warm Lambda container holds a handful of Mongo connections, so the cap becomes a ceiling on concurrent in-flight requests, and a rule of thumb of about three connections per concurrent user is close enough for planning.
 - **Each Atlas tier step raises the cap by roughly a factor of three.** Read the current tier and its cap from the Atlas console or `serverStatus`, and price the step from the MongoDB invoice, which does not appear on the AWS bill.
 - Daily spikes from the public Client API already pushed against the old 500-connection M0 cap, which is why the cluster moved to M10 on 2026-10-17 despite light total volume. **Re-measure before citing a spike figure**: this one has been quoted three-times wrong in this repo before.
 - **Implication for forecasting:** model the DB-tier step from a peak-concurrency projection, not a signup count. A traffic burst forces the upgrade long before raw customer count would.
@@ -116,11 +116,15 @@ The Atlas cost lever is driven by **simultaneous in-flight backend requests**, n
 | 1,000 | **~$45k/mo** | M20 |
 | 5,000 | **~$225k/mo** | M20→M30 |
 
-**Fixed infra is ~$83/mo all-in today** (2026-09 AWS usage $76.42 plus $6.95 tax, plus Atlas
-$0 on the shared tier by the 2026-09-15 owner decision). It is NOT the ~$105-110 this file used
-to claim, and that figure was wrong twice over: it assumed an M10 nobody took, and it added
-WorkMail on top of an AWS total that **already included WorkMail**. Domains are excluded on
-purpose, being an untaxed pass-through against domain revenue.
+**Fixed infra is about $195/mo on the September close with M10 budgeted** (2026-09 AWS usage
+$109.41 plus $9.96 tax, Atlas M10 budgeted at $60 to $65 from the hourly rate, GitHub Team and one
+non-product domain renewal). The M10 line is a budget until the first MongoDB invoice is read, and
+October is running well above September; **re-derive from the October close and the invoice**
+(Cost Explorer `UnblendedCost` grouped by `RECORD_TYPE`, method in `references/cost-model.md`)
+before quoting either. **Only quote a closed month.** A mid-month read understates: the September
+figure this file carried was read on the 24th and was 30% low, which made fixed infra look half
+its size. Do not add WorkMail on top of the AWS total, it is already inside it. Domains sold to
+customers are excluded on purpose, being an untaxed pass-through against domain revenue.
 
 The margin-improves-with-scale conclusion survives, but the mechanism has changed and matters:
 the biggest usage line is now **Amplify build minutes, which scale with DEPLOY activity rather

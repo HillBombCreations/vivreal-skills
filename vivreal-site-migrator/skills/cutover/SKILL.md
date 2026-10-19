@@ -36,7 +36,7 @@ deliberately by the owner to keep Vivreal's own content tenant off the shared
 placement, so ONE tenant in a placement is intent and not an abandoned
 migration. Earlier text here named the retired paid tier and its database placement,
 and that database placement is now dropped, holding zero groups) · demo user
-`vivreal-content-demo` (justin+content@vivreal.io). Set `VR_GROUP_ID` to that
+`vivreal-content-demo` (the owner's Vivreal Content sign-in). Set `VR_GROUP_ID` to that
 `_id` and `VR_DB_KEY` to the group's own stored `dbKey`, read live from its group
 document (never typed from this file; the loader's preflight refuses a mismatch),
 and skip the provisioning CLI entirely,
@@ -380,3 +380,17 @@ prospect-owned group. The rest of the arc, in order:
 - Report: siteId, live URL, Studio URL (`/app/sites/studio?siteId=<id>`), collection
   count seeded, any fallbacks that fired, and anything the user must decide
   (naming, domain, residual gaps).
+- **Started from `/migrate --handoff`?** End the report with ONE line in a code block, for
+  the operator to paste into **Record demo** on the business's record in the admin app:
+
+  ```
+  migration-result {"companyId":"<handoff companyId>","groupId":"<Step 0 group _id>","siteId":"<site _id>","demoUrl":"https://<slug>.vivreal.io"}
+  ```
+
+  Exactly those four keys. `companyId` is the one the hand-off carried, unchanged;
+  `groupId` is the group Step 0 provisioned; `siteId` is the site the load created.
+  `demoUrl` is the bare origin: no path, no query, no trailing slash, no port. The server
+  refuses Vivreal's own reserved hosts, and the admin app refuses a block whose `companyId`
+  is not the record it is pasted into. **Never put the claim link or its token in this
+  line, or anywhere in the report.** The record keeps only the claim status, which the
+  operator moves forward by hand (held, handed over, claimed).
