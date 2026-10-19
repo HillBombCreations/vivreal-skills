@@ -4,9 +4,8 @@ Detail backing the `vivreal-unit-economics` skill. Figures are 2026-06; the live
 
 ## The AWS bill: a decomposition, not a constant
 
-**Measured 2026-09-24** from Cost Explorer (`UnblendedCost`, the prod payer account), monthly,
-2026-04 through 2026-09. This file previously taught "a fixed ~$35/mo" and that was wrong by
-roughly **4.6x** by 2026-09. The bill has three structurally different parts, and they must be
+**Measured 2026-09-24 for 04 to 08, and 2026-10-19 for the closed 09** from Cost Explorer (`UnblendedCost`, the prod payer account), monthly,
+2026-04 through 2026-09. A "fixed ~$35/mo" model is wrong several times over by 2026-09. The bill has three structurally different parts, and they must be
 separated before any rate or trend is computed:
 
 ```
@@ -15,10 +14,10 @@ monthly_bill = usage * 1.091 + domain_registrations
 
 | Record type | 04 | 05 | 06 | 07 | 08 | 09 | Behaviour |
 |---|---|---|---|---|---|---|---|
-| Usage | 34.35 | 27.76 | 33.53 | 56.96 | 88.39 | 76.42 | the only part that is taxed |
-| Tax | 3.11 | 2.51 | 3.05 | 5.17 | 8.06 | 6.95 | **9.05 / 9.04 / 9.10 / 9.08 / 9.12 / 9.09 %** of usage |
+| Usage | 34.35 | 27.76 | 33.53 | 56.96 | 88.39 | 109.41 | the only part that is taxed |
+| Tax | 3.11 | 2.51 | 3.05 | 5.17 | 8.06 | 9.96 | **9.05 / 9.04 / 9.10 / 9.08 / 9.12 / 9.10 %** of usage |
 | Other (Amazon Registrar) | 0 | 0 | 0 | 0 | **71.00** | **87.00** | **UNTAXED** domain pass-through |
-| **Total** | **37.46** | **30.27** | **36.58** | **62.13** | **167.45** | **170.37** | |
+| **Total** | **37.46** | **30.27** | **36.58** | **62.13** | **167.45** | **206.37** | |
 
 Two rules fall out of this table, and both have already produced a wrong answer:
 
@@ -37,26 +36,26 @@ Two rules fall out of this table, and both have already produced a wrong answer:
 
 | Service | 04 | 09 | Driver |
 |---|---|---|---|
-| **AWS Amplify** | 11.32 | **42.19** (peak 56.88 in 08) | **build minutes**, see below |
-| AWS WAF | 0.00 | 9.94 | **new in 2026-07**, rising every month since |
-| AmazonCloudWatch | 2.10 | 7.23 | log volume |
-| AWS Secrets Manager | 1.08 | 5.84 | per secret per month, steps with secret count |
-| Amazon Route 53 | 2.57 | 4.36 | hosted zones, steps with domains sold |
-| **AmazonWorkMail** | 15.39 | **3.09** | per mailbox, and **FALLING** |
-| Amazon S3 | 0.36 | 1.21 | media |
-| AWS KMS | 0.99 | 0.77 | flat |
+| **AWS Amplify** | 11.32 | **57.05** (56.88 in 08) | **build minutes**, see below |
+| AWS WAF | 0.00 | 14.67 | **new in 2026-07**, rising every month since |
+| AmazonCloudWatch | 2.10 | 14.94 | metric alarms and custom metrics, plus log volume |
+| AWS Secrets Manager | 1.08 | 7.83 | per secret per month, steps with secret count |
+| Amazon Route 53 | 2.57 | 5.31 | hosted zones, steps with domains sold |
+| **AmazonWorkMail** | 15.39 | **4.00** | per mailbox, and **FALLING** |
+| Amazon S3 | 0.36 | 1.65 | media |
+| AWS KMS | 0.99 | 0.99 | flat |
 | X-Ray / API Gateway / SQS | <1 each | <1 each | negligible |
 | **AWS Lambda** | **absent** | **absent** | still $0, free-tier absorbed |
 | **Bedrock** | **absent** | **absent** | still confirms AI is the direct Anthropic API |
 
 - **Amplify is the dominant line and it is BUILD, not hosting.** Split by usage type:
   2026-07 build $25.91 of $31.97 (81%), 2026-08 build $45.93 of $56.88 (81%), 2026-09 build
-  $28.28 of $42.19 (67%). Hosting compute only moved $5.44 to $8.85 across the same window.
+  $37.55 of $57.05 (66%). Hosting compute moved $5.44 to $12.24 across the same window.
   **Builds bill per minute, so this line tracks DEPLOY activity, not customer count and not
   traffic.** A fleet-wide redeploy is a directly observable cost, and it is the single easiest
   way to move the AWS bill in either direction.
-- **WorkMail is no longer the biggest line.** It was, at $15.39 in 2026-04. It is now fifth at
-  $3.09. Any text still calling it the biggest single AWS line is stale.
+- **WorkMail is no longer the biggest line.** It was, at $15.39 in 2026-04. It is now sixth at
+  $4.00 (2026-09). Any text still calling it the biggest single AWS line is stale.
 - **Lambda sitting at $0 is what made "AWS is flat" feel true.** The compute really is
   free-tier absorbed. The growth is in build minutes, WAF, logs and secrets, none of which the
   old model tracked at all.
@@ -76,7 +75,7 @@ appears on the AWS invoice.
 
 \* Each warm Lambda container's per-client cost is 3 monitor sockets (one per replica-set member) plus up to `maxPoolSize` pooled sockets, so a cap-divided-by-maxPoolSize estimate omits the monitor sockets and understates it; per-container totals run ~3 to 15 depending on service (see `vivreal-atlas-topology` for the per-service table). **This is why DB tier tracks PEAK CONCURRENCY, not signups.** Measured 2026-08-31: the 500-connection shared cap was saturated by **~54 concurrent VR_Client_API containers**, about one episode every 5 days, not daily, even though total volume is light (~4,700 invocations/day).
 
-Current spend is the shared tier (owner decision, 2026-09-15: stay here rather than take M10). If M10 is taken later, one M10 cluster would hold all tenant DBs (`general_shared`, `pro_plus`, etc.), no per-database charge; budget ~$60/mo all-in then (backup + transfer negligible at current size).
+The cluster has been M10 since 2026-10-17. One M10 cluster holds every tenant database, with no per-database charge. Budget $60 to $65 a month (compute from the hourly rate; backup and transfer are small at current size) until the first MongoDB invoice is read, then replace the budget with the invoice line. Whether MongoDB adds sales tax is not yet known.
 
 ## Anthropic / AI agent cost mechanics
 
@@ -139,11 +138,13 @@ the margin floor comfortably at typical use, the top paid tier is the thinnest a
 and payment fees plus AI are the only two per-customer costs that matter at all.
 
 Blended gross margin lands **~84-90%** and improves with scale because fixed infra amortizes
-across more customers. **Fixed infra is ~$83/mo all-in as of 2026-09** (AWS usage $76.42 plus
-tax $6.95, plus Atlas $0 on the shared tier), excluding the Amazon Registrar domain
-pass-through. The older **~$105-110** figure was wrong in two independent ways: it priced in an
-M10 that the 2026-09-15 owner decision declined to take, and it added WorkMail on top of an AWS
-total that **already contained WorkMail**. Note also that the amortization argument is weaker
+across more customers. **Fixed infra is about $195/mo on the September close with M10
+budgeted** (AWS usage $109.41 plus tax $9.96, Atlas M10 $60 to $65 budgeted, GitHub Team, one
+non-product domain renewal), excluding the Amazon Registrar pass-through for customer domains.
+October is running well above September (Amplify builds, CloudWatch alarms and WAF), so
+**replace this line with the October close and the first M10 invoice** once both exist. A
+September figure read on 2026-09-24 was 30% below the close: quote closed months only. WorkMail
+is already inside the AWS total; do not add it again. Note also that the amortization argument is weaker
 than it reads, because the largest usage line (Amplify build minutes) scales with deploy
 activity rather than with headcount, so that part does not amortize at all.
 
