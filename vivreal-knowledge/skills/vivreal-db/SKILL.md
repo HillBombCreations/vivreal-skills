@@ -94,10 +94,12 @@ equally wrong to say there are exactly three. The shape, which is stable:
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here**, see below. | service-global |
 | a slugified group name | **Legacy or stranded per-group DB** | usually only `audit_logs`, sometimes `content_versions` | Possibly no group at all. At least one such database has no group pointing at it. Do not rely on this pattern, and do not assume there is only one |
 
-**The cluster is Atlas M0 Free, and its limits bite query work.** 10 GB out per rolling 7 days
-(over it, every read slows to about 90 KB/s with no error), 100 ops/s, 100 databases, 500
-collections. Project your reads (`find` with a projection, never whole site documents in a loop),
-because a heavy exploration session spends the same weekly byte budget production sites live on.
+**The cluster is Atlas M10 (since 2026-10-17), and query work still shares it with production.**
+The M0 Free tier before it capped data out at 10 GB per rolling 7 days (over it, every read slowed
+to about 90 KB/s with no error); M10 has no such quota, but it is one small primary with 2 GB of RAM
+and a limit of 15 new connections per second per node. Project your reads (`find` with a projection,
+never whole site documents in a loop), because a heavy exploration session competes with the
+production sites for the same node. Limits and the live tier: `vivreal-atlas-topology`.
 Slow reads with ~0 ms server time are the data-out throttle, not your query. Diagnosis, levers and
 the pending tier change (Flex chosen 2026-10-14, switch held): `vivreal-atlas-topology`.
 
@@ -290,7 +292,7 @@ Control-plane (`Vivreal`): **`groups`** (`_id` ObjectId, `key` unique slug, `tie
 - **`sparse` on a compound index is a no-op here, and a built index cannot be re-optioned.** MongoDB indexes a document under a compound sparse index if it carries ANY indexed key, and every `collection_objects` row carries `refID`. Use `partialFilterExpression`. Re-declaring a built index name with different options fails `IndexKeySpecsConflict` on every cold start (tenant DBs run `autoIndex`), silently; so measure a new index's key count against a single-field control BEFORE the schemas package publishes.
 - **The same site `_id` can exist in more than one database.** The live site renders the copy in the group's placement (`<group.dbKey>.sites`). During the pod migration the help site existed under one `_id` in two databases and two writes went to the copy nothing reads. Before any site write, check for the `_id` elsewhere, say which copy you chose, and verify against the RENDERED page, never the document you wrote.
 - **A collection-object update that omits `publishDate` UNPUBLISHES the item.** The portal proxy sends `publishDate: body?.publishDate ?? null`, CMS writes the null, and the public read gates on `publishDate <= now`. A scripted edit sends the item's existing `publishDate` (and `__v`, for the optimistic-concurrency check) every time.
-- **Heavy reads spend the production data-out budget.** On the M0 cluster a prod walk or an unprojected exploration loop competes with live sites for the weekly 10 GB, and connection-hungry runs can saturate the cluster. Project every read, keep `maxPoolSize: 1`, and close the client.
+- **Heavy reads compete with production.** A prod walk or an unprojected exploration loop competes with live sites for the same primary (on the old M0 tier it also spent the weekly 10 GB data-out budget), and connection-hungry runs eat the connection-creation rate. Project every read, keep `maxPoolSize: 1`, and close the client.
 
 ## The publishDate storefront gate: the #1 "missing content" cause
 

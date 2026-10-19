@@ -221,24 +221,24 @@ Two further independent reasons document count is the wrong axis, either suffici
 
 **What actually bounds a managed MongoDB deployment**, in the order it bites:
 
-1. **Working set against cache, and resident memory.** The real ceiling, and on the current tier it
-   is **not measurable**: `serverStatus` returns no storage-engine block and resident memory reads
-   zero.
+1. **Working set against cache, and resident memory.** The real ceiling. On the M0 tier it was
+   **not measurable** (`serverStatus` returned no storage-engine block and resident memory read
+   zero); M10 is a dedicated tier, so re-read `serverStatus` before saying it still is.
 2. **Data files per node**, counting collections and indexes, each stored as a separate file. The
    vendor recommends a ceiling per node for multi-tenant deployments and publishes a recommended
    maximum per tier. This is the constraint that decides how many databases you can afford, and it
    is the one to do arithmetic against.
 3. **Connections**, and **operations per second**. See `vivreal-atlas-topology`.
-4. **The free tier's hard caps (the cluster is Atlas M0):** 100 databases and 500 collections for the
-   whole cluster, plus 100 operations per second and 10 GB of data out per rolling 7 days. Every pod
-   carries a full set of tenant collections and their indexes, so a new database spends a slice of the
-   500-collection budget permanently, before it holds a tenant. Count with `listDatabases` and
-   `listCollections` per database rather than trusting a remembered total. Flex (chosen 2026-10-14, switch held) removes only the data-transfer cap (unlimited
-   on Flex); the 100 databases, 500 collections and 500 connections stay, and operations above
-   100/s are billed up to 500. `vivreal-atlas-topology` carries the status.
+4. **The tier's ceilings (the cluster is Atlas M10 since 2026-10-17).** MongoDB recommends at most
+   5,000 collections plus indexes on M10 (`atlas-limits`, read 2026-10-17). Every pod carries a full
+   set of tenant collections and their indexes, so a new database spends a slice of that budget
+   permanently, before it holds a tenant. Count with `listDatabases` and `listCollections` per
+   database rather than trusting a remembered total. The M0 Free tier before it had hard caps of
+   100 databases and 500 collections, 100 operations per second and 10 GB of data out per rolling
+   7 days; none of those apply now. `vivreal-atlas-topology` carries the live tier and its limits.
 
-**The honest position:** the thing that matters is unmeasurable on this tier, everything measurable
-has substantial headroom, and document count is a third thing that is not a limit at all.
+**The honest position (written on M0):** the thing that matters was unmeasurable there, everything measurable
+had substantial headroom, and document count is a third thing that is not a limit at all.
 
 **Rules that follow:**
 
