@@ -247,8 +247,9 @@ and draws the fixed highlight box from "Stills for a help page" below for one sc
 `<REMOTE_DIR>/stills/`. Every click, ring and type appends its measured `focusPoint` to
 `<REMOTE_DIR>/focus.jsonl`, which gives you the push-in origins for the edit brief.
 
-**Per-provider measurements** (Instagram, LinkedIn, TikTok: selectors, consent screens, the in-page
-schedule wheel, identity checks, orphaned recorders) live in
+**Per-provider measurements** (the one Socials composer that schedules every channel since portal
+0.36, then Instagram, LinkedIn, TikTok: selectors, consent screens, identity checks, orphaned
+recorders) live in
 `${CLAUDE_PLUGIN_ROOT}/references/connect-and-post.md` (else `references/connect-and-post.md` at the
 root of the `vivreal-content` plugin; glob for it). **Read the provider's section before any take on
 that provider.**

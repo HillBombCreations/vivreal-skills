@@ -1,48 +1,93 @@
 # tutorial-maker: connect-and-post measurements per provider
 
 Moved out of the `tutorial-maker` agent body on 2026-10-14 (skills audit batch 5). Measured per provider during the
-2026-10-04 to 2026-10-05 channel series (Instagram, LinkedIn, TikTok). **Newest dated section wins**; re-probe any
+2026-10-04 to 2026-10-05 channel series (Instagram, LinkedIn, TikTok); the 2026-10-16 section adds the
+one Socials composer that now schedules every channel. **Newest dated section wins**; re-probe any
 selector on the day before a take rests on it.
 
 ## Contents (line numbers in this file)
 
-- 47: MEASURED 2026-10-04, Instagram retake 2 (video 1, shot clean, portal v0.33.1)
-- 49: Disconnecting a wrong account works in the UI
-- 55: A disconnected provider's Connect is `[data-testid=channel-offer-<key>] button`
-- 57: Instagram forces its own login form even when the browser is signed in
-- 63: The consent screen names the account
-- 69: Composer
-- 75: Instagram's schedule picker is IN-PAGE, not native
-- 85: Connect-and-post: connect segment = browser, post half = the app (owner, 2026-10-06)
-- 91: The phone pass of a connect-and-post cannot repeat the connect or the post
-- 95: Resolve a selector BEFORE sending it
-- 99: Use a fresh `REMOTE_DIR` per take
-- 101: Harness defects found and fixed this run
-- 117: Scope every scrub or bulk rewrite to the take's own paths. Never walk the scratchpad root
-- 125: MEASURED 2026-10-05, LinkedIn (video 3): r01 published from the Vivreal Company Page
-- 127: Posting identity, owner rule: every LinkedIn calendar row posts from the Vivreal Company
-- 132: The identity is NOT picked inside the composer
-- 142: Byte-compare the composer, do not eyeball it
-- 146: After Publish
-- 152: A killed agent does not kill its recorder
-- 158: Never reuse the killed take's session folder for the new take
-- 162: Git Bash rewrites a leading-slash argument into a Windows path
-- 165: An inspector that finds a tab by URL must take the NEWEST match
-- 167: Two takes attached to one Chrome corrupt each other's captions (FIXED in `tutorial-lib.ts`)
-- 173: The orphan's encode failed
-- 176: LinkedIn schedule, measured 2026-10-05 (r12, no recording, headless Playwright on the portal
-- 183: A post filmed AFTER the real post carries tells
-- 188: MEASURED 2026-10-05, TikTok (video 4): r11 scheduled Mon Oct 5 7:00 PM PT as @vivreal.io
-- 190: Ending a stopped take that is still attached
-- 196: TikTok pre-checks, all read-only in a throwaway tab
-- 201: TikTok skipped its login entirely
-- 208: The channel header shows the display name as a handle
-- 212: Composer
-- 220: The TikTok composer defaults Comment, Duet and Stitch to OFF
-- 225: TikTok's schedule picker is the same in-page wheel as Instagram's
-- 232: Picker defect (portal, unfixed): the FIRST row of a column cannot reach the centre band
-- 242: Captions persist until replaced
-- 245: The `tasks/` output folder of the session is shared with other agents
+- 49: MEASURED 2026-10-16, portal 0.36: ONE Socials composer schedules every channel
+- 92: MEASURED 2026-10-04, Instagram retake 2 (video 1, shot clean, portal v0.33.1)
+- 94: Disconnecting a wrong account works in the UI
+- 100: A disconnected provider's Connect is `[data-testid=channel-offer-<key>] button`
+- 102: Instagram forces its own login form even when the browser is signed in
+- 108: The consent screen names the account
+- 114: Composer
+- 120: Instagram's schedule picker is IN-PAGE, not native
+- 130: Connect-and-post: connect segment = browser, post half = the app (owner, 2026-10-06)
+- 136: The phone pass of a connect-and-post cannot repeat the connect or the post
+- 140: Resolve a selector BEFORE sending it
+- 144: Use a fresh `REMOTE_DIR` per take
+- 146: Harness defects found and fixed this run
+- 162: Scope every scrub or bulk rewrite to the take's own paths. Never walk the scratchpad root
+- 170: MEASURED 2026-10-05, LinkedIn (video 3): r01 published from the Vivreal Company Page
+- 172: Posting identity, owner rule: every LinkedIn calendar row posts from the Vivreal Company
+- 177: The identity is NOT picked inside the composer
+- 187: Byte-compare the composer, do not eyeball it
+- 191: After Publish
+- 197: A killed agent does not kill its recorder
+- 203: Never reuse the killed take's session folder for the new take
+- 207: Git Bash rewrites a leading-slash argument into a Windows path
+- 210: An inspector that finds a tab by URL must take the NEWEST match
+- 212: Two takes attached to one Chrome corrupt each other's captions (FIXED in `tutorial-lib.ts`)
+- 218: The orphan's encode failed
+- 221: LinkedIn schedule, measured 2026-10-05 (r12, no recording, headless Playwright on the portal
+- 228: A post filmed AFTER the real post carries tells
+- 233: MEASURED 2026-10-05, TikTok (video 4): r11 scheduled Mon Oct 5 7:00 PM PT as @vivreal.io
+- 235: Ending a stopped take that is still attached
+- 241: TikTok pre-checks, all read-only in a throwaway tab
+- 246: TikTok skipped its login entirely
+- 253: The channel header shows the display name as a handle
+- 257: Composer
+- 265: The TikTok composer defaults Comment, Duet and Stitch to OFF
+- 270: TikTok's schedule picker is the same in-page wheel as Instagram's
+- 277: Picker defect (portal, unfixed): the FIRST row of a column cannot reach the centre band
+- 287: Captions persist until replaced
+- 290: The `tasks/` output folder of the session is shared with other agents
+
+**MEASURED 2026-10-16, portal 0.36: ONE Socials composer schedules every channel (8 posts, not filmed).**
+Newest; read before any post half. **For scheduling it supersedes the per-channel composers and the
+Hour/Minute wheel below** (`ig-publish-*`, `li-publish-*`, "New TikTok"); the connect half (provider
+login, consent screens, identity checks on the provider side) is unchanged.
+- **Open it from Socials:** `/app/social`, `social-hub-compose-button` ("Write a post"), dialog
+  `social-composer-dialog`. Channels are chips, `social-composer-chip-<instagram|facebook|linkedIn|tiktok>`
+  (`aria-pressed`); one composer posts to every ticked channel.
+- **One caption box**, `social-composer-caption`, with NO hashtag chip box: hashtags go in the text
+  after a blank line. Fill, then byte-compare the textarea to the draft, as below.
+- **Media:** one hidden `input[type=file]` (`image/*,video/*`, multiple, order kept).
+  `social-composer-media-count` reads "N of 10" (Instagram, Facebook), "N of 20" (LinkedIn), "1 of 1"
+  (TikTok); guard the N, not the limit. Per-channel blockers: `social-composer-violation-<key>` and
+  `social-composer-blocking-reason`.
+- **Identity, read it before the press:** LinkedIn `social-composer-posting-as-linkedIn` (the Page
+  switcher is inside the composer now, and it must read the Company Page); Instagram and TikTok the
+  handle in the preview header or the TikTok panel; Facebook only the preview author and
+  `/app/channels/facebook`.
+- **The time picker replaced the wheel** (and its first-row defect): Later
+  `social-composer-timing-schedule` opens `social-composer-timing-when-sheet`; day
+  `social-composer-timing-when-day-YYYY-MM-DD`; time buttons `social-composer-timing-when-time-<minutes
+  after midnight>` (690 = 11:30 am, 1140 = 7:00 pm) in 15 minute steps; readback
+  `social-composer-timing-when-readback`; confirm `social-composer-timing-when-confirm`. Then read
+  `social-composer-timing-date` and the submit label ("Schedule for Fri, Oct 16 at 11:30 am"). Launch
+  Playwright with `timezoneId: 'America/Los_Angeles'` so the readback says Pacific Time.
+- **TikTok panel** (`social-composer-tiktok-panel`): privacy `tiktok-privacy-select`, option "Everyone";
+  Comment, Duet and Stitch (`tiktok-allow-*`) still default OFF, tick them; the disclosure toggle
+  defaults off. TikTok has NO preview in this composer.
+- **After Schedule the dialog STAYS OPEN** with a per-channel "Scheduled for ..." row and a Done
+  button. Wait for that row, not for the dialog to close.
+- **Media uploads at Schedule, not at attach.** Attaching writes nothing, so a prepared composer that
+  is closed leaves nothing behind. On Schedule each file goes to a `preupload-media-*` key and the
+  create promotes it under the post.
+- **Read-back that proves it:** GET `api/proxy/integrations/get?type=<key>` lists the scheduled
+  objects with `platform`, `accountHandle`, `publishDate` (UTC), the caption (`objectValue.caption` on
+  Instagram and TikTok, `postContent` on Facebook and LinkedIn), `postType` and `mediaKeys`.
+  Byte-compare the text there. Socials "Going out" lists only the next few, so it is not a full
+  read-back.
+- **Editing a scheduled post changes words only** (Socials, the post card's options, Edit: one
+  textarea and Save). Media, time, channel and author cannot change there; a media swap is Delete
+  plus re-create, which needs the owner's OK every time.
+- vivreal-hq run notes with the full method: `docs/agent-notes/tutorial-maker.md`, the 2026-10-16
+  sections.
 
 **MEASURED 2026-10-04, Instagram retake 2 (video 1, shot clean, portal v0.33.1).** Newest; read
 before the Facebook, LinkedIn and TikTok takes.
@@ -66,13 +111,13 @@ before the Facebook, LinkedIn and TikTok takes.
   nothing visible, waits 30 s, and fails, twice on camera. The screen turned dark-themed partway.
 - Back in Vivreal at `/app/channels/instagram?connected=true` with the toast "Instagram connected
   successfully" and the handle in the header. The composer preview also shows the handle.
-- **Composer:** `[data-testid=ig-create-carousel]`, file input `input[type=file]` (hidden,
+- *(Superseded for scheduling, see 2026-10-16.)* **Composer:** `[data-testid=ig-create-carousel]`, file input `input[type=file]` (hidden,
   `multiple`, the six slides attached in order), caption `[data-testid=ig-publish-caption]`,
   hashtags `[data-testid=ig-publish-hashtags]` is a chip box that commits on a SPACE. Never send
   Enter in that dialog: the same footer button posts immediately when timing is Now. **There is
   no alt text field** (Location only), so a draft's per-slide alt text cannot be entered here.
   Typing through CDP is slow: 799 characters at `delay:10` took about 150 s of take.
-- **Instagram's schedule picker is IN-PAGE, not native** (closes the qa-walk B7 gap): Later is
+- *(Superseded for scheduling, see 2026-10-16.)* **Instagram's schedule picker is IN-PAGE, not native** (closes the qa-walk B7 gap): Later is
   `[data-testid=ig-publish-timing-schedule]`, days are buttons named "Monday, October 5th, 2026",
   time is two scroll-snap columns (`[aria-label=Hour]`, `[aria-label=Minute]`, 28 px rows in an
   84 px window, only 3 rows visible) plus AM and PM buttons. **Only click a visible row**: a
@@ -129,7 +174,7 @@ read before any LinkedIn take.
   for that row.** The first r01 take had the text in the composer as Justin's personal profile
   and was killed before Post. A founder-voice row needs its "I" lines rewritten to "we" (r01 was,
   commit a5919cf) before it is posted; flag any you find rather than posting "I" from the Page.
-- **The identity is NOT picked inside the composer.** It follows the channel page's
+- *(Superseded for scheduling, see 2026-10-16.)* **The identity is NOT picked inside the composer.** It follows the channel page's
   `[data-testid=active-account-switcher-trigger]` ("VIEWING AS"), options
   `[data-testid=active-account-switcher-option]`; the Page is
   `:has-text("linkedin.com/company/vivreal")`. "All accounts" composes as the PERSONAL profile.
@@ -173,7 +218,7 @@ read before any LinkedIn take.
 - **The orphan's encode failed** with `close failed: Command failed: ffmpeg ...` (its stdio was
   the dead agent's pipe). `frames.txt` was written first, so the raw encodes by hand with the same
   ffmpeg line from that log (add `-t` to keep only the part you need), then `-ss <contentStartMs>`.
-- **LinkedIn schedule, measured 2026-10-05 (r12, no recording, headless Playwright on the portal
+- *(Superseded for scheduling, see 2026-10-16.)* **LinkedIn schedule, measured 2026-10-05 (r12, no recording, headless Playwright on the portal
   profile):** the composer has **no alt text field** (Photos, text, visibility, timing only), so a
   draft's `alt-text.md` cannot be entered. Press Later (`li-publish-timing-schedule`) first; the
   picker is the same in-page wheel, and the readback is `[data-testid=li-publish-timing-date]`
@@ -209,7 +254,7 @@ read before any TikTok take. Supersedes nothing above.
   TikTok username. **The composer header shows the real one** ("Vivreal, @vivreal.io"), so read the
   identity in the composer (`[data-testid=tiktok-publish-dialog]`), not on the channel page.
   Unlike LinkedIn, there is no "Viewing as" switcher for TikTok.
-- **Composer:** "New TikTok" (`clickRole button "New TikTok"`, no testid). Hidden `input[type=file]`
+- *(Superseded for scheduling, see 2026-10-16.)* **Composer:** "New TikTok" (`clickRole button "New TikTok"`, no testid). Hidden `input[type=file]`
   (accept `video/*`, single) inside the dialog; ring `button:has-text("Select a video")` and use
   `upload`. Caption and hashtags share ONE `textarea` (no chip box). Type the first words, then
   `fill` the rest and byte-compare `textarea.value` (110/2200 for r11, which is the true length;
@@ -222,14 +267,14 @@ read before any TikTok take. Supersedes nothing above.
   comments (r11 went out queued with all three off and had to be redone, 2026-10-05). Saved as
   `objectValue.disableComment/Duet/Stitch`. A queued post's card menu has Edit and an inline
   "Delete this for good?" confirm; the cards carry no id, so map them through the React props.
-- **TikTok's schedule picker is the same in-page wheel as Instagram's** (closes qa-walk B7 for
+- *(Superseded for scheduling, see 2026-10-16.)* **TikTok's schedule picker is the same in-page wheel as Instagram's** (closes qa-walk B7 for
   TikTok): `[aria-label=Hour]`/`[aria-label=Minute]` columns of 28 px rows in an 84 px window, AM and
   PM buttons, default today plus the next 5 minutes. **Hours already past today are DISABLED while
   AM is selected,** so the 07 click waited 15 s and failed on camera. Press PM FIRST, then the hour.
   **A wheel scroll over a column selects on settle** (scrolling minute up by 300 px landed on 05).
   Move the pointer off the columns (`ring` a calendar day) before any dialog scroll, or the scroll
   changes the time.
-- **Picker defect (portal, unfixed): the FIRST row of a column cannot reach the centre band.**
+- *(Superseded for scheduling, see 2026-10-16.)* **Picker defect (portal, unfixed): the FIRST row of a column cannot reach the centre band.**
   With minute 00 selected, `scrollTop` is 0, 00 sits in the top row drawn white on white, and the
   blue band shows a greyed 05. Hour 01 is the same. The truth is the line
   `p:has-text("Publishing Oct 5, 2026 at 7:00 PM")`, which sits UNDER the footer until the dialog is
