@@ -38,6 +38,50 @@ update; a loop that only waits out `_IN_PROGRESS` can read a stack that has not 
 naive check: the time moved, nothing is in progress, the workflow may be green. Production runs the
 previous code, and the release line now claims a version nobody is running.
 
+### Every function in the stack, with a count
+
+The stack status says the template applied. It does not say each function took the new code, so
+read every function the stack owns, and count them, because a loop that drops one prints nothing
+to say so:
+
+```bash
+export MSYS_NO_PATHCONV=1 AWS_PAGER=""
+sp() {   # usage: sp <stack> <expected function count>
+  local STACK=$1 WANT=$2 FNS N
+  aws cloudformation describe-stacks --stack-name "$STACK" \
+    --query "Stacks[0].[StackStatus,LastUpdatedTime]" --output text | tr -d '\r'
+  FNS=$(aws cloudformation list-stack-resources --stack-name "$STACK" \
+    --query "StackResourceSummaries[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" \
+    --output text | tr -d '\r')
+  N=$(echo $FNS | wc -w); echo "functions: $N (expected $WANT)"
+  [ "$N" = "$WANT" ] || echo "STOP: function count differs"
+  for f in $FNS; do
+    aws lambda get-function-configuration --function-name "$f" \
+      --query "[FunctionName,LastModified,CodeSha256,Environment.Variables.SENTRY_RELEASE]" \
+      --output text | tr -d '\r'
+  done
+}
+```
+
+- **`tr -d '\r'` on every name list is load-bearing on Windows.** The AWS CLI there ends
+  `--output text` with a CR, so the last name in the list carries it, the call for that function
+  fails, and the loop moves on. A release once read every stack this way and silently skipped the
+  last function of each one. The count is what makes a skip visible.
+- **`WANT` is read, not remembered.** Take it from the same `list-stack-resources` query in the
+  baseline BEFORE you dispatch, and change it only when the diff adds or removes a function in the
+  template. A count copied from an earlier release is the stale inventory this skill refuses.
+- **Never count with `length(...)` inside `--query`.** The CLI paginates `list-stack-resources`
+  and applies `--query` to each page, so a large stack printed two partial counts. List the ids
+  and count them in the shell, as above.
+- **Name only the fields you need.** The `--query` above reads one variable, `SENTRY_RELEASE` (a
+  commit id), and nothing else from the environment; never drop the `--query`, because the default
+  output prints every environment value.
+
+PASS needs the count to match AND every function to name the new release (or, where no
+`SENTRY_RELEASE` is set, a new `LastModified` and `CodeSha256`). For functions behind a `live`
+alias, also run the alias check in Step 3; the same `tr -d '\r'` and count rules apply to that
+loop.
+
 ## Step 2: when it failed, find the reason where it actually is
 
 - **Stack events.** `aws cloudformation describe-stack-events --stack-name <stack>` and take the
