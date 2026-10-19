@@ -143,6 +143,7 @@ flow the diff touches.
 - No unbounded loops on the request path
 - Big-O justified for any new loop or sort over user-controlled input
 - No new render thrash (unnecessary re-renders, missing memoization where it actually matters)
+- A request-path reply that can exceed 256 KB needs a projection, a batch size, or a written exception. Two exceptions are written: Studio opening a site by id (`getSites.js`, the full document by design) and the Client API siteDetails read (the public payload). A guard, not a tier workaround: it keeps latency, Lambda memory and a slow week on a small node from turning a big reply into a false "did not save" (design 15.3 in `vivreal-hq/docs/projects/next-release-v7/design-v7-01-76-77-2026-10-17.md`). No runtime byte counter exists, so estimate the worst case from the query's projection and limit.
 **How to verify:** Read every loop in the diff. Estimate worst-case input size. Reject anything quadratic or worse without justification.
 
 ### 8. Error handling
@@ -248,7 +249,7 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 ### 3. Performance & Scalability
 - Time complexity: O(n^2) loops, nested queries, N+1 problems
 - Space complexity: unbounded arrays, memory leaks, large closures in hot paths
-- Database: missing indexes, full collection scans, un-projected queries
+- Database: missing indexes, full collection scans, un-projected queries, a request-path reply that can exceed 256 KB with no projection, batch size or written exception (workflow item 7)
 - Network: unnecessary round trips, missing connection pooling, no timeout/retry
 - Caching: appropriate use (or appropriate avoidance) of caching
 - Bundle size impact for frontend changes
