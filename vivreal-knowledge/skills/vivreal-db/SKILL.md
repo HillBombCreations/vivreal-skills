@@ -100,8 +100,9 @@ to about 90 KB/s with no error); M10 has no such quota, but it is one small prim
 and a limit of 15 new connections per second per node. Project your reads (`find` with a projection,
 never whole site documents in a loop), because a heavy exploration session competes with the
 production sites for the same node. Limits and the live tier: `vivreal-atlas-topology`.
-Slow reads with ~0 ms server time are the data-out throttle, not your query. Diagnosis, levers and
-the pending tier change (Flex chosen 2026-10-14, switch held): `vivreal-atlas-topology`.
+On M0 (history, before 2026-10-17), slow reads with ~0 ms server time were the data-out throttle,
+not your query. On M10, look at the connection creation rate and the 2 GB node instead. Diagnosis
+and levers: `vivreal-atlas-topology`.
 
 **Routing rule: read the stored placement. NEVER compute one from the tier.**
 
