@@ -767,7 +767,7 @@ silently DROPS it and the section vanishes from the live page. When a page carri
 inline signup / contact / form section, either (a) bind it explicitly at its captured
 `order` and confirm the page `format` renders that binding, or (b) give it its own
 `format: 'subscribe'` / `'form'` page. Never assume "hero + N data sections", walk EVERY
-captured section and reconcile it against the blocks the format will emit. (insideOUT
+captured section and reconcile it against the blocks the format will emit. (examplebistro.example
 2026-07-05: a "Join Our Newsletter" form sat in the home page's `collections[]` at order 3
 but produced no block, so the inline signup silently disappeared from the rendered page.
 Deterministic backstop: strengthen `packages/site-loader/src/loader/convertBlocks.js` Invariant A to reconcile
@@ -1442,7 +1442,7 @@ every site automatically. Do NOT silently best-fit and report success, that hide
 > the block is appended automatically to any page carrying `reservationUrl`.
 > The `theme` query param is normalised to `standard` DETERMINISTICALLY at capture
 > (`src/capture/reservation.js`), so the captured src is already correct, do not rewrite it.
-> (insideOUT 2026-07-05: a `theme=wide` OpenTable widget scrolled the mobile page sideways and
+> (examplebistro.example 2026-07-05: a `theme=wide` OpenTable widget scrolled the mobile page sideways and
 > hugged the left edge; the first-class block + `theme=standard` fixes both.)
 
 Emit each as a `layout-format` gap with a clear `blockedReason` (mark it `neededPortalEditing: true`),
@@ -1715,7 +1715,7 @@ Rules:
   NOT from a guess about whether the logo's alt text "sounds like" the site name. Decision table:
   - `hasLogoImg: true`, `brandText: ""` → **logo-only**: author `navigation.brand = { "name": "" }`.
     The empty string tells the renderer to show the image only, no duplicate text. This is the
-    vivreal.io / insideOUT shape, the wordmark IS the logo image, there is no separate text.
+    vivreal.io / examplebistro.example shape, the wordmark IS the logo image, there is no separate text.
   - `hasLogoImg: true`, `brandText` non-empty → **both**: author `navigation.brand = { "name": "<brandText>" }`
     verbatim, the header genuinely shows a logo AND a distinct wordmark beside it.
   - `hasLogoImg: false`, `brandText` non-empty → **text-only**: author `navigation.brand = { "name": "<brandText>" }`
@@ -1751,7 +1751,7 @@ Rules:
   `about` block with real body copy): migrate the source site's legal text if the capture has it,
   otherwise emit standard boilerplate for the business (name, address, contact email/phone, and the
   actual third parties used, e.g. OpenTable / ordering / gift-card providers). Never leave
-  `/privacy` or `/terms` linked-but-empty. (insideOUT 2026-07-05: both pages rendered blank until
+  `/privacy` or `/terms` linked-but-empty. (examplebistro.example 2026-07-05: both pages rendered blank until
   real content was added. Deterministic backstop: make the legal footer column in
   `src/preview/toBundle.js` conditional on those pages existing.)
 - Map the source's primary nav CTA (e.g. "Start Free", "Get a demo") to `navigation.cta`.

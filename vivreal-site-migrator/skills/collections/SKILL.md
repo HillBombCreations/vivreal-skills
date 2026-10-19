@@ -489,7 +489,7 @@ subscribe popup work, so the Site/Loader stage must (1) register it in the site'
 `emailPopup.collectionId` = this collection's `_id`. The popup only SHOWS when
 `emailPopup.enabled` is true OR a `siteRole:'subscribers'` collection is registered, and it
 only CAPTURES when `collectionId` resolves, setting `enabled` alone yields a dialog that
-fails every submit with a blank collectionId. (insideOUT 2026-07-05: a "Newsletter
+fails every submit with a blank collectionId. (examplebistro.example 2026-07-05: a "Newsletter
 Subscribers" collection existed with `siteRole:'subscribers'` + `email`, but it was NOT in
 `site.collectionGroups` and `emailPopup.enabled`/`collectionId` were unset, so the popup was
 silently disabled.)

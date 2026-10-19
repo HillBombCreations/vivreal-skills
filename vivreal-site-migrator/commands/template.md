@@ -176,7 +176,7 @@ the row file also ships `previewImageKey: null`. A kit is registered only when a
 the portal's CSS vignette, which is a registration gap, not a done state.
 **Template sites live on the Vivreal Content group:** any site instantiated from a template for
 validation, demo, smoke, or showcase purposes is created on **Vivreal Content**
-(`groupName "Vivreal Content"`, key `vivrealcontent`, `_id 6a68169fe1457c2f3fd04530`,
+(`groupName "Vivreal Content"`, key `vivrealcontent`, `_id <look up by key vivrealcontent>`,
 dbKey: read the group's own stored `dbKey` live, never a literal; demo user `vivreal-content-demo`), NEVER the `vivreal` group (the
 2026-07-20 smoke polluted its quota and forced a tier bump) and NEVER a prospect demo account
 (those are for client migrations). Instantiate via the portal picker while signed into the

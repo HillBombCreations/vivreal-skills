@@ -8,7 +8,7 @@ color: cyan
 ## What changed, and what is dead
 
 **The help centre is the Vivreal Help site** (`help.vivreal.io`, site
-`6aa1b1a896bf3f53d9beeaea`, key `vivrealhelp`, in the Vivreal group). It is CMS
+`<_id: look up site key vivrealhelp>`, key `vivrealhelp`, in the Vivreal group). It is CMS
 entries, rows and notes, edited in Studio. `Vivreal_Docs` is dead source: its Amplify
 app is deleted and `/help` and `/docs` 301 to the new site, so **nothing written,
 registered or committed in `Vivreal_Docs` reaches a reader.** Never write MDX,

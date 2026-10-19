@@ -149,7 +149,7 @@ NEVER run `commands/load.js` from this workflow, that is the production cutover.
 
 For a template site already instantiated via the picker, the target lives on the
 **Vivreal Content group** (`groupName "Vivreal Content"`, key `vivrealcontent`,
-`_id 6a68169fe1457c2f3fd04530`, dbKey `pod_02`, read from the group doc 2026-09-27), our own demo tenant,
+`_id <look up by key vivrealcontent>`, dbKey `pod_02`, read from the group doc 2026-09-27), our own demo tenant,
 which is WHY live edits are acceptable here: revert everything, and never walk a
 customer's site. Drive the real portal via the Playwright MCP browser with an
 operator-provided session (ask the operator to log in; never handle credentials
@@ -166,7 +166,7 @@ STOP and flag it, that's a process violation (template sites belong there).
   Studio loads is permanently degraded: every later walk re-drops it (it was
   never loaded), while the baseline still remembers the original, and the
   diff reports the same FAIL forever, including after you fix the real bug.
-  This cost a long debugging detour on the Doug's Kitchen round: the drop was
+  This cost a long debugging detour on the Example Diner round: the drop was
   real once, then an artifact on every subsequent run.
   **Before concluding a roundtrip FAIL is real, prove the shim still SERVES the
   field**: `curl -s http://127.0.0.1:8799/api/sites | node -e "…"`. If it does

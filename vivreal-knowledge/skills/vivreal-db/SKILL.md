@@ -90,7 +90,7 @@ equally wrong to say there are exactly three. The shape, which is stable:
 |---|---|---|---|
 | `Vivreal` | **Control plane (mainDb)** | `groups`, `leads` (+ lifecycle `activated`/`activatedAt`), `checkout_sessions`, `media_files`, `usage_trackings`, `domainOrders`, `domains`, `inquiries`, `emailEvents`, `suppressions` (lifecycle-email), `dataDeletionRequests`, `site_traffic_dailies` (first-party analytics rollup; code and docs call it `site_traffic_daily`, but VR_Analytics_API pins `collectionName: 'site_traffic_dailies'`, so a query on the singular name is a false zero), `commerce_dailies`, `product_search_terms`/`product_search_dailies`, analytics caches, push subs, oauth verifiers. List them with `listCollections`; `prospects` is gone (dropped 2026-07-27, absent 2026-10-15) | ALL groups (registry) |
 | `pod_01` (was `general_shared` until 2026-09-23) | **Tenant content** | `collection_groups`, `collection_objects` (incl. the SIX Outreach system groups, sequences/enrollments/contacts/senders/companies/segments, with `calls[]` + bookings on senders/companies), `integration_objects`, `sites`, `site_versions`, `content_versions`, `audit_logs`, `webhooks`, `stripe_webhook_events`, `square_webhook_events`, `metaWebhookEvents`, `instagram_comments`/`instagram_conversations`/`instagram_messages` | **Whichever groups carry `dbKey: "pod_01"`**: every customer group and the Vivreal group, across several tiers |
-| `pod_02` (was `pro_plus` until 2026-09-23) | **Tenant content**, same shape as `pod_01` (the old `pro_plus` also carried a `stripe_products` collection holding ZERO documents, dead storage nothing reads, CMS CLAUDE.md:228-232) | same shape as `pod_01` | **Only the Vivreal Content group** (`6a68169fe1457c2f3fd04530`), placed there deliberately. NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
+| `pod_02` (was `pro_plus` until 2026-09-23) | **Tenant content**, same shape as `pod_01` (the old `pro_plus` also carried a `stripe_products` collection holding ZERO documents, dead storage nothing reads, CMS CLAUDE.md:228-232) | same shape as `pod_01` | **Only the Vivreal Content group** (`<_id: look up group key vivrealcontent>`), placed there deliberately. NOT keyed on a tier. Census it: `Vivreal.groups` grouped by `dbKey` |
 | `outreach` | **Outreach service** | `suppressions` only (global suppression list). NOTE: outreach **contacts/companies/enrollments are NOT here**, see below. | service-global |
 | a slugified group name | **Legacy or stranded per-group DB** | usually only `audit_logs`, sometimes `content_versions` | Possibly no group at all. At least one such database has no group pointing at it. Do not rely on this pattern, and do not assume there is only one |
 
@@ -132,9 +132,9 @@ From the `active_ctx` JWT in the portal:
 
 | Field | Example | What it is | Used for |
 |---|---|---|---|
-| `groupID` | `6795c1358b97114840265e65` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc, tenant scoping |
+| `groupID` | `0123456789abcdef01234567` | The group's Mongo `_id` (string form) | The `groupID` filter on EVERY tenant doc, tenant scoping |
 | `dbKey` | `pod_01`, `pod_02`, or another placement name (`general_shared`/`pro_plus` are retired and refused) | The **stored** tenant database name, read back by `resolvePlacement(group)`. Never computed | Selecting the tenant database; passed as the `key` query param to CMS API |
-| `group.key` (`bucketname` in `active_ctx`) | `exodussalescollective` | The group's URL **slug** | Half of the S3 bucket formula, CDN media paths, NOT database routing |
+| `group.key` (`bucketname` in `active_ctx`) | `examplesalesco` | The group's URL **slug** | Half of the S3 bucket formula, CDN media paths, NOT database routing |
 
 `dbKey` is the database name. `group.key` is the slug. They are different values.
 

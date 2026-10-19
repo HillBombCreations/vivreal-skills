@@ -54,7 +54,7 @@ Read this section as the state of the world, and the next one as a plan that has
   `general_shared` gets ZERO documents, not an error**, which reads as "the record was deleted".
   Pair every lookup with a positive control.
 - **Who is where:** `pod_01` holds every customer group and the Vivreal group; `pod_02` holds only
-  the Vivreal Content group (`6a68169fe1457c2f3fd04530`), placed there deliberately to keep
+  the Vivreal Content group (`<_id: look up group key vivrealcontent>`), placed there deliberately to keep
   Vivreal's own content tenant off the shared placement. Tier does NOT decide placement.
 - **`DEFAULT_PLACEMENT` for a new group is `pod_01`** (`src/placement/choosePlacement.ts:19`). The
   retired `@hillbombcreations/tenant-placement` package still says `general_shared`; anything that
