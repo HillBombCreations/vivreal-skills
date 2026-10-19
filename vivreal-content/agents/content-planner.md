@@ -323,7 +323,7 @@ clean for meetings.
 
 | Field | Value |
 |---|---|
-| `calendarId` | `c_68625c497a18303d35f93545886fcbe12b41e96467aad34e057ee7d4ecfea531@group.calendar.google.com` |
+| `calendarId` | `<vivreal-content-calendar-id>` (the real id is in vivreal-hq `docs/agent-notes/content-planner.md`) |
 | Default `timeZone` | `America/Los_Angeles` |
 | Post event duration | 30 minutes |
 | Shoot block duration | 2 hours |
