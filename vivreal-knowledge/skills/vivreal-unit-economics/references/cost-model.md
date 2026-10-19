@@ -133,12 +133,13 @@ Per-customer gross margin ≈ `plan price - Stripe fee (~2.9% + $0.30) - AI toke
 
 Per-tier net margin is a three-input calculation: the price from `TIER_DISPLAY`, the Stripe fee
 for that price, and the optimised AI cost from the quota. **Compute it against the current
-ladder.** The durable conclusions, which do not depend on the numbers: every paid tier clears
-the margin floor comfortably at typical use, the top paid tier is the thinnest at maximum use
-and payment fees plus AI are the only two per-customer costs that matter at all.
+ladder.** The 2026-10-17 margin check put the top paid tier above the ~80% floor at typical use
+and the entry paid tier below it, because per-site rebuilds (Amplify build minutes) are the
+largest per-customer cost; payment fees are the other per-customer cost that matters.
 
-Blended gross margin lands **~84-90%** and improves with scale because fixed infra amortizes
-across more customers. **Fixed infra is about $195/mo on the September close with M10
+Blended gross margin is not quoted here: re-derive it, because the entry paid tier was below the
+~80% floor on 2026-10-17. It improves with scale because fixed infra amortizes across more
+customers. **Fixed infra is about $195/mo on the September close with M10
 budgeted** (AWS usage $109.41 plus tax $9.96, Atlas M10 $60 to $65 budgeted, GitHub Team, one
 non-product domain renewal), excluding the Amazon Registrar pass-through for customer domains.
 October is running well above September (Amplify builds, CloudWatch alarms and WAF), so

@@ -15,7 +15,7 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 > **Sources of truth, and the order to trust them in.** Pricing and quota constants:
 > `@hillbombcreations/tier-quotas` `src/tierQuotas.ts`, which is authoritative and which also
 > holds the Stripe price ids. Live customer mix and counts: query `Vivreal.groups`. Live Atlas
-> headroom: `db.adminCommand({serverStatus: 1})`, which is permitted on the shared tier and
+> headroom: `db.adminCommand({serverStatus: 1})`, which is permitted on M10 (and was on M0) and
 > returns `connections.current` and `connections.available` directly. Infrastructure spend: the
 > AWS bill and the MongoDB invoice, which are two separate bills. **Everything below is
 > reasoning and magnitude. Where a number is pinnable, this file points at the pin rather than
@@ -101,7 +101,7 @@ Three specific traps this table used to walk into:
 
 The Atlas cost lever is driven by **simultaneous in-flight backend requests**, not how many customers exist. Each warm Lambda container holds ~6-15 Mongo connections, so the connection cap converts into a ceiling on concurrent requests:
 
-- **The shared tier has a hard connection cap, and a production walk has hit it.** Read the live headroom with `serverStatus` before reasoning about it; do not quote a remembered ceiling. The conversion that matters: each warm Lambda container holds a handful of Mongo connections, so the cap becomes a ceiling on concurrent in-flight requests, and a rule of thumb of about three connections per concurrent user is close enough for planning.
+- **The cluster has a per-node connection cap and a connection-creation rate limit** (M10 since 2026-10-17; read `ConnectionsCap`, and see `vivreal-infra:vivreal-atlas-topology`). Read the live headroom with `serverStatus` before reasoning about it; do not quote a remembered ceiling. The conversion that matters: each warm Lambda container holds a handful of Mongo connections, so the cap becomes a ceiling on concurrent in-flight requests, and a rule of thumb of about three connections per concurrent user is close enough for planning.
 - **Each Atlas tier step raises the cap by roughly a factor of three.** Read the current tier and its cap from the Atlas console or `serverStatus`, and price the step from the MongoDB invoice, which does not appear on the AWS bill.
 - Daily spikes from the public Client API already pushed against the old 500-connection M0 cap, which is why the cluster moved to M10 on 2026-10-17 despite light total volume. **Re-measure before citing a spike figure**: this one has been quoted three-times wrong in this repo before.
 - **Implication for forecasting:** model the DB-tier step from a peak-concurrency projection, not a signup count. A traffic burst forces the upgrade long before raw customer count would.
