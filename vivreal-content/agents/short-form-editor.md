@@ -81,6 +81,10 @@ voice and no music is complete. `tone` never overrides voice rules or the honest
    and re-check once; still failing → status `failed` with notes.
 6. **Emit `edit-brief.json`** (schema: `src/edit-brief.ts`; beats reference
    manifest clip ids with in/out windows, narration, caption, role).
+   A beat may set `stillId` (an id from the manifest's `stills`) instead of `clipId`, with
+   `targetDurationMs` or narration for its length, optional `crop: { x, y, w, h }` in still
+   pixels for a card above the captions, and optional `zoom: { from, to }` between 1 and 1.5;
+   cut still videos only through render-video, never an ffmpeg script.
    **Make the voice LEAD the picture, and set the windows from measurements.**
    `beat-planner.ts` sets a beat to `max(audioDurationMs, targetDurationMs)` and
    `MovieRecut` starts that beat's wav on its first frame, so `inMs` is the ONLY
