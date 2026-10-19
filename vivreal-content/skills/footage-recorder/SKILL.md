@@ -464,6 +464,46 @@ the product (the "Harbour Street Barbers" still, 2026-10-14). If a frame needs a
 rename it in the product as an approved write (a believable demo name, recorded, read back), shoot,
 then put it back. A help still must show nothing edited.
 
+### The capture write guard (V7.110, vivreal-hq PR 37, 2026-10-18)
+
+On 2026-10-15 a Bookings list delete went through during a capture while the guard's request log
+stayed EMPTY: it listened on the page only, so a write from a second tab, a popup or the portal's
+service worker was invisible. `watchWrites` in
+`packages/content-studio/src/tutorial/scripts/help/_help.ts` now guards the whole browser context.
+Operate it by these rules:
+
+- **It blocks, it does not only watch.** `context.on('request')` records every write, and
+  `context.route` answers any write not on the take's allow list with a readable 403 before it
+  leaves the browser, for every page, popup and service worker in the context. The take fails on a
+  refused write; the log reads `WRITE <method> <path>` and `BLOCKED <method> <path>`.
+- **The 403 is deliberate; never change it to an abort.** The portal queues a write for a later
+  retry only when it gets no response at all, and that retry would run later from the shared
+  profile with no guard.
+- **A take refuses to start while the portal's offline queue holds anything** (IndexedDB
+  `vivreal-cache`, store `pendingMutations`): a queued replay the server refuses stays queued and
+  would land after the take. Do not empty the queue to get past it. Those are someone's pending
+  writes; report what it holds and stop.
+- **Put the take tab on the portal origin before arming.** IndexedDB is per origin, so the queue
+  check refuses from any other page, and the unload guard (which drops `sendBeacon` and strips
+  `keepalive`, both of which skip `context.route`) patches only portal-origin tabs. On a take
+  attached over CDP to the owner's own Chrome, the owner's other sites are left alone, but every
+  tab in that context still cannot write until the check runs.
+- **An approved write needs its own allow-list entry, anchored on host and method** (the model is
+  `WRITE_A_POST_WRITES`, the presigned S3 PUT only). A broad pattern such as
+  `/upload|presign|media/i` once passed media-library deletes and contact uploads.
+- **Two writes the app makes on view** (refresh-profile, recommendations/events) are blocked
+  without failing the take and counted as "blocked on view" in the summary line. Not a defect in
+  your take.
+- **Not covered:** WebSocket frames, and the browser's HTTP cache is off for the take (first loads
+  are slower).
+- **The guard is armed by the help scripts, not by `src/portal-capture.ts`**, which arms no request
+  guard (vivreal-hq `main`: `watchWrites` is in `_help.ts` and the ten `help-*.ts` scripts, and
+  absent from `portal-capture.ts`). For a `portal-capture.ts` sequence the read-backs in steps 5
+  and 7 above are the only proof.
+- **An empty request log is never proof that nothing was written.** Read the item back from a fresh
+  process, as steps 5 and 7 require. The guard narrows the risk; the eight steps still apply in
+  full.
+
 ### Preconditions per surface
 
 Check these before planning a frame. A missing precondition is a reason to film something else
