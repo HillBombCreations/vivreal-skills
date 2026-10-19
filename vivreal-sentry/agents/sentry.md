@@ -114,7 +114,7 @@ Every event emitted from backend services now carries the following tags. Use th
 | `environment` | CFN `SentryEnvironment` param (CI-set) | `production`, `staging` | First filter, never investigate without scoping to prod vs staging |
 | `groupID` | `handleHBRoutes`/`handleTenantRoutes` middleware + `setTag` after resolved | `68f27fec32e7acbb755c087e` | Tenant-scoped triage. Empty on pre-auth routes. |
 | `dbKey` | Same middleware | `pod_01`, `pod_02` | DB-routing-scoped triage: which tenant pod served the request. `general_shared` and `pro_plus` appear only on events from before the September 2026 pod rename; those databases no longer exist. |
-| `bucketname` | Client API errorHandler (authorizer ctx) | `collection-thecomedycollective` | S3-pipeline issues; ties events to specific media tenant |
+| `bucketname` | Client API errorHandler (authorizer ctx) | `collection-examplecomedyclub` | S3-pipeline issues; ties events to specific media tenant |
 | `requestId` / `request_id` | Header `x-request-id`, generated at portal edge | `a1b2c3d4...` | **Critical fallback** when trace propagation breaks, see Playbook 7 |
 | `lambda` | `process.env.AWS_LAMBDA_FUNCTION_NAME` | `VR-Secure-API-UserAndAuth-...` | Which Lambda fired the event |
 | `route` | `req.originalUrl` | `/api/profileSwitch`, `/tenant/collectionObject` | Endpoint-scoped triage |

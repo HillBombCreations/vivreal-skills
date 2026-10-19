@@ -42,7 +42,7 @@ displays, is a **DEFECT**, not a stylistic choice.
   order) AND its **FULL weekly `hours`** (every day the site lists, e.g. `Mon,
   Closed / Tue-Sun, 7am-2pm` as a 7-line richtext), NOT a condensed one-liner. A
   location card that renders `description` (not `hours`) will clamp, put the full
-  hours where the layout shows them. (JL Patisserie shipped with empty `image` +
+  hours where the layout shows them. (patisserie.example shipped with empty `image` +
   condensed hours, both parity defects.)
 - Only the platform's rendering STYLE may differ; the DATA must be 1:1.
 

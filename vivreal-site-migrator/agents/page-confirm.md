@@ -127,7 +127,7 @@ then restart :3000. On any data/authoring change, re-bundle and restart BOTH :87
   joins, `™` folding, counting `navigation.menuItems` while the 7th entry lives in
   `navigation.cta`, expand-glyph `+` suffixes, `$ne` against a missing Mongo field, and stale
   artifacts have each independently produced a confident false defect that reached a findings
-  doc. **Distrust the first parity number**, wrinsy's first sweep said 111 missing headings,
+  doc. **Distrust the first parity number**, firstmigration.example's first sweep said 111 missing headings,
   the refined one said 12, and the real answer was zero missing content.
 - **Check artifact freshness before quoting a number.** `ls -la` the `qa-*.json` against
   `blueprint.json`. An artifact older than the blueprint it measured is not evidence; re-run

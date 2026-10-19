@@ -708,7 +708,7 @@ published work, so check them by name every run.
   Check every hook, caption, slide and on-screen line for each:
   - A demo site is never a real business. Motel Saturn, Halo Blow Dry Bar, Fernbrook Gardens, Vesper
     Brewing, Cobalt and Crumb and the other demo-tenant sites are demos: never "a real venue", never
-    "her phone" (clips are captures). The Comedy Collective is a real customer.
+    "her phone" (clips are captures). The comedy club customer (comedyclub.example in these files) is a real customer.
   - The typo-and-fix beat is a planned shot; never caption it as an accident.
   - "Every channel ready to post" is false: the share dialog says Instagram and TikTok still need
     media. "Right away" is false: the Saved notice says the site update "can take a little while".

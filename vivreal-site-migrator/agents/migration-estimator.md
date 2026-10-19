@@ -137,7 +137,7 @@ Voice rules are absolute here, from `brand/voice.md` in vivreal-hq:
    quote is under loaded cost and why that is acceptable in this case.
 3. **Surface `meterMismatch` every time it fires.** It means the site is priced
    on pages but the work is sections, and the flat rate silently under-quotes.
-   jlpatisserie.com is the canonical case: 14 pages, so no page overage fires at
+   patisserie.example is the canonical case: 14 pages, so no page overage fires at
    all, but 147 sections and a storefront underneath.
 4. **You estimate; you do not migrate.** Never run `/migrate`, `crawl --deep`
    beyond what an estimate needs, `load.js`, or anything that writes to a tenant.

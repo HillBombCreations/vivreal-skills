@@ -122,7 +122,7 @@ Now step out and explain, as an expert on that platform's audience and current n
   - **Narration persona, added 2026-10-05.** Any first-person "I" voiceover is only honest over
     disclosed demo-tenant footage (`vivreal-content-demo`, e.g. Cobalt and Crumb), and the post's
     own caption must carry a disclosure ("Demo bakery, real product." or equivalent). Over a REAL
-    customer's own footage (signed out, no portal session, e.g. a comedycollectivechi.com-style
+    customer's own footage (signed out, no portal session, e.g. a comedyclub.example-style
     shoot), narration must be third person in Vivreal's own voice ("We moved the past shows to
     the top"); a first-person line there is a DO NOT POST regardless of how clean the cut is,
     because it makes the content speak as if it were that customer.

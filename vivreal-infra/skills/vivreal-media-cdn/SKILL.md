@@ -9,8 +9,8 @@ How media is stored, uploaded, and delivered across the stack. Bytes live in **S
 
 ## S3 bucket naming
 
-- Per-group bucket slug = **`vivreal-{group.key}`** (e.g. group key `thecomedycollective` → bucket `vivreal-thecomedycollective`). `group.key` is the URL slug, **NOT** `dbKey` (which is the tenant database name, a pod such as `pod_01`). Confusing them is a classic bug (see `vivreal-db`).
-- Some contexts use `${group.type}-${group.key}` as the S3 path prefix / `bucketname` (e.g. `collection-thecomedycollective`), unless the group stores its own `bucket` (25 of 26 do, 2026-10-15). The bucket is `bucketOf(group)` (stored `bucket`, else that formula); see `vivreal-db`.
+- Per-group bucket slug = **`vivreal-{group.key}`** (e.g. group key `examplecomedyclub` → bucket `vivreal-examplecomedyclub`). `group.key` is the URL slug, **NOT** `dbKey` (which is the tenant database name, a pod such as `pod_01`). Confusing them is a classic bug (see `vivreal-db`).
+- Some contexts use `${group.type}-${group.key}` as the S3 path prefix / `bucketname` (e.g. `collection-examplecomedyclub`), unless the group stores its own `bucket` (25 of 26 do, 2026-10-15). The bucket is `bucketOf(group)` (stored `bucket`, else that formula); see `vivreal-db`.
 - S3 IAM is scoped `arn:aws:s3:::vivreal-*` via `Vivreal-Client-S3-Access`. New buckets are created fully locked (`BlockPublicAcls`/`IgnorePublicAcls`/`BlockPublicPolicy`/`RestrictPublicBuckets: true`) + a **CloudFront OAC** bucket policy, public read ONLY through the CDN, never direct S3.
 - **Media is NEVER stored in MongoDB**, only S3 paths/metadata (the `mediafiles` collection). Deleting a doc deletes the S3 objects + decrements `mainDb.groups.mediaUsage`.
 

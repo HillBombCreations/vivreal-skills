@@ -21,7 +21,7 @@ nav from the product (see the agent's "Read the nav from the product" rule).
 - 333: MEASURED 2026-09-29, second walk, during the P6 shoot. Newer than the re-walk above
 - 376: The share beat, and why the scripts are wrong about it
 - 399: MEASURED 2026-09-29, third pass: re-taking the published-site proof shots
-- 479: MEASURED 2026-09-30, filming a LIVE CUSTOMER SITE (P6-T0, comedycollectivechi.com)
+- 479: MEASURED 2026-09-30, filming a LIVE CUSTOMER SITE (P6-T0, comedyclub.example)
 - 560: MEASURED 2026-10-02, after the release train. READ THIS FIRST, it is the newest
 - 689: MEASURED 2026-10-02, shooting the twelve-site P6 round. Newest of all
 - 802: The 2026-09-08 list, SUPERSEDED. Kept for history, not for planning
@@ -476,7 +476,7 @@ the origin promptly is still unmeasured**. Nothing in the portal was opened at a
 no Channels, no campaigns, no inbox. The renderer contrast regression that would take MOTEL
 SATURN's bar to 1.11:1 was UNPUBLISHED at the time of the shoot and is not re-checked here.
 
-### MEASURED 2026-09-30, filming a LIVE CUSTOMER SITE (P6-T0, comedycollectivechi.com).
+### MEASURED 2026-09-30, filming a LIVE CUSTOMER SITE (P6-T0, comedyclub.example).
 
 **Why this one is different from everything above it.** Every other section in this file is about
 the portal or about a Vivreal demo site. This run filmed a real customer's published site, signed
@@ -494,7 +494,7 @@ and its subdomains, so a customer on their own domain never renders it. That is 
 `*.vivreal.io` rule higher up this file, and it is correct in both places.
 
 **3. The site can open its OWN newsletter modal, and the timing is a few seconds, not fourteen.**
-comedycollectivechi.com opens a "Stay Updated" dialog **3.7s** after a home page load. It does
+comedyclub.example opens a "Stay Updated" dialog **3.7s** after a home page load. It does
 **not** reopen within 100s of being dismissed and it does **not** appear on `/shows`. Dismiss it in
 the pre-roll with `[role=dialog] button[aria-label="Close"]`. **It does not blur the page here**
 (`getComputedStyle(document.body).filter` is `none`), which is a different shape from the demo

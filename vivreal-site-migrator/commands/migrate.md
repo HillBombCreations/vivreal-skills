@@ -168,7 +168,7 @@ node commands/qa-live-parity.js captures/<domain> --migrated http://localhost:30
 a title-only PDP. Heading and nav drift, contrast, skeleton and alignment stay report-only
 because they need a human. **Read `docs/parity-comparator-rules.md` FIRST, every time.** That
 document exists because comparators have produced more false defects on this pipeline than
-the pipeline has produced real ones (wrinsy.com: 111 reported missing headings, then 12, then
+the pipeline has produced real ones (firstmigration.example: 111 reported missing headings, then 12, then
 zero real), and automating the comparator does not make its output trustworthy. Work its
 8-point checklist before opening any defect either command reports.
 
