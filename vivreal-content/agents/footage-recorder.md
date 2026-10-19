@@ -469,7 +469,7 @@ then put it back. A help still must show nothing edited.
 On 2026-10-15 a Bookings list delete went through during a capture while the guard's request log
 stayed EMPTY: it listened on the page only, so a write from a second tab, a popup or the portal's
 service worker was invisible. `watchWrites` in
-`packages/content-studio/src/tutorial/scripts/help/_help.ts` now guards the whole browser context.
+`vivreal-hq/packages/content-studio/src/tutorial/scripts/help/_help.ts` now guards the whole browser context.
 Operate it by these rules:
 
 - **It blocks, it does not only watch.** `context.on('request')` records every write, and
@@ -496,7 +496,7 @@ Operate it by these rules:
   your take.
 - **Not covered:** WebSocket frames, and the browser's HTTP cache is off for the take (first loads
   are slower).
-- **The guard is armed by the help scripts, not by `src/portal-capture.ts`**, which arms no request
+- **The guard is armed by the help scripts, not by `vivreal-hq/packages/content-studio/src/portal-capture.ts`**, which arms no request
   guard (vivreal-hq `main`: `watchWrites` is in `_help.ts` and the ten `help-*.ts` scripts, and
   absent from `portal-capture.ts`). For a `portal-capture.ts` sequence the read-backs in steps 5
   and 7 above are the only proof.
