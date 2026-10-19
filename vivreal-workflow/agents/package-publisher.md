@@ -112,6 +112,24 @@ failed or the roster could not be fetched, so nothing below that line is evidenc
 rather than grep the fleet by hand when the job is "is the old version gone", a plain grep for a
 package name misses five of its six documented forms.
 
+**A renderer re-pin is not only a lockfile; two generated artifacts move with it.**
+`@hillbombcreations/site-renderer` feeds two things that are generated from the exact version, and a
+re-pin that skips either ships a mismatch no unit test sees:
+- **VR_Secure_API's worker capability manifest**,
+  `src/instantiateTemplateWorker/assets/renderer.capability.json`. Regenerate it in the SAME re-pin
+  commit with `Vivreal_Site_Migrator`'s `commands/regen-worker-manifest.js`, from a freshly packed
+  tarball of the PUBLISHED version (the registry's, not a local build or a dev overlay), and keep
+  its byte-identical proof. If the migrator's own declared renderer is older, adopt the new version
+  in a scratch worktree and commit nothing there. Say in the commit which capability fields changed.
+- **The portal's Studio previews.** `npm run previews:build` in the portal rewrites
+  `src/data/studio-previews.manifest.json` (it records the LOCKED renderer version and a hash per
+  picture), and the new pictures must be uploaded (`--upload --bucket <name>`, a production write
+  that needs the owner's go) and answer 200 on the media CDN BEFORE the portal deploys, or the
+  Studio's pickers show broken pictures. Pictures are named by content hash, so upload new keys
+  only, never overwrite. Prove it: HEAD every file the manifest references and expect all 200, plus
+  a negative control that answers 403 or 404, so the check can fail. In the 2026-10 renderer
+  releases this was done for each of two consecutive versions.
+
 **Producer publishes before any consumer bumps, always.** If you are also releasing the shared
 package, publish it to the registry FIRST, a consumer's `npm install`/patched lockfile cannot
 resolve a version that does not exist yet.
