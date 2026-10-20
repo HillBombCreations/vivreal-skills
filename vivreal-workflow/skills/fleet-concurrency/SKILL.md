@@ -1,5 +1,6 @@
 ---
-description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, how many agents to run and the shared session budget, one publisher per shared target, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
+name: fleet-concurrency
+description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the cap of four agents and the shared session budget, routing new finds to the agent that owns the area, one publisher per shared target and one consumer bump pass, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
 ---
 
 Parallelism here is limited by the machine and by a handful of shared resources,
@@ -59,6 +60,14 @@ green against a tree that is not the one it changed. If a step needs a running
 portal, serialize that step across the whole batch, and identify a running server
 by its **path**, never by the package banner, because the portal's package name
 does not match its repository name.
+
+**`VR_HARNESS_OFFSET` gives a targeted portal e2e run its own ports.** The harness
+reads it as an integer from 0 to 400 and shifts the app port, the mock-upstream
+port and the Next dist dir for that run (portal `e2e/fixtures/harnessPorts.ts`;
+offset 0 is the historical pair, and a bad value throws rather than falling back to
+0). v7 reviewers ran targeted e2e at small non-zero offsets while the default ports
+stayed free. A second agent running targeted e2e sets it. The pre-push gate still
+binds the defaults, so it stays one at a time.
 
 **One stash, shared across every worktree.** Worktrees share the common git
 directory, so they share one stash stack. lint-staged stashes. Two agents
@@ -133,11 +142,27 @@ either way.
 
 ## Budget and collisions
 
-**Pacing (owner, 2026-10-14).** Run about five agents at once. When about six are
-running, stop dispatching until three or four have finished, then refill to about
-five. Restarting an agent that crashed (a login error, a dropped connection) is not
-a new dispatch. Prefer handing new work of the same kind to an agent about to finish
-in the same repository over a fresh dispatch.
+**Cap: at most four background agents at once (owner, 2026-10-17; it replaced the
+earlier "about five").** Count every coder, reviewer, researcher, walker and ledger
+agent. An orchestrator that runs its own sub-agents uses slots too, so leave it the
+slot it needs (v7's coordinator held the fourth slot for exactly that). When a slot
+frees, start the next item rather than idling. Restarting an agent that crashed (a
+login error, a dropped connection) is not a new dispatch. Prefer handing new work of
+the same kind to an agent about to finish in the same repository over a fresh
+dispatch.
+
+**Route every find at once (owner, 2026-10-19).** The moment a walk, review or coder
+surfaces a new item, hand it to the running agent that owns that repository or area
+(a message, for same-scope work), or dispatch a new agent if a slot is free. Never
+hold finds for a later batch. Walkers append each defect to a live `*-defects.md` as
+they find it, and the coordinator watches that file (one background wait, not a poll
+loop) so research and fixes start mid-walk. There is still one retest at the end.
+
+**A message may narrow or add same-scope work; a widened authority needs a fresh
+dispatch.** Merge, release, a production write, a real-account action, or the
+owner's go for any of them, goes in the FIRST prompt of a new dispatch. An agent
+correctly refuses a go relayed as a mid-task message (v7 release engineer,
+2026-10-20).
 
 **The session budget is shared, and it kills every agent at once.** Nine agents
 fanned out on 2026-10-04 drained it and seven died together mid-work, two with code
@@ -158,6 +183,14 @@ targets. Exactly one agent publishes to each at a time, and it publishes from me
 `master`, never from a feature branch while sibling PRs are unmerged; a cleanup
 agent once republished three kits from its own branch and the registry served
 already-removed content for four minutes.
+
+**Publish every pending package first, then ONE consumer bump pass (owner,
+2026-10-19).** When several `@hillbombcreations/*` packages have changes, publish all
+of them (each reviewed and verified on the registry), and only then dispatch one bump
+pass that moves every consumer to every new version, one commit per consumer on its
+release lane. Bumping per package multiplies commits, lockfile edits, suite runs and
+reviews in every lane. An agent that needs a package change mid-build reports it; it
+never publishes and bumps on its own. The bump pass itself is `package-publisher`.
 
 **Namespace the scratchpad.** It is shared by every agent and session. Write
 `scratchpad/<task-slug>/<file>`, never a generic name (`count.py`, `out.txt`,

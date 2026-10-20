@@ -207,10 +207,18 @@ await page.setViewportSize({ width: 1280, height: 720 }); // desktop
 PLAYWRIGHT_EXTERNAL_WEBSERVER=1 npx playwright test --project=chromium e2e/your-feature.spec.ts
 ```
 
+If another agent may be running e2e on this machine, set `VR_HARNESS_OFFSET` (an integer
+from 1 to 400) so this run gets its own app and mock-upstream ports and dist dir instead of
+attaching to a sibling's server (`fleet-concurrency`, "Fixed ports").
+
 Tests MUST:
 - FAIL on the current code if they're regression guards for a known bug
 - PASS on the fixed/current code
 - NOT use `waitForTimeout` except as a last resort (prefer `waitFor`, `toBeVisible`, `waitForFunction`)
+- Assert what the page RENDERS or what an element RESOLVES to (computed style, visible text, the
+  served response), never only what the source declares, and never pass because a mock stood in
+  for the layer the change touched. The v7 false greens are in the `verification-discipline`
+  skill, "A faked layer hides exactly the failure it fakes".
 
 ## Step 5: Update test infrastructure if needed
 

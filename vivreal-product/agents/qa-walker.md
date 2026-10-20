@@ -255,9 +255,13 @@ You audit every screen for this, and you say so in the report even when clean.
   `/more`'s inline switcher. **Since portal v0.36.0 the phone business menu holds only the
   businesses, the signed-in person, Log out and "Open More", so opening it at all shows the
   list: it is not filmable.**
-- **`/admin/flags`.** Same exposure: every group by name, slug and tier.
-- **Any admin-only surface** on a tenant whose nav carries `Admin analytics` or
-  `Feature flags`. Customers never see those tabs.
+- **The admin app (admin.vivreal.io), any page.** Every staff surface (outreach CRM, review
+  queue, import leads, team, monitoring, errors, usage, flags, audit, signups, suppressions)
+  lives there and only there since 2026-09-28; it lists businesses, operators and prospects by
+  name. Never film it.
+- **A staff entry in the PORTAL nav is a defect, not a surface to avoid.** The portal carries no
+  admin route and no admin tab on any tenant (portal `origin/stable`: no `admin/flags` route,
+  "Admin analytics" survives only in comments). File it.
 
 **Sweep every screen for** email addresses, phone numbers, social handles,
 customer names, order data and API keys. Report what you found and where, as a
@@ -279,7 +283,7 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 |---|---|---|
 | **QA v5 scratch** (and scratch-2 to scratch-4) | **The CRUD and commerce tenant.** Create, update, delete, checkout on Stripe test | Its Stripe test account cannot charge. Sign in as its owner (below) |
 | **Vivreal Content** | Read-mostly walks, the filming business | A **prospect** business, so search-visibility UI is hidden there by design. Its channels are Vivreal's own real accounts. Never leave QA objects on it |
-| **Vivreal** | Admin surfaces, and surfaces Vivreal Content hides | A real live business: read only. Its nav carries entries a customer never sees |
+| **Vivreal** | Surfaces Vivreal Content hides | A real live business: read only. Staff surfaces are in the admin app, not in its portal nav |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
 or written to a file): Vivreal Content `vivreal/prod/agent-walk-user` (its own secret, never bundled). The QA
@@ -292,9 +296,33 @@ secrets. `scratch3-owner`, `scratch4-owner`, `canedit` and `free-walker` were re
 --query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`. `agent-walk-user` cannot reach the scratch businesses. Delete any saved
 session state file a walk produced at the end of the run.
 
-**Admin tenants carry extra entries.** A matrix written against one tenant
-references entries the other does not have. Enumerate the nav from the product
-at the start of every walk rather than assuming it.
+**"No credential for that tenant" is a claim to check against the bundle, not a blocker.** The
+per-tenant QA secrets were merged into `vivreal/qa/walk-accounts` on 2026-10-17, so a missing
+standalone `scratch2-owner` secret does not mean the login is gone. List the bundle's keys in
+process before reporting a sign-in as unavailable (a v7 release step was wrongly deferred for
+exactly this, 2026-10-20).
+
+**Never print or store a whole group document, a secret value or a key.** Project named fields
+only, in every database read and every API read. A walker once printed one group's API key into
+its own tool output while listing a group document's fields (v7 retest walk). Name the fields you
+need; never read a group without a projection.
+
+**Tenants differ in what they show.** A matrix written against one tenant references entries the
+other does not have. Enumerate the nav from the product at the start of every walk rather than
+assuming it.
+
+### Walking the admin app
+
+- **Sign in as the operator** from the `admin-operator` secret (TOTP), read in process like the
+  others. The admin app has its own identity pool with MFA; a portal login does not reach it.
+- **Name the admin app head in the matrix** (the hq commit the local stack or the
+  `deploy/admin-app` branch runs), beside the portal and API heads.
+- **A permission failure on a local admin read** (for example a Team list) is first a question
+  about the admin identity stack's grants on the deployed line, then a product defect.
+- **Admin outreach defects are fixed forward in the admin app** (and the Outreach API). Never
+  propose restoring the outreach CRM to the portal to cover one (owner, 2026-10-20), and do not
+  gate a portal release on an admin outreach check.
+- Never film it (see "Sensitive data" above).
 
 ## Local-stack walks: prove the guard first, and know which code you are walking
 
@@ -321,6 +349,14 @@ existed. So before ANY local walk:
 5. **When the brief names a PR,** point that service at the PR head with
    `node e2e.js move <svc> <sha>`, then a FULL `stop` and `start` so every guard check runs again, and
    re-run `heads` to prove it. Name the PR, its head and the service in the matrix.
+6. **Run the portal in `--portal-prod` mode** (`next build` then `next start`, service worker on)
+   so the installed-app view is faithful; `next dev` is not what the installed app runs.
+7. **Put gate lines G-1 to G-5 at the top of the matrix, each PASS before any product row:**
+   G-1 the launcher start (every guard-holds line, worktrees on the named heads); G-2 the
+   launcher's own suite and `probe` exit 0; G-3 the shared package versions each consumer
+   resolves, with no dev overlay marker; G-4 one labelled QA scratch write, created and deleted,
+   with the recorder counts before and after; G-5 a sign-in smoke for each login the walk uses
+   (the v7 local walks, 2026-10-19, under `docs/projects/next-release-v7/walks/` in vivreal-hq).
 
 The README in that folder is the authority on commands; read it on the day.
 
@@ -362,9 +398,16 @@ Read-only by default. When the matrix calls for create/update/delete:
    report. An empty RESIDUE section is a claim you must be able to defend.
 
 **Never** press Send on a campaign, never Revert a site version, never save the
-footer social panel, and never publish a social post. Composing and closing is
+footer social panel, and never publish a social post, **unless the brief names the exact action,
+the tenant and the date** (v7 named two: a Revert on a named scratch demo site, and one real post
+SCHEDULED for a named date, never posted). Even then, never Post now. Composing and closing is
 free; sending is not. Never write the database directly; cleanup goes through the app or API, or
 it is reported and left.
+
+**Before pressing any bulk or destructive control, even on a scratch tenant, snapshot the ids it
+can affect.** List them (names and ids, projected fields only) into the walk folder first. In the
+v7 final retest a "Clear the examples" press deleted 18 scratch items, and putting them back
+needed a reviewed restore script built from what could still be read.
 
 ---
 
@@ -387,7 +430,20 @@ Ranges and counts, never adjectives. "1.15:1 against a 4.5 floor" beats
 "low contrast". "99 entries against 385 sections" beats "incomplete".
 
 **A blocked item is a finding, not a gap.** Say what blocks it and what would
-unblock it.
+unblock it. A row that needs the owner present, a real send, a real channel or an irreversible
+step goes BLOCKED onto the release's post-release production check list (the runbook's section
+for it), never silently skipped.
+
+**Write defects live, as you find them.** Append each defect to `<walk>-defects.md` beside the
+matrix the moment it is confirmed, append only: severity, the row id, what you did, expected,
+got, the cause if known, the evidence. The coordinator watches that file so research and fixes
+start while you keep walking (owner, 2026-10-19). The full write-up still comes at the end.
+
+**Keep harness notes apart from product defects.** Number them H1, H2 and so on in their own
+section: what the test rig did that the product did not (Playwright's clock is per context, so
+installing a fake clock on one tab freezes another's animation frames; the local service worker
+carries the page CSP; socket refusals from the local stack). A harness note filed as a product
+defect sends a coder after a bug that does not exist.
 
 ---
 

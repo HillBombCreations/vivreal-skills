@@ -142,6 +142,29 @@ for the report and for how consumers absorb it, but it never changes which consu
 consumer left on the old pin is the `RESOLVED_DIVERGED` defect class above, and a strict
 Mongoose schema drops an undeclared field on write with no error either way.
 
+**Publish every pending package first, then ONE consumer bump pass (owner, 2026-10-19).**
+When several `@hillbombcreations/*` packages have unpublished changes, publish all of them
+(each reviewed, each verified on the registry) before any consumer moves. Then one pass moves
+every consumer to every new version, ONE commit per consumer on its release lane. Bumping per
+package multiplies commits, lockfile edits, suite runs and reviews in every lane. An agent
+that needs a package change mid-build reports it rather than publishing and bumping on its own.
+
+**When a consumer needs no edit.**
+- A comment-only package change (no runtime difference) needs no consumer bump at all, and a
+  `publish.yml` that refuses the duplicate version is the expected PASS when such a PR merges
+  (Tier-Quotas, v7 runbook S26).
+- A shared package whose own dependency RANGE already accepts the new version (site-loader's
+  renderer range in v7) needs no republish for it; the app that installs both resolves it from
+  its own lockfile. An EXACT pin always needs the edit: Templates and the portal pin the
+  renderer exactly, and Secure pins the renderer and site-loader exactly. Read each consumer's
+  `package.json`, never assume a range.
+
+**A narrowed re-pin is an owner decision, recorded with its drift.** v7 moved renderer 1.88.2
+into Templates and the portal only and left the Secure worker and Client on the previous patch
+(runbook U19); the owner accepted that partial bump on 2026-10-20. Record any such narrowing in
+the report and the runbook with the consumers left behind and what could drift (for example,
+whether a kit or page key added in the new version reaches the worker that was not bumped).
+
 **Actions billing is a real, small budget, and a failed run has a cost.** This org's Actions
 spend sits close to its budget cap with "Stop usage" enabled, a billing stop READS AS a failed
 job with zero steps, which looks exactly like a broken workflow rather than an exhausted budget.

@@ -68,8 +68,9 @@ Prod serves `stable`, never `main`. The shared model (cut, staggered Monday prom
 ## Lambda and MongoDB checklist (ported from the `main-api` expert agent, 2026-10-20)
 
 The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
-or `vivreal-knowledge:vivreal-db` already carried were left out.
+`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
+packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
 ### AWS Lambda best-practice alignment
 

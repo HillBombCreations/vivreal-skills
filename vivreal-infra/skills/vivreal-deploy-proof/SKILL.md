@@ -57,7 +57,7 @@ sp() {   # usage: sp <stack> <expected function count>
   [ "$N" = "$WANT" ] || echo "STOP: function count differs"
   for f in $FNS; do
     aws lambda get-function-configuration --function-name "$f" \
-      --query "[FunctionName,LastModified,CodeSha256,Environment.Variables.SENTRY_RELEASE]" \
+      --query "[FunctionName,LastModified,CodeSha256,TracingConfig.Mode]" \
       --output text | tr -d '\r'
   done
 }
@@ -73,12 +73,15 @@ sp() {   # usage: sp <stack> <expected function count>
 - **Never count with `length(...)` inside `--query`.** The CLI paginates `list-stack-resources`
   and applies `--query` to each page, so a large stack printed two partial counts. List the ids
   and count them in the shell, as above.
-- **Name only the fields you need.** The `--query` above reads one variable, `SENTRY_RELEASE` (a
-  commit id), and nothing else from the environment; never drop the `--query`, because the default
-  output prints every environment value.
+- **Name only the fields you need, and read no environment at all.** Never drop the `--query`,
+  because the default output prints every environment value. The helper used to project one
+  variable, `SENTRY_RELEASE`, but the local hook that blocks environment reads blocks any
+  `Environment.Variables` projection, so the v7 release proved every function with `LastModified`,
+  `CodeSha256` and `TracingConfig` instead and recorded that as a deviation (v7 release runbook,
+  "Deviation, stack proofs", 2026-10-20). The helper above is that form.
 
-PASS needs the count to match AND every function to name the new release (or, where no
-`SENTRY_RELEASE` is set, a new `LastModified` and `CodeSha256`). For functions behind a `live`
+PASS needs the count to match AND every function to show a `LastModified` later than the deploy
+time with a `CodeSha256` that differs from the baseline. For functions behind a `live`
 alias, also run the alias check in Step 3; the same `tr -d '\r'` and count rules apply to that
 loop.
 
@@ -143,8 +146,19 @@ or exercise it, and say which of the two you did.
   the lines by content before every promote.
 - **The Monday promote crons re-ship whatever is on the line.** A line that failed to deploy fails
   again on Monday until it is fixed.
-- **Proving an IAM change:** `aws iam simulate-principal-policy` on the role, for the granted actions
-  (`allowed`) AND a control you did not grant (`implicitDeny`), before and after.
+- **A service string limit fails only at deploy time.** CloudWatch caps `AlarmDescription` at 1024
+  characters, `AlarmName` at 255 and a composite `AlarmRule` at 10240. Tests, lint, review and the
+  change-set preview all pass an over-long value; the real update fails on that resource and rolls
+  the whole stack back (Secure v2.22.2, 2026-10-20). Measure any alarm string a change adds, keep a
+  repo test that parses every template for these limits, and on a failed deploy read the FIRST
+  `*_FAILED` stack event.
+- **Proving an IAM change: the first real call is the proof.** `aws iam simulate-principal-policy` on
+  the role, for the granted actions (`allowed`) AND a control you did not grant (`implicitDeny`), is
+  a pre-check only: it evaluates the resource ARN and context keys you supply, so it agrees with a
+  policy written against the wrong resource or conditioned on a key the real request never carries.
+  Both happened in v7 (Amplify `ListJobs` on 2026-10-17, the ECR Public bearer token on
+  2026-10-20; details in `vivreal-iam-secrets`). Then make the first real call the grant exists for
+  and read its result.
 
 ## Related
 

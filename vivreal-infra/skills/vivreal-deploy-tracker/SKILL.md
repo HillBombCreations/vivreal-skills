@@ -122,8 +122,10 @@ reading the template back after a "successful" deploy.
 
 ## Gotchas
 - **"My Templates/renderer change isn't live"** is usually NOT a stuck deploy, merging Templates `main`
-  releases NOTHING; someone must run the **promote-stable** workflow (main→stable FF), which rebuilds every
-  site's `stable` branch. See `vivreal-site-deploy-pipeline`.
+  releases NOTHING; someone must dispatch the **promote-stable** workflow (main→stable FF), after which
+  `fleet-build.mjs` starts release builds for the `live` build tier only. Demo sites catch up in
+  `demo-catchup.yml`, which is also the recovery for a failed fan-out; never re-run promote-stable to
+  recover. See `vivreal-site-deploy-pipeline`.
 - **"Content created in portal missing on site"** is the `publishDate` storefront gate, not the deploy, see `vivreal-db`.
 - The state machine is NOT in IaC; console edits are drift. Source of truth is
   `Vivreal_EventHandler/docs/ops/deploy-site-state-machine.asl.json`.

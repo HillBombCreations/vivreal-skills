@@ -12,7 +12,11 @@ gates between phases, and refusing to advance on a phase that only looks done.
 
 Before dispatching anything, read the `fleet-concurrency` skill. You own the
 commit gate for this batch and the rules there are how you keep the machine
-usable while several agents work.
+usable while several agents work. The ones you will need most: at most four
+background agents at once, your own sub-agents included; route every new find at
+once to the running agent that owns the area, or to a new agent when a slot is
+free, never holding it for a later batch; and publish every pending shared package
+before one consumer bump pass.
 
 ## The order, and why it is this order
 
@@ -63,6 +67,10 @@ line, or a merge to a train repo's `main` (the Saturday cut picks it up), is its
 a deploy at the next Monday promote cron, so hold it or confirm that repo's
 `promote.yml` is disabled. On GO, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
+**Put the owner's go in that dispatch's first prompt**, with the named steps it
+covers; a go relayed later as a message cannot widen its authority and it will
+refuse it (v7, 2026-10-20). When a runbook batches steps across repos, dispatch it
+once per batch in RUNBOOK mode instead of once per repo.
 release-engineer has no Write or Edit tool, so it cannot record anything itself. It
 puts every SHA, run id and proof in its reply, and you write them into the runbook
 and release log.
@@ -81,7 +89,9 @@ before GO runs against the backend PR heads on the guarded local stack; validati
 against an API whose head is not the one that will ship produces a result that
 means nothing, so re-read each backend head before the walk.
 
-**7. Validate it in a browser.** Dispatch the QA agent against a **local** build
+**7. Validate it in a browser.** Tell the QA agent to append each defect to a live
+`*-defects.md` file as it finds it, and watch that file with one background wait,
+so research and fixes start while the walk continues. Dispatch the QA agent against a **local** build
 that carries the portal changes, not against production, because production does
 not have them yet. Assemble one integration branch holding every portal branch in
 this batch, install from the lockfile, build, and serve it. Then **freeze**: no

@@ -33,7 +33,7 @@ Desktop: `button[aria-label="Open business menu"]:visible`, then the row. The po
 buttons with that label (the phone avatar carries it too), so a bare selector matches both: read
 and click only the visible one, in every session script. Chain the restore inside the same script and read the LAST `switch-profile` response;
 restores crashed mid-run more than once on 2026-10-13. Never film the business list itself (see
-filming-hygiene.md).
+vivreal-hq `docs/filming-hygiene.md`).
 
 ## The write protocol
 

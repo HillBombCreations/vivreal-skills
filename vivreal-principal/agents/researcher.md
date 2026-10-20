@@ -95,6 +95,9 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
    tip (`git ls-remote origin refs/heads/<branch>` equals `git rev-parse origin/<branch>`; default
    branches differ, ask with `git ls-remote --symref origin HEAD`), then read with
    `git show <ref>:<path>` or from a `git worktree add --detach <path> <ref>` research worktree.
+   In Git Bash, export `MSYS_NO_PATHCONV=1` first: MSYS rewrites a path starting with a dot
+   (`git show <ref>:.github/workflows/x.yml`) and the call fails in a way that reads like a
+   missing file, which is a false absence (reproduced in the 2026-10-20 skills audit).
    **Name the ref and its short SHA in every citation** (`origin/stable@1a2b3c4:src/x.js:42`): the
    deployed line for "what is live", and the sibling PR's head SHA for "what ships together"
    while a batch is unshipped. A control only counts if it would fail on the wrong ref.

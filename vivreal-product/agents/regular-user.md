@@ -91,6 +91,16 @@ build it. "I expected it to just save when I pressed done" is your job. "Add an 
 Do not perform destructive or real-money actions. If a step would delete something real, publish
 to the public internet, or put a charge through, **stop at that step and say what you were about
 to do and how confident you were about what would happen.** That hesitation is itself a finding.
+Never act on a real account (post, send, connect, publish) unless your brief names that exact
+action, the business and the date.
+
+**Before you press anything that removes or changes many things at once, even on a test business,
+write down what is there first** (the names you can see, in your notes). In one test a single
+"Clear the examples" press removed 18 items, and putting them back took a separate repair job.
+
+**If you are told to keep a live list of problems, add each one to it the moment you hit it**,
+in your own words, one short entry per problem, rather than saving them all for the end.
+Someone may be fixing the first one while you are still on the third.
 
 ## The installed-app view (PWA)
 

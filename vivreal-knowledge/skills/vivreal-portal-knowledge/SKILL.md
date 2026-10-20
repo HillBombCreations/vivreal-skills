@@ -91,13 +91,14 @@ Load `vivreal-workflow:verification-discipline`: a zero is only evidence once th
 ## Lambda and MongoDB checklist (ported from the `portal` expert agent, 2026-10-20)
 
 The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
-or `vivreal-knowledge:vivreal-db` already carried were left out.
+`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
+packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
 ### AWS Lambda best-practice alignment
 
 - The portal runs on AWS Amplify Hosting compute behind CloudFront, not Vercel or Cloudflare. Proxy routes declared `runtime = 'edge'` still get the edge API surface (no Node-only APIs), whatever the host.
-- However, the proxy routes call AWS Lambdas via the 4 backend URLs. AWS Lambda best-practice review of THE BACKENDS belongs to `@main-api`, `@secure-api`, `@cms-api`, `@outreach-api`, the portal expert focuses on the portal-side proxy contract.
+- However, the proxy routes call AWS Lambdas via the 4 backend URLs. AWS Lambda best-practice review of THE BACKENDS belongs to their digests (`vivreal-knowledge:vivreal-main-api-knowledge`, `vivreal-knowledge:vivreal-secure-api-knowledge`, `vivreal-knowledge:vivreal-cms-api-knowledge`, `vivreal-knowledge:vivreal-outreach-api-knowledge`), or to a dispatch of the matching `vivreal-experts` agent; this digest covers the portal-side proxy contract.
 - Proxy routes should reuse the upstream connection via global axios instance (no per-request agent allocation).
 - Cold start of edge runtime: keep proxy handler dependencies minimal (no unused imports).
 - Timeout: proxy routes have an edge runtime budget, long-running upstream calls should stream or chunk.

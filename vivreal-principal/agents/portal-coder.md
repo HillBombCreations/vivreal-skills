@@ -145,6 +145,10 @@ and the branch is already proven.
 - Prove each fix with a direct REFUSE test (bad input or bad object, asserting the exact
   refusal) paired with an ALLOW test and a `Red:` line, same as SOLO step 4, and update the PR
   body with what changed.
+- **When a fix changes what a client sends, run the real proxy route handler** in one test, with
+  only the far upstream mocked. A v7 hook test mocked the network, so the proxy route that still
+  required a field the client had stopped sending never ran, and every save without it would
+  have answered 400.
 - Report the new head SHA and exactly which tests ran.
 
 ## Portal-specific lessons (read as rules, the story lives in memory if you want it)
@@ -152,7 +156,20 @@ and the branch is already proven.
 - **Fixed ports collide across worktrees, not only within one.** `reuseExistingServer` means
   3100 and 4600 are shared machine-wide; any gate result, red or green, is void while another
   portal worktree owns those ports. Confirm ownership by the process's command line before
-  trusting either outcome.
+  trusting either outcome. **A targeted e2e run can take its own ports:** set
+  `VR_HARNESS_OFFSET` (integer 1 to 400; `e2e/fixtures/harnessPorts.ts`) and the app port, the
+  mock-upstream port and the dist dir all shift for that run. The pre-push gate still binds the
+  defaults.
+- **Parity tests read per-sibling overrides, not only `VIVREAL_REPOS`.** `tests/support/siblingRepo.ts`
+  also honours `VIVREAL_TEMPLATES` and `VIVREAL_CLIENT_API` for a worktree that is not under the
+  shared root. The local Templates clone can sit parked on an old branch, so a hooked push that
+  runs a Templates parity test needs `VIVREAL_TEMPLATES` (or `VIVREAL_REPOS`) pointed at a
+  Templates checkout holding `main` (v7, 2026-10-20).
+- **Test what an element resolves to, not what is declared.** A fonts test passed on the
+  `@font-face` declarations while the utility font stack named a literal family, so the
+  self-hosted faces never loaded. Assert the computed style. `next/font/local` names the face
+  after the const, which can collide case-insensitively with a literal family loaded elsewhere,
+  so name those consts `*SelfHosted`.
 - **`.env.local` is gitignored and absent from every fresh worktree.** Copy it before any
   e2e-touching work; a baseline run in a second fresh worktree is equally blind and will read
   as a false clean comparison.
