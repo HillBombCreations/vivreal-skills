@@ -139,12 +139,12 @@ checked.
   or anywhere else. The demo's channels are real accounts. If a claim can only be
   verified by pressing one of those, write the claim as unverified in the defects file
   and leave it out of the article. The only route to verifying it is an owner-approved write run
-  through footage-recorder's eight-step write protocol (load `vivreal-content:footage-recorder`,
-  "The write protocol"); ask for that approval in your report, never press it yourself.
+  through footage-recorder's eight-step write protocol (read "The write protocol" in
+  `${CLAUDE_PLUGIN_ROOT}/agents/footage-recorder.md`); ask for that approval in your report, never press it yourself.
 - **Search visibility is hidden on Vivreal Content** (a prospect business, by design): the status
   line, "Let people find your site" and the Home card do not render there. Verify that UI on the
   Vivreal business (vivreal.io), **read only**: switch with the business menu and switch back,
-  per footage-recorder's "Which login, for which business" (load `vivreal-content:footage-recorder`).
+  per footage-recorder's "Which login, for which business" (read `${CLAUDE_PLUGIN_ROOT}/agents/footage-recorder.md`).
 - **"Connect with Stripe" is off in live**, so moving from Square to Stripe goes by a pasted key.
   Check the current state before writing either path.
 - **Owner rule (2026-10-08): help articles are the opposite of Meta App Review material.** Plain

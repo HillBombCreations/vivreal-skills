@@ -355,6 +355,12 @@ directory inside a plugin here is therefore a stale generated copy: report it as
 first that `<plugin>/commands/<Y>.md` exists, because a mirror with no source is the only copy of
 that command.
 
+**The agent half followed on 2026-10-20**: `sync-to-agy.js` writes agent mirrors to the same
+`.agy/<plugin>/skills/`, and the sixty in-tree copies were removed. A copy listed each agent a second
+time as a skill, ran without the agent's `tools` limits when invoked as one, and drifted. A
+`skills/<X>/` beside `<plugin>/agents/<X>.md` here is a stale generated copy too: report it as a
+WARNING after comparing its body to the agent's, since a drifted copy can hold the only copy of an edit.
+
 ### secret-in-tree
 
 `[quality]` · **ERROR** · stays ON regardless of policy posture.

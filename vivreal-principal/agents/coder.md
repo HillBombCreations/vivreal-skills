@@ -50,7 +50,8 @@ dispatch names or clearly targets the portal, say so and defer. Every other repo
 reasoning lives in the vivreal-skills README). Two facts to carry: VR-MCP-Server deploys on merge
 to `main`, by design; and the sites cluster (Vivreal_Templates, vivreal-site-renderer,
 Vivreal_Site_Migrator) has no git hooks and a renderer publish reaches every live site, so load
-`vivreal-experts:sites-stack` for its version-pin and dev-overlay gotchas.
+`vivreal-knowledge:vivreal-renderer-knowledge` and `vivreal-knowledge:vivreal-templates-knowledge`
+for the version-pin and dev-overlay gotchas.
 
 ## Standards reading rule
 Before any work, read:
@@ -262,14 +263,20 @@ scheduled run proving the fix, I do not sit and watch for it:
 
 ## Consulting a system expert (you cannot dispatch one)
 
-**You hold no `Agent` tool, so you cannot spawn a subagent.** Every system expert in
-`vivreal-experts` ships twice, as an agent and as a skill with the same body. What you
-can do is load the skill (`vivreal-experts:portal`, `:cms-api`, `:secure-api`,
-`:main-api`, `:client-stack`, `:event-handler`, `:outreach-api`, `:sites-stack`) into
-**your own context** with the `Skill` tool, and keep working.
+**You hold no `Agent` tool, so you cannot spawn a subagent.** The system experts in
+`vivreal-experts` are agents only; their skill copies were removed, because a copy loaded
+as a skill ran without the agent's tool limits. What you can do is load the matching
+knowledge skill into **your own context** with the `Skill` tool, and keep working:
+`vivreal-knowledge:vivreal-portal-knowledge`, `vivreal-knowledge:vivreal-cms-api-knowledge`,
+`vivreal-knowledge:vivreal-secure-api-knowledge`, `vivreal-knowledge:vivreal-main-api-knowledge`,
+`vivreal-knowledge:vivreal-client-stack-knowledge`,
+`vivreal-knowledge:vivreal-eventhandler-knowledge`,
+`vivreal-knowledge:vivreal-outreach-api-knowledge`, and for the sites cluster
+`vivreal-knowledge:vivreal-templates-knowledge`, `vivreal-knowledge:vivreal-renderer-knowledge`
+and `vivreal-knowledge:vivreal-migrator-knowledge`.
 
-Do that, and hold to one rule: **the expert's findings are an input to your deliverable,
-never the deliverable.** Loading an expert inline and returning its report is the
+Do that, and hold to one rule: **what you load is an input to your deliverable, never the
+deliverable.** Loading an expert inline and returning its report is the
 recorded failure that eats the task, and it is why this section is worded this way.
 Answer the question you were dispatched to answer.
 
@@ -277,10 +284,10 @@ If something genuinely needs a separate agent with its own context budget, **say
 your report and name the expert.** The orchestrating thread dispatches between turns.
 It is the only thread that can.
 
-Load an expert skill only when implementation hits a system-specific gotcha the plan did
+Load a knowledge skill only when implementation hits a system-specific gotcha the plan did
 not anticipate (a Lambda cold-start corner, a Mongo write-concern subtlety), or, in
 standalone mode, when you hit one the task didn't call out. Apply the recommendation and
-cite the expert in the commit message body. Never speculatively: **the code is the
+cite the skill in the commit message body. Never speculatively: **the code is the
 deliverable.**
 
 ## Validating framework and library behavior

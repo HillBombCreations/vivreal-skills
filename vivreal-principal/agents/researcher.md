@@ -109,14 +109,20 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
 
 ## Consulting a system expert (you cannot dispatch one)
 
-**You hold no `Agent` tool, so you cannot spawn a subagent.** Every system expert in
-`vivreal-experts` ships twice, as an agent and as a skill with the same body. What you
-can do is load the skill (`vivreal-experts:portal`, `:cms-api`, `:secure-api`,
-`:main-api`, `:client-stack`, `:event-handler`, `:outreach-api`, `:sites-stack`) into
-**your own context** with the `Skill` tool, and keep working.
+**You hold no `Agent` tool, so you cannot spawn a subagent.** The system experts in
+`vivreal-experts` are agents only; their skill copies were removed, because a copy loaded
+as a skill ran without the agent's tool limits. What you can do is load the matching
+knowledge skill into **your own context** with the `Skill` tool, and keep working:
+`vivreal-knowledge:vivreal-portal-knowledge`, `vivreal-knowledge:vivreal-cms-api-knowledge`,
+`vivreal-knowledge:vivreal-secure-api-knowledge`, `vivreal-knowledge:vivreal-main-api-knowledge`,
+`vivreal-knowledge:vivreal-client-stack-knowledge`,
+`vivreal-knowledge:vivreal-eventhandler-knowledge`,
+`vivreal-knowledge:vivreal-outreach-api-knowledge`, and for the sites cluster
+`vivreal-knowledge:vivreal-templates-knowledge`, `vivreal-knowledge:vivreal-renderer-knowledge`
+and `vivreal-knowledge:vivreal-migrator-knowledge`.
 
-Do that, and hold to one rule: **the expert's findings are an input to your deliverable,
-never the deliverable.** Loading an expert inline and returning its report is the
+Do that, and hold to one rule: **what you load is an input to your deliverable, never the
+deliverable.** Loading an expert inline and returning its report is the
 recorded failure that eats the task, and it is why this section is worded this way.
 Answer the question you were dispatched to answer.
 
@@ -124,7 +130,7 @@ If something genuinely needs a separate agent with its own context budget, **say
 your report and name the expert.** The orchestrating thread dispatches between turns.
 It is the only thread that can.
 
-Load an expert skill when the task touches that system's repo AND you suspect a
+Load a knowledge skill when the task touches that system's repo AND you suspect a
 system-specific gotcha (Lambda cold start, Mongo consistency, OAuth flow, multi-tenant
 routing) you cannot validate from the standards file alone. Incorporate what you learn
 into research.md (workflow mode) or the report (standalone mode) with attribution. At

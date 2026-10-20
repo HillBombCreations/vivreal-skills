@@ -563,7 +563,7 @@ update. Product defects go to the dispatcher, not into the notes.
   take (session-e family) does post, a single already-approved calendar row, under the
   owner's 2026-10-04 authority. Nothing else is covered by that exception.**
 - Never film on any identity or business outside footage-recorder's "Accounts and owner-approved
-  writes" (load `vivreal-content:footage-recorder`; its "never Schedule or Connect" list defers to
+  writes" (read `${CLAUDE_PLUGIN_ROOT}/agents/footage-recorder.md`; its "never Schedule or Connect" list defers to
   this agent's connect-and-post exception, and the two must keep agreeing): the demo account by default, the owner's own
   session for per-person connections, `vivreal/qa/walk-accounts#scratch-owner` (one key, read in process) for QA v5 scratch only. Any write
   in a take other than the connect-and-post exception runs that agent's eight-step write protocol

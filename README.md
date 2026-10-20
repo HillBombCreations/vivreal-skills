@@ -25,10 +25,14 @@ node scripts/check-definitions.mjs --self-test  # prove the gate can fail
 
 It fails on a definition that does not parse, a manifest that disagrees with the directories
 or with this README, an agent whose description disagrees with its tool list, a copied
-mechanical value in a plugin tree, a cross-reference to a skill that does not exist, a
-reference to behaviour deleted from the product, any em dash or en dash, an AWS
-account id anywhere, and a command mirror (`skills/cmd-*`) inside a plugin tree (`sync-to-agy.js`
-writes those to the gitignored `.agy/`, because Claude Code already lists every command as a skill). **This repository is public**, and an account id enables account
+mechanical value in a plugin tree, a cross-reference to a skill that does not exist (or a line
+that loads an agent as a skill), a reference to behaviour deleted from the product, any em dash
+or en dash, an AWS account id anywhere, and a generated mirror inside a plugin tree: a command
+mirror (`skills/cmd-*`) or an agent mirror (`skills/<name>/` beside `agents/<name>.md`).
+`sync-to-agy.js` writes both to the gitignored `.agy/`, because Claude Code already lists every
+command as a skill, and an agent copied in as a skill runs without the agent's tool limits. An
+agent's knowledge reaches another agent by a dispatch, a `${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`
+read in the same plugin, or a `vivreal-knowledge` skill. **This repository is public**, and an account id enables account
 enumeration and cross-account role-name guessing while buying a reader nothing that a
 profile name and a region do not. Name the profile and the region.
 
@@ -37,16 +41,13 @@ per rule, requires every rule to go red on its own poison, and then requires the
 back clean with the poison removed. A rule that cannot fail reports a clean run forever, and
 two of these rules could not fail the first time the control was run.
 
-Three things it reports as warnings rather than failures, because fixing any of them changes what
+Two things it reports as warnings rather than failures, because fixing either changes what
 an agent DOES rather than what it knows:
 
 - **`description-length`**: a description over the documented limit. The skill listing
   truncates the combined description text, and the truncated tail is where these files put
   their "distinct from X" disambiguation, which is the sentence that stops two agents stealing
   each other dispatches. Move it to the front rather than deleting it.
-- **`mirror-drift`**: an agent and its skill mirror have diverged. They are two copies of one
-  thing. Reconciling means choosing which is authoritative, and syncing an agent appendix into
-  a skill changes what loads passively into every matching session.
 - **`mcp-prefix`**: an `mcp__<server>__` grant or instruction naming a server that no plugin
   here, no enabled official plugin and no fleet project `.mcp.json` declares. The grant resolves
   to nothing in silence. Drop it, or add the server to the script's list with where it comes from.
