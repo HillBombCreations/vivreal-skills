@@ -1,7 +1,7 @@
 ---
 name: db-query
 description: Safely query Vivreal's multi-tenant MongoDB via MCP, with built-in dbKey routing, safety guards, and result formatting
-allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text), Bash(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).CLUSTER_URL)'), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__db-stats
+allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text), Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__db-stats
 user-invocable: true
 ---
 
@@ -42,11 +42,12 @@ connect, do **NOT** ask the user to paste a connection string. It is the Atlas *
 (`mongodb+srv://…`, no database path; the DB is chosen per query):
 
 ```bash
-aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).CLUSTER_URL)'
+aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text | node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"
 ```
 
 Run it exactly as written, on one line: this command's `allowed-tools` pre-approves those two
-commands verbatim and no other shell command, so any variation asks first.
+commands verbatim and no other shell command, so any variation asks first. The script reads the
+secret JSON on stdin and prints only `CLUSTER_URL`.
 
 Pass that value to `mcp__mongodb__connect`, then re-run the query. The `vivreal-db` knowledge skill
 (vivreal-knowledge plugin) carries the full sourcing detail and a no-MCP driver fallback.

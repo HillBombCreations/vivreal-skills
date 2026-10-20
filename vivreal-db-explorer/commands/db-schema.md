@@ -1,7 +1,7 @@
 ---
 name: db-schema
 description: Show the Mongoose schema definition, indexes, and a sample document for any Vivreal MongoDB collection
-allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text), Bash(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).CLUSTER_URL)'), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
+allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text), Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
 user-invocable: true
 ---
 
@@ -17,11 +17,12 @@ The MCP server is normally **already connected**, the `vivreal-db-explorer` plug
 source the string yourself and call `mcp__mongodb__connect`, do **NOT** ask the user to paste one:
 
 ```bash
-aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).CLUSTER_URL)'
+aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text | node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"
 ```
 
 Run it exactly as written, on one line: this command's `allowed-tools` pre-approves those two
-commands verbatim and no other shell command, so any variation asks first.
+commands verbatim and no other shell command, so any variation asks first. The script reads the
+secret JSON on stdin and prints only `CLUSTER_URL`.
 
 It is a secret (embeds the Atlas user + password): pass it only into the connect call, never log or
 persist it. Only ask the user as a true last resort, and only if Secrets Manager is genuinely

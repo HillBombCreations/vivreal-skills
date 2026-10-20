@@ -39,8 +39,25 @@ marketplace.plugins.forEach(plugin => {
   // spent description tokens on every turn; a cmd-* mirror listed each command twice
   // (vivreal-workflow:reviewer AND vivreal-workflow:cmd-reviewer), because Claude Code already
   // lists every command as a skill. scripts/check-definitions.mjs fails on either in-tree.
-  const agyMirrorSkillsDir = path.join(vivrealSkillsDir, '.agy', plugin.name, 'skills');
+  if (!/^[a-z0-9-]+$/.test(plugin.name)) {
+    // plugin.name builds a path that is deleted below; refuse anything that could climb out of .agy/.
+    throw new Error(`Refusing to sync plugin with unexpected name: ${JSON.stringify(plugin.name)}`);
+  }
+  const agyPluginDir = path.join(vivrealSkillsDir, '.agy', plugin.name);
+  const agyMirrorSkillsDir = path.join(agyPluginDir, 'skills');
+  // Start from empty, so a mirror whose agent or command was deleted or renamed does not
+  // linger in the Antigravity registry.
+  fs.rmSync(agyPluginDir, { recursive: true, force: true });
   let hasMirrors = false;
+
+  // Antigravity does not substitute ${CLAUDE_PLUGIN_ROOT}. A sibling-agent read
+  // (`${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`) points at that agent's mirror; any other
+  // plugin-root path points at the plugin's own directory.
+  const toForward = p => p.replace(/\\/g, '/');
+  const forAgy = content => content
+    .replace(/\$\{CLAUDE_PLUGIN_ROOT\}\/agents\/([\w-]+)\.md/g,
+      (_, agent) => toForward(path.join(agyMirrorSkillsDir, agent, 'SKILL.md')))
+    .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, toForward(pluginDir));
 
   // Process agents -> skills
   if (fs.existsSync(agentsDir)) {
@@ -54,7 +71,7 @@ marketplace.plugins.forEach(plugin => {
       }
       
       const sourceContent = fs.readFileSync(path.join(agentsDir, file), 'utf8');
-      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), sourceContent, 'utf8');
+      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), forAgy(sourceContent), 'utf8');
       hasMirrors = true;
     });
   }
@@ -75,7 +92,7 @@ marketplace.plugins.forEach(plugin => {
       }
       
       const sourceContent = fs.readFileSync(path.join(commandsDir, file), 'utf8');
-      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), sourceContent, 'utf8');
+      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), forAgy(sourceContent), 'utf8');
       hasMirrors = true;
     });
   }
