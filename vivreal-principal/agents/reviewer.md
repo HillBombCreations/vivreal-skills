@@ -4,6 +4,8 @@ description: The final gate before shipping any diff, in any repository, in two 
 color: red
 model: opus
 tools: Read, Grep, Glob, Bash, Write, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
+skills:
+  - vivreal-workflow:verification-discipline
 ---
 
 ## Identity

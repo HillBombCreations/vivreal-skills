@@ -302,12 +302,42 @@ function ruleCrossReferences(files) {
       new RegExp('\\bSkill name:\\s*' + r),
     ].some((re) => re.test(text));
   };
+  // Two phrasings that name no plugin:skill pair and so slip past REF below: a wildcard over a
+  // plugin that ships no skills ("the `vivreal-experts:*` skills"), and a bare agent name called
+  // a skill ("the `content-planner` skill"). Both were live after the agent mirrors left.
+  const pluginsWithSkills = new Set([...known].map((r) => r.split(':')[0]));
+  const skillNames = new Set([...known].map((r) => r.split(':')[1]));
+  const agentOnlyNames = [...new Set([...agents].map((r) => r.split(':')[1]))].filter((n) => !skillNames.has(n));
+  const WILDCARD = /\b(vivreal-[a-z-]+):\*`?\s+skills?\b/g;
+  const BARE = agentOnlyNames.length
+    ? new RegExp('(^|[^:\\w-])`?(' + agentOnlyNames.map(escapeRe).join('|') + ')`?\\s+skills?\\b', 'i')
+    : null;
   const REF = /\b(vivreal-[a-z-]+):([a-z0-9-]+)\b/g;
   for (const abs of files) {
     const rel = norm(relative(ROOT, abs));
     if (!isPluginFile(rel) || !rel.endsWith('.md')) continue;
     const lines = readFileSync(abs, 'utf8').split('\n');
     lines.forEach((line, i) => {
+      WILDCARD.lastIndex = 0;
+      let w;
+      while ((w = WILDCARD.exec(line))) {
+        if (PLUGIN_DIRS.includes(w[1]) && !pluginsWithSkills.has(w[1])) {
+          fail(
+            'cross-reference',
+            `${rel}:${i + 1}`,
+            `"${w[1]}:*" calls this plugin's entries skills, and it ships none. Its agents are dispatched, not loaded.`,
+          );
+        }
+      }
+      const b = BARE && line.match(BARE);
+      if (b) {
+        fail(
+          'cross-reference',
+          `${rel}:${i + 1}`,
+          `"${b[2]}" is an agent with no skill of that name anywhere, and this line calls it a skill. ` +
+            'Name the knowledge skill that carries the facts, or the agent to dispatch.',
+        );
+      }
       REF.lastIndex = 0;
       let m;
       while ((m = REF.exec(line))) {
@@ -970,6 +1000,33 @@ function selfTest() {
         {
           path: join(tmp, 'agents', 'expert.md'),
           body: '---\nname: expert\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n',
+        },
+      ],
+    },
+    {
+      // The help-page-producer shape the #48 review caught: a wildcard over a plugin that now
+      // ships agents only. The fixture plugin holds no skill in this case, only the agent.
+      rule: 'cross-reference',
+      match: 'ships none',
+      label: 'cross-reference: a plugin:* wildcard over agents only',
+      path: join(tmp, 'agents', 'wild.md'),
+      body:
+        '---\nname: wild\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'The `' + FIXTURE_PLUGIN + ':*` skills are read-only experts. Load one for a gotcha.\n',
+    },
+    {
+      // A bare agent name called a skill, with no plugin prefix for REF to see.
+      rule: 'cross-reference',
+      match: 'calls it a skill',
+      label: 'cross-reference: a bare agent name called a skill',
+      path: join(tmp, 'agents', 'bare.md'),
+      body:
+        '---\nname: bare\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'For the full list, read the `oracle-fixture` skill first.\n',
+      with: [
+        {
+          path: join(tmp, 'agents', 'oracle-fixture.md'),
+          body: '---\nname: oracle-fixture\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n',
         },
       ],
     },

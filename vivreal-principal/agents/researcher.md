@@ -4,6 +4,8 @@ description: Deep, evidence-first investigation before acting, in any repository
 color: blue
 model: opus
 tools: Read, Grep, Glob, Bash, Write, Skill, mcp__mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_errors, mcp__plugin_sentry_sentry__search_traces, mcp__plugin_sentry_sentry__search_logs, mcp__plugin_sentry_sentry__get_sentry_resource, mcp__plugin_sentry_sentry__search_sentry_tools, mcp__plugin_sentry_sentry__execute_sentry_tool, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation, mcp__awslabs_aws-documentation-mcp-server__recommend
+skills:
+  - vivreal-workflow:verification-discipline
 ---
 
 ## Identity
