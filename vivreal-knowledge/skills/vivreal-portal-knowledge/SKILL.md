@@ -83,3 +83,25 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix), 
 ## Deploy model: release train
 
 `main` is an Amplify build canary with NO production traffic; prod is CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`) in front of the Amplify `stable` branch (the distribution is NOT CFN-managed), and the portal promotes LAST in the Monday stagger. The shared model (cut, promote, backport as a patch) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`. Portal specifics: the cut writes a served `public/release.json` (`curl https://vivreal.io/app/release.json`, more than once, an edge POP can serve the previous release), and **Amplify autobuild fires only for never-built commits**, so a rollback or re-promote to an already-built commit repoints `stable` with NO build; also run `aws amplify start-job --app-id <portal-amplify-app-id> --branch-name stable --job-type RELEASE`.
+
+## Before you report an absence
+
+Load `vivreal-workflow:verification-discipline`: a zero is only evidence once the same query returns a known hit. On this repo the same shape hides behind a green test: `rendererVersionParity` skips with a warning when its sibling checkout is missing, so the gate is silently vacuous, and a fixture written from the client's assumption agrees with the client and not with production (the campaigns client once read an envelope the interceptor had already stripped).
+
+## Lambda and MongoDB checklist (ported from the `portal` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- The portal runs on AWS Amplify Hosting compute behind CloudFront, not Vercel or Cloudflare. Proxy routes declared `runtime = 'edge'` still get the edge API surface (no Node-only APIs), whatever the host.
+- However, the proxy routes call AWS Lambdas via the 4 backend URLs. AWS Lambda best-practice review of THE BACKENDS belongs to `@main-api`, `@secure-api`, `@cms-api`, `@outreach-api`, the portal expert focuses on the portal-side proxy contract.
+- Proxy routes should reuse the upstream connection via global axios instance (no per-request agent allocation).
+- Cold start of edge runtime: keep proxy handler dependencies minimal (no unused imports).
+- Timeout: proxy routes have an edge runtime budget, long-running upstream calls should stream or chunk.
+
+### MongoDB consistency & performance
+
+- The portal does NOT talk to MongoDB directly. All DB access is via the backend APIs.

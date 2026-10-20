@@ -125,3 +125,28 @@ A product list carries `collection_groups.commerce { state: selling | paused | m
 - **`preupload-*` keys live one day** (`ExpirePreuploadOrphans` on every tenant bucket). A reference left on one after a save is permanently dead (S3 403 behind the media 302). Verify media by diffing referenced keys against the bucket listing.
 - ESLint (correctness rules) + a 100%-coverage test suite + husky push gate are now in place, no GitHub Actions test workflow exists, so the hook is the only automated gate before merge.
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+
+## Before you report an absence
+
+Load `vivreal-workflow:verification-discipline`: a zero is only evidence once the same query returns a known hit. This repo's own idiom for it: a `git grep "dynamicDb\[dbKey\]"` misses most of the surface, and a query against a lowercased collection name returns zero rows against a database that has data.
+
+## Lambda and MongoDB checklist (ported from the `cms-api` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- All functions on Node.js 22.x (`test/unit/runtime-node22.test.js` binds the claim to both templates); the five API functions carry WebSocket integration (`WS_ENDPOINT` + `WS_TABLE`).
+- Heavy Mongoose models loaded per-Lambda, verify schemas package version is consistent across all 5 (`@hillbombcreations/schemas`).
+- ColObjects Lambda: bulk import handles up to 1000 docs per call, verify chunking and timeout headroom.
+- WebSocket broadcast on create/update: must be non-blocking; if WS table is unavailable, the main op proceeds.
+- Cross-Lambda invoke (ColGroups → GetCollectionInfo) is synchronous, handle 502/503 with retry + backoff.
+
+### MongoDB consistency & performance
+
+- `archived` filter: use `{ archived: { $ne: true } }`, not `{ archived: false }`, many docs lack the field entirely.
+- Bulk import: use `insertMany` with `ordered: false` for partial-failure tolerance.
+- Versioning: increment `version` atomically with `$inc`, prune via tail-deletion bounded by `maxVersionsPerObject`.
+- Audit log writes: separate collection `auditLogs`, indexed on `groupID + timestamp`.

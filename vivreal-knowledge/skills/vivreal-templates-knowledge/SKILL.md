@@ -119,3 +119,13 @@ A site can show the owner's synced social posts. `src/lib/api/collections/social
 
 - The rendered site does NOT read `templateType` for layout, layout comes from `pageConfigs[].format` (one exception: `templateType === 'restaurant'` enables the FAB). Render-behavior changes belong in the renderer, not branch logic.
 - `data/mockData.ts` is fallback only (used if the API is unavailable).
+
+## Lambda and MongoDB checklist (ported from the `sites-stack` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### MongoDB consistency & performance
+
+- The site document VR_Client_API serves is read from the TENANT database (`tenantDb[database].sites` in `getSiteDetails.js`), the group's stored placement, not from the control-plane `Vivreal` database; the `vivreal-db` skill carries the routing rules. This expert reads Mongo only to verify site-doc shapes (`pages`, `collectionGroups`, `siteDetails.values`, `deployment`), and reads the copy in the tenant database.

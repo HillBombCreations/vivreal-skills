@@ -120,3 +120,29 @@ tier id is the case to think about: nothing rewrites it when a package folds a t
 - The orphaned-OTEL-layer gotcha is RESOLVED, `cloudformation/updateGroup.yaml`'s `Layers` now carries only the ffmpeg ARN via `/vivreal/prod/shared/ffmpeg-arn` SSM; no `AWS_LAMBDA_EXEC_WRAPPER`.
 - Former P0 security gaps are CLOSED + test-locked (SEC-1..3): Stripe webhook signature IS verified (`stripe.webhooks.constructEvent` in `handleEvents.js`, raw body captured via `express.json({ verify })` in `createApp.js`); `acceptRequest`/`denyRequest` inherit the Cognito default authorizer + owner/admin 403; RBAC enforced on write ops (`UnauthorizedRoleException`); CORS is single-layer (`createApp.js`). Legit `Authorizer: NONE` remains only on the Stripe webhook + OAuth callback.
 - Deps: `@hillbombcreations/schemas`, `@hillbombcreations/tier-quotas`, `site-loader`, and `site-renderer` pinned **EXACTLY**, byte-matching the fleet renderer, which must not be loosened without regenerating `renderer.capability.json`. **Read every one of those pins from `package.json` on the deployed line.** X-Ray is retired here (`AWSXrayWriteOnlyAccess` is no longer auto-attached).
+
+## Before you report an absence
+
+Load `vivreal-workflow:verification-discipline`. This is the highest-blast-radius backend, so an absence claim (a route, a policy, a Lambda, an env var) costs the most here: make the same check return a hit for something you know is there before calling anything absent.
+
+## Lambda and MongoDB checklist (ported from the `secure-api` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- One deploy artifact per function, each with its own CloudFormation fragment and its own `build-lambdas.js` roster entry; a function missing from the build roster fails packaging, not tests.
+- Stripe SDK initialization must be top-level, reused across warm invocations.
+- IAM least-privilege: each Lambda must have only the policies it needs.
+- WebSocket: agent, createAndJoinGroup, createSites and updateGroup carry `WS_ENDPOINT` + `WS_TABLE`. Send-message paths must be idempotent on stale connections.
+- Step Functions integration: use `StartExecution` ARN format, NOT `DescribeExecution` ARN format (different IAM resource types).
+- Cold start: billing Lambda's webpack bundle is the largest (Stripe SDK is heavy), measure and consider Provisioned Concurrency if p99 cold-start exceeds 3s.
+
+### MongoDB consistency & performance
+
+- mainDb queries: ALWAYS `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). NEVER `groupName`. `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null.
+- Profile switch atomically updates `activeGroupID` on the user doc and re-issues the `active_ctx` JWT, verify the order doesn't leak across requests.
+- Group creation: insert + S3 bucket creation must roll back together on partial failure (idempotent retry).
+- Index audit: `groupID`, `userID`, `stripeSubscriptionID`, `cognitoSub` must be indexed; `groupID + userID` compound index for membership queries.

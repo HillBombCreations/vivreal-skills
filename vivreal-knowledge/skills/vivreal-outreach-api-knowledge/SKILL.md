@@ -102,3 +102,20 @@ The **sender doc** (Outreach Senders) owns `fromAddress`/`fromName`/`replyToAddr
 
 - **`outreach-api` expert agent** (vivreal-experts), read-only deep analysis with citations.
 - **`vivreal-outreach-mcp-knowledge`**, the 50-tool MCP server fronting this API. **`vivreal-db`**, Mongo query rules. **`vivreal-atlas-topology`**, connection/ops. **`vivreal-iam-secrets`**, CTX_SECRET rotation. **`vivreal-portal-knowledge`**, the portal-side outreach proxy routes.
+
+## Lambda and MongoDB checklist (ported from the `outreach-api` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- WebSocket emission uses the same `Lambda-Webhook` managed policy + connections table as the other backends, socket sends must be non-blocking.
+- cronTick: 1-minute schedule with 300s timeout, overlapping ticks possible; send paths must be idempotent (rate limiter, daily per-sender cap + scheduling in `src/cron/`).
+- Sentry: `@sentry/aws-serverless` manual init (`utils/sentry.js`); tenant tags set per request in auth middleware.
+- Inbound bucket expires raw .eml after 90 days, not an archive.
+
+### MongoDB consistency & performance
+
+- TWO connection roots: `MONGO_OUTREACH_URI` → dedicated `outreach` DB (suppressions only, `db/suppressionsClient.js`); `MONGO_TENANT_BASE_URI` → per-`dbKey` tenant DBs (`db/tenantClient.js`, `scripts/dynamicDb.js`), same routing convention as the other backends.
