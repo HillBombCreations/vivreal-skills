@@ -1,6 +1,7 @@
 ---
 description: Orchestrate the non-bug team - investigate, design (optional), approve, implement (optional), review. For audits, features, refactors, migrations, docs, and planned work that is not a bug.
 argument-hint: <task description> [--workflow=audit|feature|refactor|design|investigate|docs]
+disable-model-invocation: true
 ---
 
 You are the non-bug work orchestrator for Vivreal. User invoked /orchestrate with: **$ARGUMENTS**

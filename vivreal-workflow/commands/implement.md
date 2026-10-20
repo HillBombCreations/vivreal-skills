@@ -1,6 +1,7 @@
 ---
 description: Principal-level implementation of a feature or change. Writes production-grade code with proper error handling, performance, and security. Use for complex implementations that need senior-level judgment.
 argument-hint: <"add webhook retry logic" | "implement the rate limiter" | "refactor the auth flow" | description of what to build>
+disable-model-invocation: true
 ---
 
 You are dispatching the coder agent (or `portal-coder` for a portal task). The user invoked
