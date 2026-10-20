@@ -27,63 +27,84 @@ marketplace.plugins.forEach(plugin => {
   const commandsDir = path.join(pluginDir, 'commands');
   const skillsDir = path.join(pluginDir, 'skills');
 
-  let hasCustomSkills = fs.existsSync(skillsDir);
-  let hasCopiedAgentsOrCommands = false;
+  // Only REAL skills count: a skill directory holding a SKILL.md. The old check was
+  // fs.existsSync(skillsDir), which a generated mirror alone satisfied, so a plugin with
+  // agents and no skills of its own was registered as a skills root.
+  const hasCustomSkills = fs.existsSync(skillsDir) && fs.readdirSync(skillsDir, { withFileTypes: true })
+    .some(d => d.isDirectory() && fs.existsSync(path.join(skillsDir, d.name, 'SKILL.md')));
+
+  // Every generated mirror (agents AND commands) is written OUTSIDE the plugin tree, under
+  // the gitignored .agy/<plugin>/skills/. Inside the plugin, an agent mirror listed each agent
+  // a second time as a skill, ran without the agent's tool limits when invoked that way, and
+  // spent description tokens on every turn; a cmd-* mirror listed each command twice
+  // (vivreal-workflow:reviewer AND vivreal-workflow:cmd-reviewer), because Claude Code already
+  // lists every command as a skill. scripts/check-definitions.mjs fails on either in-tree.
+  if (!/^[a-z0-9-]+$/.test(plugin.name)) {
+    // plugin.name builds a path that is deleted below; refuse anything that could climb out of .agy/.
+    throw new Error(`Refusing to sync plugin with unexpected name: ${JSON.stringify(plugin.name)}`);
+  }
+  const agyPluginDir = path.join(vivrealSkillsDir, '.agy', plugin.name);
+  const agyMirrorSkillsDir = path.join(agyPluginDir, 'skills');
+  // Start from empty, so a mirror whose agent or command was deleted or renamed does not
+  // linger in the Antigravity registry.
+  fs.rmSync(agyPluginDir, { recursive: true, force: true });
+  let hasMirrors = false;
+
+  // Antigravity does not substitute ${CLAUDE_PLUGIN_ROOT}. A sibling-agent read
+  // (`${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`) points at that agent's mirror; any other
+  // plugin-root path points at the plugin's own directory.
+  const toForward = p => p.replace(/\\/g, '/');
+  const forAgy = content => content
+    .replace(/\$\{CLAUDE_PLUGIN_ROOT\}\/agents\/([\w-]+)\.md/g,
+      (_, agent) => toForward(path.join(agyMirrorSkillsDir, agent, 'SKILL.md')))
+    .replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, toForward(pluginDir));
 
   // Process agents -> skills
   if (fs.existsSync(agentsDir)) {
     const agents = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
     agents.forEach(file => {
       const name = path.basename(file, '.md');
-      const targetSkillDir = path.join(skillsDir, name);
+      const targetSkillDir = path.join(agyMirrorSkillsDir, name);
       
       if (!fs.existsSync(targetSkillDir)) {
         fs.mkdirSync(targetSkillDir, { recursive: true });
       }
       
       const sourceContent = fs.readFileSync(path.join(agentsDir, file), 'utf8');
-      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), sourceContent, 'utf8');
-      hasCopiedAgentsOrCommands = true;
+      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), forAgy(sourceContent), 'utf8');
+      hasMirrors = true;
     });
   }
 
-  // Process commands -> skills (prefixed with cmd- to avoid naming clashes).
-  // These mirrors are written OUTSIDE the plugin tree, under the gitignored
-  // .agy/<plugin>/skills/, because Claude Code already lists every command as a
-  // skill: a cmd-* copy inside the plugin's skills/ listed each command twice
-  // (vivreal-workflow:reviewer AND vivreal-workflow:cmd-reviewer).
-  // Commands that must NOT get a cmd-* skill mirror (promptify ships as a
-  // command only, see commit 9168979)
+  // Process commands -> skills (prefixed with cmd- so a command never collides with an
+  // agent mirror of the same name). Commands that must NOT get a cmd-* skill mirror
+  // (promptify ships as a command only, see commit 9168979)
   const EXCLUDED_COMMANDS = new Set(['promptify']);
-  const agyCommandSkillsDir = path.join(vivrealSkillsDir, '.agy', plugin.name, 'skills');
-  let hasCommandMirrors = false;
   if (fs.existsSync(commandsDir)) {
     const commands = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'))
       .filter(f => !EXCLUDED_COMMANDS.has(path.basename(f, '.md')));
     commands.forEach(file => {
       const name = 'cmd-' + path.basename(file, '.md');
-      const targetSkillDir = path.join(agyCommandSkillsDir, name);
+      const targetSkillDir = path.join(agyMirrorSkillsDir, name);
       
       if (!fs.existsSync(targetSkillDir)) {
         fs.mkdirSync(targetSkillDir, { recursive: true });
       }
       
       const sourceContent = fs.readFileSync(path.join(commandsDir, file), 'utf8');
-      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), sourceContent, 'utf8');
-      hasCommandMirrors = true;
+      fs.writeFileSync(path.join(targetSkillDir, 'SKILL.md'), forAgy(sourceContent), 'utf8');
+      hasMirrors = true;
     });
   }
 
-  if (hasCustomSkills || hasCopiedAgentsOrCommands) {
+  if (hasCustomSkills) {
     // Add this skills folder to the list for skills.json (use forward slashes for cross-platform compatibility)
-    const relativeSkillsPath = path.relative(vivrealSkillsDir, skillsDir).replace(/\\/g, '/');
-    const absoluteSkillsPath = path.join(vivrealSkillsDir, relativeSkillsPath).replace(/\\/g, '/');
-    skillsPaths.push(absoluteSkillsPath);
-    console.log(`✅ Synced ${plugin.name} skills (${hasCopiedAgentsOrCommands ? 'compiled agents' : 'native skills'})`);
+    skillsPaths.push(skillsDir.replace(/\\/g, '/'));
+    console.log(`✅ Synced ${plugin.name} native skills`);
   }
-  if (hasCommandMirrors) {
-    skillsPaths.push(agyCommandSkillsDir.replace(/\\/g, '/'));
-    console.log(`✅ Synced ${plugin.name} command mirrors to .agy/${plugin.name}/skills`);
+  if (hasMirrors) {
+    skillsPaths.push(agyMirrorSkillsDir.replace(/\\/g, '/'));
+    console.log(`✅ Synced ${plugin.name} agent and command mirrors to .agy/${plugin.name}/skills`);
   }
 });
 

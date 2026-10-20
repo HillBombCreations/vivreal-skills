@@ -1,6 +1,7 @@
 ---
 description: "Write or refresh REFERENCE documentation describing how something works now, with diagrams, reading the deployed code rather than the existing document. Not /document, which writes up a finished bug: this writes the standing docs a person or an agent opens cold."
 argument-hint: <what to document, or the path of a document that has gone stale>
+disable-model-invocation: true
 ---
 
 You are dispatching the `system-doc-writer` agent. The user invoked `/write-docs`

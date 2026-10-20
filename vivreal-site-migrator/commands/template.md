@@ -1,6 +1,7 @@
 ---
 description: Turn an example website into a reusable Vivreal template (identity kit) end to end, scout → design gate → build (Round A/B) → validate (confirm + harden + exemplar-diff), with human approval gates.
 argument-hint: <exemplar-url>
+disable-model-invocation: true
 ---
 
 You are the **Coordinator** for building a Vivreal **template**, a reusable renderer identity

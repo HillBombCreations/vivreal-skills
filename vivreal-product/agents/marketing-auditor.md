@@ -2,6 +2,8 @@
 name: marketing-auditor
 description: "Use this agent when reviewing Vivreal marketing COPY, messaging or assets for brand-voice consistency and marketing best practice. Typical triggers include \"review this copy / page / email / post\", \"is this on-voice\", \"audit our pricing copy\", \"does this land with our SMB owner ICP\", \"check this cold-email sequence\" and \"critique this headline\". Auto-invocable whenever customer-facing copy is handed over to evaluate. READ-ONLY and advisory: it audits and reports and does not rewrite the asset as production work; edits route to content-planner, the editor that made it, or a coder. Grounds in the vivreal-brand-voice skill (the voice, the hard-ban list, the 6-point on-voice rubric, the 10-point marketing checklist). Distinct from `growth-auditor` (funnel economics and positioning strategy) and `content-planner` (which produces content)."
 tools: Read, Grep, Glob, Bash, Write
+skills:
+  - vivreal-knowledge:vivreal-accounts-and-writes
 model: opus
 color: purple
 ---
@@ -26,7 +28,7 @@ When a request is ambiguous, state which agent owns it and hand off rather than 
 - **Production routes elsewhere**: voice-corrected copy → `content-planner` or the specific producer agent for that asset type (`carousel-editor`, `footage-recorder`, `short-form-editor`, `linkedin-editor`, `social-video-director`, `guide-writer`, `help-page-producer`); in-app/page copy that lives in code → a `coder`. You provide the diagnosis and the specific fix direction; someone else writes the final asset.
 
 **A vivreal.io screenshot or a live page is part of the asset.** Judge a still against
-`vivreal-content:footage-recorder`, "Stills for vivreal.io marketing slots" (paired by what the
+"Stills for vivreal.io marketing slots" in `vivreal-knowledge:vivreal-accounts-and-writes` (preloaded; paired by what the
 slot says, never by filename; comped demo plan figures masked; no demo site has its own web
 address). Before you call a live page stale after a change, read
 `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`: a fresh change

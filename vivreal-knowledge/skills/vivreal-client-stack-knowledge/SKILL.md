@@ -121,3 +121,32 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 ## Deploy model: release train, VR_Client_API only
 
 Prod serves `stable`, never `main`. The shared model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`. **VR_Client_Auth is not on the train**: it deploys straight off a push to `main`.
+
+## Before you report an absence
+
+Load `vivreal-workflow:verification-discipline`: a zero is only evidence once the same query returns a known hit. Two of its worked examples are this stack's own surfaces: an `aws s3api head-object` against a bucket that does not exist in the account (a 404 that meant "no such bucket"), and a 403 from `media.vivreal.io`, which enforces `TrustedKeyGroups`, so EVERY unsigned request is 403 whether or not the object exists. Name the bucket, ref or collection you queried and prove it can return a known hit.
+
+## Lambda and MongoDB checklist (ported from the `client-stack` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- Two Lambdas, two different deploy frameworks (SAM + Serverless). Verify each is deployed via its own pipeline.
+- Authorizer cache: API Gateway authorizer-level TTL. Changes to API key revocation only take effect after TTL expiry.
+- Connection reuse: Mongo client must be top-level. Cold-start without connection reuse triples latency.
+- IAM: authorizer needs only Mongo read + decryption; client API needs Mongo read + S3 read + Stripe read.
+- Timeout budget: authorizer 290s but should respond in <500ms p99; client API 30s but should respond in <2s p99.
+- Cold start: this is the highest-traffic backend, provisioned concurrency may be justified at scale.
+- Reserved concurrency was raised once for crawler bursts and then LOWERED on 2026-09-21 because each container holds Mongo pools against a shared Atlas connection cap (`vivreal-hq/docs/projects/atlas-connection-fixes-2026-09-15/spec.md`); the ConcurrentExecutions alarm was recalibrated to the new ceiling in the same change, so read both from `sam-template.yaml`. Alarms on Throttles, ConcurrentExecutions and Duration p95 exist behind the optional `AlarmNotificationArn` param, plus a `MonitoringSubscription` (CacheHitRate) + CloudWatch dashboard for the edge cache and a locked-down `ClientApiCloudFrontLogsBucket` (SSE, 90d expiry).
+
+### MongoDB consistency & performance
+
+- Multi-tenant via authorizer-injected `database` context. Same dbKey routing as CMS API.
+- Read-only, never write.
+- `publishDate` filter: `{ publishDate: { $lte: new Date() } }` (or null).
+- `archived` filter: `{ archived: { $ne: true } }`.
+- Index audit: every customer-facing query must hit an index. `groupID + publishDate + archived` compound index for collection objects.
+- Read concern: `local` is fine for content; consider `majority` if there's read-after-write coupling with CMS API writes.

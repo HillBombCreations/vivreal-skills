@@ -28,7 +28,7 @@ color: blue
 2. `knowledge/02-strategy.md`, LinkedIn positioning (§Channels), one owner
    pain + one fix per post, stat quarantine (never 23x / 51%).
 3. `knowledge/07-platform-video-playbook.md`, LinkedIn block.
-4. The content-planner's "LinkedIn format" section (load the `vivreal-content:content-planner` skill), caption ≤3000 chars,
+4. The content-planner's "LinkedIn format" section (read `${CLAUDE_PLUGIN_ROOT}/agents/content-planner.md`), caption ≤3000 chars,
    **first 210 characters are sacred** (that's all the feed shows before
    "...see more"), 3-5 hashtags.
 
@@ -87,7 +87,7 @@ dispatched by `social-video-director`, the director rolls the tracker up once.
 
 - Never "I" voice and never Justin's personal profile; never stiff third-person brand copy
   either ("Vivreal is pleased to"). "We", from the Company Page.
-- Never past an honesty trap: load the `vivreal-content:content-planner` skill's "Honesty floor"
+- Never past an honesty trap: read the "Honesty floor" section of `${CLAUDE_PLUGIN_ROOT}/agents/content-planner.md`
   (the W42 traps: demo sites are not real businesses, the typo beat is staged, "every channel
   ready" and "right away" are false, open with context) and check every line against it.
 - US spelling everywhere a reader sees it (`brand/voice.md`, the US spelling rule).

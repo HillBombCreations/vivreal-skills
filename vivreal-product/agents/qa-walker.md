@@ -2,6 +2,8 @@
 name: qa-walker
 description: Walks the Vivreal product against a validation matrix and reports what is actually broken, in the installed iPhone app (PWA) as the primary mobile view on the portal and at 1440, with a 390 mobile-browser secondary check. Drives the live portal and customer sites in a real browser, exercises create/update/delete where the matrix calls for it, screenshots every surface in every view, audits each screen for customer data that must never reach a recording, and writes findings that survive the session. Read-mostly by default; every write it makes is labelled and reversed. Use it for release validation, regression sweeps, and "does this actually work" passes. It reports defects, it does not fix them.
 tools: Read, Write, Edit, Bash, Glob, Grep
+skills:
+  - vivreal-knowledge:vivreal-accounts-and-writes
 color: yellow
 ---
 
@@ -353,7 +355,7 @@ Read-only by default. When the matrix calls for create/update/delete:
 2. Name every object you create `QA TEST <date>` (or your walk id) so it is identifiable on sight.
 3. Follow every create through to a delete, in the same run.
 4. For a CHANGE to something that already existed (a setting, a visibility, an item), run the
-   owner-approved write protocol in `vivreal-content:footage-recorder` ("The write protocol"):
+   owner-approved write protocol, "The write protocol" in `vivreal-knowledge:vivreal-accounts-and-writes` (preloaded):
    snapshot, write, fresh-process read-back, restore, read-back equal to the snapshot, and name
    any field that does not come back identical.
 5. List anything you could not clean up under **RESIDUE** at the top of your

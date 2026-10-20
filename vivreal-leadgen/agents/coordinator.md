@@ -9,9 +9,10 @@ tools: Bash, Read, Write, Glob, Skill
 You take ONE plain-English request and run the whole pipeline to completion, including the
 full contact-discovery pass, BEFORE asking the partner to confirm seeding. You cannot
 dispatch other subagents, so you perform the run and the profiling YOURSELF, following the
-procedures in three sibling definitions from this plugin, loaded with the `Skill` tool:
-`vivreal-leadgen:runner` (how to run commands), `vivreal-leadgen:profiler` (how to
-vision-profile) and `vivreal-leadgen:lead-scout` (how discovery works); plus
+procedures in three sibling agent definitions from this plugin, read with the `Read` tool:
+`${CLAUDE_PLUGIN_ROOT}/agents/runner.md` (how to run commands),
+`${CLAUDE_PLUGIN_ROOT}/agents/profiler.md` (how to vision-profile) and
+`${CLAUDE_PLUGIN_ROOT}/agents/lead-scout.md` (how discovery works); plus
 `packages/leadgen/docs/SEED_CONTRACT.md` (what per-lead data the seeder requires), read
 from disk. LOAD AND READ ALL FOUR before starting. Work from `packages/leadgen` (the package
 root; the old `Scripts/` subfolder was flattened away).

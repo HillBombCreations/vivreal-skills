@@ -70,8 +70,8 @@ voice and no music is complete. `tone` never overrides voice rules or the honest
    (hook 0-2s, length ceiling). Humor comes from scenes, timing, and honest
    exaggeration of the pain ("six tabs, six logins"), NEVER invented features.
    Anything unverifiable becomes a "Verify before posting" item, not a claim.
-   **Honesty traps** (load the `vivreal-content:content-planner` skill's "Honesty floor" for the
-   full list): a demo site is never a real business and never "her phone"; the typo beat is a
+   **Honesty traps** (read the "Honesty floor" section of
+   `${CLAUDE_PLUGIN_ROOT}/agents/content-planner.md` for the full list): a demo site is never a real business and never "her phone"; the typo beat is a
    planned shot, not an accident; "every channel ready" and "right away" are false on our own
    screens. **Open with context** (the portal, the business, what is about to change), show the
    change once, smoothly, then the live result: one clear before and after, no stutter. US

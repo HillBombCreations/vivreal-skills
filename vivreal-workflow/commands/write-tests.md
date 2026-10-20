@@ -1,6 +1,7 @@
 ---
 description: Write comprehensive e2e tests for a feature, component, or page. Applies the Vivreal test quality standard, edge cases, error states, numeric safety, accessibility, breakpoints, and interaction coverage.
 argument-hint: <feature-name or component-path>
+disable-model-invocation: true
 ---
 
 You are writing Playwright e2e tests for the Vivreal Portal. The user invoked `/write-tests` with: **$ARGUMENTS**

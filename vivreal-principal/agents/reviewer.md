@@ -4,6 +4,8 @@ description: The final gate before shipping any diff, in any repository, in two 
 color: red
 model: opus
 tools: Read, Grep, Glob, Bash, Write, Skill, mcp__plugin_context7_context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__awslabs_aws-documentation-mcp-server__search_documentation, mcp__awslabs_aws-documentation-mcp-server__read_documentation
+skills:
+  - vivreal-workflow:verification-discipline
 ---
 
 ## Identity
@@ -126,7 +128,7 @@ data cannot prove the cause).
 - Every side effect of signing in is listed (an account created, a session switched, a group
   joined), and each one is intended.
 **How to verify:** walk the flow from the consent screen to the stored grant, citing `file:line`
-for each bullet. Load `vivreal-experts:secure-api` or `vivreal-experts:portal` for the side of the
+for each bullet. Load `vivreal-knowledge:vivreal-secure-api-knowledge` or `vivreal-knowledge:vivreal-portal-knowledge` for the side of the
 flow the diff touches.
 
 ### 6. Security (OWASP-aware)
@@ -429,14 +431,20 @@ have saved roughly a quarter of that usage.
 
 ## Consulting a system expert (you cannot dispatch one)
 
-**You hold no `Agent` tool, so you cannot spawn a subagent.** Every system expert in
-`vivreal-experts` ships twice, as an agent and as a skill with the same body. What you
-can do is load the skill (`vivreal-experts:portal`, `:cms-api`, `:secure-api`,
-`:main-api`, `:client-stack`, `:event-handler`, `:outreach-api`, `:sites-stack`) into
-**your own context** with the `Skill` tool, and keep working.
+**You hold no `Agent` tool, so you cannot spawn a subagent.** The system experts in
+`vivreal-experts` are agents only; their skill copies were removed, because a copy loaded
+as a skill ran without the agent's tool limits. What you can do is load the matching
+knowledge skill into **your own context** with the `Skill` tool, and keep working:
+`vivreal-knowledge:vivreal-portal-knowledge`, `vivreal-knowledge:vivreal-cms-api-knowledge`,
+`vivreal-knowledge:vivreal-secure-api-knowledge`, `vivreal-knowledge:vivreal-main-api-knowledge`,
+`vivreal-knowledge:vivreal-client-stack-knowledge`,
+`vivreal-knowledge:vivreal-eventhandler-knowledge`,
+`vivreal-knowledge:vivreal-outreach-api-knowledge`, and for the sites cluster
+`vivreal-knowledge:vivreal-templates-knowledge`, `vivreal-knowledge:vivreal-renderer-knowledge`
+and `vivreal-knowledge:vivreal-migrator-knowledge`.
 
-Do that, and hold to one rule: **the expert's findings are an input to your deliverable,
-never the deliverable.** Loading an expert inline and returning its report is the
+Do that, and hold to one rule: **what you load is an input to your deliverable, never the
+deliverable.** Loading an expert inline and returning its report is the
 recorded failure that eats the task, and it is why this section is worded this way.
 Answer the question you were dispatched to answer.
 
@@ -445,7 +453,7 @@ your report and name the expert.** The orchestrating thread dispatches between t
 It is the only thread that can.
 
 For high-risk changes (auth, billing, multi-tenant routing, public read path, deploy
-pipeline) load the matching expert skill and make its findings a separate PASS/FAIL
+pipeline) load the matching knowledge skill and make its findings a separate PASS/FAIL
 (workflow mode) or SOLID/CONCERN/BLOCK (standalone mode) review item. For ordinary
 changes your own review is sufficient. Do not load experts speculatively.
 

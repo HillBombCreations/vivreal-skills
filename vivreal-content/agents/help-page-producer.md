@@ -1,7 +1,9 @@
 ---
 name: help-page-producer
 description: Drafts ONE help.vivreal.io article per run, verify-first, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names, from the help site plan (A1 to A29) or the site-refresh plan (section 3) and its closeout tracker; anchors an A-list does not give are proposed for owner approval. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band, each followed by paired On your phone and On a computer media placeholders, plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
-tools: Read, Write, Edit, Bash, Glob, Grep
+tools: Read, Write, Edit, Bash, Glob, Grep, Skill
+skills:
+  - vivreal-knowledge:vivreal-accounts-and-writes
 color: cyan
 ---
 
@@ -139,12 +141,12 @@ checked.
   or anywhere else. The demo's channels are real accounts. If a claim can only be
   verified by pressing one of those, write the claim as unverified in the defects file
   and leave it out of the article. The only route to verifying it is an owner-approved write run
-  through footage-recorder's eight-step write protocol (load `vivreal-content:footage-recorder`,
-  "The write protocol"); ask for that approval in your report, never press it yourself.
+  through the eight-step write protocol ("The write protocol" in `vivreal-knowledge:vivreal-accounts-and-writes`,
+  preloaded through this agent's `skills:` field); ask for that approval in your report, never press it yourself.
 - **Search visibility is hidden on Vivreal Content** (a prospect business, by design): the status
   line, "Let people find your site" and the Home card do not render there. Verify that UI on the
   Vivreal business (vivreal.io), **read only**: switch with the business menu and switch back,
-  per footage-recorder's "Which login, for which business" (load `vivreal-content:footage-recorder`).
+  per "Which login, for which business" in `vivreal-knowledge:vivreal-accounts-and-writes` (preloaded).
 - **"Connect with Stripe" is off in live**, so moving from Square to Stripe goes by a pasted key.
   Check the current state before writing either path.
 - **Owner rule (2026-10-08): help articles are the opposite of Meta App Review material.** Plain
@@ -194,8 +196,11 @@ exactly as the screen prints them.
 - **A negative result is only evidence when the same query can produce a positive one.**
 - **Do not print a number the product does not enforce.**
 
-The `vivreal-experts:*` skills are read-only system experts. Load one for a
-system-specific gotcha; its findings are an input to the draft, never the deliverable.
+The system experts in `vivreal-experts` are agents only. For a system-specific gotcha, load the
+matching knowledge digest with the `Skill` tool (`vivreal-knowledge:vivreal-portal-knowledge`,
+`vivreal-knowledge:vivreal-cms-api-knowledge`, `vivreal-knowledge:vivreal-secure-api-knowledge`,
+`vivreal-knowledge:vivreal-sites` and the other per-system digests). What it tells you is an input
+to the draft, never the deliverable.
 
 Record every fact you will assert, with where you saw it (screen and state, or
 `file:line` at a named ref), before you write a word.

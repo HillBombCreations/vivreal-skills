@@ -201,8 +201,8 @@ the `carousel-source/` role in `linkedin-editor.md`.
    their list and their bill there, so never "one bill" and never a graphic in which a
    Mailchimp tab collapses into a Vivreal tab. Never "the preview is the real site". Any
    competitor price gets a `Verify before posting` item naming the day it must be re-checked.
-5. **Honesty traps and premise** (load the `vivreal-content:content-planner` skill's "Honesty
-   floor" for the full list): a demo site is never a real business; "every channel ready" and
+5. **Honesty traps and premise** (read the "Honesty
+   floor" section of `${CLAUDE_PLUGIN_ROOT}/agents/content-planner.md` for the full list): a demo site is never a real business; "every channel ready" and
    "right away" are false on our own screens. **Slide 1 must make sense to a stranger on its own**
    (the W42 "a web guy vanished" deck opened with no context and lost viewers); the week's mix must
    include visual decks (a real screenshot, a demo-site photo, or a labeled generated image that

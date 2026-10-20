@@ -1,6 +1,7 @@
 ---
 description: "Run a change end to end across the portal and a backend, from research to checked in, validating the portal on the guarded local stack against the backend PR heads and shipping the backend on the owner's GO, then validating in a browser and getting owner-level feedback before the portal PR. Not /orchestrate, which is the phase gated planning workflow with approval stops: this one carries the release steps and the validation through to done."
 argument-hint: <what to build or fix, and whether to promote the portal or just check it in>
+disable-model-invocation: true
 ---
 
 You are dispatching the `delivery-orchestrator` agent. The user invoked

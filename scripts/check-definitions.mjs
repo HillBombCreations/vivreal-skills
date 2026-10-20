@@ -35,11 +35,15 @@
  *   8. A reference to behaviour that has been deleted from the product.
  *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
  *      buys a reader nothing that a profile name and a region do not.
- *  10. A command mirror (`skills/cmd-*`) inside a plugin tree. They are generated into the
- *      gitignored `.agy/`; in a plugin they list every command twice.
+ *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
+ *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
+ *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
  *
- * It warns (without failing) on a description over the documented length, an agent and its
- * skill mirror that have drifted, and an `mcp__<server>__` prefix no known server declares.
+ * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
+ * that LOADS an agent as a skill, since an agent has no skill entry to load.
+ *
+ * It warns (without failing) on a description over the documented length and an
+ * `mcp__<server>__` prefix no known server declares.
  *
  * Run:  node scripts/check-definitions.mjs
  * Self-test (the must-pass control):  node scripts/check-definitions.mjs --self-test
@@ -277,12 +281,63 @@ function ruleCrossReferences(files) {
     const keys = frontmatter(readFileSync(abs, 'utf8'), rel);
     if (keys && keys.name) known.add(`${m[1]}:${keys.name.trim()}`);
   }
+  // An agent is a valid target for a DISPATCH (`subagent_type: plugin:agent`), so a reference
+  // that names one passes. Until the agent mirrors left the plugin trees every agent also
+  // resolved as a skill, so "load `plugin:agent`" worked; now it loads nothing, and these
+  // shapes are what fail it. The previous line is joined in, because the verb and the name
+  // are often split across a wrap.
+  const agents = new Set();
+  for (const abs of files) {
+    const m = norm(relative(ROOT, abs)).match(/^([^/]+)\/agents\/([^/]+)\.md$/);
+    if (m) agents.add(`${m[1]}:${m[2]}`);
+  }
+  const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const loadsAsSkill = (text, ref) => {
+    const r = '`?' + escapeRe(ref) + '\\b`?';
+    return [
+      new RegExp('\\bload(s|ed|ing)?\\s+(the\\s+)?(skill\\s*\\(?\\s*)?' + r, 'i'),
+      new RegExp(r + "\\s+skill\\b", 'i'),
+      new RegExp(r + '\\s+with\\s+the\\s+`?Skill`?', 'i'),
+      new RegExp('\\bSkill\\s*\\(\\s*skill:\\s*"' + escapeRe(ref) + '"'),
+      new RegExp('\\bSkill name:\\s*' + r),
+    ].some((re) => re.test(text));
+  };
+  // Two phrasings that name no plugin:skill pair and so slip past REF below: a wildcard over a
+  // plugin that ships no skills ("the `vivreal-experts:*` skills"), and a bare agent name called
+  // a skill ("the `content-planner` skill"). Both were live after the agent mirrors left.
+  const pluginsWithSkills = new Set([...known].map((r) => r.split(':')[0]));
+  const skillNames = new Set([...known].map((r) => r.split(':')[1]));
+  const agentOnlyNames = [...new Set([...agents].map((r) => r.split(':')[1]))].filter((n) => !skillNames.has(n));
+  const WILDCARD = /\b(vivreal-[a-z-]+):\*`?\s+skills?\b/g;
+  const BARE = agentOnlyNames.length
+    ? new RegExp('(^|[^:\\w-])`?(' + agentOnlyNames.map(escapeRe).join('|') + ')`?\\s+skills?\\b', 'i')
+    : null;
   const REF = /\b(vivreal-[a-z-]+):([a-z0-9-]+)\b/g;
   for (const abs of files) {
     const rel = norm(relative(ROOT, abs));
     if (!isPluginFile(rel) || !rel.endsWith('.md')) continue;
     const lines = readFileSync(abs, 'utf8').split('\n');
     lines.forEach((line, i) => {
+      WILDCARD.lastIndex = 0;
+      let w;
+      while ((w = WILDCARD.exec(line))) {
+        if (PLUGIN_DIRS.includes(w[1]) && !pluginsWithSkills.has(w[1])) {
+          fail(
+            'cross-reference',
+            `${rel}:${i + 1}`,
+            `"${w[1]}:*" calls this plugin's entries skills, and it ships none. Its agents are dispatched, not loaded.`,
+          );
+        }
+      }
+      const b = BARE && line.match(BARE);
+      if (b) {
+        fail(
+          'cross-reference',
+          `${rel}:${i + 1}`,
+          `"${b[2]}" is an agent with no skill of that name anywhere, and this line calls it a skill. ` +
+            'Name the knowledge skill that carries the facts, or the agent to dispatch.',
+        );
+      }
       REF.lastIndex = 0;
       let m;
       while ((m = REF.exec(line))) {
@@ -291,8 +346,17 @@ function ruleCrossReferences(files) {
         // not skill references.
         if (m[2] === 'vivreal' || line.includes('claude plugin')) continue;
         if (!PLUGIN_DIRS.includes(m[1])) continue;
-        if (!known.has(ref)) {
+        if (known.has(ref)) continue;
+        if (!agents.has(ref)) {
           fail('cross-reference', `${rel}:${i + 1}`, `"${ref}" names no skill that exists`);
+        } else if (loadsAsSkill((i > 0 ? lines[i - 1] : '') + ' ' + line, ref)) {
+          fail(
+            'cross-reference',
+            `${rel}:${i + 1}`,
+            `"${ref}" is an agent, and this line loads it as a skill. There is no skill by that name to load. ` +
+              'Dispatch the agent, read its file (`${CLAUDE_PLUGIN_ROOT}/agents/<name>.md` in the same plugin), ' +
+              'or load a knowledge skill that carries the same facts.',
+          );
         }
       }
     });
@@ -431,48 +495,6 @@ function ruleAgentDispatch(files) {
 }
 
 /**
- * Most agents in this marketplace ship twice: once as `<plugin>/agents/<name>.md` and
- * once as `<plugin>/skills/<name>/SKILL.md`, with the same body. That is deliberate,
- * so the knowledge can load passively without dispatching a subagent, and it is also
- * the repo's own instance of the problem this whole restructure is about: two copies
- * of one thing drift, and the drift is silent.
- *
- * This is a WARNING rather than a failure. Reconciling a pair means choosing which
- * direction to sync, and syncing an agent appendix into a skill changes what loads
- * passively into every matching session. That is a judgement call, not a lint fix.
- */
-function ruleMirrorDrift(files) {
-  const body = (abs) => {
-    const t = readFileSync(abs, 'utf8');
-    const end = t.indexOf('\n---', 3);
-    return (end < 0 ? t : t.slice(end + 4)).replace(/\r/g, '').trim();
-  };
-  const agents = new Map();
-  const skills = new Map();
-  for (const abs of files) {
-    const rel = norm(relative(ROOT, abs));
-    let m = rel.match(/^([^/]+)\/agents\/(.+)\.md$/);
-    if (m) agents.set(`${m[1]}/${m[2]}`, abs);
-    m = rel.match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/);
-    if (m) skills.set(`${m[1]}/${m[2]}`, abs);
-  }
-  for (const [key, aAbs] of agents) {
-    const sAbs = skills.get(key);
-    if (!sAbs) continue;
-    const a = body(aAbs);
-    const s = body(sAbs);
-    if (a === s) continue;
-    warn(
-      'mirror-drift',
-      key,
-      `agent body is ${a.length} bytes and its skill mirror is ${s.length} bytes. ` +
-        'They are copies of one thing and they have diverged. Decide which is authoritative, ' +
-        'then sync, rather than editing one of them again.',
-    );
-  }
-}
-
-/**
  * Every `mcp__<server>__` prefix an agent is granted, or told to call, must name a server
  * something actually declares. A grant that resolves to nothing is dropped in silence; an
  * agent whose ONLY entries for a capability are unresolvable has no way to reach it, and the
@@ -549,25 +571,48 @@ function ruleMcpPrefixes(files) {
 }
 
 /**
- * Command mirrors (`skills/cmd-<name>/`) belong in the gitignored `.agy/` tree, never inside a
- * plugin. Claude Code already lists every command as a skill, so an in-tree mirror listed each
- * command twice (`vivreal-workflow:reviewer` and `vivreal-workflow:cmd-reviewer`), and two of the
- * old mirrors had no command behind them at all, so they were the only copy of `/deliver` and
- * `/write-docs`. An older `sync-to-agy.js` run puts them back; this is what notices.
+ * Generated mirrors belong in the gitignored `.agy/` tree, never inside a plugin. Two shapes:
+ *
+ *  - A command mirror (`skills/cmd-<name>/`). Claude Code already lists every command as a
+ *    skill, so an in-tree mirror listed each command twice (`vivreal-workflow:reviewer` and
+ *    `vivreal-workflow:cmd-reviewer`), and two of the old mirrors had no command behind them
+ *    at all, so they were the only copy of `/deliver` and `/write-docs`.
+ *  - An agent mirror (`skills/<name>/` beside `agents/<name>.md`). Sixty of them once sat
+ *    here: each listed its agent a second time as a skill, spent description tokens on every
+ *    turn, ran WITHOUT the agent's tool limits when invoked as a skill, and ten had drifted
+ *    from their agent.
+ *
+ * An older `sync-to-agy.js` run puts either back; this is what notices.
  */
-function ruleNoInTreeCommandMirrors(files) {
+function ruleNoInTreeMirrors(files) {
+  const agents = new Set();
+  for (const abs of files) {
+    const m = norm(relative(ROOT, abs)).match(/^([^/]+)\/agents\/([^/]+)\.md$/);
+    if (m) agents.add(`${m[1]}/${m[2]}`);
+  }
   const flagged = new Set();
   for (const abs of files) {
     const rel = norm(relative(ROOT, abs));
-    const m = rel.match(/^([^/]+)\/skills\/(cmd-[^/]+)\//);
+    const m = rel.match(/^([^/]+)\/skills\/([^/]+)\//);
     if (!m || flagged.has(`${m[1]}/${m[2]}`)) continue;
-    flagged.add(`${m[1]}/${m[2]}`);
-    fail(
-      'cmd-mirror-in-tree',
-      `${m[1]}/skills/${m[2]}`,
-      'a command mirror inside a plugin tree lists the command twice. sync-to-agy.js writes these to .agy/. ' +
-        'Delete it, after checking ' + m[1] + '/commands/' + m[2].slice(4) + '.md exists (a mirror with no source is the only copy).',
-    );
+    if (m[2].startsWith('cmd-')) {
+      flagged.add(`${m[1]}/${m[2]}`);
+      fail(
+        'mirror-in-tree',
+        `${m[1]}/skills/${m[2]}`,
+        'a command mirror inside a plugin tree lists the command twice. sync-to-agy.js writes these to .agy/. ' +
+          'Delete it, after checking ' + m[1] + '/commands/' + m[2].slice(4) + '.md exists (a mirror with no source is the only copy).',
+      );
+    } else if (agents.has(`${m[1]}/${m[2]}`)) {
+      flagged.add(`${m[1]}/${m[2]}`);
+      fail(
+        'mirror-in-tree',
+        `${m[1]}/skills/${m[2]}`,
+        `an agent mirror inside a plugin tree lists ${m[1]}/agents/${m[2]}.md a second time, as a skill that ` +
+          'runs without the agent tool limits. sync-to-agy.js writes these to .agy/. Delete it, after checking ' +
+          'its body against the agent (a mirror that drifted can hold the only copy of a change).',
+      );
+    }
   }
 }
 
@@ -782,9 +827,8 @@ function runAll(files) {
   ruleAgentTools(files);
   ruleAgentDispatch(files);
   ruleCrossReferences(files);
-  ruleMirrorDrift(files);
   ruleMcpPrefixes(files);
-  ruleNoInTreeCommandMirrors(files);
+  ruleNoInTreeMirrors(files);
   ruleCopiedValues(files);
   ruleDashes(files);
   ruleDeletedBehaviour(files);
@@ -923,10 +967,84 @@ function selfTest() {
       ].join('\n'),
     },
     {
-      rule: 'cmd-mirror-in-tree',
-      label: 'cmd-mirror-in-tree: a command mirror inside a plugin',
+      rule: 'mirror-in-tree',
+      label: 'mirror-in-tree: a command mirror inside a plugin',
       path: join(tmp, 'skills', 'cmd-poison', 'SKILL.md'),
       body: '---' + String.fromCharCode(10) + 'description: fixture' + String.fromCharCode(10) + '---' + String.fromCharCode(10),
+    },
+    {
+      // The shape sync-to-agy.js wrote sixty times: a skill directory named for an agent in
+      // the same plugin. `with` writes the agent the mirror sits beside.
+      rule: 'mirror-in-tree',
+      match: 'an agent mirror',
+      label: 'mirror-in-tree: an agent mirror inside a plugin',
+      path: join(tmp, 'skills', 'mirrored', 'SKILL.md'),
+      body: '---\nname: mirrored\ndescription: fixture\n---\n\nbody\n',
+      with: [
+        {
+          path: join(tmp, 'agents', 'mirrored.md'),
+          body: '---\nname: mirrored\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n',
+        },
+      ],
+    },
+    {
+      // An agent named where a skill is loaded. `match` keeps this from passing on the
+      // "names no skill" branch, which would fire if the agent were not recognised at all.
+      rule: 'cross-reference',
+      match: 'is an agent',
+      label: 'cross-reference: an agent loaded as a skill',
+      path: join(tmp, 'skills', 'loader', 'SKILL.md'),
+      body:
+        '---\nname: loader\ndescription: fixture\n---\n\nFor a gotcha, load\n`' + FIXTURE_PLUGIN + ':expert` with the `Skill` tool.\n',
+      with: [
+        {
+          path: join(tmp, 'agents', 'expert.md'),
+          body: '---\nname: expert\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n',
+        },
+      ],
+    },
+    {
+      // The help-page-producer shape the #48 review caught: a wildcard over a plugin that now
+      // ships agents only. The fixture plugin holds no skill in this case, only the agent.
+      rule: 'cross-reference',
+      match: 'ships none',
+      label: 'cross-reference: a plugin:* wildcard over agents only',
+      path: join(tmp, 'agents', 'wild.md'),
+      body:
+        '---\nname: wild\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'The `' + FIXTURE_PLUGIN + ':*` skills are read-only experts. Load one for a gotcha.\n',
+    },
+    {
+      // A bare agent name called a skill, with no plugin prefix for REF to see.
+      rule: 'cross-reference',
+      match: 'calls it a skill',
+      label: 'cross-reference: a bare agent name called a skill',
+      path: join(tmp, 'agents', 'bare.md'),
+      body:
+        '---\nname: bare\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'For the full list, read the `oracle-fixture` skill first.\n',
+      with: [
+        {
+          path: join(tmp, 'agents', 'oracle-fixture.md'),
+          body: '---\nname: oracle-fixture\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n',
+        },
+      ],
+    },
+    {
+      // The ALLOW half of the case above: a DISPATCH of the same agent is a valid reference.
+      // `kind: 'clean'` inverts the control, so this one must stay green.
+      rule: 'cross-reference',
+      kind: 'clean',
+      label: 'cross-reference: an agent dispatched by name',
+      path: join(tmp, 'skills', 'dispatcher', 'SKILL.md'),
+      body:
+        '---\nname: dispatcher\ndescription: fixture\n---\n\nDispatch `' + FIXTURE_PLUGIN + ':expert` with the Agent tool.\n',
+      with: [
+        {
+          path: join(tmp, 'agents', 'expert.md'),
+          body: '---\nname: expert\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n',
+        },
+      ],
     },
     {
       // A warning rule still has to be able to fire. A grant naming a server nothing
@@ -969,25 +1087,36 @@ function selfTest() {
     for (const c of cases) {
       failures.length = 0;
       warnings.length = 0;
-      mkdirSync(dirname(c.path), { recursive: true });
-      writeFileSync(c.path, c.body, 'utf8');
+      const written = [{ path: c.path, body: c.body }, ...(c.with || [])];
+      for (const f of written) {
+        mkdirSync(dirname(f.path), { recursive: true });
+        writeFileSync(f.path, f.body, 'utf8');
+      }
 
       // Run the REAL rule set, over the real walk, so the self-test exercises the
       // same code path the real run does. Nothing is reimplemented here.
       runAll(walk(ROOT));
 
       // A warning rule may already be firing on real files, so its control must find the
-      // hit IN THE FIXTURE, or it would read red with the poison absent.
+      // hit IN THE FIXTURE, or it would read red with the poison absent. `match` narrows a
+      // failure rule to one branch, so a sibling branch of the same rule cannot stand in.
       const tripped =
         c.kind === 'warn'
           ? warnings.some((w) => w.rule === c.rule && w.where.startsWith(FIXTURE_PLUGIN + '/'))
-          : failures.some((f) => f.rule === c.rule);
+          : failures.some(
+              (f) =>
+                f.rule === c.rule &&
+                (c.kind !== 'clean' || f.where.startsWith(FIXTURE_PLUGIN + '/')) &&
+                (!c.match || f.msg.includes(c.match)),
+            );
+      // A `clean` case is an ALLOW control: correct means its rule stayed green on the fixture.
+      const correct = c.kind === 'clean' ? !tripped : tripped;
       console.log(
         `  ${tripped ? 'RED   ' : 'GREEN '} ${(c.label || c.rule).padEnd(34)} ` +
-          (tripped ? '(correct)' : '(THIS CHECK CANNOT FAIL)'),
+          (correct ? '(correct)' : c.kind === 'clean' ? '(THIS CHECK REFUSES A VALID FILE)' : '(THIS CHECK CANNOT FAIL)'),
       );
-      if (!tripped) allCanFail = false;
-      rmSync(c.path, { force: true });
+      if (!correct) allCanFail = false;
+      for (const f of written) rmSync(f.path, { force: true });
     }
 
     // The other half of the control: with the poison gone, the repo must come back

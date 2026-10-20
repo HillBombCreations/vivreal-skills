@@ -1,6 +1,7 @@
 ---
 description: Bump a shared dependency across all Vivreal consumer repos (esp. private @hillbombcreations/* GitHub Packages), discover consumers, detect skew, patch each consumer's lockfile surgically (see the package-publisher agent), build/test, and open PRs.
 argument-hint: <package> [target-version]  e.g. @hillbombcreations/schemas <target-version>
+disable-model-invocation: true
 ---
 
 You are running a cross-repo coordinated dependency bump. The user invoked `/bump-package` with: **$ARGUMENTS**

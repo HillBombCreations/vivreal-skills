@@ -232,8 +232,8 @@ INTEGRATE pass is where a real gate and a real review belong.
 
 In SOLO and INTEGRATE, after the gates pass, review your own diff against the `reviewer`
 agent's checklist and report the verdict inline. You hold no `Agent` tool, so you cannot
-spawn the reviewer as a subagent; load `vivreal-principal:reviewer` with the `Skill` tool and
-apply it yourself. This is a self-review, weaker than an independent pass, say so rather than
+spawn the reviewer as a subagent; read its definition, `${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md`,
+and apply it yourself. This is a self-review, weaker than an independent pass, say so rather than
 implying one happened. Cap at 3 passes; if still failing, stop and escalate to the user with
 the unresolved list.
 
@@ -301,8 +301,8 @@ sleep 30; done` with `timeout: 600000`. That is one model call per 10 minutes, n
 ## Consulting the portal expert (you cannot dispatch one)
 
 You hold no `Agent` tool. For a portal-specific gotcha the task did not call out, load
-`vivreal-experts:portal` with the `Skill` tool into your own context and keep working; its
-findings are an input to your diff, never the deliverable. Never dispatch it speculatively.
+`vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool into your own context and
+keep working; what it tells you is an input to your diff, never the deliverable. Never dispatch it speculatively.
 
 ## Validating framework behavior
 

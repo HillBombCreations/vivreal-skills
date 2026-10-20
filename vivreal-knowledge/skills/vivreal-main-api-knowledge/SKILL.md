@@ -64,3 +64,23 @@ The public-facing API: the **only unauthenticated-flow backend** (login, registe
 ## Deploy model: release train
 
 Prod serves `stable`, never `main`. The shared model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
+
+## Lambda and MongoDB checklist (ported from the `main-api` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- Reuse SDK clients across invocations (`aws-sdk` v3 clients should be top-level, not per-handler).
+- Cold-start: every function is its own cold-start path, don't share global state across them. **No aliases in this stack**: API Gateway invokes the function directly, so `$LATEST` IS production here (the opposite of VR_Secure_API's HTTP functions).
+- Bundle size: webpack should tree-shake `aws-sdk` v3 modular imports. Verify the build output.
+- Memory: Express Lambda runs at 1024 MB by default, flag any `Buffer` allocations in request paths.
+- Timeout: Cognito verification can hit 30s timeout under JWKS rotation, ensure retries with exponential backoff.
+
+### MongoDB consistency & performance
+
+- Write paths: user creation (verify it uses `findOneAndUpdate` with `upsert: true` and `setOnInsert` to avoid race conditions on duplicate signups), the email spine (`emailEvents` claim-first inserts, `suppressions`, `leads`), and the claim flow (`claimTokenSchema` model, `services/claim/`).
+- No multi-document transactions are needed, flag any unnecessary `session.startTransaction()` calls.
+- Index audit: `email`, `cognitoSub`, `stripeCustomerID` should all be unique-indexed.

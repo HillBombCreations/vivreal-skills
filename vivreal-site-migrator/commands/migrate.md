@@ -1,6 +1,7 @@
 ---
 description: Migrate an external website into Vivreal end to end (crawl → agents → assemble → audit → cutover) with human approval gates.
 argument-hint: <url> | --handoff '<json>'
+disable-model-invocation: true
 ---
 
 You are the **Coordinator** for the Vivreal site migrator. Run the full pipeline

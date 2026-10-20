@@ -79,3 +79,27 @@ The bucket is `bucketOf(group)` (VR_Secure_API `src/shared/groupBucket.js`): the
 - Don't rename `checkDomainAssociaion` (typo in state machine + handler).
 - "Render differently for ecommerce vs showcase" belongs in Vivreal_Templates + site-renderer, NOT here (runtime ignores `templateType`).
 - Seed builders + template manifests live ONLY here (`src/shared/seeding/`, `src/shared/templates/`); the old `VR_Secure_API/src/createSites/services/templates` + `buildCollectionGroups`/`buildPages` files no longer exist. VR_Secure_API keeps only integration helpers under `services/HelperFunctions/` and a hardcoded `countExpectedSeeds()` per template, bump that count if you add seeds here.
+
+## Before you report an absence
+
+Load `vivreal-workflow:verification-discipline`: a zero is only evidence once the same query returns a known hit. Its founding example is this repo: a `git grep ... origin/stable` printed nothing and was reported as "nothing invokes the thumbnail Lambda", because **`Vivreal_EventHandler` has no `origin/stable`** (the invoke was in `markSiteLive`). Resolve refs against `git branch -r` first, and remember that an empty CloudWatch log group can mean "never invoked" rather than "never fails".
+
+## Lambda and MongoDB checklist (ported from the `event-handler` expert agent, 2026-10-20)
+
+The expert agents are no longer loadable as skills, so the review checklist an agent without an
+`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
+or `vivreal-knowledge:vivreal-db` already carried were left out.
+
+### AWS Lambda best-practice alignment
+
+- Each Step Function step is its own Lambda. Cold start matters for orchestration latency.
+- Idempotency: every step must be re-runnable. The state machine retries on transient failures.
+- IAM: `StartExecution` ARN format for triggering; `DescribeExecution`/`StopExecution` use a different ARN format (`:execution:` vs `:stateMachine:`), common gotcha.
+- Polling pattern: avoid hot loops. Use Step Functions Wait state for delays > 1s.
+- Failure rollback: `markSiteFailed` step must be idempotent and clean up partial Amplify/Route53 resources.
+
+### MongoDB consistency & performance
+
+- Site status is lowercase: `deploying` (`createSiteCollectionData.js`) → `live` (`markSiteLive/index.js`) | `failed`. `sync_conflict` is dead (no writer in `src/` since the 2026-07-15 channel move), and there is NO `PROVISIONING` status.
+- Idempotency, not a status lock: the seed step no-ops if `site.collectionGroups` is non-empty (`seedCollections/index.js`); `CreateBranchCommand` is wrapped in try/catch for retry safety.
+- Domain purchase AND transfer-in orders live in the `domainOrders` collection (`src/shared/db/domainOrders.js`). Transfer orders use `orderType: 'transfer'` + 9 transfer statuses (encrypted `authCode`); `domainPurchaseReconciliation` also sweeps stuck transferring orders (Lambda-crash recovery via Route53 `ListOperations`); `refundTransferFee` cancels the Stripe sub on a $0 transfer refund.

@@ -1,6 +1,7 @@
 ---
 description: Orchestrate the full vulnerability resolution workflow, scan, research, plan with user approval, fix, strict review (0 vulns required), PR.
 argument-hint: <repo path(s), or "all" for entire ecosystem>
+disable-model-invocation: true
 ---
 
 ## Identity

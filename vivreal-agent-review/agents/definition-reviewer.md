@@ -117,9 +117,9 @@ First match wins:
 Glob the component tree. Then identify generated skill mirrors: a
 `skills/<X>/SKILL.md` is generated **iff** a sibling source exists and the two are
 **byte-identical**, either `<plugin>/agents/<X>.md`, or `<plugin>/commands/<Y>.md`
-where `<X>` equals `"cmd-" + <Y>`. Compare with `Bash` `diff` or `cmp`. In this marketplace the
-`cmd-` mirrors live in the gitignored `.agy/`, so a `skills/cmd-*` inside a plugin is itself a
-finding (`generated-mirror-drift` in rules.md).
+where `<X>` equals `"cmd-" + <Y>`. Compare with `Bash` `diff` or `cmp`. In this marketplace both
+kinds of mirror live in the gitignored `.agy/`, so a `skills/cmd-*`, or a `skills/<X>/` beside
+`agents/<X>.md`, inside a plugin is itself a finding (`generated-mirror-drift` in rules.md).
 
 Exclude mirrors: they carry agent-only keys such as `tools` and `color` into a skill
 file and would trip `skill-unknown-field` systematically, an artifact of the sync
