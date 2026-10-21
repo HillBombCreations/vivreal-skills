@@ -33,7 +33,7 @@ For each repo below, run `git -C <path> log --since=<baseline> --format='%h %ad 
 | `Vivreal_Site_Migrator` | `vivreal-knowledge/skills/vivreal-migrator-knowledge` |
 | `Vivreal-Tier-Quotas` | `vivreal-knowledge/skills/vivreal-unit-economics` (+`references/cost-model.md`), `vivreal-product/agents/finance-auditor.md` (**AI quota values**) |
 | `Vivreal-Schemas` | `shared-standards` repo table, `vivreal-fullstack/skills/fullstack-context` schema list |
-| `vivreal-hq` `packages/admin-app` (admin.vivreal.io, the staff hub since v7) | `shared-standards` vivreal-hq row and deploy-trigger row (merge deploys nothing; `deploy/admin-app` fast-forward), `vivreal-product/agents/qa-walker.md` (admin app walks), `vivreal-infra/skills/vivreal-notifications` (admin push surface) |
+| `vivreal-hq` `packages/admin-app` (the admin app, the staff hub since v7) | `shared-standards` vivreal-hq row and deploy-trigger row (merge deploys nothing; `deploy/admin-app` fast-forward), `vivreal-product/agents/qa-walker.md` (admin app walks), `vivreal-infra/skills/vivreal-notifications` (admin push surface) |
 | `vivreal-hq` `packages/fleet-ops` (alarms, deploy role, e2e-local, coverage checks) | `vivreal-infra/skills/vivreal-observability`, `vivreal-infra/skills/vivreal-iam-secrets` and `vivreal-infra/agents/infra-engineer.md` (deploy role), `vivreal-infra/skills/vivreal-deploy-proof` |
 | `vivreal-hq` `packages/leadgen` | `vivreal-leadgen/agents/*` (the plugin mirrors this package's pipeline and write paths) |
 | `Vivreal-Mongo-Connection` (`@hillbombcreations/tenant-db`, `mongo-connection`) | `vivreal-knowledge/skills/vivreal-tenancy`, `vivreal-infra/skills/vivreal-atlas-topology`, `vivreal-knowledge/skills/vivreal-db` |

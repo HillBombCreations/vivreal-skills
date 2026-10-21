@@ -157,7 +157,7 @@ and the branch is already proven.
   3100 and 4600 are shared machine-wide; any gate result, red or green, is void while another
   portal worktree owns those ports. Confirm ownership by the process's command line before
   trusting either outcome. **A targeted e2e run can take its own ports:** set
-  `VR_HARNESS_OFFSET` (integer 1 to 400; `e2e/fixtures/harnessPorts.ts`) and the app port, the
+  `VR_HARNESS_OFFSET` (integer 0 to 400, where 0 is the default ports, so use a non-zero value; `e2e/fixtures/harnessPorts.ts`) and the app port, the
   mock-upstream port and the dist dir all shift for that run. The pre-push gate still binds the
   defaults.
 - **Parity tests read per-sibling overrides, not only `VIVREAL_REPOS`.** `tests/support/siblingRepo.ts`

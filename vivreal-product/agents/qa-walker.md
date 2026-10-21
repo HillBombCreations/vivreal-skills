@@ -255,7 +255,7 @@ You audit every screen for this, and you say so in the report even when clean.
   `/more`'s inline switcher. **Since portal v0.36.0 the phone business menu holds only the
   businesses, the signed-in person, Log out and "Open More", so opening it at all shows the
   list: it is not filmable.**
-- **The admin app (admin.vivreal.io), any page.** Every staff surface (outreach CRM, review
+- **The admin app, any page.** Every staff surface (outreach CRM, review
   queue, import leads, team, monitoring, errors, usage, flags, audit, signups, suppressions)
   lives there and only there since 2026-09-28; it lists businesses, operators and prospects by
   name. Never film it.

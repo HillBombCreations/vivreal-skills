@@ -145,7 +145,7 @@ either way.
 **Cap: at most four background agents at once (owner, 2026-10-17; it replaced the
 earlier "about five").** Count every coder, reviewer, researcher, walker and ledger
 agent. An orchestrator that runs its own sub-agents uses slots too, so leave it the
-slot it needs (v7's coordinator held the fourth slot for exactly that). When a slot
+slot it needs. When a slot
 frees, start the next item rather than idling. Restarting an agent that crashed (a
 login error, a dropped connection) is not a new dispatch. Prefer handing new work of
 the same kind to an agent about to finish in the same repository over a fresh
@@ -162,7 +162,11 @@ loop) so research and fixes start mid-walk. There is still one retest at the end
 dispatch.** Merge, release, a production write, a real-account action, or the
 owner's go for any of them, goes in the FIRST prompt of a new dispatch. An agent
 correctly refuses a go relayed as a mid-task message (v7 release engineer,
-2026-10-20).
+2026-10-20), and every write agent does the same, not only the release engineer
+(v7.1). So when the owner approves a one-shot in the main thread (a single
+production command, a change set, a typed-confirmation script), the coordinator
+runs it itself rather than relaying the go to a running agent, then hands the
+read-back to the agent that owns the work.
 
 **The session budget is shared, and it kills every agent at once.** Nine agents
 fanned out on 2026-10-04 drained it and seven died together mid-work, two with code
@@ -196,6 +200,9 @@ never publishes and bumps on its own. The bump pass itself is `package-publisher
 `scratchpad/<task-slug>/<file>`, never a generic name (`count.py`, `out.txt`,
 `after.json`), and treat a scratch helper as untrusted between invocations: a
 sibling can overwrite it with different code that still prints a plausible number.
+That includes PR bodies: in v7.1 a PR body was overwritten through a shared
+`pr-body.md`. Name every file uniquely (`<repo>-<branch>-pr-body.md`), and read
+it back before `gh pr create --body-file` or `gh pr edit --body-file`.
 
 **Never `git reset --hard`, `git stash`, `git checkout --` or `git restore` a file
 you did not write.** An unexpected change in a repository you share is someone

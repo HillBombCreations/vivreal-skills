@@ -23,14 +23,14 @@ producer → vivreal-notification-queue (SQS, batch size 1, + DLQ) → Notificat
 
 - **EventHandler `markSiteLive`** (first producer): enqueues a push on a **template-instantiated** site's FIRST live deploy, gated on `siteInfo.template` + `instantiation` both present via a `.lean()` read (both are strict-bypassed undeclared schema paths). Runs after the critical DB write, 5s-raced, failures logged and swallowed (never fails a deploy). markSiteLive's Lambda timeout went 60s → 75s for this.
 - **VR_Secure_API deploy-status pushes**: the offline push fallback is **suppressed for non-terminal `deploymentStatus` events**, only terminal states (live/failed) push; intermediate stage chatter stays socket-only.
-- **Staff alarms (VR_OnCall_Webhook alarm push bridge, v7)**: a CloudWatch alarm becomes a staff push whose click opens the admin app's monitoring page (`https://admin.vivreal.io/monitoring`).
+- **Staff alarms (VR_OnCall_Webhook alarm push bridge, v7)**: a CloudWatch alarm becomes a staff push whose click opens the admin app's `/monitoring` page.
 
 ## Two surfaces: portal devices and admin-app devices (v7)
 
 - **The admin app subscribes devices with `surface: 'admin'`** through Secure's admin push routes, behind the admin pool (count `Path: /api/admin` events in Secure's `cloudformation/` for the set; never quote a number). Portal subscriptions carry no `surface`.
 - **The consumer splits by type.** A staff type (one with a pinned recipient) goes ONLY to `surface: 'admin'` devices; a customer type goes only to non-admin devices (`$ne: 'admin'`, which also matches portal rows with no field). `surface` is declared in the consumer's own `db.js`, so the strict query keeps the path.
 - **A staff type with no admin device logs a warning** (`no admin-app device subscribed for a staff alert`) and delivers nothing. A customer group with no devices stays quiet. So "the alarm push never arrived" starts with: is an admin device subscribed at all?
-- **Release order for this split** (v7 runbook S11 and S17b): Secure's admin push routes and the admin app, then an admin device subscribed, then Main's consumer, then the OnCall bridge, then the portal. Shipping the consumer before a device subscribes means alarm pushes reach nobody.
+- **Release order for this split** (v7 runbook S11 and S17b): Secure's admin push routes and the admin app, then an admin device subscribed, then Main's consumer, then the OnCall bridge, then the portal. Shipping the consumer before a device subscribes means alarm pushes reach nobody. **v7 shipped Main and the bridge with S11 deferred** (owner, 2026-10-20), so for a missing alarm push check for an admin device subscription first.
 
 ## Gotchas
 

@@ -208,7 +208,7 @@ PLAYWRIGHT_EXTERNAL_WEBSERVER=1 npx playwright test --project=chromium e2e/your-
 ```
 
 If another agent may be running e2e on this machine, set `VR_HARNESS_OFFSET` (an integer
-from 1 to 400) so this run gets its own app and mock-upstream ports and dist dir instead of
+from 0 to 400, where 0 is the default ports, so use a non-zero value) so this run gets its own app and mock-upstream ports and dist dir instead of
 attaching to a sibling's server (`fleet-concurrency`, "Fixed ports").
 
 Tests MUST:

@@ -182,7 +182,7 @@ pass. That is how v7 fed it (passes twenty two to twenty four).
 - **Read the queue from the line after the last pass's "applied through" point** to its end.
   Each line is a claim like any other request: verify it at a named ref before it moves a row.
 - **One register block per pass**, headed with the date, the pass number and the queue line it
-  applied through (`## <date>: <n>th pass, ledger queue applied through <the last event>,
+  applied through (`## <date>: <ordinal in words> pass, ledger queue applied through <the last event>,
   registered under H<first> to H<last>`), then the rows it opened, moved or closed.
 - **The queue is append-only for its writer.** Never edit or delete a queue line to mark it
   applied; the pass heading is the mark. A line you could not verify stays unapplied and is

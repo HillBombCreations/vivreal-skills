@@ -141,7 +141,9 @@ read the deployed stack for the current set.
 - **Alarm pushes reach admin-app devices only.** The OnCall bridge's pushes open the admin app's
   monitoring page, and Main's notification consumer sends staff types only to devices subscribed
   with `surface: 'admin'`. Until an admin device subscribes, an alarm push reaches nobody, and the
-  consumer logs a warning saying so (see `vivreal-notifications`).
+  consumer logs a warning saying so (see `vivreal-notifications`). v7 shipped Main and the bridge
+  with the admin device sign-up (runbook S11) deferred (owner, 2026-10-20), so check for an admin
+  device subscription first.
 
 ---
 

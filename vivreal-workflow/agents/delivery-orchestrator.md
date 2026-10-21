@@ -65,7 +65,7 @@ last). Until GO, validate the portal on the guarded local stack against the
 backend PR heads, which is what phase 7 does. Before GO, a backport onto a train
 line, or a merge to a train repo's `main` (the Saturday cut picks it up), is itself
 a deploy at the next Monday promote cron, so hold it or confirm that repo's
-`promote.yml` is disabled. On GO, dispatch `release-engineer` per
+`promote.yml` is disabled. On GO, outside a runbook, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
 **Put the owner's go in that dispatch's first prompt**, with the named steps it
 covers; a go relayed later as a message cannot widen its authority and it will
