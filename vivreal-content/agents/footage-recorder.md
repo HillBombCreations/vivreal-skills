@@ -252,7 +252,7 @@ Measure the segment windows off the video, write a `markers.json` by hand with
 `wallClockElapsedMs` set to the probed video duration so drift correction is a no-op
 (scale = 1), and say in the manifest `note` that the markers were reconstructed.
 
-## Hard-won gotchas (measured, 2026-09-01 Windward House shoot)
+## Hard-won gotchas (measured, the 2026-09-01 shoot)
 
 Every one of these cost a re-shoot or a wrong diagnosis. Read before writing a sequence.
 
@@ -320,7 +320,7 @@ close it in the pre-roll of every portal take; give a dismiss helper both labels
 - **"A new version is ready." with a Refresh button** can sit over the phone header and block the
   business menu. Press Refresh off camera when it shows.
 - **Demo-site email popups:** read `emailPopup.enabled` per site rather than remembering a list.
-  On 2026-10-14 they opened on Marlowe, Windward, Cobalt and Blackbird. Dismiss before every frame.
+  On 2026-10-14 they opened on four sites. Dismiss before every frame.
 - **Slideshow heroes rotate** (Motel Saturn). Wait for a named slide, or record which slide landed.
 - **The phone Studio sheet scrolls inside its own box**, 202 px (Page settings) to 264 px (Business
   info) tall at 844 high, which cuts a control in half at any scroll. Scroll that element, not the

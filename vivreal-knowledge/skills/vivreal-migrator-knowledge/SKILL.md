@@ -52,7 +52,7 @@ The package runs inside VR_Secure_API's `instantiateTemplateWorker` in productio
 - **One brand name across a kit's data and its copy.**
 - **Kit copy never promises a confirmation email (v7.2).** Site sign-ups are one step, so "check your inbox to confirm" is gone from the kits.
 - **A kit's sample time zones only reach demo sites.** VR_Secure_API strips page, opening-hours and section zones at a customer instantiation (`scrubKitZones`), so the customer's business zone governs. Do not rely on a kit zone for anything a customer sees.
-- **site-loader's Repeats help** names the word the site repeats on and says repeats stop after the end date if one is set, matching the renderer's repeat-until rule. The prod worker runs the version VR_Secure_API's deployed tag pins, which can lag master.
+- **site-loader's Repeats help** names the word the site repeats on and says repeats stop after the end date if one is set, matching the renderer's repeat-until rule. The prod worker runs the version VR_Secure_API's deployed tag pins (v2.22.6 pins this release); between releases that pin can lag master.
 - **An empty binding can still draw its heading over an empty body** (a layout declaring `nullOnEmpty: false` keeps its section when the list is empty), so set `showHeader: false` on a kit binding that may seed nothing.
 - **Kit sample dates are seeded on or after the seed date** (site-loader, S9-D2), so a new site never opens with an events list that is already over.
 

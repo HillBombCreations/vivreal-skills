@@ -26,7 +26,7 @@ Discoverable via `resources/templates/list`. Substitute `{placeholders}` with re
 
 - `vivreal://groups/{groupId}/content-types`, all schemas in this group
 - `vivreal://groups/{groupId}/content-types/{contentTypeId}`, one schema in detail
-- `vivreal://groups/{groupId}/content-types/{contentTypeId}/items?search=&page=&limit=&sort=`, paginated items
+- `vivreal://groups/{groupId}/content-types/{contentTypeId}/items?search=&page=&limit=&sort=`, paginated items. `sort` is `field:dir` (for example `title:asc`, `createdAt:desc`), and a bad field or direction is refused with a sentence naming the fix before any call. Archived items are left out; `?archived=true` returns ONLY the archived ones
 - `vivreal://groups/{groupId}/content-types/{contentTypeId}/items/{itemId}`, one item
 - `vivreal://groups/{groupId}/content-types/{contentTypeId}/items/{itemId}/versions`, version history (count limit by tier)
 

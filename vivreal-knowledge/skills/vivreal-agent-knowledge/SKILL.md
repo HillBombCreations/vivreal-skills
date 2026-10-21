@@ -5,7 +5,7 @@ description: 'Use when working on, writing about, or debugging Vivreal AI. The A
 
 # Vivreal AI agent: cross-repo knowledge digest
 
-Last synced: 2026-10-21 (VR-MCP-Server `origin/main` 3285303, portal `origin/stable` v0.37.1, Secure `origin/stable` v2.22.5)
+Last synced: 2026-10-21 (VR-MCP-Server `origin/main` 3285303, portal `origin/stable` v0.37.1, Secure `origin/stable` v2.22.6)
 
 ## Read this first: AI is the MCP server, and only the MCP server
 

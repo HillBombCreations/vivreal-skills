@@ -5,7 +5,7 @@ description: 'Use when working on Vivreal''s first-party analytics, VR_Analytics
 
 # VR_Analytics_API: knowledge digest
 
-Last synced: 2026-10-15 against `origin/main` (deploys on push to `main`)
+Last synced: 2026-10-21 against `origin/main` at `13c0763` (#25, the v7 release; deploys on push to `main`, which has no `stable`)
 
 Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (this repo) is **collect → store → rollup only**; increment 2 (the read API + dashboard) lives in `VR_Secure_API` + the portal. Node 22 (`nodejs22.x`), AWS SAM, webpack, same conventions as the other backends. Read `CLAUDE.md` at `origin/main` first (added 2026-09-23); `README.md`'s status header may still say DEPLOY-GATED, which is stale. The full design is `Vivreal_Portal_Mobile/docs/projects/vivreal-first-party-analytics/design.md` + `cost-analysis.md`.
 
@@ -14,6 +14,10 @@ Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (th
 **Observability + hardening (added this window):** Sentry DSN is now wired for both Lambdas, plus alarms for swallowed errors, missed rollup cron runs, and throttles. The repo also picked up Atlas connection/teardown hardening (part of the cross-repo half-open-connection fix) and joined the testing campaign, 100%-coverage test suite, ESLint, and a husky pre-push gate.
 
 **The W4 CDN egress meter runs unconditionally.** `src/rollupCron/cdnRollup.js` + `src/shared/cloudwatchClient.js` `$inc` `cdnUsage.totalBytes` per group from `AWS/AmplifyHosting` `BytesDownloaded`, as a guarded sibling pass in `rollupCron/main.js` that runs even when the traffic rollup throws, and whose own failure is logged and never rethrown. It was safe to enable because VR_Client_API's CDN quota gate no longer 402s (it meters and falls through), so metering cannot take a site down. A third sibling pass, `searchRollup`, rolls `product_search_terms` into `product_search_dailies`.
+
+**The traffic-multiple watch (V7.284, v7).** A fourth guarded sibling, `src/rollupCron/trafficMultipleCheck.js`, runs after the CDN rollup and LOGS one warn line, `rollupCron: group over traffic multiple`, for each group with pay as you go off that is at or over `TRAFFIC_ALERT_MULTIPLE` times its plan's monthly traffic allowance (a literal in `template.yaml`; a missing or bad value falls back to 3). It never blocks or bills: VR_Client_API keeps serving over-cap sites on purpose. The allowance comes from `@hillbombcreations/tier-quotas`, never from the stale `groups.cdnUsage.quota`. `TrafficMultipleMetricFilter` counts that line into `Vivreal/Analytics` `GroupsOverTrafficMultiple`, and `TrafficMultipleAlarm` (`<stack>-groups-over-traffic-multiple`) fires at 1 or more. Every run ends with `rollupCron: traffic multiple check complete` carrying `checked`, `over` and `multiple`; `over: 0` with `checked` equal to the live group count is the proof the watch ran and found nobody, not silence.
+
+**Indexes are built by an explicit step (V7.307, v7).** `src/shared/mongo.js` sets `autoIndex: false` and `autoCreate: false`, so a cold start no longer creates collections or indexes. `scripts/build-indexes.js` checks (default, read only) or `--build`s missing indexes through tenant-db's `buildIndexes`; `--placements` is required and must name stored tenant dbKeys, and `--new-placement <pod>` pre-builds the next pod (`vivreal-tenancy`). `indexes.snapshot.json` plus its test fail when the declared index set changes without a reviewed snapshot.
 
 ## Pipeline (end to end)
 
@@ -29,7 +33,7 @@ Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (th
 
 ## Gotchas
 
-- **siteId→groupID probes `ANALYTICS_TENANT_DB_KEYS`** (a comma-separated list of tenant DATABASE names, not a global index). A future enterprise tenant's dedicated DB must be added to that env list or its beacons are **silently dropped** (logged `info` only).
+- **Tenant databases are enumerated from the stored `groups.dbKey`** (`src/shared/placements.js`, TEN-10), cached briefly per container, so a new placement is seen without touching this repo. The old `ANALYTICS_TENANT_DB_KEYS` list is now only an operator override for a local run and is deliberately NOT set in `template.yaml` (a stored value would outrank the registry). Every failure path THROWS rather than returning a short list (zero groups read, zero routable placements, a bad override), and both callers turn the throw into a Sentry event without taking ingest down. The retired database names are refused by tenant-db's `isRoutablePlacement`.
 - **Origin-verify secret rotation requires a stack redeploy**, the value is baked into both the Lambda env and the CloudFront origin config via `{{resolve:...}}` at deploy time.
 - Origin verify is a shared-secret header, NOT CloudFront OAC, OAC would force SigV4 payload hashes `sendBeacon` cannot send. Direct-to-Function-URL callers bypass WAF but still hit every Lambda-side defense.
 - Cardinality capping happens at **cron time**, not ingest (race-free; ingest path stays write-only). Paths length-capped ≤300 chars at validation.
