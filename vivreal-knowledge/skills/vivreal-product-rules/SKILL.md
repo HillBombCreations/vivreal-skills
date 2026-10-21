@@ -5,7 +5,7 @@ description: 'Use before filing, describing or changing Vivreal behaviour that l
 
 # Vivreal product rules (decided, not defects)
 
-Last synced: 2026-10-20
+Last synced: 2026-10-21 (v7.1 and v7.2 rules added, read at each deployed line)
 
 Each line below is a decision the owner made or a rule the product enforces on purpose. A walker who
 does not know them files defects against decisions, a help page mis-describes them, and a coder may
@@ -93,6 +93,27 @@ Never put a customer name, id or address in this file.
     `notificationConsumer` sends a pinned-recipient (staff) type only to subscriptions with
     `surface: 'admin'`, and customer types only to the rest. A staff alert with no admin device
     subscribed is logged and delivered to nobody. See `vivreal-infra:vivreal-notifications`.
+
+## Sign-ups, lists and the site clock (v7.1 and v7.2)
+
+18. **A site sign-up is one step** (owner, 2026-10-20): typing the address is the consent, so it is
+    saved subscribed with no confirmation email and the site says "You're on the list." Only a hard
+    bounce or a complaint on the platform list keeps an address unmailable. An unsubscribed person who
+    signs up again gets one rejoin email (at most one a week) and is back only after clicking it.
+    People the OWNER adds or imports are still asked to confirm by email. VR_Client_API
+    `createDefinedCollectionObject.js`, VR_Secure_API `recordParkedSignup.js`, VR_CMS_API
+    `importSubscribers.js`.
+19. **Unsubscribe and bounces reach every copy of the address on that list**, and only that list in
+    that business. VR_Main_API `campaignUnsubscribe.js`, `src/campaignEvents/lambda.js`.
+20. **Deleting a site keeps the people.** Sign-up, contact, reservation, quote-request, booking and
+    parked sign-up lists are kept while they hold anyone, and a list another site of the business
+    uses is kept with its items (owner, 2026-10-20). VR_Secure_API `deleteSite.js`.
+21. **The business time zone is the site's clock** (owner, 2026-10-20). A page or section may set its
+    own zone and wins on that page; a kit's sample zone never reaches a customer site. VR_Client_API
+    `src/shared/siteTimeZone.js`, renderer `scheduleTimezone`, VR_Secure_API `scrubKitZones`.
+22. **A repeating stop's end date means "repeat until"**, never one long event, and the calendar feed
+    lists each occurrence (owner, 2026-10-20). Renderer `src/lib/scheduleOccurrences.ts`, shared with
+    VR_Client_API's feed.
 
 ## Adding a rule
 

@@ -117,6 +117,15 @@ Still only planned or open, as of 2026-10-04:
 
 - **A third pod.** Nothing needs one (see "Should this tenant get its own database" below), and an
   empty pod still costs its collections and indexes against the per-node data-file budget.
+  The tooling to open one exists since v7: each service that builds tenant indexes takes
+  `scripts/build-indexes.js --build --new-placement <pod>` (on the deployed lines of VR_CMS_API,
+  VR_Secure_API, VR_Client_API and Vivreal_EventHandler at this sync; the EventHandler header says
+  seven services build a tenant pod, so check each). The name must be exactly the pod tenant-db's
+  `choosePlacementForNewGroup` would open next from the stored dbKeys, and a build is refused when
+  any collection there already holds a document. **Before a new-pod build, compare two inputs that
+  can disagree:** signup reads the `Vivreal.placement_weights` census, the script reads
+  `Vivreal.groups.dbKey`, and a census row with no group (or the reverse) makes them name different
+  next pods. Build only when they match.
 - **Memory and docs that still say `general_shared`.** Several notes and the 2026-09-16 precedent
   scripts were written before the move and carry the old name; treat any hardcoded `general_shared`
   or `pro_plus` database name as stale on sight.

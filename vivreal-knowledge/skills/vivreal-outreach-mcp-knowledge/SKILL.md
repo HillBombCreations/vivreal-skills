@@ -5,7 +5,7 @@ description: 'Use when working in VR-Outreach-MCP-Server, the internal-only remo
 
 # VR-Outreach-MCP-Server: knowledge digest
 
-Last synced: 2026-10-15 against `origin/main` (Node 22 since 2026-10-02, `edb651d`)
+Last synced: 2026-10-20 against `origin/main` at `066d0b2` (#11, live since 2026-10-19; Node 22 since 2026-10-02)
 
 **Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions), but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` for depth (updated 2026-07-27, FRESH; header says "50 tools, 0 prompts").
 
@@ -38,6 +38,8 @@ Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SH
 - **Sender identity resolves LIVE at send time, never snapshotted**, sequences store only `senderUserId`. Editing a sender changes in-flight sends immediately; **deleting an in-use sender strands enrollments in a silent `no-sender` backoff**. Sender `signature` free-text is RETIRED (composed from `fromName`+`role`+`signatureImageUrl`); `fromAddress` must end `@vivreal.io` (client-enforced only).
 - **`import-contacts` is insert-net-new / skip-existing**, NOT upsert; body must be `{contacts:[...]}` (bare array 400s). **Company must exist first**, unresolved `companyId` soft-skips the row (`droppedInvalid[]`, `unresolved-companyId`); always surface skips. HITL flow: `create-company` → `import-contacts` with the `_id`.
 - **`bulk-enroll-contacts` fails the WHOLE batch (502)** on a suppression-lookup failure, deliberate fail-closed for deliverability.
+- **The enrol tools report the real result (v7).** `enroll-contacts`, `import-sequence-csv` and `bulk-enroll-contacts` say "nobody was enrolled" ONLY on Outreach's exact suppression-failure 502 (`SUPPRESSION_LOOKUP_FAILED_ERROR` in `src/tools/sequences.ts`, a hand copy of Outreach's message that vivreal-hq contract-drift `enrol-suppression-502` pins); any other 502, and any 504, is an UNKNOWN outcome. Skips carry Outreach's reasons, including `company-excluded`.
+- **`update-contact` refuses `_system` and `companyId` (v7).** `_system` holds server-written values (the exclude mark, the CMS web address) that the CMS would discard anyway, so the edit is refused rather than reported as landed; `companyId` links a person to a company and is not edited here (`src/tools/contacts.ts`).
 - **`log-call` sends `advance` as an explicit boolean**, the API defaults it to `true` (and 409s with no active call step); omitted means "just log a note." It now also accepts an optional `disposition` (`no-answer` | `left-voicemail` | `reached`), `reached` COMPLETES the enrollment rather than advancing it; the other two advance.
 - gmail-history tools return `{messages:[], reason:'not-configured'}` when `GMAIL_SA_KEY_JSON` is absent, a normal result, not an error.
 - Sequences are versioned (each PUT = snapshot); senders are not. CMS object schema is `{}`, **validate in the tool handlers**.

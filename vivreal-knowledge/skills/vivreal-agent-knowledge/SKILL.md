@@ -5,7 +5,7 @@ description: 'Use when working on, writing about, or debugging Vivreal AI. The A
 
 # Vivreal AI agent: cross-repo knowledge digest
 
-Last synced: 2026-10-15 (VR-MCP-Server `origin/main` 84b0921, portal `origin/stable` v0.36.0, Secure `origin/stable` v2.21.5)
+Last synced: 2026-10-21 (VR-MCP-Server `origin/main` 3285303, portal `origin/stable` v0.37.1, Secure `origin/stable` v2.22.5)
 
 ## Read this first: AI is the MCP server, and only the MCP server
 
@@ -45,6 +45,8 @@ The assistant was ONE feature spanning two repos: the **portal** owned every ent
 - **`transcript.js`**, `normalizeHistory` (shifts leading assistant entries, merges same-role runs, drops trailing user) + `composeTurnMessages`. `<group_context>` stays in the **USER** role with its `cache_control`, moving it to system would break the audited C4 injection control.
 - **`tools/policy.js`**, capability per tool via tier-quotas `TIER_FLAGS`, checked at definition time AND in `executeTool`; `v1Disabled` on `writeSiteFile` ONLY (`triggerSiteDeploy` stays live).
 - **`siteComposeTools.js`**, reuse-first `matchCatalogComponents` (deterministic total ordering over the REQUEST-supplied catalog), `getDraftOutline`, `proposeSiteEdits`. Zero matches → logs `{event:'agent.catalogGap'}` + graceful decline. **No codegen path in v1.**
+- **The agent's `updateCollectionObject` MERGES** a partial value onto the stored one (`mergeObjectValue` in `src/agent/services/tools/collectionObjectTools.js`: top-level keys, `null` clears, no `__proto__`, no `_system`). It is unreachable today, because `agentActions` is 0 on every tier.
+- **A rename through the agent's site tools or MCP `update-site`** goes through VR_Secure_API's `renameIdentity.js`, so kit-shaped page titles and an exactly matching sender name follow the new name (`vivreal-product-rules`).
 - **`getAgentContext`** uses intent-scoped query projections, and **every group projection carries `dbKey`** (a projection without `dbKey` makes `resolvePlacement` THROW, which is the point: it fails loudly rather than rerouting the tenant).
 
 ## Cost / quota framing

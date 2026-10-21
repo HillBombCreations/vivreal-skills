@@ -63,7 +63,9 @@ Defined in `@layer base :root`, overridable at runtime by `Providers` from `site
 
 ## Outreach list/detail conventions
 
-`src/app/(app)/outreach/`, `companies/`, `contacts/`, `queue/`, `senders/`, `suppressions/`, `reach-out/` (the renamed cold-call console, channel `SegmentedControl` Calls/LinkedIn/Email; `cold-call/` survives as a redirect-only page) each as a route, plus `[id]/` for detail, a shared `layout.tsx`, `loading.tsx`, `error.tsx`. This is the **list-of-entities → detail** convention: a sectioned layout wrapper, per-entity list routes, a dynamic `[id]` detail, and admin-gated sub-sections. Mirror this structure for new multi-entity admin surfaces (list route + `[id]` detail + shared layout + loading/error boundaries).
+> **DELETED from the portal in v0.37 (v7, #450):** the outreach CRM now lives in vivreal-hq `packages/admin-app` (`vivreal-admin-app-knowledge`), with its own styling. The description below is history, kept for the list-and-detail shape only; never rebuild the CRM in the portal.
+
+It was `src/app/(app)/outreach/` with `companies/`, `contacts/`, `queue/`, `senders/`, `suppressions/` and `reach-out/` each as a route, plus `[id]/` for detail, a shared `layout.tsx`, `loading.tsx`, `error.tsx`. This is the **list-of-entities → detail** convention: a sectioned layout wrapper, per-entity list routes, a dynamic `[id]` detail, and admin-gated sub-sections. Mirror this structure for new multi-entity admin surfaces (list route + `[id]` detail + shared layout + loading/error boundaries).
 
 ## Admin tabbed-analytics pattern
 

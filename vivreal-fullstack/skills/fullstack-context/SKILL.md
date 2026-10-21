@@ -1,10 +1,9 @@
 ---
 name: fullstack-context
 description: Auto-triggers when the user mentions a backend endpoint, API route, cross-repo feature, or any Vivreal backend service (VR_Main_API, VR_Secure_API, VR_CMS_API, VR_Client_API, EventHandler). Loads relevant cross-repo context so Claude can reason about the full stack.
-version: 1.1.1
 ---
 
-Last synced: 2026-10-04
+Last synced: 2026-10-21 (v7.2 deployed lines; the release tags are in each repo's `vivreal-knowledge` digest)
 
 # Vivreal Fullstack Context Loader
 
@@ -15,7 +14,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | Repo | Path | CLAUDE.md | Purpose |
 |---|---|---|---|
 | Vivreal Portal (frontend) | `C:\repos\Vivreal_Portal_Mobile` | `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` | Next.js 16 portal, proxy routes, components, auth |
-| VR_Main_API | `C:\repos\VR_Main_API` | `C:\repos\VR_Main_API\CLAUDE.md` | Auth, signup, transactional + lifecycle email, the demo-account claim flow, campaign sends, Meta data-deletion callbacks |
+| VR_Main_API | `C:\repos\VR_Main_API` | `C:\repos\VR_Main_API\CLAUDE.md` | Auth, signup, transactional + lifecycle email, the demo-account claim flow, campaign sends and unsubscribe, subscriber confirmation for owner imports and rejoins, Meta data-deletion callbacks |
 | VR_Secure_API | `C:\repos\VR_Secure_API` | `C:\repos\VR_Secure_API\CLAUDE.md` | Group mgmt, site creation, billing, profile switching |
 | VR_CMS_API | `C:\repos\VR_CMS_API` | `C:\repos\VR_CMS_API\CLAUDE.md` | Collections, objects, integrations, media, audit, versioning |
 | VR_Client_API | `C:\repos\VR_Client_API` | `C:\repos\VR_Client_API\CLAUDE.md` | Public content delivery API for end-user sites |
@@ -23,7 +22,9 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | VR_Outreach_API | `C:\repos\VR_Outreach_API` | N/A (no CLAUDE.md; `README.md` + `docs/`) | Email outreach, sequences, contacts/companies, booking, SES |
 | VR_Analytics_API | `C:\repos\VR_Analytics_API` | `C:\repos\VR_Analytics_API\CLAUDE.md` | First-party analytics ingest + rollup pipeline |
 | Vivreal_EventHandler | `C:\repos\Vivreal_EventHandler` | `C:\repos\Vivreal_EventHandler\CLAUDE.md` | Step Functions site deployment pipeline |
-| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Universal site template: every customer site's Amplify app builds the shared `stable` branch (per-customer branches are dead); releases go out through `promote-stable` |
+| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `C:\repos\Vivreal_Templates\CLAUDE.md` | Universal site template: every customer site's Amplify app builds the shared `stable` branch (per-customer branches are dead); releases go out through `promote-stable`, which builds the `live` build tier only (demos weekly) |
+| Vivreal_Site_Migrator | `C:\repos\Vivreal_Site_Migrator` | `C:\repos\Vivreal_Site_Migrator\CLAUDE.md` | `/migrate`, `/template`, restyles, and `packages/site-loader`, which VR_Secure_API's instantiation worker runs in prod |
+| vivreal-hq | `C:\repos\vivreal-hq` | `C:\repos\vivreal-hq\CLAUDE.md` + `packages/*/CLAUDE.md` | The internal admin app (`packages/admin-app`, the staff hub and the outreach CRM's client since v7), `packages/fleet-ops` (health watcher, alarms, deploy role, `contract-drift`), leadgen, content |
 | vivreal-site-renderer | `C:\repos\vivreal-site-renderer` | `C:\repos\vivreal-site-renderer\CLAUDE.md` | `@hillbombcreations/site-renderer` rendering engine |
 | VR-MCP-Server | `C:\repos\VR-MCP-Server` | `C:\repos\VR-MCP-Server\CLAUDE.md` | OAuth 2.1 MCP server (~the CMS tool roster) |
 | VR-Outreach-MCP-Server | `C:\repos\VR-Outreach-MCP-Server` | `C:\repos\VR-Outreach-MCP-Server\CLAUDE.md` | Internal outreach MCP server (count its tools from the registry) |
@@ -36,7 +37,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 | `NEXT_PUBLIC_MAIN_API` | VR_Main_API | `/api/*`, `/stripe/*` | N/A (no tenant routing) | `user/*`, `push/*` |
 | `NEXT_PUBLIC_SECURE_URL` | VR_Secure_API | `/api/*` | `dbKey` | `group/*`, `sites/*`, `dash/*`, `webhooks/*`, `agent/*` |
 | `NEXT_PUBLIC_CMS_URL` | VR_CMS_API | `/tenant/*` | `key` | `collections/*`, `collectionObjects/*`, `integrations/*`, `get-media`, `uploadFiles`, `calendar/*`, `audit`, `versions/*`, `activity`, `search/*` |
-| `NEXT_PUBLIC_OUTREACH_URL` | VR_Outreach_API | `/*` (Cognito + x-active-ctx) | HMAC `x-active-ctx` header | `outreach/*` (49 routes) |
+| `NEXT_PUBLIC_OUTREACH_URL` | VR_Outreach_API | `/*` (Cognito + x-active-ctx) | HMAC `x-active-ctx` header | `outreach/*`, only the public and Studio-facing routes since portal v0.37 (booking, demo-link, studio-demo, studio-draft, studio-funnel); the CRM's client is the admin app. Count the files, never quote a number |
 
 ## Portal Proxy Layer
 
@@ -54,7 +55,7 @@ When this skill activates, you have context about a cross-repo concern. Before a
 
 | Aspect | VR_CMS_API | VR_Secure_API | VR_Main_API |
 |---|---|---|---|
-| Lambdas (read the template on `origin/stable`, rosters move) | five API functions (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) plus the invoke-only mediaExportWorker and a separate snapshot stack | the HTTP functions (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent) plus many crons, queue consumers and the invoke-only template worker; count them from `cloudYamls/allRoutes.yaml` | the Express API plus email, notification, lifecycle-scan, campaign-send, campaign-events and email-events workers |
+| Lambdas (read the template on `origin/stable`, rosters move) | five API functions (getCollectionInfo, createAndUpdateColObjects, createAndUpdateColGroups, handleMedia, createAndUpdateIntegrations) plus the invoke-only mediaExportWorker and a separate snapshot stack | the HTTP functions (userAndAuth, billingAndSubscription, createAndJoinGroup, createSites, getGroupInformation, updateGroup, agent) plus many crons, queue consumers and the invoke-only template worker; count them from `cloudYamls/allRoutes.yaml` | the Express API plus email, notification, lifecycle-scan, campaign-send, campaign-events, email-events and the two subscriber-confirm workers |
 | Handler wrapper | `handleTenantRoutes` | `handleHBRoutes` | `handleHBRoutes` |
 | dbKey from | `req.query.key` | `req.query.dbKey` | N/A |
 | API Gateway auth | Cognito authorizer | Cognito authorizer (some routes Authorizer: NONE) | None (unauthenticated API) |
@@ -86,7 +87,9 @@ When this skill activates, you have context about a cross-repo concern. Before a
 - **Never use `groupName` for mainDb queries**, always `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null.
 - Portal proxy routes run on **edge runtime**, no Node.js APIs available
 - Cognito claims available in backend via `req.apiGateway.event.requestContext.authorizer.claims` (email, given_name, family_name, sub)
-- Audit logging and content versioning are fire-and-forget, if they fail, the main operation still succeeds
+- Audit logging and content versioning are fire-and-forget, if they fail, the main operation still succeeds; audit rows carry `expiresAt` from the group's tier and a TTL index reaps them
+- **Hand-copied cross-repo values are checked, not trusted.** vivreal-hq `npm run check:contracts --workspace packages/fleet-ops` compares them at their refs (exit 0 agree, 1 drift, 2 VOID): among others `uncounted-list-roles` (CMS's `UNCOUNTED_SITE_ROLES` enforcer against Secure's recount healer), `rejoin-cooldown` (Client against Main), `subscriber-confirm-intent` (CMS against Main) and `enrol-suppression-502` (Outreach against the Outreach MCP). Change one side, run it.
+- **The business time zone crosses four repos:** VR_Secure_API stores `groups.timezone` (`PUT /api/group/timezone`), VR_Client_API serves it as `siteDetails.values.timezone`, Templates spreads it into `siteData.timezone`, and the renderer's `scheduleTimezone` reads it after any page or section zone (VR_Client_API's `.ics` feed calls the same renderer functions through `@hillbombcreations/site-renderer/bindings`)
 
 ## When You Need to Trace a Feature
 
