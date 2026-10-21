@@ -128,8 +128,9 @@ Load `vivreal-workflow:verification-discipline`. This is the highest-blast-radiu
 ## Lambda and MongoDB checklist (ported from the `secure-api` expert agent, 2026-10-20)
 
 The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
-or `vivreal-knowledge:vivreal-db` already carried were left out.
+`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
+packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
 ### AWS Lambda best-practice alignment
 
@@ -142,7 +143,6 @@ or `vivreal-knowledge:vivreal-db` already carried were left out.
 
 ### MongoDB consistency & performance
 
-- mainDb queries: ALWAYS `{ _id: ObjectId(groupID) }` (shell form; in Node write `new ObjectId(groupID)`, bson 6 throws without `new`). NEVER `groupName`. `{ key }` takes the group's slug, never `dbKey`: `dbKey` is the tenant database name (`pod_01`, `pod_02`), no group's `key` equals it, so `{ key: dbKey }` returns null.
 - Profile switch atomically updates `activeGroupID` on the user doc and re-issues the `active_ctx` JWT, verify the order doesn't leak across requests.
 - Group creation: insert + S3 bucket creation must roll back together on partial failure (idempotent retry).
 - Index audit: `groupID`, `userID`, `stripeSubscriptionID`, `cognitoSub` must be indexed; `groupID + userID` compound index for membership queries.

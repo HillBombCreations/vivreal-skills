@@ -16,7 +16,7 @@ here: portal proxy routes, the axios tier, hydration and SSR, portal component c
 
 ## Tech stack quick ref
 - Next.js 16 App Router, React 19, TypeScript 5 strict
-- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (sequences/contacts/booking, the `outreach/*` proxy routes, `NEXT_PUBLIC_OUTREACH_URL`)
+- Four proxied backends: VR_Main_API (auth), VR_Secure_API (group/site/billing), VR_CMS_API (collections/integrations/media), VR_Outreach_API (`NEXT_PUBLIC_OUTREACH_URL`). From v7 (portal v0.37) the portal's `outreach/*` proxy routes are only the PUBLIC ones: booking (`book/*`), `demo-link/[code]`, `studio-demo/visit`, `studio-draft` and `studio-funnel`. The outreach CRM (sequences, contacts, companies, import, review) moved to the admin app in vivreal-hq `packages/admin-app`, its `api/outreach/*` routes. **An admin outreach defect is fixed forward in the admin app (and the Outreach API), never by restoring the CRM to the portal** (owner, 2026-10-20). Read the route list from `src/app/api/proxy/outreach/` on the deployed line.
 - Public content delivery: VR_Client_API (read-only, applies publishDate/archived filters)
 - All proxy routes at `src/app/api/proxy/*` run on edge runtime
 - MongoDB multi-tenant, each group has its own DB identified by `dbKey`
@@ -38,7 +38,7 @@ Errors from axios calls: use `getApiError(err, fallback)` from `@/lib/api/auth/h
 - Manual routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read, VR_Main_API sends bare-JSON-string error bodies, and a hand-rolled read against a string silently returns `undefined`. That was the exact bug that killed the login error branches in prod.
 - All authenticated proxy routes MUST verify `active_ctx` via `verifyCtxEdge()`
 - Helpers: `injectCtxParams()`, `filterParams()`, `cleanSearchParam()`. `injectCtxParams()` sets **`key`** (CMS convention) + `groupID`; Secure endpoints whose Joi validator names the tenant key `dbKey` reject `key` as unknown, set `dbKey`/`groupID` manually **instead** for those
-- New portal surfaces ship "live but dark" behind `group.featureFlags.<flag>`, written only by operators at `/admin/flags`; the only live flag is `aiActionsEnabled` (`templatePicker` + `squareStorefront` retired 2026-07-29, both GA). Gated entry points **hide, never disable** (`useAgentAccess()` is the single gate). Absence of AI in a group's UI is the expected default, not a bug
+- New portal surfaces ship "live but dark" behind `group.featureFlags.<flag>`, written only by operators on the admin app's flags page (staff surfaces left the portal on 2026-09-28; there is no portal `/admin/flags` route); the only live flag is `aiActionsEnabled` (`templatePicker` + `squareStorefront` retired 2026-07-29, both GA). Gated entry points **hide, never disable** (`useAgentAccess()` is the single gate). Absence of AI in a group's UI is the expected default, not a bug
 - The portal is **light-only**, a bare `dark:` Tailwind utility is a regression (no `@custom-variant dark`; it resolves against the OS scheme)
 
 ## Hydration & SSR rules

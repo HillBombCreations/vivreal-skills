@@ -42,6 +42,12 @@ prompt: |
   The backend half lands on its repo's open release PR and ships only on the
   owner's GO for the batch, API first, portal last, and is PROVEN live from stack
   state before the portal lands. Before GO, validate against the backend PR heads.
+  The release-engineer dispatch carries the owner's go and the named steps in its
+  FIRST prompt; never relay a go as a later message.
+
+  At most four background agents at once, yours included. Route every new find at
+  once to the running agent that owns the area, or to a new agent when a slot is
+  free. Walkers write defects to a live *-defects.md file as they find them.
 
   Validate against a LOCAL build carrying the portal changes, assembled from
   every portal branch in this batch, then freeze the tree while validation runs.

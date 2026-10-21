@@ -281,8 +281,9 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   banned revert cycle under another name, and agents did it repeatedly on 2026-10-15. The two
   rules were reconciled 2026-10-15 on the owner's delegation (memory
   `one-full-suite-run-per-change`): **the coder owns the red proof and does it at the base
-  commit; the reviewer checks the record and never repeats the cycle.** Red is established one
-  of two ways, and the report names which:
+  commit; the reviewer checks the record and never repeats the cycle.** Red is established by
+  (b) or (a) for code in a repository, and by (c) for a one-shot ops script outside every
+  repository; the report names which:
   - **(b) Red at the base commit, in a separate read-only worktree** (owner decision D1,
     2026-10-14, the standard proof and the coder's default). `git worktree add --detach <scratch
     path> <base sha>` (detached is right here: nothing is ever committed in it), copy in ONLY the
@@ -293,6 +294,13 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
     reconciliation names it). The new test ran red before any fix code existed in the tree, then green
     after it. Same counting rule as (b). It is valid only when the run really came first;
     removing fix code to recreate "before" is the banned in-place mutation, so use (b).
+  - **(c) Mutation on a scratch COPY, for one-shot ops scripts only** (owner, 2026-10-20,
+    standard practice). A production data-step script that lives outside every repository has
+    no base commit, so red is proved by copying the script into a scratch directory outside
+    every working tree, removing one guard at a time in the COPY, and showing that guard's
+    named test go red. **Keep the harness and the per-guard log with the script**, naming the
+    source line each mutation removed, so the reviewer can reproduce it; a deleted harness is a
+    CONCERN in review (v7 scratch-2 restore, C1). Never in a working tree, never on product code.
 
   **What the reviewer does with it.** It confirms the `Red:` line is recorded, names the REFUSE
   assertion, and failed for the right reason; it reads the tests; and it runs each relevant test
@@ -306,11 +314,12 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   guard; make the test load at the base (stub only what the fix ADDS, never the guard) or say red
   could not be established. "By reading" is not a proof, and a report never says "verified it
   fails" for it. The report line names the failing assertion:
-  `Red: (a|b) <test file> "<REFUSE test name>" at <sha>: failed on <expect line>; green at <head
+  `Red: (a|b|c) <test file> "<REFUSE test name>" at <sha>: failed on <expect line>; green at <head
   sha>: <k> passed`. A REFUSE test that is still green at the base commit pins nothing; rewrite
   it.
 - **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. The check is the red proof above, never an edit to the implementation: a mirroring test stays green at the base commit, so run (b) and it shows.
 - **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
+- **A faked layer hides the failure it fakes** (v7, 2026-10-19/20). A stubbed Mongoose model never runs the schema cast, so a write on an undeclared path passes; a mocked network never runs the next hop's validator; a test of what is DECLARED (a `@font-face`) passes while the element resolves to something else; a spy that matches any call passes on broken code. So: one test of any write runs through the REAL schema model; when a change alters what a client sends, one test goes through the real next hop with only the far upstream mocked; assert what renders or resolves; assert the exact call. Cases and rules: `verification-discipline`, "A faked layer hides exactly the failure it fakes".
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
 - **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.
@@ -368,7 +377,7 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
 | Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md, `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
-| vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Count its agents and commands from `.claude/`; do not quote a number. |
+| vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Since v7 it also holds the **admin app** (`packages/admin-app`, the only home of staff surfaces including the outreach CRM). **Merging hq `main` deploys nothing:** the admin Amplify app builds only `deploy/admin-app`, so its deploy is a fast-forward of that branch, and its three stacks and every `packages/fleet-ops` stack deploy by hand from a clean worktree at the merge (v7 release runbook, hq row). Its agents and commands live in the `vivreal-skills` marketplace, not in its `.claude/`. |
 | vivreal-content | `${VIVREAL_REPOS}/vivreal-content\` | **DEAD SOURCE.** Consolidated into `vivreal-hq` on 2026-08-03 and frozen: its last commit is that same day, while the hq content tree has moved repeatedly since. The checkout still exists and still holds its own agents and commands, which is exactly why it gets read by mistake. Read and edit content work in `vivreal-hq`, never here. |
 | Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`), whose default origin is the Vivreal_Templates Amplify app `vivreal` (`<vivreal-io-amplify-app-id>`, real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
@@ -399,6 +408,12 @@ number when you need it, from the deployed line:
 | VR_Client_Auth | `serverless.yml` (Serverless Framework, not SAM) | No | Push to `main` |
 | EventHandler | `serverless.yml`, count `handler:` keys. Three state machines: deploy, purchase saga, transfer saga | No | Push to `main` |
 | VR_Analytics_API | `template.yaml`, stack `vr-analytics-api` | No | Push to `main` |
+| VR-MCP-Server | its deploy workflow (`deploy.yaml`) | No | Push to `main`, by design; ships after the CMS it calls |
+| VR-Outreach-MCP-Server | its deploy workflow | No | Push to `main` |
+| VR_Insights_Scan | `deploy.yml` | No | Push to `main`; a manual dispatch needs `-f mode=deploy` |
+| vivreal-domain-search | `lambda_api.yml` | No | Merge to `main`, then dispatch `lambda_api.yml --ref main` |
+| Vivreal_Templates | n/a (Amplify apps, one per site) | No | Dispatch `promote-stable.yml`; `fleet-build.mjs` builds the `live` tier (see `vivreal-infra:vivreal-site-deploy-pipeline`) |
+| vivreal-hq | admin app plus fleet-ops stacks | No | Merge deploys nothing; fast-forward `deploy/admin-app`, stacks by hand |
 
 ### Release trains (2026-08-15)
 

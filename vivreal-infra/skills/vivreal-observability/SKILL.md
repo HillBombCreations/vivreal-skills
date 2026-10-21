@@ -110,12 +110,51 @@ a total-spend budget and a tighter infrastructure-only one. **Read the current a
 
 ---
 
+## What v7 deployed (2026-10-20), and how to check it
+
+The estate grew in the v7 release. These are pointers to the templates and checks, not a roster;
+read the deployed stack for the current set.
+
+- **Mongo timeout metric filters** on every function log group the template names, plus the Client
+  API slow-fetch filter, in vivreal-hq
+  `packages/fleet-ops/mongo-timeout-alarm/cloudformation/mongo-timeout-alarms.yaml`. Beside the
+  one-minute `vivreal-mongo-operation-timeouts` alarm sits a sustained alarm,
+  `vivreal-mongo-operation-timeouts-sustained`, whose threshold is an owner decision passed
+  explicitly on every deploy (`--parameter-overrides SustainedThreshold=...`), because a
+  CloudFormation parameter `Default` never updates a deployed stack. Read the stored parameter.
+- **The two alarm names share a prefix.** A check that matches alarm names with `includes()` or a
+  prefix passes on the wrong alarm; parse whole names (the composite's `ALARM("...")` terms).
+- **Amplify hosting alarms** in `packages/fleet-ops/cloudformation/amplify-hosting-alarms.yaml`:
+  portal 5xx and latency, marketing 5xx, admin 5xx, and customer sites 5xx computed as the account
+  total minus the named apps. The sites page alarm uses the composite
+  `vivreal-mongo-upstream-outage` as its `ActionsSuppressor` (with a wait and an extension period
+  read from the template), so a database outage pages once as a database outage and a real sites
+  outage still pages, a few minutes late at most.
+- **An alarm with no actions of its own can still be delivered through a composite.** Secure's
+  alarm verifier once credited only an alarm's own actions and flagged the suppressed sites alarm
+  and the composite as undeliverable; it now follows composites (Secure v2.22.3, 2026-10-20). A
+  verifier finding on an actionless alarm is a question about the composite first.
+- **Read-only coverage checks.** `npm run check:mongo-coverage --workspace packages/fleet-ops` in
+  vivreal-hq compares the filters with the live log groups; exit 2 is VOID, not a pass, and it
+  belongs after any Secure or CMS deploy that adds a function. VR_OnCall_Webhook carries its own
+  `npm run check:subscriptions`.
+- **Alarm pushes reach admin-app devices only.** The OnCall bridge's pushes open the admin app's
+  monitoring page, and Main's notification consumer sends staff types only to devices subscribed
+  with `surface: 'admin'`. Until an admin device subscribes, an alarm push reaches nobody, and the
+  consumer logs a warning saying so (see `vivreal-notifications`). v7 shipped Main and the bridge
+  with the admin device sign-up (runbook S11) deferred (owner, 2026-10-20), so check for an admin
+  device subscription first.
+
+---
+
 ## Logs
 
 **Retention.** The declared policy is **30 days standard, and 365 days for sign-in, billing and
 payment paths**, because those are the money and identity trails. The estate has been swept so that
 **no log group is set to never expire**, down from several dozen. A never-expiring log group is both
-an unbounded bill and a compliance surface nobody decided to keep.
+an unbounded bill and a compliance surface nobody decided to keep. One deliberate exception: the
+admin app's ops-read Lambda log group keeps 400 days (vivreal-hq
+`packages/admin-app/cloudformation/ops-read.yaml`, v7), so do not "fix" it to the policy.
 
 **The CloudFormation trap that makes this fragile.** Retention was drifted across an entire
 service's functions, set by hand, while the template declared something different and had never been

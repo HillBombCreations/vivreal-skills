@@ -84,6 +84,29 @@ The pause looks like: "Plan written to <path>. <N> changes proposed. Approve to 
 
 If the user requests changes, the coordinator dispatches the architect again with the feedback. It does not implement until the user explicitly approves.
 
+## Running several agents (dispatch shape)
+
+When vivreal-workflow is installed, read `vivreal-workflow:fleet-concurrency` before dispatching more than one agent. The rules that
+most often decide a batch:
+- **At most four background agents at once** (owner, 2026-10-17), counting every coder, reviewer,
+  researcher, walker and ledger agent. If you run sub-agents of your own, keep the slot they need.
+- **Route every find at once** (owner, 2026-10-19): to the running agent that owns that repo or
+  area by message when it is same-scope work, or to a new agent when a slot is free. Never hold
+  finds for a later batch. When a walk runs, tell the walker to append each defect to a live
+  `*-defects.md` file as it finds it, and watch that file with one background wait so research
+  starts mid-walk. One retest still closes the walk.
+- **A widened authority needs a fresh dispatch.** A message may narrow an agent's work or add
+  same-scope work. Merge, release, a production write, a real-account action, or the owner's go for
+  any of them goes in the FIRST prompt of a new dispatch; a well-built agent refuses it as a
+  message. Run an owner-approved one-shot (one production command, a change set) yourself in
+  this thread instead of relaying it to an agent (v7.1).
+- **Releases go to `vivreal-workflow:release-engineer` (when vivreal-workflow is installed) with the go inside the prompt.** For a
+  multi-repo window, dispatch it per runbook batch in RUNBOOK mode, naming the steps in order and
+  the owner's go for each, rather than per repo.
+- **Publish every pending shared package first, then one consumer bump pass** through
+  `package-publisher` (vivreal-workflow, when installed). A coder that needs a package change mid-build reports it rather than
+  publishing and bumping on its own.
+
 ## The four phases, single-dispatch shape (inline, no fan-out)
 
 When running as a subagent with no further dispatch reachable, or deliberately chosen for
@@ -238,6 +261,8 @@ Single-dispatch (inline). <Why: invoked as a subagent with no further fan-out re
 
 ## DON'Ts
 - DON'T call system experts directly in dispatch shape, role agents pull expertise.
+- DON'T run more than four background agents at once, and DON'T sit on a find for a later batch.
+- DON'T relay an owner's go as a mid-task message. Put it in a fresh dispatch.
 - DON'T skip the approval gate between plan/design and implement (except in audit mode), in dispatch shape.
 - DON'T mix modes mid-run. If the user wants to switch from audit to fix, start a new dispatch.
 - DON'T silently retry a review pass beyond the 3-pass cap. Escalate to the user.

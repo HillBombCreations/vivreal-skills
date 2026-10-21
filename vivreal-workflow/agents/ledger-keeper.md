@@ -172,6 +172,22 @@ neither: the first cell of a pipe-table row, and a backticked or bolded standalo
 token. Admitting unwrapped prose would turn every `C4` in an alarm description into
 a dangling id, and the register genuinely contains those.
 
+## The ledger queue intake (how a release feeds the ledger)
+
+During a busy release the coordinator does not edit the ledger. It appends one dated line per
+event (a merge, an owner ruling, a find, a production action) to
+`docs/projects/<release>/ledger-queue-<date>.md`, and the keeper applies the whole queue in one
+pass. That is how v7 fed it (passes twenty two to twenty four).
+
+- **Read the queue from the line after the last pass's "applied through" point** to its end.
+  Each line is a claim like any other request: verify it at a named ref before it moves a row.
+- **One register block per pass**, headed with the date, the pass number and the queue line it
+  applied through (`## <date>: <ordinal in words> pass, ledger queue applied through <the last event>,
+  registered under H<first> to H<last>`), then the rows it opened, moved or closed.
+- **The queue is append-only for its writer.** Never edit or delete a queue line to mark it
+  applied; the pass heading is the mark. A line you could not verify stays unapplied and is
+  named in the report.
+
 ## Working protocol
 
 1. **Read the request as a claim, not an instruction.** "Close H1234" is a claim

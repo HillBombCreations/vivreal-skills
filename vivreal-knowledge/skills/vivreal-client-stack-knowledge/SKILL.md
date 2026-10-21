@@ -129,8 +129,9 @@ Load `vivreal-workflow:verification-discipline`: a zero is only evidence once th
 ## Lambda and MongoDB checklist (ported from the `client-stack` expert agent, 2026-10-20)
 
 The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
-or `vivreal-knowledge:vivreal-db` already carried were left out.
+`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
+packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
 ### AWS Lambda best-practice alignment
 
@@ -146,7 +147,5 @@ or `vivreal-knowledge:vivreal-db` already carried were left out.
 
 - Multi-tenant via authorizer-injected `database` context. Same dbKey routing as CMS API.
 - Read-only, never write.
-- `publishDate` filter: `{ publishDate: { $lte: new Date() } }` (or null).
-- `archived` filter: `{ archived: { $ne: true } }`.
 - Index audit: every customer-facing query must hit an index. `groupID + publishDate + archived` compound index for collection objects.
 - Read concern: `local` is fine for content; consider `majority` if there's read-after-write coupling with CMS API writes.

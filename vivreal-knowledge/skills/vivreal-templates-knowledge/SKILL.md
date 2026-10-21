@@ -123,8 +123,9 @@ A site can show the owner's synced social posts. `src/lib/api/collections/social
 ## Lambda and MongoDB checklist (ported from the `sites-stack` expert agent, 2026-10-20)
 
 The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Bullets this digest, `vivreal-infra:vivreal-lambda`
-or `vivreal-knowledge:vivreal-db` already carried were left out.
+`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
+packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
 ### MongoDB consistency & performance
 

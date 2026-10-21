@@ -93,6 +93,14 @@ including a re-pin added after an earlier review passed.
   the same release, breaking or additive. A skew is reported, never chosen, and narrowing the re-pin
   needs an explicit owner instruction. Additive vs breaking (new `required`/`enum`, removed export,
   renamed field) still goes in the report; it does not change which consumers move.
+- **One publish pass, then one bump pass (owner, 2026-10-19):** publish every pending package
+  first, then move every consumer to every new version in one commit per consumer on its release
+  lane. A comment-only package change needs no consumer bump (a duplicate-version refusal from
+  `publish.yml` is then the expected PASS). An exact-pinned consumer always needs the edit; a
+  shared package whose own range already accepts the new version needs no republish. A narrowed
+  re-pin (v7: renderer 1.88.2 into Templates and the portal only, accepted by the owner
+  2026-10-20) is recorded as an owner decision with the consumers left behind and the drift risk.
+  Detail: the `package-publisher` agent.
 - **Lockfile integrity:** patch the target package's lockfile entry surgically, never
   `rm -rf node_modules package-lock.json && npm install` on Windows and never
   `--package-lock-only` as a substitute (it produces a lockfile shape that breaks a later

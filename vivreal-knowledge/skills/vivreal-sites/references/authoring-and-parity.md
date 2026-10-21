@@ -32,7 +32,7 @@ Content edits are live on Save. But changes to the **renderer** or **template co
 
 1. Publish the new `@hillbombcreations/site-renderer` version (its CI publishes on push to its `master`).
 2. Bump the renderer dep in `Vivreal_Templates` `package.json` + lockfile.
-3. **Merge to Vivreal_Templates `main`**, then **run the promote-stable workflow** (Actions → promote-stable → Run workflow). It fast-forwards `main`→`stable`; every customer site's Amplify app builds the shared `stable` branch, so that push rebuilds them all (including cross-account Example Grain Co).
+3. **Merge to Vivreal_Templates `main`**, then **dispatch the promote-stable workflow** (dry run first). It fast-forwards `main`→`stable`, then `scripts/fleet-build.mjs` starts a release build pinned to that commit for every app in the `live` build tier (the `vivreal:buildTier` tag; untagged counts as live). Demo sites catch up weekly in `demo-catchup.yml`, which is also the recovery for a failed fan-out: never re-run promote-stable to recover, it moves `stable` again.
 
 **Merging Templates `main` alone releases NOTHING** (Phase 2, 2026-07-15, per-site branches and the old auto-sync workflow are deleted). The rollout gate is the promote-stable run; the live gate for renderer changes is the renderer version pinned in Templates `package.json`+lockfile. (Full pipeline: `vivreal-site-deploy-pipeline`. Per-site Amplify **env vars** are per-app, a release does not touch them.)
 

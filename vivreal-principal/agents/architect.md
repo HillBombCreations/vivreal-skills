@@ -128,6 +128,16 @@ For feature/migration mode (`docs/projects/<slug>/design.md`):
 - Phasing (for migrations) with rollback plan.
 - Open Questions section.
 
+For a **release runbook** (a multi-repo release window, `docs/projects/<release>/release-runbook-*.md`), the shape that carried v7 through four revisions and a two-day window (vivreal-hq `docs/projects/next-release-v7/release-runbook-v7-2026-10-19.md`, sections 0 to 4):
+- an **owner-decisions table**, each decision with its source (a ledger line or a dated owner message) and the steps it governs;
+- an **UNVERIFIED register**: every claim not yet read live, and the step where it gets settled;
+- a **reference table** per repo: the reviewed merge head as 40 hex, the deploy mechanism (derived from the repo's own workflows, never assumed), what is live now, and the rollback target;
+- **helpers** with the never-print rule (every AWS read names its fields in `--query`, no secret values, no environment maps);
+- **numbered steps**, each with preconditions, the exact commands, the proof (stack state, never a green workflow), named STOP conditions, and a change-set **preview** on every production stack step, executed only when it equals the expected set;
+- an **execution-state** section added once the window opens, one row per step with its record and any deviation;
+- a **post-release production check list** for rows that need the owner, a real send or a real channel, and a **rollback index**.
+The release engineer runs it in RUNBOOK mode, one dispatch per batch of steps, each step with its own go in the dispatch.
+
 For a standalone-mode design small enough to return inline (no written artifact), use this shape in the report:
 
 ```markdown

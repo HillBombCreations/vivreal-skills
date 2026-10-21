@@ -217,6 +217,33 @@ checkout on disk** and skips with a warning when it is absent, so the gate is si
 landing-page setting absent after the same grep shape returned **40 hits for `navFavorites`**
 (walk 10, section 3, check 5).
 
+### Faked layers: the v7 false greens (2026-10-19/20)
+
+Four v7 suites passed on code that would have failed in production, and each faked or only
+declared the layer where the failure lived. Full cases: `verification-discipline`, "A faked
+layer hides exactly the failure it fakes". What each means for the tests I write:
+
+- **One test of any database write runs through the REAL schema model** (in-memory Mongo, or
+  buffering off so the cast still runs). A sinon-stubbed model never casts, so a write on a path
+  the schema does not declare (`Could not find path ... in schema`) passes every stubbed test.
+  This is the one exception to "mock all DB in backend unit tests" below.
+- **When a change alters what a client sends, one test goes through the real next hop**: the
+  real proxy route handler, or the real serverless-express plus query parser plus validator,
+  with only the far upstream mocked. A hook test that mocked the network never met the proxy
+  that still required the field the client stopped sending.
+- **Assert what renders or resolves, not what is declared.** The computed style, the rendered
+  element, the served page. A fonts test passed on the `@font-face` declarations while the font
+  stack resolved to a different family. Commit the test that drives the real entry point; a
+  scratch harness that proved the wiring and was deleted proves nothing next month.
+- **Assert the exact call.** A spy that throws or records for any call passes on broken code;
+  match its arguments and target, and pair it with an ALLOW that proves the call happens.
+- **Match whole tokens, never a prefix.** One alarm name is a prefix of another.
+- **A parity test moves with the function it mirrors.** When a mirrored function moves, re-point
+  the parity test in the same change.
+- **Ops scripts: red by mutation on a scratch copy is the standard** (owner, 2026-10-20; the
+  `shared-standards` red proof, form (c)). Keep the harness and the per-guard log beside the
+  script, naming the line each mutation removed.
+
 ### Two more, specific and expensive
 
 - **`aria-disabled` is not `disabled`, and Playwright will not click it.** The locked nav-tab
@@ -318,7 +345,9 @@ If a test passes on the unfixed code, it's not testing the bug, rewrite.
 - DON'T weaken an assertion (`toBe`→`toContain`, exact→`expect.anything()`, deleting a check) to turn a red suite green.
 - DON'T import from `@playwright/test` directly, always use the fixtures wrapper.
 - DON'T add new fixtures when an existing one fits.
-- DON'T mock what you should integration-test (network, DB) in e2e, but in backend UNIT tests, DO mock all DB/AWS/socket/network (a real call that "fails fast offline" is a hidden flake that times out under NYC).
+- DON'T mock what you should integration-test (network, DB) in e2e, but in backend UNIT tests, DO mock all DB/AWS/socket/network (a real call that "fails fast offline" is a hidden flake that times out under NYC), with one exception: at least one test of each write runs through the REAL schema model, in-memory or with buffering off, so a schema cast error is red.
+- DON'T let a mocked network stand in for the next hop when the change alters what the client sends. One test runs the real proxy route or validator.
+- DON'T assert a declaration when the question is what renders or resolves, and DON'T write a spy that matches any call.
 - DON'T use `.only` in committed tests.
 - DON'T add `sleep()`, use `waitFor()` with explicit conditions.
 - (Backend) DON'T use `/* istanbul ignore */` to skip a branch you could test, reserve it for genuinely-unreachable code, with a reason.

@@ -76,8 +76,22 @@ Create/Get/Update/DeleteSchedule on the CMS stack's own `VR-CMS-API-*` schedules
 `TagResource`, no new PassRole), added because the CMS hourly social sync's
 `AWS::Scheduler::Schedule` rolled the whole CMS stack back without it. Each managed policy in that
 file has a byte ceiling; read the spare-bytes comment beside the policy before adding a statement.
-Proving any grant: `iam simulate-principal-policy` for the granted actions (`allowed`) and a control
-outside the scope (`implicitDeny`), before and after. Full proof method: `vivreal-deploy-proof`.
+**A simulation is a pre-check, never the proof of a grant. The proof is the first real call.**
+Run `iam simulate-principal-policy` for the granted actions (`allowed`) and a control outside the
+scope (`implicitDeny`) before and after, then make the first REAL call the grant exists for (a
+dry-run dispatch, the real login) and read its result. A simulation evaluates only the resource
+ARN and the context keys you hand it, and it passed twice in v7 on grants that failed for real:
+- 2026-10-17: Amplify `ListJobs` is authorised against `apps/<id>/branches/<b>/jobs/*`, not the
+  branch ARN the service reference documents. All 24 simulated rows passed; the first real dry run
+  was denied. Grant both resources.
+- 2026-10-20: ECR Public authorises `sts:GetServiceBearerToken` inside its own
+  `GetAuthorizationToken` call, without a matching `sts:AWSServiceName`. A grant conditioned on
+  that key simulated `allowed` (the simulation supplied the key) and the first real login was
+  denied. The fix drops the condition (`Resource: '*'`, as AWS's own ECR Public managed policies
+  grant it); the comment above Sid `EcrPublicPullBearerToken` in `deploy-role-permissions.yaml`
+  records why and what bounds it instead.
+
+Full proof method: `vivreal-deploy-proof`.
 
 **A permission needed by a CREATE is authorised separately from the same permission used
 elsewhere, and this has already broken a signup path once.** Measured 2026-09-27:

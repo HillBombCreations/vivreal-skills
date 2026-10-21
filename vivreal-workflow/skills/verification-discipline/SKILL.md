@@ -1,6 +1,6 @@
 ---
 name: verification-discipline
-description: Use whenever a result is about to become a finding, a claim, a PASS or a merge. Covers the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, why a gate can be enabled and still incapable of failing, why a count is the wrong assertion when the question is which, and how to read a deployed line instead of a working tree. Triggers on, grep returned nothing, no results found, zero occurrences, the test passes, coverage is 100 percent, the lint rule is on, I verified, I confirmed, I checked, audit, sweep, measure, count, mutation testing, break harness, is this shipped, does this exist.
+description: Use whenever a result is about to become a finding, a claim, a PASS or a merge. Covers the false-zero mechanisms that make a broken search look like a clean absence, the positive control that is the only defence against them, why a gate can be enabled and still incapable of failing, why a count is the wrong assertion when the question is which, the faked layers (a stubbed model, a mocked next hop, a too-broad spy) that pass on broken code, and how to read a deployed line instead of a working tree. Triggers on, grep returned nothing, no results found, zero occurrences, the test passes, coverage is 100 percent, the lint rule is on, I verified, I confirmed, I checked, audit, sweep, measure, count, mutation testing, break harness, is this shipped, does this exist.
 ---
 
 # Verification discipline
@@ -266,6 +266,55 @@ the function is still there.
 
 Parse the key, or strip comment lines, then sweep. And give the stripper its own control:
 feed it one commented occurrence and one live occurrence, and require exactly one survivor.
+
+---
+
+## A faked layer hides exactly the failure it fakes (v7 false greens, 2026-10-19/20)
+
+Four suites went green on code that would have failed in production during the v7 release,
+and each one faked, or only declared, the layer where the failure lived. Reviews caught them;
+the suites did not.
+
+1. **A stubbed database model never runs the schema cast.** A Mongoose `updateOne` whose
+   `arrayFilters` or `$set` names a path the schema does not declare throws `Could not find
+   path ... in schema` while casting, before any database call, and `strict: false` does not
+   stop it. A sinon stub of the model method never casts, so a rename save that would have
+   failed on every kit site passed every test (Secure, v7 rename). **Rule:** a write on a path
+   outside the declared schema either declares the path or uses the native driver
+   (`Model.collection.updateOne`) on purpose, and at least one test runs the write through the
+   REAL schema model (in-memory Mongo, or buffering off so the cast still runs).
+2. **A mocked network skips the next hop's own validation.** A portal hook test mocked the
+   network, so the proxy route that still required a field the client had stopped sending
+   never ran, and every save without that field would have answered 400. Unit tests that
+   mocked the MCP server's CMS client never met the CMS validator, which refused the new sort
+   shape and the resource URIs on every call. **Rule:** when a change alters what a client
+   sends, one test goes through the real next hop (the real proxy route handler, or the real
+   serverless-express plus query parser plus validator), with only the far upstream mocked.
+3. **Test what renders or resolves, not what is declared.** A fonts test checked the
+   `@font-face` declarations while the utility font stack named a literal family, so the
+   self-hosted faces never loaded and the test stayed green. A page's wiring was proved only by
+   a scratch harness that was then deleted, so nothing committed would notice the arm being
+   dropped. **Rule:** assert the computed style, the rendered element or the served page, and
+   commit the test that drives the real entry point.
+4. **A spy wide enough to pass on broken code.** A fail-closed test's spy threw for any call,
+   so it passed whether or not the guarded read happened. **Rule:** assert the exact call (its
+   arguments and target), and pair it with an ALLOW proving the call happens when it should.
+5. **Name matching by prefix lies.** One alarm's name is a prefix of another's, so an
+   `includes()` check passes on the wrong alarm. **Rule:** match whole tokens (the test that
+   caught it parses exact `ALARM("...")` terms).
+6. **A parity test must move with the function it mirrors.** When the renderer moved a rule to
+   a new function, two consumer parity tests that still pointed at the old one would have kept
+   passing. **Rule:** re-pointing every cross-repo parity test is part of the bump checklist.
+7. **A simulation that supplies a context key cannot prove the real request carries it.** An
+   IAM simulation passed on a grant conditioned on a key the service's own internal call never
+   sends, and the first real call was denied (2026-10-20). The first real call is the proof
+   (`vivreal-infra:vivreal-iam-secrets`).
+8. **An unknown flag is not a dry run.** A preview that passes a flag the script does not define
+   runs the real thing. Read the argument parser before trusting any flag as a preview.
+
+Sources, all in vivreal-hq `docs/projects/next-release-v7/`: the Secure rename and portal walk
+2 reviews, the walk 2 defects research, the final deltas review (B2), the alarm suppressor
+review, the renderer 1.88.2 review, and the release runbook.
 
 ---
 

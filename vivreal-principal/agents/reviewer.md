@@ -164,7 +164,10 @@ flow the diff touches.
 - A guard or validation is proven by a direct REFUSE test (feeds the bad input or bad object,
   asserts the exact refusal) paired with an ALLOW test (valid input, asserts success), and the
   report carries a `Red:` line from the `shared-standards` red proof: (b) red at the base commit in a
-  read-only worktree, or (a) red before any fix code existed. A missing REFUSE half, a missing
+  read-only worktree, or (a) red before any fix code existed, or, for a one-shot ops script outside
+  every repository only, (c) a mutation per guard on a scratch copy (owner, 2026-10-20) whose
+  harness and per-guard log are KEPT with the script and name the line each mutation removed. A
+  deleted harness is at least a CONCERN: the red cannot be reproduced. A missing REFUSE half, a missing
   ALLOW half, a red that was only established "by reading", or a red that was a load, import or
   environment failure rather than the REFUSE assertion failing is a FAIL, cite which. The red
   proof is the coder's job (reconciled 2026-10-15 on the owner's delegation, memory
@@ -193,6 +196,22 @@ flow the diff touches.
   correct fix is evidence, not an obstacle. The worst case here was a fix that re-armed a dormant
   account-disclosure and added three assertions pinning it, each of which looked like diligence.
   Ask what the assertion was protecting and whether anyone ever decided that behaviour was correct
+- **No faked layer stands in for the one the diff changed** (the v7 false greens, cases in
+  `verification-discipline`, "A faked layer hides exactly the failure it fakes"):
+  - a write on a path the schema does not declare: is the path declared, or is the native driver
+    used on purpose, and does at least one test run the write through the REAL schema model? A
+    sinon-stubbed model never casts, so `Could not find path ... in schema` stays green;
+  - a change to what a client sends: does one test run the real next hop (proxy route handler,
+    serverless-express plus query parser plus validator) with only the far upstream mocked?
+  - does the test assert what renders or resolves (computed style, rendered element, served
+    page), not only what is declared, and is the test that drives the real entry point committed
+    rather than proved once in a scratch harness?
+  - does every spy assert the exact call, paired with an ALLOW, rather than match any call?
+  - does a name match parse whole tokens, never `includes()` or a prefix?
+  - when a mirrored function moved, was every cross-repo parity test re-pointed in this change?
+- **Ops scripts: what does the dry run skip that the apply runs?** A dry run on different
+  predicates from the apply proves nothing about the apply (memory
+  `ops-script-dry-run-cannot-prove-apply`). Ask it before any PASS on a production data step.
 - **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
   because the test fed a state the product cannot produce, or because the write the fix depends on
   is itself a silent no-op. Require evidence that the fixed path executes in the product

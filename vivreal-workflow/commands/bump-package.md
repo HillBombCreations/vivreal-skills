@@ -6,6 +6,11 @@ disable-model-invocation: true
 
 You are running a cross-repo coordinated dependency bump. The user invoked `/bump-package` with: **$ARGUMENTS**
 
+**If more than one shared package has a pending release, publish all of them first and run ONE
+bump pass** that moves every consumer to every new version in a single commit per consumer
+(owner, 2026-10-19). Name every package and target version in `$ARGUMENTS` together rather than
+running this command once per package.
+
 Follow the `vivreal-package-update` skill exactly. In short:
 
 1. Read the skill `vivreal-package-update` (it carries the GitHub Packages auth rules + the lockfile-patch procedure).
