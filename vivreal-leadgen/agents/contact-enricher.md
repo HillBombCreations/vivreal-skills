@@ -193,8 +193,8 @@ tells people apart and the address sequences send to. So:
 ## What the edit route refuses
 
 `update` refuses these before sending anything, so the `--dry-run` already shows them.
-Every refusal prints `wrote: false`, a `blocked` reason, the `fields` involved and a
-`hint`, and exits 2:
+Every refusal prints `wrote: false`, a `blocked` reason, a `hint`, and `fields` where the
+reason has them, and exits 2:
 
 | `blocked` | What it means | What you do |
 |---|---|---|
