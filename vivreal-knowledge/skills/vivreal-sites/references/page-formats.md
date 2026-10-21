@@ -57,6 +57,11 @@ The home Product Showcase emits `/products?f_productType=<objectValue.product-ty
 - The systemic fix (schema-bind the showcase `product-type` to the canonical filter values, "Option C") is deferred; legacy free-text instances can still drift and were patched per-instance.
 - Same bug class as the publishDate string variant: a label-vs-value mismatch that silently fails a machine comparison.
 
+## Item pages
+
+Which page serves an item's own page, which page a card links to, the Studio "Detail pages" switch, and
+the addresses that 404 by design: `references/detail-pages.md`.
+
 ## How to add a page / format
 
 1. Add the `format` to the portal `PageFormat` union (`pageBuilder.ts`) + both Add/Edit page dialog format lists. Preview then auto-works.
