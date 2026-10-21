@@ -199,7 +199,7 @@ Every refusal prints `wrote: false`, a `blocked` reason, the `fields` involved a
 | `blocked` | What it means | What you do |
 |---|---|---|
 | `server-owned-field` | You tried to set a field Outreach writes itself: `companyId`, `contacted`, `contactedAt`, `calls`, `socialTouches`, `isTest`, `_system`, or a tenant key (`groupID`, `dbKey`). | Drop it from `--set`. Contact history and the company link are not yours to edit. |
-| `invalid-field` | A field name starting with `$` or containing a dot. | Fix the name. |
+| `invalid-field` | A field name starting with `$` or containing a dot, a `notes` that is not an array, or an `email` that is not a string. | Fix the name, or send `notes` as a JSON array with `--set-json`. |
 | `company-field` | The person is linked to a company, and you set a company-level field (`company`, `website`, `domain`, `companyLinkedin`, `address`, `industry`, `techStack`, `instagram`, `facebook`, `companySize`, `personalizationHook`, `seasonalHook`, `contentActivity`, `monthlyUpdates`, `uiIssue`, `mobileFriendly`, `companyPhone`, `companyEmail`). Those are edited on the company, which copies them to its people. | Drop them from `--set` and write the person-level findings. Report the company-level findings to the operator separately; this CLI does not edit companies. |
 | `excluded` | The contact carries the exclude mark: its business was excluded from outreach, permanently. | Skip it. There is nothing to enrich it for. |
 | `email-change` | The email differs and `--allow-email-change` was not passed. | Ask the operator (see Email above). |
@@ -217,9 +217,10 @@ And these come back from the write itself:
 - Scalars (title, phone, linkedinUrl, a personalization angle): `--set title="Owner & Head Stylist"`
 - Arrays/booleans (e.g. tags): `--set-json tags='["owner","priority"]'`. An array
   replaces the stored one, so send the full list you want (existing tags plus new ones).
-- Do not write `notes`. It is the record's note list (an array of notes with authors),
-  and a value you send replaces the whole list. Outreach refuses a `notes` that is not
-  an array.
+- `notes` is an array (the record's note list, each note an object with at least
+  `text`), never a string: `--set-json notes='[...]'`. What you send replaces the whole
+  list, so include the existing notes from `get` and add yours to them. A string or a
+  single object is refused before sending (`invalid-field`).
 
 ## Hard rules (NON-NEGOTIABLE, apply identically across all 3 modes)
 
