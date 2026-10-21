@@ -10,6 +10,9 @@ Everything brand-specific comes from **site values** on the `sites` doc, NOT har
 
 Site values + chrome are persisted via the portal proxy `PUT /api/proxy/sites/update` → VR_Secure_API `updateSiteValues`, and returned to the live site by VR_Client_API `getSiteDetails`.
 
+- **A business rename rewrites only kit-shaped titles** (VR_Secure_API `src/shared/renameIdentity.js`, v7): `seo.metaTitle` and `detailPage.seo.titlePattern` change only where the old name is the whole title or a whole end segment joined by a kit separator; the campaign sender name changes only on an exact match, and the From address's local part never does.
+- **The site's time zone is the business's** (v7.1): `siteDetails.values.timezone` as the site reads it is VR_Client_API's answer (the business zone first, the site's own stored value second), so writing the site value changes nothing while the business has a zone. Set it on the business (portal Business details, `PUT /api/group/timezone`).
+
 ## Authored navbar + footer chrome (Q3b): Studio-editable, lazy auto-derive
 
 Customers can author their **navbar and footer** in Studio; the renderer falls back to auto-derived chrome when a field is unset (so existing sites render identically until edited):

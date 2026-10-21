@@ -3,7 +3,7 @@ name: vivreal-eventhandler-knowledge
 description: 'Use when working in Vivreal_EventHandler, the AWS Step Functions site-deployment pipeline that assigns the shared `stable` channel branch (per-site branches are DEAD as of Phase 2, 2026-07-15), creates an Amplify app, deploys, optionally registers a custom domain, and marks the site live/failed. Covers the ordered state list (with preserved typos you must NOT rename), the seedCollections front state, the hybrid template model, Amplify env-var injection, the Serverless-Framework + esbuild build, the domain purchase + transfer-in sagas (separate state machines), and the GitHub installation-token → Amplify accessToken 255-char fix. Triggers on: Vivreal_EventHandler, site deployment, Step Functions, Amplify deploy, createGithubBranch, seedCollections, templateType, markSiteLive, deploy pipeline, stable branch, channel branch, domain purchase, domain transfer, domainOrders, transferDomain, getInstallationToken. Source of truth: Vivreal_EventHandler source (CLAUDE.md refreshed 2026-07-21).'
 ---
 
-Last synced: 2026-10-15 against `origin/main` (no `stable` here; a merge to `main` is the deploy)
+Last synced: 2026-10-20 against `origin/main` at `19e8102` (#95; no `stable` here, a merge to `main` is the deploy)
 Last extended: 2026-09-16 (stored buildSpec vs `buildSpec.js`, the `SITE_RENDER_MODE` fleet fix)
 
 # Vivreal_EventHandler: knowledge digest
@@ -36,7 +36,7 @@ The Deploy-Site state machine pre-dates the serverless setup and is invoked by V
 2. **Channel time (here):** the `createGithubBranch` state is now **channel assignment only** (Phase 2, 2026-07-15), resolves `CHANNEL_BRANCH || 'stable'`, creates **no git branch**, writes **no marker file**. `createAmplifyApp` persists `deployment.branchName` on the site doc (schemas ≥1.21.0) and sets `enableBranchAutoDeletion: false`.
 3. **Runtime (Templates + site-renderer):** layout selection uses `pageConfigs[].format`, NOT `templateType`.
 
-Live template keys (5): `ecommerce`, `showcase`, `restaurant`, `services`, `portfolio` (`src/shared/templates/index.js`; mirrored in `VR_Secure_API` `validators.js`). Live Templates branches: **only `main` + `stable`** (+ dev PR branches), no per-customer and no per-template-type branches exist. Releases go out via the **promote-stable** workflow (main→stable FF), which rebuilds every site app.
+Live template keys (5): `ecommerce`, `showcase`, `restaurant`, `services`, `portfolio` (`src/shared/templates/index.js`; mirrored in `VR_Secure_API` `validators.js`). Live Templates branches: **only `main` + `stable`** (+ dev PR branches), no per-customer and no per-template-type branches exist. Releases go out via the **promote-stable** workflow (main→stable FF), after which `scripts/fleet-build.mjs` starts release builds for the `live` build tier only; demo apps catch up weekly. New apps are created with autobuild OFF (v7, below), so a push to `stable` alone builds nothing on them.
 
 ## Amplify env-var injection (createAmplifyApp)
 
@@ -72,6 +72,13 @@ The bucket is `bucketOf(group)` (VR_Secure_API `src/shared/groupBucket.js`): the
 - Renderer-oracle parity fixture (`test/fixtures/renderer-oracle/`): a vendored snapshot of the renderer's `dist/composition/`. Its version is stated in exactly ONE place, the README's "Sync anchor" section; read it there, and never write it anywhere else.
 - `sync_conflict` status is **legacy only**, `VR_Secure_API/templateSyncWebhook.js` was deleted in Phase 2 (2026-07-15); nothing writes it anymore.
 - **Migration script** (reusable): `scripts/migrate-to-channel-branch.js`, dry-run default, `--execute`, `--app-id`, `--profile`, `--region`, `--db-keys`, separate verify-first `--delete-old-branches` pass; needs `CLUSTER_URL`. Gotcha: Amplify returns the apex subdomain prefix as `null` but UpdateDomainAssociation requires `""`.
+
+## v7 and v7.1 (merged and live 2026-10-19/20; a merge here is the deploy)
+- **New apps build only when asked (V7.247, #92).** `createAmplifyApp` creates every app with `enableAutoBuild: false` and a `vivreal:buildTier` tag (`src/shared/amplify/costTags.js`, `buildTierFor`): `live` by default, `demo` or `qa` only on an exact match of a listed group id, so every unknown fails toward `live`. A redeploy keeps a tier the app already carries (TagResource would otherwise reset a backfilled or overridden tier). The Templates promote starts release builds by this tag, live tier only; demos catch up weekly (`vivreal-infra:vivreal-site-deploy-pipeline`).
+- **Seeded items are metered under `collectionObject_<id>` (v7.1 S9-D7, #95).** `seedCollections` writes each seeded item's usage row field for field as VR_CMS_API's `trackBulkDocs` does (`itemUsageRow`); the legacy `collection_<id>` key released nothing on delete and was counted twice on the first edit.
+- **Audit rows carry `expiresAt`** from the group's tier (`src/shared/auditLog.js`, the same rule as VR_CMS_API and VR_Secure_API), with the group tier lookup raced against a 1 s timeout that covers both the connect and the read (`GROUP_TIER_LOOKUP_TIMEOUT_MS`).
+- **`scripts/build-indexes.js --new-placement <pod>`** builds the next pod's indexes before its first tenant: it must be exactly the next pod by tenant-db's rule and is refused when the pod already holds data; `--placements` must name a stored tenant dbKey (`vivreal-tenancy`).
+- **The deploy logs in to ECR Public first** (`.github/workflows/lambda_api.yml`, step "Log in to Amazon ECR Public", after anonymous pulls were throttled with 429 on 2026-10-17). It needs `ecr-public:GetAuthorizationToken` and `sts:GetServiceBearerToken` on the deploy role, the latter UNCONDITIONED: an `sts:AWSServiceName` condition simulated `allowed` and was denied for real, which failed the first v7 deploy.
 
 ## Hard rules / gotchas
 

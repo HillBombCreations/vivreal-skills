@@ -39,4 +39,4 @@ The opinionated rules + REAL conventions for any Vivreal portal interface work. 
 - The **`ux-critic`** agent, it CRITIQUES usability read-only; `references/ux-psychology.md` is its primary lens.
 - Companions: `vivreal-sites` (the customer-site product/authoring model, distinct from portal chrome), `vivreal-portal-knowledge` (the portal's API/proxy/auth internals).
 
-Sources of truth (read for depth): `C:\repos\Vivreal_Portal_Mobile\src\styles\globals.css` (tokens), `src/components/Dashboard/*` + `src/app/(app)/outreach/*` (patterns; the admin pages are deleted), `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` (Styling + Privacy sections), and the `.claude/agents/designer.md` protocol.
+Sources of truth (read for depth): `C:\repos\Vivreal_Portal_Mobile\src\styles\globals.css` (tokens), `src/components/Dashboard/*` (patterns; the admin pages and, since v0.37, the outreach CRM are deleted from the portal), `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md` (Styling + Privacy sections), and the `.claude/agents/designer.md` protocol.

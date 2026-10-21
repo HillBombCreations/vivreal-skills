@@ -368,7 +368,7 @@ surfaces do not exist as written. Prefer it unless a script's own surface is ver
 **Product surfaces that do NOT exist, so no beat can rest on them:**
 - **No single-tap sold-out or mark-as-sold control.** Sold-out is derived renderer-side from a
   content item's status, availability or stock. Two scripts assume a one-tap version.
-- **Windward House's hero Subtitle is a DEAD control.** Typing into it renders nothing, in the
+- **On a site using the stacked-words hero, the hero Subtitle is a DEAD control.** Typing into it renders nothing, in the
   preview or live, because the stacked-words hero treatment never draws a subtitle.
 - **The "connected-channels checklist ticking after Save" does not exist.** A Studio Save
   publishes the site and ticks nothing. See the share beat below.
@@ -775,7 +775,7 @@ is what found the three failed payoffs above; the manifests would otherwise have
 
 #### The email popup: four sites, 6 to 14s, and the dismissal persists
 
-`emailPopup.enabled` is true on exactly `windward-house`, `cobalt-crumb`, `fernbrook-gardens` and
+`emailPopup.enabled` is true on exactly one live site plus the demos `cobalt-crumb`, `fernbrook-gardens` and
 `marlowe-kept`. Measured appearance: 6.0s, 8.1s, 11.0s, 13.6s after load, **not the 14s recorded
 earlier**. Only `marlowe-kept` blurs the page now; the other three do not, which also supersedes
 the earlier blanket claim. Dismissing writes `localStorage.vivreal_popup_dismissed_at` and it does

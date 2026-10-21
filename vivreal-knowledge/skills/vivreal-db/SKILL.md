@@ -258,7 +258,10 @@ plain strings. For `$lookup` recipes use `mcp__mongodb__aggregate`.
   `siteDetails{schema,values}`, `domainInformation`. Index: `groupID`.
 - **`content_versions` / `site_versions`**, `entityId`(str), `entityType`, `version`(num),
   `snapshot`, `changeSummary{changedFields, changeType}`, `groupID`. Index: `entityId+version`.
-- **`audit_logs`**, `action`, `entityType`, `entityId`(str), `groupID`, `actor{email,name}`.
+- **`audit_logs`**, `action`, `entityType`, `entityId`(str), `groupID`, `actor{email,name}`,
+  `expiresAt` (Date or null; VR_CMS_API, VR_Secure_API and Vivreal_EventHandler stamp it from the
+  group's tier, and the `expiresAt_ttl` index reaps it). Older rows carry none and are never reaped:
+  never assume every row has it.
   Indexes: `{groupID:1, createdAt:-1}`, `{groupID:1, entityType:1, entityId:1, createdAt:-1}`
   (auditLogSchema.js).
 
@@ -315,6 +318,32 @@ VR_Outreach_API / applied directly to live Mongo, so treat them as live-DB/outre
 artifacts, not schema-backed. The `outreach` database holds only the global `suppressions` list.
 So to find a tenant's outreach contacts: resolve the Contacts system `collection_group` `_id`
 then query `collection_objects` by `collectionObj.refID` (string), same pattern as any content.
+
+## Fields v7 added that queries trip on (schemas on the deployed lines, 2026-10-21)
+
+- **Subscriber rows.** `subscriberStatus` is one of `pending`, `subscribed`, `unsubscribed`, `bounced`,
+  `complained` (absent on non-subscriber rows). An ordinary campaign mails only `subscribed`; a
+  confirmation campaign mails only `pending` (VR_Main_API `sendBatches.js`,
+  `SENDABLE_STATUSES_BY_AUDIENCE`). A site sign-up is saved `subscribed` at once since v7.2. `consentSource` is `capture` (typed into a
+  form) or `import` (an owner's import, with `importId` pointing at the attestation on the group);
+  `confirmedAt` records a click on a confirm link and is never backfilled; `unsubscribedAt` is the
+  person's own opt-out and `suppressedAt` is ours (a hard bounce or a complaint);
+  `confirmationSentAt` carries the confirm and rejoin cooldowns. One list can hold the same address
+  on more than one row, so count and update by `{ groupID, 'collectionObj.refID', subscriberEmail }`
+  over EVERY match, never the first (VR_Main_API's unsubscribe does since v7.2).
+- **`objectValue.vivrealExample`** is `true` on items a template seeded and `false` once the owner
+  edits one; the portal's "Clear the examples" deletes by it (`vivreal-cms-api-knowledge`).
+- **`objectValue._system`** is server-written: Outreach contacts carry `excludedAt` and
+  `excludedCompanyId` there after `POST /companies/:id/exclude`, and the CMS keeps the stored
+  `_system` on every update.
+- **`usage_trackings.docKey`** for an item is `collectionObject_<id>`; rows written before 2026-07-31
+  (and seeds before v7.1) use `collection_<id>`, and both still exist. Match both keys when you
+  count an item's bytes; lists with `siteRole` `subscribers`, `group-subscribers` or `bookings`
+  take no entry (`UNCOUNTED_SITE_ROLES`).
+- **`groups.timezone`** is the business time zone (canonical IANA, written by VR_Secure_API), and
+  the site serves it as `siteDetails.values.timezone`; the site document's own value is only the
+  fallback. **`groups.billing.source: 'comped'`** marks a comped paid-tier group: count paying
+  customers by `stripeSubscriptionID`, never by tier.
 
 ## Known drift (measured 2026-10-15; re-measure before relying on it)
 

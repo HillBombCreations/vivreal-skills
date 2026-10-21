@@ -36,7 +36,7 @@ The MCP tool names use the public terminology (`content-type`, `content`, `chann
 ```
 list-content-types                  # list all schemas in the active group
 get-content-type(name)              # read one schema in detail
-list-content(collectionGroupID)     # list items inside a content type
+list-content(collectionGroupID)     # list items inside a content type (archived left out)
 ```
 
 Use the `vivreal://groups/{groupId}/content-types` resource for a structured view that includes counts and metadata.
@@ -56,6 +56,8 @@ Use the `create-content-plan` MCP prompt, it walks the full workflow with schema
 For bulk creation use `bulk-create-content` (the same plan gate as every other tool; see "Plan gating" below).
 
 **Whether an item is on the site is `siteStatus`, not `approvalStatus`.** Content output carries `siteStatus` (`live`, `scheduled`, `not_published`, `archived`, `waiting_for_approval`, `sent_back`). `approvalStatus` is the approval WORKFLOW state and reads `draft` on every item never sent for approval, live or not, so never tell an owner an item is a draft or not live from `approvalStatus`.
+
+**Archived items and the calendar.** `list-content` with `archived` false or omitted returns only items that are NOT archived; `archived: true` returns ONLY archived items, so to see everything make one call each way. `list-events` leaves out private lists (mailing-list sign-ups, contact and quote requests, form enquiries) and keeps booking requests; an entry that does not say whether it is archived carries no `siteStatus`, so say you cannot tell.
 
 ### Schedule a post across socials
 
@@ -143,7 +145,7 @@ Prefer `vivreal://` MCP resources over the equivalent list tools when you want a
 - `vivreal://field-types`, supported schema field types (static)
 - `vivreal://groups/{groupId}/dashboard`, usage, quotas, recent activity
 - `vivreal://groups/{groupId}/audit?start=&end=`, audit log (retention by tier)
-- `vivreal://groups/{groupId}/content-types/{contentTypeId}/items`, paginated items with `?search`, `?page`, `?limit`, `?sort`
+- `vivreal://groups/{groupId}/content-types/{contentTypeId}/items`, paginated items with `?search`, `?page`, `?limit`, `?sort=field:dir`; archived items are left out, `?archived=true` returns ONLY archived ones
 - `vivreal://groups/{groupId}/content-types/{contentTypeId}/items/{itemId}/versions`, version history
 
 Full list: see `references/resources.md`.
