@@ -211,7 +211,8 @@ flow the diff touches.
   - when a mirrored function moved, was every cross-repo parity test re-pointed in this change?
 - **Ops scripts: what does the dry run skip that the apply runs?** A dry run on different
   predicates from the apply proves nothing about the apply (memory
-  `ops-script-dry-run-cannot-prove-apply`). Ask it before any PASS on a production data step.
+  `ops-script-dry-run-cannot-prove-apply`). Ask it before any PASS on a production data step, and
+  check the script against every rail in `vivreal-workflow:ops-one-shot`.
 - **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
   because the test fed a state the product cannot produce, or because the write the fix depends on
   is itself a silent no-op. Require evidence that the fixed path executes in the product

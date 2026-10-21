@@ -22,6 +22,8 @@ A **site** is a Mongo document (`sites` collection, in the group's tenant DB) ho
   (what lives in site values, the Q3b authored navbar/footer overrides + lazy auto-derive, where they persist + the strict-mode subdoc trap.)
 - **Authoring + Studio↔live parity + going live** → `references/authoring-and-parity.md`
   (Studio is the single surface, content goes live on **Save** (no Publish button), composePage preview parity seams, and the promote-stable release rollout.)
+- **Detail pages: item addresses, who links where, what 404s on purpose** → `references/detail-pages.md`
+  (the portal switch, `detailEligible`, `itemKeyField`, the renderer's served-collection and detail-wins rules, Templates' lookup and `linkedItems`, the item page summary.)
 - **Publishing to vivreal.io and the help site** (a runner, a screenshot swap, a help batch) → `references/publishing-vivreal-io-and-help.md`
   (the CMS sorts `mediaKeys` and keys `mediaFields` by file name, `promoteMedia` re-encodes, `media_files` lives in the main database, band plus order for duplicate checks, the sitemap leaves out noindex pages, unwrap `/_next/image`.)
 
