@@ -215,17 +215,25 @@ interactive login at seed time if the outreach token is expired.
         `node commands/sync-suppressions.js`. It pulls hard bounces, complaints and opt-outs
         from Outreach into the lead store so the seed gate withholds them. Read-only against
         Outreach.
-     2. **SES check of every seedable address.**
-        `node commands/discover-contacts.js --tag <tag> --write --check-all` is a PREVIEW: it
-        prints how many addresses need a check and the estimated cost (about $0.01 each),
-        and checks nothing. Then `node commands/discover-contacts.js --tag <tag> --write
-        --check-all --yes` spends and records each verdict. The seed gate sends only to an
-        address SES rated IsValid HIGH and MailboxExists HIGH; every other address is
+     2. **SES check of every seedable address, owner-name guesses included.**
+        `node commands/discover-contacts.js --tag <tag> --write --check-guesses --check-all`
+        is a PREVIEW: it prints how many guesses and addresses need a check and the
+        estimated cost (about $0.01 each), and checks and spends nothing. Then
+        `node commands/discover-contacts.js --tag <tag> --write --check-guesses --check-all --yes`
+        spends: it checks the firstname@ guesses (a guess is written as a contact only with
+        its verdict), then every address the seed gate would send to, and records each
+        verdict. Without `--yes` neither flag spends anything. The seed gate sends only to
+        an address SES rated IsValid HIGH and MailboxExists HIGH; every other address is
         withheld. If the preview's count is far above the brief's `volume` (more than about
         two addresses a lead), do not run `--yes`; report the count at the checkpoint
         instead. A run that stops on an AWS session error (expired credentials, access
         denied) is an auth failure: stop and report it, do not loop.
-     3. **Quality gate.** `node commands/quality-report.js --tag <tag>`. The last block reads
+     3. **Quality gate.** `node commands/quality-report.js --tag <tag>`, with exactly the
+        selection flags the seed will use (`--tag`, `--campaign`, `--status`, `--domain`,
+        `--minScore`, `--platform`, `--limit`, `--in-season`): the report selects and scores
+        the batch with the same functions the seed does, so the same flags print the verdict
+        the seed enforces. `--domains` and `--since` narrow the scorecard only, never the
+        gate. The last block reads
         `QUALITY GATE: PASS` or `QUALITY GATE: FAIL (...)`. **FAIL is a stop.** Do not
         present the batch as seed-ready: report the failing lines (deep pass under 95%,
         sendable under 45%, SES-checked under 100%, hook under 70% of sendable) and what
@@ -295,7 +303,7 @@ interactive login at seed time if the outreach token is expired.
   Un-profiled or hookless in-target leads seed fine; never hold a lead back for lacking a hook.
 - Contact discovery is IN-HOUSE (no paid email API). Only seed an email you can stand behind
   (verified/published AND person-named AND on the lead's own domain, AND rated SES HIGH/HIGH
-  by `discover-contacts.js --check-all`); an unverified guess,
+  by `discover-contacts.js --check-all --yes`); an unverified guess,
   a role inbox, or a cross-domain address is left blank and the contact seeds on its name +
   LinkedIn/phone.
 - **The contact bar is standing, not per-campaign.** Every seeded person needs a first
