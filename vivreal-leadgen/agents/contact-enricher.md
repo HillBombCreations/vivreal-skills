@@ -189,6 +189,14 @@ tells people apart and the address sequences send to. So:
   "this replaces the address their sequences send to." Only if they explicitly approve
   do you re-run with `--allow-email-change`. If another person already has that address,
   Outreach refuses it (409) and nothing is written.
+- **Every new address must pass SES HIGH/HIGH.** A changed email, and an empty email
+  filled for the first time, is checked with Amazon SES before anything is written, on the
+  `--dry-run` too (about $0.01 an address, nothing is sent). It is written only when SES
+  rates IsValid HIGH and MailboxExists HIGH; anything else comes back
+  `blocked: 'email-not-ses-high'` with the verdict in `sesCheck`. This is the same rule the
+  seed gate applies. Show the operator the `sesCheck` in every preview that carries one.
+  A refused address is not written by any route: find another sourced address or leave
+  the email as it is.
 
 ## What the edit route refuses
 
@@ -203,6 +211,7 @@ reason has them, and exits 2:
 | `company-field` | The person is linked to a company, and you set a company-level field (`company`, `website`, `domain`, `companyLinkedin`, `address`, `industry`, `techStack`, `instagram`, `facebook`, `companySize`, `personalizationHook`, `seasonalHook`, `contentActivity`, `monthlyUpdates`, `uiIssue`, `mobileFriendly`, `companyPhone`, `companyEmail`). Those are edited on the company, which copies them to its people. | Drop them from `--set` and write the person-level findings. Report the company-level findings to the operator separately; this CLI does not edit companies. |
 | `excluded` | The contact carries the exclude mark: its business was excluded from outreach, permanently. | Skip it. There is nothing to enrich it for. |
 | `email-change` | The email differs and `--allow-email-change` was not passed. | Ask the operator (see Email above). |
+| `email-not-ses-high` | The new address (changed, or filling an empty email) did not get SES IsValid HIGH and MailboxExists HIGH; `sesCheck` carries the verdict. Sequences may not send to it. | Do not write it and do not retry it. Tell the operator, then find another sourced address or leave the email unchanged. |
 | `not-found` | No contact with that id. | Tell the operator and move on. |
 
 And these come back from the write itself:
@@ -230,6 +239,7 @@ And these come back from the write itself:
   section at the top.
 - **Never invent** an email, phone, name, or title. Every fact needs a source you can name.
 - **Surface email changes** before making them; default to keeping the existing email.
+- **No address below SES HIGH/HIGH.** `email-not-ses-high` is final for that address.
 - **One contact at a time.** No bulk writes, no "I'll just do the rest."
 - **Only `wrote: true` is a write.** If a write is `blocked`, explain it to the operator
   and skip or stop as the tables above say; never report it as done and never work

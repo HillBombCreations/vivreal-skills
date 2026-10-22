@@ -86,7 +86,8 @@ interactive login at seed time if the outreach token is expired.
        `deep pass ran:` should be at or near 100% of the tag (the `--tag` scoping is real
        since 2026-08-02). If it is 0%, the pass did not run; if it is a fraction, the crawl
        was truncated. Either way the profiles you are about to write are missing their
-       reach hook.
+       reach hook. The report also ends with `QUALITY GATE: FAIL` at this point; that is
+       expected right after a crawl and is not a stop yet (see PRE-CHECKPOINT GATES below).
    - **OWNER RESEARCH (required, and it must run BEFORE profiling):** you have no `Agent`
      tool and no web tools, so ask the orchestrator to run `@owner-researcher` over the
      crawled domains. The crawl's deep pass mines owner NAMES
@@ -204,7 +205,38 @@ interactive login at seed time if the outreach token is expired.
      the normal seed gate. A lead is only truly **company-only** AFTER this pass. Record, per
      lead, which it is, (a) now has a seedable contact, (b) owner named but no reachable
      channel, (c) no owner found, (d) closed/dropped, so the checkpoint shows a list you've
-     already dug into. The data is fully persisted in `Data/prospects.jsonl`. **STOP, do NOT seed yet.**
+     already dug into. The data is fully persisted in `Data/prospects.jsonl`.
+
+   - **PRE-CHECKPOINT GATES (required, in this order, after discovery and the contact passes,
+     before the seed checkpoint).** Use the same selection flags you will seed with
+     (`--tag <tag>`, plus `--campaign` and the rest if the seed uses them) on every command
+     here, so each one scores the batch the seed will actually select.
+     1. **Suppressions.** `node commands/sync-suppressions.js --dry-run`, then
+        `node commands/sync-suppressions.js`. It pulls hard bounces, complaints and opt-outs
+        from Outreach into the lead store so the seed gate withholds them. Read-only against
+        Outreach.
+     2. **SES check of every seedable address.**
+        `node commands/discover-contacts.js --tag <tag> --write --check-all` is a PREVIEW: it
+        prints how many addresses need a check and the estimated cost (about $0.01 each),
+        and checks nothing. Then `node commands/discover-contacts.js --tag <tag> --write
+        --check-all --yes` spends and records each verdict. The seed gate sends only to an
+        address SES rated IsValid HIGH and MailboxExists HIGH; every other address is
+        withheld. If the preview's count is far above the brief's `volume` (more than about
+        two addresses a lead), do not run `--yes`; report the count at the checkpoint
+        instead. A run that stops on an AWS session error (expired credentials, access
+        denied) is an auth failure: stop and report it, do not loop.
+     3. **Quality gate.** `node commands/quality-report.js --tag <tag>`. The last block reads
+        `QUALITY GATE: PASS` or `QUALITY GATE: FAIL (...)`. **FAIL is a stop.** Do not
+        present the batch as seed-ready: report the failing lines (deep pass under 95%,
+        sendable under 45%, SES-checked under 100%, hook under 70% of sendable) and what
+        would fix each, and end the run there. `seed-outreach.js` computes the same verdict
+        and refuses a FAIL batch on a direct seed and on `--emit`.
+     4. **Seed preview.** `node commands/seed-outreach.js --tag <tag> --dry-run`. It prints
+        the same gate plus every withheld and skipped count with its reason (a rediscovered
+        business already in the Outreach group shows up here). Carry those counts into the
+        checkpoint summary.
+
+     **STOP, do NOT seed yet.**
 
 3. **Single confirmation checkpoint (the ONLY one).** Present a compact, seed-ready
    per-lead summary so the partner can eyeball it before anything is pushed:
@@ -217,7 +249,8 @@ interactive login at seed time if the outreach token is expired.
    backstop found (owner identified but unreachable, vs no owner found at all) so the partner
    sees these are already dug into, not awaiting research, deep owner research has already run
    by default, so the partner's call is just seed-company-only vs drop, never "go dig deeper."
-   This is the moment to make those calls, NOT after seeding. Then
+   This is the moment to make those calls, NOT after seeding. Include the `QUALITY GATE: PASS`
+   line, the SES verdict tally from `--check-all`, and the seed preview's withheld counts. Then
    end the run and wait for the partner's explicit "seed it." Returning this summary IS the
    checkpoint; the orchestrator relays it and the seed runs as a confirmed continuation.
 
@@ -230,6 +263,17 @@ interactive login at seed time if the outreach token is expired.
      dedupKey→_id from the returned `companies` → import-contacts). No browser
      login exists any more (retired 2026-07-16); direct POST mode needs
      `OUTREACH_BEARER` in `.env` and is the fallback, not the default.
+   - **The seed refuses a FAIL batch.** Re-run the pre-checkpoint gates if anything changed
+     since the checkpoint. **Never pass `--override-quality-gate`** unless the brief carries
+     an explicit owner go for this batch with its reason; then pass that reason verbatim,
+     `--override-quality-gate "<the owner's reason>"`, and say so in the report (the reason
+     is logged to `Data/runs/quality-gate-overrides.jsonl`). A partner's "seed it" at the
+     checkpoint is not an override.
+   - **After EVERY seeded batch has landed in Outreach**, run
+     `node commands/sync-contacted.js --dry-run`, then `node commands/sync-contacted.js`. It
+     merges the newly seeded companies into `Data/contacted.json` (merge, never forget), so
+     the next discovery run withholds them. Skipping it lets the next campaign re-seed the
+     same businesses.
    - **Do NOT pass `--good-hooks` by default**, hooks are optional, so
      `--good-hooks` would silently drop every hookless in-target lead. Add it only if the partner
      explicitly asks for a hooked-only seed. NOTE: 3 of the 4 live sequences use
@@ -250,7 +294,8 @@ interactive login at seed time if the outreach token is expired.
 - The seed gate is STRUCTURAL now: name + website + a dedup key (NO hook, NO CMS-fit score).
   Un-profiled or hookless in-target leads seed fine; never hold a lead back for lacking a hook.
 - Contact discovery is IN-HOUSE (no paid email API). Only seed an email you can stand behind
-  (verified/published AND person-named AND on the lead's own domain); an unverified guess,
+  (verified/published AND person-named AND on the lead's own domain, AND rated SES HIGH/HIGH
+  by `discover-contacts.js --check-all`); an unverified guess,
   a role inbox, or a cross-domain address is left blank and the contact seeds on its name +
   LinkedIn/phone.
 - **The contact bar is standing, not per-campaign.** Every seeded person needs a first
@@ -260,4 +305,7 @@ interactive login at seed time if the outreach token is expired.
   surface it, don't pad it with junk.
 - Be honest in profiling, a clean site gets `uiIssue: null` and the lead leans on its
   seasonal or multi-channel hook. Never manufacture issues or hooks to inflate the count.
+- **`QUALITY GATE: FAIL` is a stop**, at the checkpoint and at seed time. Report it; never
+  route around it. `--override-quality-gate` needs an explicit owner go written into the brief.
+- Suppressions sync before the seed; the contacted registry syncs after every seeded batch.
 - On an auth failure, stop and report clearly, do not loop or retry to force it.

@@ -25,7 +25,8 @@ dispatching it as a subagent (`@prompt ...`) leaves it unable to ask anything.
   ```
   === INTAKE BLOCKED: needs the main thread ===
   reason:    AskUserQuestion is unavailable to subagents
-  sequences: <the list from list-sequences.js, one line each>
+  sequences: <the list from list-sequences.js, one line each; if none are
+             runnable, say "none: create the sequences first" and ask nothing else>
   ask:       1. Which sequence? 2. <niche/geography question>
              3. <profile/volume question>
   next:      re-run this intake in the main conversation
@@ -62,6 +63,15 @@ turns it into a precise spec.
    option (what Touch 1 leads with + what makes a good lead for it). Do NOT ask
    about their search yet, sequence comes first.
 
+   **No sequence, no brief.** If `list-sequences.js` prints `(none built yet)`, or
+   `!! None are runnable` (every sequence has 0 steps), STOP. There may be none at all:
+   the 2026-10-22 outreach reset deleted every sequence. Tell the operator plainly:
+   "Create the sequences first (the admin app's Sequences page), give each its steps,
+   and set its sender and send window, then run me again." (As of 2026-10-22 the admin
+   editor sets only name, status and steps; sender and send window are set through the
+   Outreach MCP `update-sequence` tool until the editor gains them.) Never write a brief that
+   names a sequence `list-sequences.js` did not list, and never invent one.
+
 2. **Lock the chosen sequence.** The pick sets `sequence`, `hookFocus`, and
    `leadCriteria`. Derive all three by READING THAT SEQUENCE'S ACTUAL STEPS, its
    Touch 1 tells you what it opens on and which merge tokens it uses. That is the
@@ -69,6 +79,13 @@ turns it into a precise spec.
    tokens it renders. (Hooks are OPTIONAL now, a story-led sequence that renders
    no hook token needs no hook at all to seed; see `SEED_CONTRACT.md`.) Everything
    below is shaped by this choice.
+
+   **Sender and send window come from the sequence, not the brief.** The brief has no
+   sender, send-window, time-zone or daily-cap field, and you never add one in `notes`.
+   Those are set on the sequence itself, and a sequence with no sender skips every send.
+   `list-sequences.js` does not print them, so ask the operator to confirm the chosen
+   sequence has its sender and send window set; if it does not, they set it on the
+   sequence before the seed, and you say so in `notes`.
 
 3. **NOW get the search query, clarify the target.** Ask only what's needed to
    remove vagueness:
@@ -102,7 +119,8 @@ turns it into a precise spec.
 ```
 === LEAD CAMPAIGN BRIEF ===
 goal:          <one sentence: who + where + why they fit the sequence>
-sequence:      <chosen sequence name>
+sequence:      <chosen sequence name, exactly as list-sequences.js printed it; must exist>
+               # sender, send window and daily cap live on the sequence, never here
 hookFocus:     personalization | seasonal | either   # which hook to LEAD with WHEN one exists (optional; implied by the sequence)
 searchType:    search | maps
 industry:      <specific niche>
@@ -130,6 +148,10 @@ notes:         <anything else the coordinator should know>
   sequence, clarify the target, confirm the goal. You are NOT a fire-and-forget
   background job; the whole point is the back-and-forth that removes vagueness.
   This is why the main thread is required; see the section at the top.
+- **The brief names an existing sequence.** No runnable sequence listed means no brief:
+  send the operator to create the sequences first (see step 1).
+- **Send timing and sender are the sequence's.** Never put a sender, send window or cap in
+  the brief; the coordinator and the send pipeline read them from the sequence.
 - **Never emit a brief with a vague field.** If the user is unsure, propose a
   sensible default and confirm it, don't leave it blank.
 - **Sequence is locked before leadCriteria**, leadCriteria and hookFocus are
