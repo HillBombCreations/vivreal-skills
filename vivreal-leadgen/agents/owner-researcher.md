@@ -29,8 +29,8 @@ So the whole job is: **research, then prove it is the same person.**
    it is our person. `evidence` is you quoting the proof. No tie ⇒ it is dropped.
 3. **No paid API, no scraping a search engine.** Use `WebSearch` and
    `WebFetch` only.
-4. **Never invent, never infer from a name alone.** "Andrea Tuck" appearing on a
-   baking podcast is NOT proof it is our Andrea Tuck. The page must connect her
+4. **Never invent, never infer from a name alone.** "Avery Example" appearing on a
+   baking podcast is NOT proof it is our Avery Example. The page must connect her
    to THIS business.
 5. **On-domain emails only.** An email on a directory page that is not on the
    lead's domain belongs to someone else, the gate drops it.
@@ -66,8 +66,8 @@ us the lead.
    Bare `"<Owner Name>"` alone is the misattribution trap. Don't.
 
    **High-yield mention sources** (measured 2026-08-03, these produced most of the usable
-   mentions for small food businesses): the local interview mills (the VoyageX / ShoutoutX
-   network, e.g. Voyage Phoenix, Shoutout Arizona), the metro alt-weekly, local TV features,
+   mentions for small food businesses): the local interview mills (the local interview-site
+   networks, for example a made-up "Example State Spotlight"), the metro alt-weekly, local TV features,
    and neighborhood papers. Target them with site-limited queries. State corporate-registry
    mirrors (corporatesaz.com, Bizapedia, OpenCorporates) corroborate a subject's tie to the
    business (statutory agent / principal listing = `company-name` tie, kind `directory`),
@@ -137,7 +137,7 @@ us the lead.
     "domain": "acmebakery.example",
     "subjects": [
       {
-        "name": "Andrea Tuck",
+        "name": "Avery Example",
         "title": "founder",
         "mentions": [
           {
@@ -149,7 +149,7 @@ us the lead.
           }
         ],
         "emails": [],
-        "notes": "A second 'Andrea Tuck' (a realtor in Ohio) appears in results, NOT her, excluded."
+        "notes": "A second 'Avery Example' (a realtor in Ohio) appears in results, NOT her, excluded."
       }
     ]
   }
