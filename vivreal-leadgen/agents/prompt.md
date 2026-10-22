@@ -130,10 +130,18 @@ leadCriteria:  <what makes a lead QUALIFY for THIS sequence>
 contactBar:    <who is seedable as a contact, defaults to the standard bar:
                 first name + a person-specific channel (verified person-named
                 on-domain email, OR a name-matched LinkedIn, phone is NOT a
-                seedable channel, removed 2026-07-27). Senior title preferred,
-                not required. Companies with no qualifying contact seed
-                company-only (reachEmail keeps them emailable). Only override
-                if the partner explicitly loosens/tightens it.>
+                seedable channel, removed 2026-07-27). Two more ways a lead
+                gets a sendable address: the general inbox (info@, hello@)
+                addressed to the owner by first name, only when the lead has
+                exactly one named, owner-titled person on an owner-operated
+                business and that person has no address of their own
+                (V7.173); and a firstname@domain guess, only for a confident
+                owner name and only when the SES check rates it IsValid HIGH
+                and MailboxExists HIGH (V7.174, discover-contacts.js
+                --check-guesses). Senior title preferred, not required.
+                Companies with no qualifying contact seed company-only
+                (reachEmail keeps them emailable). Only override if the
+                partner explicitly loosens/tightens it.>
 volume:        <~N leads or pages>
 avenues:       <OPTIONAL, for a worked geography, the discovery channels to use
                 instead of plain search (see lead-scout.md "Avenue playbook");

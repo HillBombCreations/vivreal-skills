@@ -184,7 +184,8 @@ jargon, only what they can SEE.
   surface even when no scraped page matched the standard blog/news names, use it for
   `contentActivity` and as evidence the business already produces content (great Vivreal fit).
 - `signals.stack`, **the highest-value hook material; read this FIRST.** `{ channels, channelCount,
-  multiChannel, toolNames, tools, fragmented, newsletterSignup, multiLocation, locationCount }`,
+  multiChannel, toolNames, tools, fragmented, newsletterSignup, multiLocation, locationCount,
+  orderingVendors }`,
   derived from their social links + separate-tool fingerprints found in the crawled text/URLs.
   - `multiChannel` (3+ social channels) and `fragmented` (a Linktree, or 2+ separate tools like
     Mailchimp + Calendly) are the STRONGEST, most personal hooks: they prove the owner is juggling
@@ -205,9 +206,11 @@ jargon, only what they can SEE.
 - `enrichment.social.instagram`, **the reach upgrade to `signals.stack`.** `stack.channels` can
   only see THAT an Instagram link exists; this says how hard they actually RUN it:
   `{ handle, url, displayName, followers, following, posts }`, or `null`.
-  - **Only present if `commands/enrich-social.js` has been run for this domain.** Absent or
-    `null` = UNKNOWN (no account, or the profile was walled/private), say nothing, never infer.
-    Same tri-state discipline as every signal above.
+  - **Written by the deep contact pass that `commands/crawl.js` runs after every crawl** (unless
+    the crawl ran with `--no-social`; `commands/enrich-social.js` is the backfill for those), and
+    copied back from the `_social.json` sidecar when a recrawl rewrites `_index.json`. Absent or
+    `null` = UNKNOWN (the pass was skipped, there is no account, or the profile was walled or
+    private), say nothing, never infer. Same tri-state discipline as every signal above.
   - **Counts are ROUNDED by Instagram at scale**, it serves "20K"/"492K", which parse to
     `20000`/`492000`. These are an order of magnitude, NOT an exact figure. Write "over 20K
     followers"; never "20,000 followers". An owner knows their real number and fake precision
@@ -245,6 +248,26 @@ jargon, only what they can SEE.
     the sentence you are writing, do not write it.
   - It is HOOK material, not a channel. Only `subjects[].emails` (on-domain, gate-checked) may
     be treated as contact, and it still goes through the normal verify gate on save.
+- `signals.seasonal`, **holiday and pre-order pages the crawl actually fetched**: `{ items: [{ url,
+  occasion, kind, year, class, form, snippet }], current, prior, undated, hasCurrentPreorder }`
+  (the lead record carries the same items, without `snippet`, as `siteSignals.seasonal`). `kind`
+  is `pre-order` or `seasonal-menu`; `class` is `current-season`, `prior-season` or `undated`;
+  `form` is `true` when the page has a form on it. OPTIONAL hook material, never required:
+  - A `current-season` `pre-order` item is the timeliest hook there is. Name the page by its
+    occasion, and open `url` to confirm it says what `snippet` says before you write it. GOOD:
+    *"I saw your Thanksgiving pie pre-order page is already up, nice to see it out this early."*
+  - A `prior-season` item (a "Christmas 2024 menu" still up in October 2026) is a gentle polish
+    observation for `personalizationHook`, never `seasonalHook` (see the `seasonalHook` rule
+    below), framed as easy to refresh, never as a mistake.
+  - Empty `items` means the crawl found no such page, not that they have none. Never invent a
+    pre-order page, an occasion or a year that is not in an item.
+- `signals.stack.orderingVendors` (on the lead record, `siteSignals.orderingVendors`), the
+  ordering services found linked from their site, named (for example `["Hotplate"]` or
+  `["Square Online", "Toast"]`). OPTIONAL hook material: naming the ordering app they already use
+  makes the "two places to update" point concrete. GOOD: *"I noticed your orders run through
+  Hotplate while the menu lives on your site, that's two places to keep in step."* Cite only a
+  vendor in the list, by the name it carries; an empty list means none was detected, so say
+  nothing about how they take orders.
 - `signals.design.designReview`, the **objective corroborators for the design-quality hook** (see
   the "Design-quality judgment" section above): `fontFamilyCount`, `paletteSize`, `isResponsive`,
   `mediaQueryCount`, `ageTells`. These are facts, not pixels, use them directly.
@@ -314,7 +337,7 @@ Each prospect profile must be a JSON object with these fields:
   "phones": ["any real phone you can SEE in the crawled text, same verify gate as emails; never guess"],
   "specialNotes": ["anything notable, franchise plans, awards, unique offerings, etc."],
   "notAFit": false,
-  "notAFitReason": "Set notAFit:true ONLY for a clear non-prospect (media company, nonprofit, large enterprise, franchise chain, or tech company) and put the one-line reason here. Otherwise leave notAFit:false and this null. There is NO 0-100 CMS-fit score anymore, any in-target small business is a fit.",
+  "notAFitReason": "Set notAFit:true ONLY for a clear non-prospect (media company, nonprofit, large enterprise, franchise chain, or tech company) or a hard exclusion (wholesale-only, a grocery or in-store counter, a bakery inside another business, 3 or more locations, closed permanently; see the Fit section) and put the one-line reason here. Otherwise leave notAFit:false and this null. There is NO 0-100 CMS-fit score anymore, any in-target small business is a fit.",
   "outreachAngle": "1-2 sentence personalized pitch connecting this business's specific content/publishing pain to Vivreal's create once, publish everywhere. Reference their tools, channels, and workflow, NOT generic CMS benefits. Use Vivreal's brand voice: direct, confident, practical.",
   "personalizationHook": "ONE specific thing you noticed, written like a real person texting a friend (casual, ONE sentence of at most 25 words ending with a period, 'I' experience, a little tentative), NOT an auditor. No em or en dash, none of the words under 'Never use these words' in brand/voice.md, owner-visible language only (save-review.js refuses the entry otherwise). A flaw is OPTIONAL: honest praise tied to a benefit works just as well for a clean good-fit site. Gain-framed, never a verdict, signal- or text-verifiable, never invented. Write one for every good-fit lead.",
   "seasonalHook": "A timely reason outreach lands NOW: the business's real upcoming busy season + their location's real events + the content bottleneck that creates. Honest (see rules). null if the industry isn't in-season for them or they produce no content.",
@@ -407,8 +430,25 @@ non-prospects:
 - Set **`notAFit: true`** (with a one-line `notAFitReason`) for a media company,
   nonprofit, large enterprise (50+ employees), franchise chain, or tech company,
   the businesses Vivreal is not built for.
+- **Hard exclusions, also `notAFit: true`.** These are not judgment calls and the
+  "don't talk yourself out of it" rule below does not soften them: when the crawled
+  text (or the lead record) shows one, set `notAFit: true` and name it in
+  `notAFitReason` (for example `"wholesale only"`).
+  - **Wholesale-only**: sells only to cafes, restaurants or stores, no retail
+    customers ("wholesale accounts only", no shop hours, no public ordering). A
+    retail shop that ALSO does wholesale is still a fit.
+  - **A grocery or in-store counter**: a bakery or deli counter inside a grocery,
+    supermarket or big-box store.
+  - **A bakery inside another business**: the baking is a department of a cafe
+    chain, hotel, restaurant group, church or school rather than its own business.
+  - **3 or more locations**: read `siteSignals.locationCount` on the lead record, or
+    `signals.stack.locationCount` in `_index.json`; 3 or more is out. A count of 2
+    stays a fit, and `null` is unknown, so do not exclude on it; a locations page in
+    the crawled text listing 3 or more storefronts also counts.
+  - **Closed permanently**: the site, the press or a status flag says the business
+    has closed for good. A seasonal or temporary closure is not this.
 - For everything else, leave `notAFit: false`. A clean, small, owner-operated local
-  business is a fit by default; don't talk yourself out of it.
+  business that is a genuine fit is a fit by default; don't talk yourself out of it.
 
 `save-review.js` routes `notAFit:true` leads to status `not-a-fit`; everyone else
 becomes `qualified`. Spend your effort on **accurate data + real contacts**, which is
@@ -530,7 +570,7 @@ An empty field is honest. A wrong field is a burned lead. Every single data poin
 
 ## Other Important Rules
 
-1. **Flag non-prospects.** If a business is a media company, nonprofit, large enterprise, franchise chain, or tech company, set `notAFit: true` with a one-line `notAFitReason` (it routes to status `not-a-fit`). Everything else profiles as a fit; there is no fit score.
+1. **Flag non-prospects.** If a business is a media company, nonprofit, large enterprise, franchise chain, or tech company, or meets a hard exclusion (wholesale-only, a grocery or in-store counter, a bakery inside another business, 3 or more locations, closed permanently), set `notAFit: true` with a one-line `notAFitReason` (it routes to status `not-a-fit`). Everything else profiles as a fit; there is no fit score.
 2. **Clean company names.** Remove "Home |", "About Us -", "Best ... in City" prefixes. Use the actual business name as it appears on their site.
 3. **Be specific in outreach angles.** Reference something specific about the business, their menu, their booking needs, their platform limitations, their multi-channel publishing pain. Never write generic pitches.
 4. **Cross-reference current data.** The batch file shows current data (score, platform, email, phone). If the crawled text contradicts the current data, use the crawled text, it's more reliable. If the current email is a placeholder but the crawl found a real one, use the real one.
@@ -548,7 +588,9 @@ Before reading full page text, check `_index.json` for quick signals:
   challenge screen.
 - `platform`, already detected (shopify, wordpress, squarespace, etc.)
 - `enrichment.emails` / `enrichment.phones` / `enrichment.socialLinks`, basic extraction already done
-- `enrichment.social`, present ONLY when `commands/enrich-social.js` has run. The deep pass:
+- `enrichment.social`, written by the deep contact pass `commands/crawl.js` runs after each
+  crawl (absent when the crawl ran with `--no-social` and `commands/enrich-social.js` has not
+  backfilled it). The deep pass:
   `.instagram` is the reach block (see "New signals as hook material"), `.owners` are
   body-copy owner-name candidates, `.blocked` lists pages/profiles that came back walled.
   Absent is normal and means UNKNOWN, not "none".
