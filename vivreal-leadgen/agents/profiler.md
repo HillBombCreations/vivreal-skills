@@ -389,7 +389,7 @@ These feed directly into outreach email merge variables, so they appear verbatim
   - The bakery example in phrasing rule 2 above shows the polish framing, not the length: as a `personalizationHook` it would be refused. Keep the framing, cut it to one sentence.
 
   Casual, the way you'd text a friend. Use "I" experience and be a little tentative (*"I tried scrolling your specials carousel and couldn't get it to move, might just be me but figured you'd want to know"*). A flaw is OPTIONAL: when the site is clean and they're a good fit, make it honest praise tied to a benefit (*"your Instagram is genuinely great, better than most spots your size, made me wonder if your website is pulling its weight next to it"*). Gain-framed, never a verdict. Must be signal- or text-verifiable, a real observation or real praise, never invented. "Your site could be better" is useless. This is the lead's main hook, so write one for every good-fit lead; `null` only when you genuinely have nothing honest to say.
-- **seasonalHook**, a timely reason this lands NOW, tying the business's **real upcoming busy season + their location's real events + the content bottleneck that creates** (e.g. a Seattle lead: *"With your summer calendar filling up, 4th of July, Blue Angels, Seafair, your team is pushing a lot of event content and probably feeling the bottleneck."*). Honesty floor: the season must be real for their **industry** (check `refdata/seasonalCalendar.json` against their `categories[0]`), the events real for their **location** (`location.city`/`state`), AND they must actually produce content (`contentActivity` / social presence) so the "bottleneck" is true. `null` if the industry isn't in-season for them or they post nothing, do NOT manufacture a season.
+- **seasonalHook**, a timely reason this lands NOW, tying the business's **real upcoming busy season + their location's real events + the content bottleneck that creates** (e.g. a Seattle lead: *"With your summer calendar filling up, 4th of July, Blue Angels, Seafair, your team is pushing a lot of event content and probably feeling the bottleneck."*). Honesty floor: the season must be real for their **industry** (from what their own site and posts show; `refdata/seasonalCalendar.json` is timing data for `--in-season` only and says nothing about hooks), the events real for their **location** (`location.city`/`state`), AND they must actually produce content (`contentActivity` / social presence) so the "bottleneck" is true. `null` if the industry isn't in-season for them or they post nothing, do NOT manufacture a season.
 - **industryPersonalization**, the `"a/an <industry>"` phrase for Touch 3; derive from the real industry, else `null` (the seeder falls back to `categories[0]`).
 - **contentActivity**, describe what you actually saw (a blog with posts, an events calendar, a newsletter signup). If the crawl exposed a blog/news/events page, code will derive a fallback Y/N, but your read of the actual content is better, so supply it when you can.
 - **monthlyUpdates**, only state a cadence you can back with visible dates in the crawled text. Never guess "monthly" from industry norms. `null` if no dated content is visible.
@@ -425,7 +425,7 @@ These are **verified facts the crawler proved**, read this block FIRST, before w
 
 **`monthlyUpdates`, phrase from `signals.freshness`.** Build the cadence note from the dated facts (`sitemapNewestLastmod`, `jsonLdDates`, `monthsSinceNewest`, `isStale`, `sitemapLastmodHistogram`), e.g. "Looks stale, newest dated content Apr 2024 (26 months ago)" or "~14 updates in the last 12 months." If you omit it, `save-review.js` derives the same note from `signals.freshness` automatically (`deriveMonthlyUpdates`), so only supply your own when a visible date in the page text is *more* specific than the machine facts. Never state a cadence the freshness facts don't support.
 
-**`seasonalHook` is sequence-driven (see SEED_CONTRACT.md), not strictly site-backed.** It ties the prospect's **real upcoming busy season + their location's real events + their content bottleneck** (industry seasonality IS allowed here, unlike older guidance). It must still be honest: the season real for their industry (per `seasonalCalendar.json` + `categories[0]`), the events real for their `location`, and they must actually produce content. A **stale/past** dated element on the site is NOT a seasonal hook, that staleness belongs in `personalizationHook`. If the industry isn't in-season for this lead or they post nothing, `seasonalHook` is `null` and the lead leans on the personalization hook.
+**`seasonalHook` is sequence-driven (see SEED_CONTRACT.md), not strictly site-backed.** It ties the prospect's **real upcoming busy season + their location's real events + their content bottleneck** (industry seasonality IS allowed here, unlike older guidance). It must still be honest: the season real for their industry (as their own site and posts show it, never from `seasonalCalendar.json`, which is `--in-season` timing only), the events real for their `location`, and they must actually produce content. A **stale/past** dated element on the site is NOT a seasonal hook, that staleness belongs in `personalizationHook`. If the industry isn't in-season for this lead or they post nothing, `seasonalHook` is `null` and the lead leans on the personalization hook.
 
 The Golden Rule still wins over all of the above: when a signal is ambiguous, `null`.
 
@@ -437,12 +437,14 @@ The Golden Rule still wins over all of the above: when a signal is ambiguous, `n
 seed refuses them until Outreach maps the industry and the portal has its try pages). A
 business in none of the eight has no industry and will not seed. Musician is not a target.
 
-**`categories[0]`** stays a seasonal-calendar key, because the `seasonalHook` honesty check
-and `seed-outreach.js --in-season` read `refdata/seasonalCalendar.json` by it: restaurant,
-cafe, bakery, bar, salon, barbershop, spa, boutique, florist, pet-services, fitness,
-auto-services, cleaning, medical, dental, photography, home-services, professional-services,
-retail, catering, brewery, wedding, other (for example a med spa is `spa`, a taproom
-`brewery`, a wedding venue `wedding`, a resale shop `retail`).
+**`categories[0]`** is a plain category word, not the slug. Three readers use it:
+`seed-outreach.js --in-season` (`lib/seedBatch.js`) matches it, or the lead's `industry`,
+against the keys of `refdata/seasonalCalendar.json`, which is timing only (which leads to
+seed when) and never enters copy; `lib/prospectToContact.js` falls back to it as
+"a/an <categories[0]>" for `industryPersonalization` when you leave that null; and
+`save-review.js` copies it into the lead's `industry`. So pick the word that reads right in
+"running a/an ___", and when one of the calendar's keys fits, use that key (read the file
+for the list; a key it lacks simply never matches `--in-season`).
 
 ## Industry
 
