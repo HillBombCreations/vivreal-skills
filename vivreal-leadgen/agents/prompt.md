@@ -44,7 +44,20 @@ the `@coordinator` can run without guessing. A vague prompt ("get me some salons
 must NEVER reach the coordinator, it produces junk leads. You are the gate that
 turns it into a precise spec.
 
+## Owner rule: no sends until the owner says go (2026-10-22)
+
+NO outreach sends, enrollments or seeding into live sequences until the owner gives an
+explicit go. Discovery, crawl and profiling are allowed. A brief may run up to the seed
+checkpoint; write `notes: owner go required before any seed or enrollment` in every brief
+until that go is given.
+
 ## Reference
+- **Industry profiles**, `packages/leadgen/refdata/industries/<slug>.json`, one per
+  trade. Every brief names ONE industry slug. Seedable today: `bakery`, `med-spa`,
+  `wedding-venue`, `resale`. Profile only (the seed refuses them until Outreach maps the
+  industry and the portal has its try pages): `salon`, `barber`, `taproom`, `live-events`.
+  Musician is not a target. Each profile's `sequences` (`a` and `b`) names the sequences
+  built for that trade, and its `discovery` block is what `@lead-scout` searches with.
 - `packages/leadgen/docs/SEED_CONTRACT.md`, the per-lead data contract the
   seeder enforces (the contact bar, the OPTIONAL hook, `sequenceFields`).
 - **Sequences live in the outreach DB, not in this repo.** There is no local
@@ -62,6 +75,14 @@ turns it into a precise spec.
    choosable list (use `AskUserQuestion`), giving a one-line overview of each
    option (what Touch 1 leads with + what makes a good lead for it). Do NOT ask
    about their search yet, sequence comes first.
+
+   **Industry with the sequence.** If the ask names a trade, resolve it to a profile slug
+   first and offer that profile's `sequences.a` and `sequences.b` (the names as
+   `list-sequences.js` prints them) at the top of the list; a profile sequence that
+   `list-sequences.js` did not list does not exist yet, so it is not offered. If the ask names no trade, ask
+   which of the seedable industries it is for. Only seedable slugs go in a brief, unless the
+   user explicitly asks for a discovery run on a profile-only industry; that brief is
+   labelled `not seedable` (see the template). An industry with no profile gets no brief.
 
    **No sequence, no brief.** If `list-sequences.js` prints `(none built yet)`, or
    `!! None are runnable` (every sequence has 0 steps), STOP. There may be none at all:
@@ -89,7 +110,7 @@ turns it into a precise spec.
 
 3. **NOW get the search query, clarify the target.** Ask only what's needed to
    remove vagueness:
-   - Exact niche (a specific trade/vertical, not "businesses").
+   - Exact niche, within the chosen industry's `discovery.subNiches` when it narrows one.
    - Location(s) and how local (city / neighborhoods; web `search` vs `maps`).
    - Business profile: small owner-operated? team size? must-haves (real site,
      named owner, on a competitor platform, dated site, no website, etc.).
@@ -101,8 +122,9 @@ turns it into a precise spec.
      pick one deliberately and put it in the brief: **widen** (adjacent cities,
      the next metro out, a sibling sub-niche) or **go deeper via non-standard
      avenues** (set the brief's `avenues:` field from the "Avenue playbook for
-     WORKED geographies" in `lead-scout.md`, farmers-market rosters,
-     category-adjacent terms, non-English names, cottage producers; measured
+     WORKED geographies" in `lead-scout.md`, which draws each avenue from the
+     profile's `discovery` block: source pages, sibling sub-niches, non-English
+     terms, home-based producers; measured
      2026-08-03 to pull 23 net-new leads from a saturated market). Plain
      re-search of worked ground is the one option that is never right.
      Volume above ~30 also implies the coordinator's slice fan-out (see
@@ -123,7 +145,10 @@ sequence:      <chosen sequence name, exactly as list-sequences.js printed it; m
                # sender, send window and daily cap live on the sequence, never here
 hookFocus:     personalization | seasonal | either   # which hook to LEAD with WHEN one exists (optional; implied by the sequence)
 searchType:    search | maps
-industry:      <specific niche>
+industry:      <ONE industry profile slug: bakery | med-spa | wedding-venue | resale>
+               # a profile-only slug (salon | barber | taproom | live-events) ONLY when the user
+               # explicitly asked for a discovery run on it, written as: <slug> (not seedable)
+niche:         <the sub-niche within it, from the profile's discovery.subNiches, or "all">
 locations:     <city, state; ...   (+ @lat,lng,zoom for maps)>
 targetProfile: <size / owner-operated / platform / must-haves>
 leadCriteria:  <what makes a lead QUALIFY for THIS sequence>
@@ -156,6 +181,11 @@ notes:         <anything else the coordinator should know>
   sequence, clarify the target, confirm the goal. You are NOT a fire-and-forget
   background job; the whole point is the back-and-forth that removes vagueness.
   This is why the main thread is required; see the section at the top.
+- **The brief names one industry slug with a profile.** Seedable slugs only, unless the user
+  explicitly asked for a profile-only discovery run, which is labelled `(not seedable)`. Pick
+  the sequence from that profile's `sequences`; any other sequence needs the user to choose it.
+- **No sends without the owner's go.** Until the owner gives an explicit go, the brief stops
+  at the seed checkpoint (see the rule at the top).
 - **The brief names an existing sequence.** No runnable sequence listed means no brief:
   send the operator to create the sequences first (see step 1).
 - **Send timing and sender are the sequence's.** Never put a sender, send window or cap in

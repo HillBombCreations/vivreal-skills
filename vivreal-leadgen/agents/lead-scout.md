@@ -18,6 +18,25 @@ contract before you start, so the hooks/fields you gather match what the seeder 
 The brief names the sequence; its live steps in the outreach tool are the only authority
 on which merge tokens it actually uses.
 
+## The industry profile is your playbook (read it before you search)
+
+The brief names ONE industry slug. Its profile is
+`packages/leadgen/refdata/industries/<slug>.json`, and its `discovery` block is where your
+search plan comes from, never a general list in this file:
+
+- `discovery.searchTerms`, the queries to run per geography.
+- `discovery.subNiches`, the slice axis (see "Orchestration" below).
+- `discovery.sourcePages`, the listing pages to harvest first (`<city>` is a placeholder).
+- `discovery.nonEnglishTerms`, the same trade in the languages its owners use (may be empty).
+- `exclusions`, the trade's hard exclusions: skip a business that plainly meets one.
+
+The eight profiles: `bakery`, `med-spa`, `wedding-venue`, `resale` (seedable today) and
+`salon`, `barber`, `taproom`, `live-events` (profile only: the seed refuses them until
+Outreach maps the industry and the portal has its try pages). A run for a profile-only
+industry is allowed when the brief labels it `not seedable`; say so again in your report.
+No profile for the asked trade (musician is not a target) means no run: stop and report it,
+never borrow another trade's profile.
+
 ## What you produce
 
 A single CSV at `Data/exports/<campaign>-leads-<date>.csv` with EXACTLY these columns
@@ -34,6 +53,11 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
 - **contactChannel / contactType**, ONE person-specific channel + its type (`email` / `linkedin`). Blank if none. (Phone is NOT a seedable channel, capture the business phone in the `phone` column instead; it powers warm-call touches, never a seeded contact.)
 - **tier**, `1 email-ready` · `2 linkedin` · `3 company-only` · `B no-website` (a quick reachability sort).
 - **seedable**, `yes` only when owner + a person-specific channel exist (a PRELIMINARY reachability sort; a `no` is NOT a final company-only verdict, the owner-recovery pass refines it later). **emailReady**, `yes` only when the channel is a real sendable email.
+- **industry**, REQUIRED on every row: the brief's industry slug exactly (`bakery`,
+  `wedding-venue`, ...). `import-leads.js` stamps `profile.industrySlug` from it, and a
+  row whose industry resolves to no profile imports but will never seed (`! INDUS` in its
+  output). A business that turns out to be another profiled trade gets THAT slug, never the
+  brief's by default.
 - **industryPhrase**, completes "running ___" (e.g. `a French patisserie`). **personalizationHook**, one specific, POSITIVE, verifiable observation (an invite compliment, never a manufactured flaw).
 - **statusFlags**, anything the operator must know (closed?, Chapter 11, relocated, unverified owner, etc.).
 - **sourceQuery**, REQUIRED on every row, never blank: the search or source that surfaced this
@@ -47,10 +71,12 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
 1. **Scope from the brief.** `industry` + `locations` + `targetProfile` + `exclude` define what a
    lead is. `searchType` routes you: `search` → website businesses (track A); `maps` /
    no-website → track B phone/local targets; "both" → gather both, tagging each.
-2. **Find, by many angles.** Web-search per geography × bakery-type/category, plus "best of",
-   local press, and directory pages (as SOURCES, not leads). Exclude aggregators, national
-   chains/franchises, grocery/big-box in-store counters, and dead links. **Dedup by domain**,
-   the same business surfaces under several searches.
+2. **Find, by many angles.** Web-search per geography × each of the profile's
+   `discovery.searchTerms` and `discovery.subNiches`, plus its `discovery.sourcePages`
+   (as SOURCES, not leads) and its `discovery.nonEnglishTerms`. Exclude, for every trade,
+   aggregators, national chains and franchises, businesses with 3 or more locations, closed
+   businesses and dead links; then the profile's own `exclusions`. **Dedup by domain**, the
+   same business surfaces under several searches.
 3. **Enrich each lead** by fetching its site (About/Team/Contact), LinkedIn, IG/TikTok/FB,
    Google, and press:
    - **A person-specific channel is the goal, chase it in this ORDER, and don't stop at the
@@ -119,7 +145,7 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
      there. Priority: on-domain owner email > general inbox > business gmail. Emit it in the
      `reachEmail` column.
    - **Where reachable emails hide (high-yield, routinely missed):** the Facebook page
-     **About/Contact** section (bakeries very often list an email there the website omits),
+     **About/Contact** section (small businesses very often list an email there the website omits),
      Google Business, the Instagram bio "email" button, and the site's own contact/booking page.
      Also try a bounded off-site search, `"@<domain>"` and `"<Company Name>" email`, for a
      directory or press page that publishes an address the site itself doesn't. Same honesty
@@ -144,9 +170,9 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
 
 For any brief above ~30 leads, the orchestrator does NOT hand the whole brief to one scout.
 It first expands the brief into a **worklist of slices**, the cross product of
-`locations × sub-niches` (e.g. for "bakeries in Tucson + Yuma": Tucson×retail-bakery,
-Tucson×custom-cakes, Tucson×cottage/home, Yuma×retail-bakery, …), plus a "best-of /
-directory sweep" slice per location, then runs **one scout per slice in parallel** and
+`locations × the profile's discovery.subNiches` (e.g. for a bakery brief over Sample City and
+Sample Town: Sample City×retail bakery, Sample City×custom cakes, Sample Town×retail bakery,
+…), plus a "best-of / directory sweep" slice per location over `discovery.sourcePages`, then runs **one scout per slice in parallel** and
 merges the returned rows into one CSV before importing (dedup by domain happens at import).
 Per-slice yield is predictable (~10-25 leads); the slice list is what makes campaign volume
 a number you choose instead of whatever one scout happens to find. A single scout covers a
@@ -156,36 +182,34 @@ small brief end-to-end. Either way, the deliverable is the same canonical CSV + 
 ## Source-page harvesting (do this FIRST in every slice)
 
 The highest-yield discovery move is not searching business-by-business, it is finding the
-pages that already LIST them: "best bakeries in <city>" round-ups, chamber-of-commerce and
-downtown-association member directories, local-news "reader's choice" winners, farmers-market
-vendor lists, wedding-vendor directories. When you land on one, **extract EVERY qualifying
+pages that already LIST them, the profile's `discovery.sourcePages` (round-ups,
+member directories, reader's choice winners, vendor rosters, trade listings). When you land on one, **extract EVERY qualifying
 business it lists as a candidate row** (then verify each is open/in-target/independent before
 keeping it), never sample a listicle for its top 3. One good directory page is worth thirty
 searches; say in your run notes which source pages produced the bulk of the haul.
 
-## Avenue playbook for WORKED geographies (measured 2026-08-03, Phoenix/Scottsdale bakeries)
+## Avenue playbook for WORKED geographies (measured 2026-08-03 on bakeries)
 
 When a geography has already been through standard `"<niche> in <city>"` discovery, plain
-re-searching only rediscovers the contacted set. These channels found 23 net-new leads in a
-saturated market, ranked by yield, reach for them (the `sourceQuery` column, emitted on every
-row, names the avenue that produced each lead; it is recorded in the CSV only, no tool reads it yet):
+re-searching only rediscovers the contacted set. These avenues found 23 net-new leads in a
+saturated market, ranked by yield. The `sourceQuery` column, emitted on every row, names the
+avenue that produced each lead (it is recorded in the CSV only, no tool reads it yet). The
+WHAT for each avenue comes from the brief's industry profile, never from this list:
 
-1. **Farmers-market vendor rosters**, best single source (5 keepers from one roster). Vendor
-   pages list micro-bakeries with no storefront that no map/search query surfaces.
-2. **Category-adjacent terms**, highest track-A yield. The niche's SIBLING categories are
-   often untouched: for bakeries that was bagel shops, kolache shops, donut shops, patisseries,
-   pie shops, none of which answer to "bakery".
-3. **Non-English business names**, search the niche in the languages its owners use
-   (panaderia, pan dulce, tres leches). Spanish-named businesses are systematically invisible
-   to English queries.
-4. **Instagram-first / cottage producers**, licensed home businesses with a linktree or
-   Square site but no SEO presence.
-5. **Wedding-vendor directories**, WeddingWire summaries work even when The Knot bot-walls.
-6. **Delivery platforms** (DoorDash/UberEats categories), moderate, occasionally surfaces a
-   storefront the rest miss.
-7. **Press best-of lists**, LOW yield here (they resurface the already-contacted set in a
-   worked geography); they are a first-pass tool, not a re-work tool.
-8. **Food halls / incubators**, ran dry; check cheaply, don't invest.
+1. **Roster and listing pages** from `discovery.sourcePages`, the best single source (5
+   keepers from one farmers-market roster in the bakery run). They list businesses with no
+   storefront that no map or search query surfaces.
+2. **Category-adjacent terms** from `discovery.subNiches`, the highest track-A yield. A
+   trade's sibling categories are often untouched because they do not answer to its main
+   name.
+3. **Non-English business names** from `discovery.nonEnglishTerms`, when the list is not
+   empty. Businesses named in another language are systematically invisible to English queries.
+4. **Instagram-first and home-based producers**, licensed businesses with a link-in-bio page
+   or a builder site but no search presence.
+5. **Trade directories** named in `discovery.sourcePages` (for wedding venues, the venue
+   listing sites); a summary page often works when the full directory blocks bots.
+6. **Press best-of lists**, LOW yield in a worked geography (they resurface the
+   already-contacted set); a first-pass tool, not a re-work tool.
 
 ## Volume & scaling
 
