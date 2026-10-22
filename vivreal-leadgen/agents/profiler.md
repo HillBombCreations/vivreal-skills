@@ -198,7 +198,8 @@ jargon, only what they can SEE.
   - ONE hook only, never a list. When several signals are present, lead in this priority:
     fragmentation / tool-sprawl > multi-channel activity > stale / freshness > a design flaw. Cite
     the ACTUAL detected tools and channels by name (they are facts in `signals.stack`); never invent
-    one. `newsletterSignup` and `multiLocation` are supporting fit signals, good for the gain clause.
+    one. `newsletterSignup` and `multiLocation` are supporting fit signals, good for the gain clause
+    (`multiLocation` is true at 2 locations; 3 or more is a hard notAFit, see Exclusions).
   - `adPixels` / `marketingActive` (a Meta/TikTok/Pinterest/LinkedIn ad pixel was found) is a
     QUIET qualifier, not a default email line: it means they already spend on ads, so they rank
     higher and the create-once, publish-everywhere pitch lands, but do NOT open with "I noticed you're tracking

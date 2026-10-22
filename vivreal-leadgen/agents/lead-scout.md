@@ -38,8 +38,8 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
 - **statusFlags**, anything the operator must know (closed?, Chapter 11, relocated, unverified owner, etc.).
 - **sourceQuery**, REQUIRED on every row, never blank: the search or source that surfaced this
   lead, as you ran it (`custom cakes Sample City AZ`, or the source page, for example
-  `farmers-market roster: Sample Town Market`). It is how yield per query and per avenue stays
-  measurable. `import-leads.js` maps columns by header, so the column imports harmlessly; the CSV
+  `farmers-market roster: Sample Town Market`). It is recorded in the CSV only; no tool reads it
+  yet. `import-leads.js` maps columns by header, so the column imports harmlessly; the CSV
   is the record of it.
 
 ## Method (mirror the enrichment pass that works)
@@ -168,7 +168,7 @@ searches; say in your run notes which source pages produced the bulk of the haul
 When a geography has already been through standard `"<niche> in <city>"` discovery, plain
 re-searching only rediscovers the contacted set. These channels found 23 net-new leads in a
 saturated market, ranked by yield, reach for them (the `sourceQuery` column, emitted on every
-row, names the avenue that produced each lead, so yield stays measurable):
+row, names the avenue that produced each lead; it is recorded in the CSV only, no tool reads it yet):
 
 1. **Farmers-market vendor rosters**, best single source (5 keepers from one roster). Vendor
    pages list micro-bakeries with no storefront that no map/search query surfaces.
