@@ -65,11 +65,11 @@ turns it into a precise spec.
 
    **No sequence, no brief.** If `list-sequences.js` prints `(none built yet)`, or
    `!! None are runnable` (every sequence has 0 steps), STOP. There may be none at all:
-   the 2026-10-22 outreach reset deleted every sequence. Tell the operator plainly:
+   an outreach reset may have deleted every sequence. Tell the operator plainly:
    "Create the sequences first (the admin app's Sequences page), give each its steps,
-   and set its sender and send window, then run me again." (As of 2026-10-22 the admin
-   editor sets only name, status and steps; sender and send window are set through the
-   Outreach MCP `update-sequence` tool until the editor gains them.) Never write a brief that
+   and set its sender and send window, then run me again." (The admin Sequences editor
+   sets the sender, send window and demo site; the Outreach MCP `update-sequence` tool can
+   set the sender and send window too.) Never write a brief that
    names a sequence `list-sequences.js` did not list, and never invent one.
 
 2. **Lock the chosen sequence.** The pick sets `sequence`, `hookFocus`, and

@@ -52,13 +52,13 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
      first miss (skipping a rung is what dumps a lead to company-only):**
      1. A **published, on-domain, person-named email** (`firstname@theirdomain.com`). These hide
         on the OWNER'S BIO / TEAM page, the site's contact/booking page, and the **Facebook
-        About/Contact** section, check all three (that is where addresses shaped like `maria@rosewoodbakery.example`,
-        `tomreyes@pieshop.example` or `dana@littlecakery.example` live). Never invent one; a
+        About/Contact** section, check all three (that is where addresses shaped like `pat@example-bakery.example`,
+        `sam@sample-pies.example` or `dana@littlecakery.example` live). Never invent one; a
         cross-domain personal address (`owner@theirpersonalsite.com` on a `theirbakery.com` lead)
         is rejected by the seeder, so it's worse than useless.
      2. **When you have the owner's NAME but no on-domain email, do the LinkedIn name-match, a
         REQUIRED step, not optional.** Find THAT person's LinkedIn at THAT company and emit it
-        ONLY if the slug carries their surname (`/in/jane-doakes`, `/in/sam-sample-…`). A
+        ONLY if the slug carries their surname (`/in/pat-example`, `/in/sam-sample-…`). A
         company-word or wrong-person slug (`/in/sample-sweets`) FAILS the seeder and must be
         left blank. This single step recovers a large share of otherwise-company-only leads.
      3. **There is no rung 3. Phone is NOT a seedable channel** (removed 2026-07-27,
@@ -78,8 +78,8 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
      batch the crawl found nothing for). Work it in this order when the site names nobody:**
      1. **Local interview + press features**, the workhorse (8/11 names in the test). Search
         `"<company>" site:<the metro's interview site>`-style queries against the local
-        interview mills (the VoyageX / ShoutoutX network covers most metros, one site per
-        metro or state), the metro alt-weekly (for example a "Sample City Times"), local TV
+        interview mills (the local interview-site networks cover most metros, one site per
+        metro or state, for example a made-up "Sample Town Interview Co"), the metro alt-weekly (for example a "Sample City Times"), local TV
         station features, and neighborhood papers (for example a "Sample Town Weekly"). Small food businesses are near-guaranteed
         to have one, and the pieces end with contact blocks.
      2. **State corporate-registry mirrors**, when press names nobody. The registry itself is

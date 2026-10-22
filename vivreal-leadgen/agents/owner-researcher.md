@@ -66,8 +66,8 @@ us the lead.
    Bare `"<Owner Name>"` alone is the misattribution trap. Don't.
 
    **High-yield mention sources** (measured 2026-08-03, these produced most of the usable
-   mentions for small food businesses): the local interview mills (the VoyageX / ShoutoutX
-   network, e.g. Voyage Phoenix, Shoutout Arizona), the metro alt-weekly, local TV features,
+   mentions for small food businesses): the local interview mills (the local interview-site
+   networks, for example a made-up "Example State Spotlight"), the metro alt-weekly, local TV features,
    and neighborhood papers. Target them with site-limited queries. State corporate-registry
    mirrors (corporatesaz.com, Bizapedia, OpenCorporates) corroborate a subject's tie to the
    business (statutory agent / principal listing = `company-name` tie, kind `directory`),

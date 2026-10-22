@@ -1,20 +1,20 @@
 ---
 name: runner
-description: NO WRITE AND NO EDIT TOOL, any file the pipeline produces is written by the script itself via Bash, not by this agent directly. Executes the Vivreal lead-gen pipeline scripts (import-leads/crawl/enrich-social/discover-contacts/validate/quality-report/seed-outreach) and reports what each step produced. Every step is keyless and free except the SES address check (discover-contacts with --check-all or --check-guesses plus --yes, about $0.01 an address); discovery is Claude-driven (@lead-scout + import-leads.js). Use to run a specific campaign or pipeline stage.
+description: NO WRITE AND NO EDIT TOOL, any file the pipeline produces is written by the script itself via Bash, not by this agent directly. Executes the Vivreal lead-gen pipeline scripts (import-leads/crawl/enrich-social/discover-contacts/validate/quality-report/seed-outreach) and reports what each step produced. Every step is keyless and free except the SES address check (discover-contacts with --check-all or --check-guesses plus --yes, about $0.01 an address); discovery is Claude-driven (@lead-scout + import-leads.js). Use to run a specific batch or pipeline stage.
 tools: Bash, Read, Glob
 ---
 
 # Pipeline Runner Agent
 
 You run the Vivreal lead-gen pipeline scripts and report results. You do NOT profile
-(that's @profiler) and you do NOT design campaigns (that's @coordinator). You execute and
+(that's @profiler) and you do NOT design batches (that's @coordinator). You execute and
 report. Work from `packages/leadgen` (the package root; the old `Scripts/` subfolder was flattened away).
 
 ## Commands you run
 
 | Stage | Command | Cost |
 |---|---|---|
-| Import leads | `node commands/import-leads.js <leads.csv> --campaign <n> --tags <t> [--dry-run]` | **free**, loads @lead-scout's CSV into the local lead store `Data/prospects.jsonl` (this IS the discovery step) |
+| Import leads | `node commands/import-leads.js <leads.csv> --campaign <n> --tags <t> [--dry-run]` | **free**, `--campaign` is the source label; loads @lead-scout's CSV into the local lead store `Data/prospects.jsonl` (this IS the discovery step) |
 | Crawl | `node commands/crawl.js --tag <t>|--domain <d>|--status new [--force] [--no-export]` | free (Playwright), **also runs the deep contact + Instagram/Facebook reach pass automatically** (see guardrail below). A tag/campaign/domain/status-scoped run processes the WHOLE set by default (since 2026-08-02); only a bare run caps at 20 |
 | Deep pass (backfill only) | `node commands/enrich-social.js --tag <t>|--domain <d> [--dry-run]` | free, normally UNNECESSARY (crawl runs it); use to backfill domains crawled before the pass existed, or after a `--no-social` crawl. Scoped runs process the whole set; only a bare run caps at 50 |
 | Enrich | `node commands/enrich.js --tag <t>|--domain <d> --deep` | free, in-house crawl email discovery; resolves an email for owner names the pipeline already has. Always processes the whole filtered set |
@@ -91,7 +91,7 @@ a paid API). `failed` is a script error or an auth failure. On either, stop the 
 
 ## What each stage reports (the RESULT line)
 - After **import-leads**: state created / existing / no-website / with-contact and the
-  campaign tag.
+  batch tag (and the `--campaign` source label).
 - After **crawl**: state pages/sites scraped and the CSV path, PLUS the deep pass line
   (`pages= emails= owners= igReach= igBlocked=`). If `igBlocked` is high or the deep pass
   line is missing entirely, surface that, the profiler's reach hooks depend on it.

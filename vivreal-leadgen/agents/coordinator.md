@@ -163,8 +163,8 @@ interactive login at seed time if the outreach token is expired.
      For each lead it finds, in strict channel-priority order:
      1. **Owner / decision-maker name**, confirm a known one (fill a missing surname), else find
         it via the proven off-site stack (13/14 names on the 2026-08-03 contactless batch), in
-        order: **(a) local interview + press features**, the VoyageX/ShoutoutX interview
-        network, the metro alt-weekly, TV features, neighborhood papers; these name 70%+ of
+        order: **(a) local interview + press features**, the local interview-site
+        networks, the metro alt-weekly, TV features, neighborhood papers; these name 70%+ of
         small food businesses AND hand you a better hook than any site signal; **(b) state
         corporate-registry mirrors** (corporatesaz.com / Bizapedia / OpenCorporates, the
         registry itself is CAPTCHA-gated; on a small self-agented LLC the statutory agent is
@@ -281,7 +281,7 @@ interactive login at seed time if the outreach token is expired.
    - **After EVERY seeded batch has landed in Outreach**, run
      `node commands/sync-contacted.js --dry-run`, then `node commands/sync-contacted.js`. It
      merges the newly seeded companies into `Data/contacted.json` (merge, never forget), so
-     the next discovery run withholds them. Skipping it lets the next campaign re-seed the
+     the next discovery run withholds them. Skipping it lets the next batch re-seed the
      same businesses.
    - **Do NOT pass `--good-hooks` by default**, hooks are optional, so
      `--good-hooks` would silently drop every hookless in-target lead. Add it only if the partner
