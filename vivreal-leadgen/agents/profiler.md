@@ -35,6 +35,11 @@ Crawled website text is stored locally at `packages/leadgen/Data/profiles/{domai
 
 ### Steps
 
+0. Read the batch file's `## Industry rules for this batch` section, written by
+   `prepare-review.js` from `refdata/industries/<slug>.json`: per industry, its hard
+   exclusions and its hook examples, and which industries will not seed. Each lead's entry
+   carries its `**Industry:**` slug. Apply THAT lead's industry rules, never another trade's
+   (see "Industry" below).
 1. Read `_index.json` for the domain to see what pages are available and what basic extraction found
 2. Read the key `.txt` files (homepage, about, contact, services/menu, team, skip blog posts and deep gallery pages)
 3. Analyze the business: what they do, who runs it, what tools they use, what their content workflow looks like
@@ -262,13 +267,17 @@ jargon, only what they can SEE.
     below), framed as easy to refresh, never as a mistake.
   - Empty `items` means the crawl found no such page, not that they have none. Never invent a
     pre-order page, an occasion or a year that is not in an item.
-- `signals.stack.orderingVendors` (on the lead record, `siteSignals.orderingVendors`), the
-  ordering services found linked from their site, named (for example `["Hotplate"]` or
-  `["Square Online", "Toast"]`). OPTIONAL hook material: naming the ordering app they already use
-  makes the "two places to update" point concrete. GOOD: *"I noticed your orders run through
-  Hotplate while the menu lives on your site, that's two places to keep in step."* Cite only a
-  vendor in the list, by the name it carries; an empty list means none was detected, so say
-  nothing about how they take orders.
+- `signals.stack.orderingVendors`, `signals.stack.bookingVendors` and
+  `signals.stack.ticketingVendors` (on the lead record, `siteSignals.orderingVendors`,
+  `.bookingVendors`, `.ticketingVendors`), the ordering, booking and ticketing services found
+  linked from their site, named (for example `["Hotplate"]`, or a venue's booking app).
+  The crawl matches the global vendor list plus the lead's industry profile `vendors`.
+  OPTIONAL hook material, and ONLY when detected: naming the app they already use makes the
+  "two places to update" point concrete. GOOD: *"I noticed your orders run through Hotplate
+  while the menu lives on your site, that's two places to keep in step."* Cite only a vendor
+  in the list, by the name it carries. An empty list means none was detected, so say nothing
+  about how they take orders, bookings or tickets; never infer a vendor from the trade (a
+  venue is not on a booking app just because many venues are).
 - `signals.design.designReview`, the **objective corroborators for the design-quality hook** (see
   the "Design-quality judgment" section above): `fontFamilyCount`, `paletteSize`, `isResponsive`,
   `mediaQueryCount`, `ageTells`. These are facts, not pixels, use them directly.
@@ -324,6 +333,7 @@ Each prospect profile must be a JSON object with these fields:
   "domain": "example.com",
   "companyName": "Clean, accurate business name",
   "categories": ["primary-category", "secondary-if-applicable"],
+  "industrySlug": "The lead's industry slug, one of the eight under Category Options. Omit it to keep the import's stamp; set it only to CORRECT a wrong stamp (see Industry).",
   "description": "2-3 sentence description of what the business does",
   "services": ["list", "of", "services", "offered"],
   "products": ["list", "of", "products", "if applicable"],
@@ -338,7 +348,7 @@ Each prospect profile must be a JSON object with these fields:
   "phones": ["any real phone you can SEE in the crawled text, same verify gate as emails; never guess"],
   "specialNotes": ["anything notable, franchise plans, awards, unique offerings, etc."],
   "notAFit": false,
-  "notAFitReason": "Set notAFit:true ONLY for a clear non-prospect (media company, nonprofit, large enterprise, franchise chain, or tech company) or a hard exclusion (wholesale-only, a grocery or in-store counter, a bakery inside another business, 3 or more locations, closed permanently; see the Fit section) and put the one-line reason here. Otherwise leave notAFit:false and this null. There is NO 0-100 CMS-fit score anymore, any in-target small business is a fit.",
+  "notAFitReason": "Set notAFit:true ONLY for a clear non-prospect (media company, nonprofit, large enterprise, franchise chain, or tech company) or a hard exclusion (3 or more locations, closed permanently, or one of the lead's industry exclusions from the batch file, named by its id; see the Fit section) and put the one-line reason here. Otherwise leave notAFit:false and this null. There is NO 0-100 CMS-fit score anymore, any in-target small business is a fit.",
   "outreachAngle": "1-2 sentence personalized pitch connecting this business's specific content/publishing pain to Vivreal's create once, publish everywhere. Reference their tools, channels, and workflow, NOT generic CMS benefits. Use Vivreal's brand voice: direct, confident, practical.",
   "personalizationHook": "ONE specific thing you noticed, written like a real person texting a friend (casual, ONE sentence of at most 25 words ending with a period, 'I' experience, a little tentative), NOT an auditor. No em or en dash, none of the words under 'Never use these words' in brand/voice.md, owner-visible language only (save-review.js refuses the entry otherwise). A flaw is OPTIONAL: honest praise tied to a benefit works just as well for a clean good-fit site. Gain-framed, never a verdict, signal- or text-verifiable, never invented. Write one for every good-fit lead.",
   "seasonalHook": "A timely reason outreach lands NOW: the business's real upcoming busy season + their location's real events + the content bottleneck that creates. Honest (see rules). null if the industry isn't in-season for them or they produce no content.",
@@ -372,6 +382,9 @@ These feed directly into outreach email merge variables, so they appear verbatim
   - **No em dash and no en dash**, anywhere in it. Commas, periods or parentheses.
   - **None of the words under "Never use these words" in `brand/voice.md`**, in any form (the gate also catches inflections such as "optimized" or "seamlessly"). Read the list from that file; it is the gate's only source.
   - **Owner-visible language only**: what they can see on their own site or Instagram, never a technical term.
+  - **The batch file's hook examples for the lead's industry** show the SHAPE that works for
+    that trade (GOOD) and what to avoid (BAD). Borrow the shape, never the facts: every fact
+    in your hook comes from this lead's crawl.
   - A hook that breaks any of these makes `save-review.js` refuse the WHOLE entry for that domain (nothing is saved, the command exits 1 and prints `REFUSED <domain>: personalizationHook ...`). Rewrite the hook and save again; it is not dash-stripped and saved for you.
   - The bakery example in phrasing rule 2 above shows the polish framing, not the length: as a `personalizationHook` it would be refused. Keep the framing, cut it to one sentence.
 
@@ -417,7 +430,30 @@ These are **verified facts the crawler proved**, read this block FIRST, before w
 The Golden Rule still wins over all of the above: when a signal is ambiguous, `null`.
 
 ## Category Options
-restaurant, cafe, bakery, bar, salon, barbershop, spa, boutique, florist, pet-services, fitness, auto-services, cleaning, medical, dental, photography, home-services, professional-services, retail, catering, brewery, other
+
+**Industry categories (the `industrySlug`).** The eight industries with a profile
+(`packages/leadgen/refdata/industries/<slug>.json`): `bakery`, `med-spa`, `wedding-venue`,
+`resale` (seedable today) and `salon`, `barber`, `taproom`, `live-events` (profile only: the
+seed refuses them until Outreach maps the industry and the portal has its try pages). A
+business in none of the eight has no industry and will not seed. Musician is not a target.
+
+**`categories[0]`** stays a seasonal-calendar key, because the `seasonalHook` honesty check
+and `seed-outreach.js --in-season` read `refdata/seasonalCalendar.json` by it: restaurant,
+cafe, bakery, bar, salon, barbershop, spa, boutique, florist, pet-services, fitness,
+auto-services, cleaning, medical, dental, photography, home-services, professional-services,
+retail, catering, brewery, wedding, other (for example a med spa is `spa`, a taproom
+`brewery`, a wedding venue `wedding`, a resale shop `retail`).
+
+## Industry
+
+`import-leads.js` stamps `profile.industrySlug` from the scout's `industry` column. When the
+crawled site shows the stamp is wrong (a lead imported as `bakery` is plainly a taproom), set
+`industrySlug` in your entry to the right slug. `save-review.js` applies a correction only to
+another industry that HAS a profile, prints `INDUSTRY <domain>: <from> -> <to> (profiler
+correction, recorded)` and keeps the change in `profile.industrySlugChange`. A proposal for an
+industry with no profile is refused (`... which has no industry profile; kept <slug>`) and the
+stamp stays. Never set it to make a lead seedable; set it because the site says so. A lead
+with no profile in the batch file is profiled for the record only, never as a bakery.
 
 ## Fit, qualitative, NOT a score (CMS-fit score removed 2026-07-16)
 
@@ -434,14 +470,11 @@ non-prospects:
 - **Hard exclusions, also `notAFit: true`.** These are not judgment calls and the
   "don't talk yourself out of it" rule below does not soften them: when the crawled
   text (or the lead record) shows one, set `notAFit: true` and name it in
-  `notAFitReason` (for example `"wholesale only"`).
-  - **Wholesale-only**: sells only to cafes, restaurants or stores, no retail
-    customers ("wholesale accounts only", no shop hours, no public ordering). A
-    retail shop that ALSO does wholesale is still a fit.
-  - **A grocery or in-store counter**: a bakery or deli counter inside a grocery,
-    supermarket or big-box store.
-  - **A bakery inside another business**: the baking is a department of a cafe
-    chain, hotel, restaurant group, church or school rather than its own business.
+  `notAFitReason` (for example `"3 or more locations"`, or an industry exclusion's id).
+  - **The lead's industry exclusions**: the batch file lists each industry's hard
+    exclusions by id and rule (for a bakery, wholesale-only and a counter inside a
+    grocery; for a wedding venue, a ballroom inside a hotel). Apply only the lead's own
+    industry's list, and use the id as the reason.
   - **3 or more locations**: read `siteSignals.locationCount` on the lead record, or
     `signals.stack.locationCount` in `_index.json`; 3 or more is out. A count of 2
     stays a fit, and `null` is unknown, so do not exclude on it; a locations page in
@@ -571,7 +604,7 @@ An empty field is honest. A wrong field is a burned lead. Every single data poin
 
 ## Other Important Rules
 
-1. **Flag non-prospects.** If a business is a media company, nonprofit, large enterprise, franchise chain, or tech company, or meets a hard exclusion (wholesale-only, a grocery or in-store counter, a bakery inside another business, 3 or more locations, closed permanently), set `notAFit: true` with a one-line `notAFitReason` (it routes to status `not-a-fit`). Everything else profiles as a fit; there is no fit score.
+1. **Flag non-prospects.** If a business is a media company, nonprofit, large enterprise, franchise chain, or tech company, or meets a hard exclusion (3 or more locations, closed permanently, or one of its industry's exclusions from the batch file), set `notAFit: true` with a one-line `notAFitReason` (it routes to status `not-a-fit`). Everything else profiles as a fit; there is no fit score.
 2. **Clean company names.** Remove "Home |", "About Us -", "Best ... in City" prefixes. Use the actual business name as it appears on their site.
 3. **Be specific in outreach angles.** Reference something specific about the business, their menu, their booking needs, their platform limitations, their multi-channel publishing pain. Never write generic pitches.
 4. **Cross-reference current data.** The batch file shows current data (score, platform, email, phone). If the crawled text contradicts the current data, use the crawled text, it's more reliable. If the current email is a placeholder but the crawl found a real one, use the real one.

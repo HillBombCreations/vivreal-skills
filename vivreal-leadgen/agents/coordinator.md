@@ -23,6 +23,14 @@ platform limit: subagents in general CAN spawn subagents.) Discovery is
 Claude-driven and happens UPSTREAM: `@lead-scout` web-researches the brief and
 `import-leads.js` loads the leads under the campaign tag. You start from that imported tag.
 
+## Owner rule: no sends until the owner says go (2026-10-22)
+
+NO outreach sends, enrollments or seeding into live sequences until the owner gives an
+explicit go. Discovery, crawl and profiling are allowed, and so are the read-only gates and
+`seed-outreach.js --dry-run`. Until that go is given, end every run at the step-3 checkpoint:
+a partner's "seed it" is not the owner's go, so do not run step 4 (no `--emit` hand-off to the
+MCP, no direct POST, no enrollment) and say in the report that the batch is waiting on it.
+
 ## The one-prompt rule
 
 The structured brief (from `@prompt`) is the ONLY input you need until the data is ready to
@@ -44,6 +52,11 @@ interactive login at seed time if the outreach token is expired.
 
    When you DO have a brief, parse it and run it verbatim, never second-guess it:
    - `searchType` / `industry` / `locations` / `exclude` / `volume` → what @lead-scout was told to find; use them to sanity-check the imported tag matches the brief.
+   - `industry` is ONE profile slug (`packages/leadgen/refdata/industries/<slug>.json`).
+     Check the `Industry:` line `import-leads.js` printed: rows outside the brief's slug, or
+     `unmatched (no-industry)`, will not seed. A brief marked `(not seedable)` is a
+     profile-only discovery run (`salon`, `barber`, `taproom`, `live-events` today): run it
+     through profiling and stop; the seed refuses those leads by industry.
    - `targetProfile` + `leadCriteria` → which crawled leads you keep + how strict the
      profiling fit bar is.
    - `sequence` + `hookFocus` → which hook the profiler must lead with
@@ -244,6 +257,18 @@ interactive login at seed time if the outreach token is expired.
         the same gate plus every withheld and skipped count with its reason (a rediscovered
         business already in the Outreach group shows up here). Carry those counts into the
         checkpoint summary.
+        - **Industry refusals.** A lead whose industry has no profile, or one Outreach does
+          not map to live demo kits (or whose kit has no portal try page), is withheld with
+          an industry reason (`no-industry`, `no-industry-profile`, `industry-not-in-outreach`,
+          `industry-kit-not-in-outreach`, `industry-kit-not-in-portal`); it is never seeded as
+          a bakery. `quality-report.js` counts the same leads outside sendable and prints
+          `N crawled lead(s) refused for industry`, one line per domain with its reason. Report the industry refusal count, by reason, in the quality report you
+          carry to the checkpoint.
+        - **Default-kit warning.** When an industry's profile `defaultKit` is not the first
+          kit Outreach's map lists for it, the seed prints `WARNING: <slug> leads will land on
+          Outreach's first kit ..., not the profile default ...` (wedding venue today). The
+          seed still runs; the fix is the kit order in Outreach's industry map. Carry the
+          warning into the checkpoint verbatim and flag it before any send.
 
      **STOP, do NOT seed yet.**
 
@@ -259,12 +284,14 @@ interactive login at seed time if the outreach token is expired.
    sees these are already dug into, not awaiting research, deep owner research has already run
    by default, so the partner's call is just seed-company-only vs drop, never "go dig deeper."
    This is the moment to make those calls, NOT after seeding. Include the `QUALITY GATE: PASS`
-   line, the SES verdict tally from `--check-all`, and the seed preview's withheld counts. Then
+   line, the SES verdict tally from `--check-all`, the seed preview's withheld counts, the
+   industry refusal count and any default-kit warning. Then
    end the run and wait for the partner's explicit "seed it." Returning this summary IS the
    checkpoint; the orchestrator relays it and the seed runs as a confirmed continuation.
 
-4. **Seed, only after the partner approves (terminal step).** If invoked to seed
-   already-reviewed leads, skip steps 1-2.
+4. **Seed, only after the partner approves AND the owner has given the explicit go on sends
+   (terminal step; see the owner rule at the top).** If invoked to seed already-reviewed
+   leads, skip steps 1-2.
    - `node commands/validate.js --tag <tag>` →
      `node commands/seed-outreach.js --tag <tag> --emit Data/exports/seed-<tag>.json`.
      The emitted file carries the gated payloads + an `mcpRecipe`; the SUPPORTED
@@ -295,6 +322,10 @@ interactive login at seed time if the outreach token is expired.
    imported / crawled / qualified / contacts resolved / contacts pushed.
 
 ## Rules
+- **No sends, enrollments or live-sequence seeding without the owner's explicit go
+  (2026-10-22).** Discovery, crawl, profiling and dry runs are allowed.
+- **One industry slug per brief.** Profiled leads keep their industry rules from the batch
+  file; a lead in an industry the seed refuses is reported, never re-labelled to get through.
 - **Brief-only input.** Run ONLY from a `LEAD CAMPAIGN BRIEF`. No brief → stop and send the
   partner to `@prompt`. Never interpret a raw ask or invent campaign fields yourself.
 - **One human confirmation only**, the seed go-ahead in step 3, after the full process
