@@ -58,8 +58,8 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
         is rejected by the seeder, so it's worse than useless.
      2. **When you have the owner's NAME but no on-domain email, do the LinkedIn name-match, a
         REQUIRED step, not optional.** Find THAT person's LinkedIn at THAT company and emit it
-        ONLY if the slug carries their surname (`/in/jane-doakes`, `/in/mei-lin-park-…`). A
-        company-word or wrong-person slug (`/in/purple-elephant`) FAILS the seeder and must be
+        ONLY if the slug carries their surname (`/in/jane-doakes`, `/in/sam-sample-…`). A
+        company-word or wrong-person slug (`/in/sample-sweets`) FAILS the seeder and must be
         left blank. This single step recovers a large share of otherwise-company-only leads.
      3. **There is no rung 3. Phone is NOT a seedable channel** (removed 2026-07-27,
         `isSeedableContact` accepts email or LinkedIn only, and AZ law bars unsolicited
@@ -69,18 +69,18 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
         the email/LinkedIn rungs above. No email and no LinkedIn ⇒ the lead is company-only
         (the reachEmail below is what keeps it emailable).
    - **Name the owner even when the brand hides it.** Possessive / eponymous names carry it,
-     "Sydney's Sweet Shoppe" → Sydney, "Kendra's Country Bakery" → Kendra, "Houlden's" → surname
-     Houlden, "Creative Cakes by Dena" → Dena. Confirm it against a real source (about page,
-     press, a review sign-off) before using it; an eponymous guess still needs corroboration,
-     a business can outlive its namesake (Barb's Bakery, Phoenix: "Barb" predates the current
-     owners; the eponymous guess would misattribute).
+     "Robin's Example Sweets" → Robin, "Kit's Sample Bakery" → Kit, "Examplesons'" → surname
+     Exampleson, "Cakes by Sam Sample" → Sam (all made up). Confirm it against a real source
+     (about page, press, a review sign-off) before using it; an eponymous guess still needs
+     corroboration, a business can outlive its namesake (a made-up "Lou's Sample Bakery"
+     whose "Lou" predates the current owners; the eponymous guess would misattribute).
    - **Off-site owner-name recovery, the proven stack (measured 2026-08-03: 13/14 names on a
      batch the crawl found nothing for). Work it in this order when the site names nobody:**
      1. **Local interview + press features**, the workhorse (8/11 names in the test). Search
-        `"<company>" site:voyagephoenix.com`-style queries against the local interview mills
-        (the VoyageX / ShoutoutX network covers most metros, Voyage Phoenix, Shoutout
-        Arizona, …), the metro alt-weekly (Phoenix New Times), TV features (azfamily, ABC15),
-        and neighborhood papers (North Central News). Small food businesses are near-guaranteed
+        `"<company>" site:<the metro's interview site>`-style queries against the local
+        interview mills (the VoyageX / ShoutoutX network covers most metros, one site per
+        metro or state), the metro alt-weekly (for example a "Sample City Times"), local TV
+        station features, and neighborhood papers (for example a "Sample Town Weekly"). Small food businesses are near-guaranteed
         to have one, and the pieces end with contact blocks.
      2. **State corporate-registry mirrors**, when press names nobody. The registry itself is
         often CAPTCHA-gated (AZCC's Business Search is, flag it for a human rather than

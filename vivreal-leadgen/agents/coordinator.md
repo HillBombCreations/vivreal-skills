@@ -137,7 +137,7 @@ interactive login at seed time if the outreach token is expired.
      capture it for warm-call touches, never as the contact's channel). A senior title is NO LONGER required,
      any named person with a real channel can seed, though still prefer owners/decision-makers
      when ranking. Keep EVERY contact that clears it (not just one per company); DROP the rest:
-     wrong-person/company-word LinkedIn (.../in/sol-bello for "Alba Serrato"), role inboxes
+     wrong-person/company-word LinkedIn (.../in/sample-studio for "Pat Example"), role inboxes
      (info@/customerservice@), guessed or cross-domain emails, and nameless rows all fail. The
      seeder enforces this gate too, so anything that fails is silently company-only at seed
      time anyway, surface it NOW so the partner sees a clean list on the first pass.
@@ -168,9 +168,10 @@ interactive login at seed time if the outreach token is expired.
         small food businesses AND hand you a better hook than any site signal; **(b) state
         corporate-registry mirrors** (corporatesaz.com / Bizapedia / OpenCorporates, the
         registry itself is CAPTCHA-gated; on a small self-agented LLC the statutory agent is
-        usually the owner, a registered-agent service is not); **(c) eponymous** ("Sydney's
-        Sweet Shoppe" → Sydney), but ONLY with corroboration: a business can outlive its
-        namesake (Barb's Bakery), so an uncorroborated eponymous guess misattributes.
+        usually the owner, a registered-agent service is not); **(c) eponymous** ("Robin's
+        Example Sweets" → Robin), but ONLY with corroboration: a business can outlive its
+        namesake (a made-up "Lou's Sample Bakery" run by new owners), so an uncorroborated
+        eponymous guess misattributes.
      2. **The single best SEEDABLE channel:** a **published, on-domain, person-named email** you
         actually find (NEVER guessed) > a **name-matched LinkedIn** (surname in the slug, a
         company-word/wrong-person slug FAILS). There is no phone rung, phone is not a seedable
@@ -191,7 +192,7 @@ interactive login at seed time if the outreach token is expired.
      set `website`, flip ALL THREE maps-only markers together (`status`, `mapsOnly`, the
      `maps-only` tag, see leadgen CLAUDE.md), and normalize `domain` from the synthetic
      `maps:<slug>` to the real domain, a `maps:` domain also makes the on-domain email check
-     reject a genuinely on-domain contact email (hit 2026-08-04, Biscotti Box).
+     reject a genuinely on-domain contact email (hit 2026-08-04, on one bakery lead).
 
      **PRE-SEED PROVENANCE QA (required, cheap, catches poison):** before any seed, grep every
      `contacts[].email` against that domain's crawl corpus (`Data/profiles/<domain>/`). An email

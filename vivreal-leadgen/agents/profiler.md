@@ -223,7 +223,7 @@ jargon, only what they can SEE.
       *"You've put out 500+ posts on Instagram; getting that work onto your site and your other
       channels in one publish is how it starts compounding."*
   - It is REACH, never a channel: do not treat it as a contact. And **never treat `displayName`
-    as an owner name**, it is almost always the brand ("a Bakeshop", "Accurate Air Conditioning").
+    as an owner name**, it is almost always the brand ("a Bakeshop", "Example Air Co" (made up)).
   - Do NOT claim their site "doesn't show" their Instagram unless you can actually see that in
     the crawled text, a link in `stack.channels` means the site DOES reference it.
 - `enrichment.social.ownerResearch`, **the most personal hook material there is**, when it
