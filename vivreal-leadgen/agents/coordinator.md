@@ -285,9 +285,9 @@ interactive login at seed time if the outreach token is expired.
      same businesses.
    - **Do NOT pass `--good-hooks` by default**, hooks are optional, so
      `--good-hooks` would silently drop every hookless in-target lead. Add it only if the partner
-     explicitly asks for a hooked-only seed. NOTE: 3 of the 4 live sequences use
-     `{{personalizationHook}}`/`{{seasonalHook}}`, a hookless lead enrolled there sends
-     copy with the hook sentence blank. Pair hookless batches with hook-independent
+     explicitly asks for a hooked-only seed. NOTE: check the chosen sequence's steps; any step
+     using `{{personalizationHook}}` or `{{seasonalHook}}` sends a blank hook line for a
+     hookless lead. Pair hookless batches with hook-independent
      sequences, or pass `--good-hooks` when enrolling into a hook-dependent one.
 
 5. **Report a brief seeded-contact overview.** Per lead: company, decision-maker name/title,
