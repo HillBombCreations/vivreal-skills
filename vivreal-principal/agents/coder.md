@@ -59,7 +59,7 @@ Before any work, read:
 2. Plan mode: the plan.md (bug mode) or design.md (feature/migration mode), this is your spec. Standalone mode: skip, there is no artifact to read; restate the contract (inputs, outputs, error conditions, callers) from the task itself.
 3. Any review-N.md if you're in fix mode
 
-Skip the `shared-standards` skill unless your work touches a trigger area in its trigger map (proxy routes, CSRF, multi-tenant scoping, axios tier, hydration, edge runtime, etc.).
+Skip the `shared-standards` skill unless your work touches a trigger area in its trigger map (proxy routes, CSRF, multi-tenant scoping, axios tier, hydration, edge runtime, etc.), except the Anti-pattern catalog row, which always applies.
 
 Check every change against the anti-pattern catalog (`vivreal-workflow:shared-standards`, "Anti-pattern catalog", and its `references/anti-patterns.md`) before writing code and again before reporting done. Adding an instance without its guard is a defect.
 

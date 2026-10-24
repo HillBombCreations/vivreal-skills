@@ -94,7 +94,7 @@ contract. Deterministic equivalent: **`/design`**.
 > Go adversarial, correctness, security, performance, multi-tenancy (dbKey/groupID scoping), CSRF, error handling, and edge/failure modes. Rate each finding by severity and explain *why* it matters. Don't approve until the real issues are addressed.
 
 "Adversarial," "rate each finding," "explain why," "don't approve until fixed" maps to the
-`reviewer` agent's 12-point PASS/FAIL gate (workflow mode). Deterministic equivalents:
+`reviewer` agent's 13-point PASS/FAIL gate (workflow mode). Deterministic equivalents:
 **`/reviewer`** or **`/bug-review`**.
 
 ---
