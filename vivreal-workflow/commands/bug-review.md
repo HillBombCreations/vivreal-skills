@@ -24,7 +24,7 @@ You are dispatching the reviewer agent directly. The user invoked `/bug-review` 
 ```
 description: Adversarial review pass <N> for <slug>
 subagent_type: reviewer
-prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-standards skill. [If slug mode: also read docs/bugs/<slug>/research.md, docs/bugs/<slug>/plan.md, and any prior review docs]. Run git diff to see changes. Walk the 12-point checklist with PASS/FAIL/N-A per item. Cite file:line for every FAIL. Write your verdict to docs/bugs/<slug>/review-<N>.md. Approval requires ALL 12 items PASS or N-A.
+prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-standards skill. [If slug mode: also read docs/bugs/<slug>/research.md, docs/bugs/<slug>/plan.md, and any prior review docs]. Run git diff to see changes. Walk the 12-point checklist plus its mandatory item 13 (anti-pattern catalog) with PASS/FAIL/N-A per item. Cite file:line for every FAIL. Write your verdict to docs/bugs/<slug>/review-<N>.md. Approval requires ALL 13 items PASS or N-A.
 ```
 
 ## Post-Dispatch
