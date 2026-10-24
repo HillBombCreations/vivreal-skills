@@ -103,7 +103,7 @@ three searches returned three different incomplete answers.
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
 | Dispatching a deploy workflow, or claiming a stack updated | "Reading and verifying a CloudFormation deploy" |
 | Backports, cherry-picks, "did this fix reach `release/*`" | "Proving a fix reached a line" |
-| Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog" |
+| Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog", which points to [references/anti-patterns.md](references/anti-patterns.md) |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
 
 If a task obviously spans multiple trigger areas, read each relevant section once. Do not eager-load adjacent sections.
@@ -612,45 +612,11 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 
 ## Anti-pattern catalog (check every diff)
 
-The full catalog, with how to spot each entry, its guard, and where it is enforced, lives in
-[references/anti-patterns.md](references/anti-patterns.md) (source of truth:
-`${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the evidence).
-Read the entry for any rule your diff touches. A diff that adds an instance of any rule below is
-wrong even when its tests pass.
-
-1. **Borrowed links.** Store and draw only addresses we own (a key, or the stable media redirect).
-   A platform CDN URL or a signed URL is an input to copy, never a stored display value.
-2. **Narrow by default.** Every list read answers a named view, the narrowest by default; an
-   unknown view is a 400; every `limit` validator has a `.max()`; nothing crosses a
-   server-to-client boundary except an allowlist slice.
-3. **Bounded requests.** A screen's request count is pinned by a budget test; fan-out goes through
-   a concurrency cap; media signing goes through the batcher.
-4. **Redact at the boundary.** Logger serializers and Sentry `beforeSend` drop headers, cookies
-   and axios `config`; never interpolate a provider body into an error message; never print a
-   secret, even to check it exists.
-5. **"Nothing yet" is a 200.** A page-load GET answers 200 for every state an owner can be in.
-6. **Every outbound call has a timeout** below its caller's budget; every poll pauses when hidden
-   and has a time cap; an SDK socket timeout comes with an explicit `maxAttempts`.
-7. **Caches merge.** One write rule per cache, merge by id; a replace writer beside an upsert
-   writer is a defect.
-8. **One read per question per render.** Server reads go through a request-scoped memo.
-9. **No silent owner-visible failure.** It reaches Sentry or an alarm, and the owner is told even
-   with the app closed.
-10. **Our traffic is tagged.** Nothing local sends as `production`; production test runs carry the
-    run marker.
-11. **No silencing without a root cause.** No archive, ignore, `expectedDenial`,
-    `expectedStatuses` or "by design" without a named root cause, a guard, and a proof window.
-12. **Alarms must be reachable** by one real failure of the path; never `Errors` alone on a
-    serverless-express Lambda.
-13. **Keep the cause.** Rethrow with `{ cause }`; log the provider's stated reason.
-14. **Tolerate failures by name**, never a bare `||`.
-15. **One source for a shared rule**, or a parity test that moves with it.
-16. **Mongo predicates:** multi-field array conditions use `$elemMatch`; `limit(0)` and null get a
-    branch.
-17. **One real-hop test per change** (real next hop, real schema); assert the exact set.
-18. **Prove the safety net works**, not just that it ran; exercise an unexercised renewal before
-    its date.
-19. **Every expiry is registered**, with a date, an owner and an alarm.
+Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
+the 19 rules in checklist form, then each entry with how to spot it and its guard (source of
+truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
+evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
+when its tests pass.
 
 When you find a new recurring class, add it to the catalog in the same PR as the fix (vivreal-hq
 source first, then this plugin copy), with its evidence and its guard.

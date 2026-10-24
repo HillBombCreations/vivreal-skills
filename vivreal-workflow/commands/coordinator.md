@@ -97,7 +97,7 @@ Subagents available (`researcher`/`architect`/`coder`/`portal-coder`/`reviewer` 
 - `coder`, implementation, every repo except Vivreal_Portal_Mobile
 - `portal-coder`, same, dedicated to Vivreal_Portal_Mobile (SOLO/PARALLEL/INTEGRATE modes, routed to whenever the plan touches that repo)
 - `tester`, Playwright + unit tests
-- `reviewer`, adversarial 12-point review
+- `reviewer`, adversarial 13-point review
 - `documenter`, RESOLUTION.md + PR description
 
 Shared standards file: the `shared-standards` skill (every agent reads this first).
@@ -218,7 +218,7 @@ Dispatch `reviewer`:
 ```
 description: Adversarial review pass <N> for <slug>
 subagent_type: reviewer
-prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-standards skill, docs/bugs/<slug>/research.md, docs/bugs/<slug>/plan.md, and (if N>1) docs/bugs/<slug>/review-<N-1>.md. Run git diff to see changes. Walk the 12-point checklist plus its mandatory item 13 (anti-pattern catalog) with PASS/FAIL/N-A per item. Cite file:line for every FAIL. Write your verdict to docs/bugs/<slug>/review-<N>.md. Approval requires ALL 13 items PASS or N-A.
+prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-standards skill, docs/bugs/<slug>/research.md, docs/bugs/<slug>/plan.md, and (if N>1) docs/bugs/<slug>/review-<N-1>.md. Run git diff to see changes. Walk the 13-point checklist (item 13, the anti-pattern catalog, is mandatory) with PASS/FAIL/N-A per item. Cite file:line for every FAIL. Write your verdict to docs/bugs/<slug>/review-<N>.md. Approval requires ALL 13 items PASS or N-A.
 ```
 
 Read `docs/bugs/<slug>/review-<N>.md`.

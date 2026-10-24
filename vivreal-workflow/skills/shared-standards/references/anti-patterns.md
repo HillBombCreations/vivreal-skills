@@ -17,34 +17,75 @@ REMOVES or does not touch an instance, using that entry's "How to spot it". A di
 instance is wrong even when its tests pass, unless it also adds the entry's guard. When a diff
 shows a recurring class this catalog does not name, propose the entry (in vivreal-hq first).
 
-"Not yet" in "Enforced today" means nothing in CI, lint, an alarm or a query would turn red on a
-new instance. Review and memory do not count as enforcement.
+Enforcement status for each entry is tracked in vivreal-hq `docs/standards/anti-patterns.md`, not
+here. A guard below counts as enforcement only when CI, lint, an alarm or a query turns red on a
+new instance. Review and memory do not count.
 
 ---
 
 ## Summary table
 
-| # | Name | Rule (one line) | Enforced today |
-|---|---|---|---|
-| 1 | Borrowed links | Draw and send only addresses we own; a third-party or signed link is an input, never a stored display value | Not yet |
-| 2 | Whole-document reads | Every list read answers a named, narrow view with a hard `limit` ceiling | Partly (Sentry detects, nothing blocks) |
-| 3 | N+1 and unbounded bursts | A screen makes a bounded, budgeted number of requests; fan-out has a concurrency cap | Partly (opt-in batcher) |
-| 4 | Secrets that can reach logs | Redact at the logger and SDK boundary by the value's shape, never by variable name | Partly (some services) |
-| 5 | Error status for "nothing yet" | A page-load GET answers 200 for every state an owner can be in | Not yet |
-| 6 | Unbounded background work | Every outbound call has a timeout; every poll pauses when hidden and has a time cap | Not yet (a few call sites only) |
-| 7 | A cache that replaces | A shared cache has one write rule: merge by id; a replace writer is a defect | Not yet |
-| 8 | Duplicate fetches per render | One request-scoped memo per backend read; two helpers asking the same question share one call | Not yet |
-| 9 | Silent owner-visible failures | Anything that fails where an owner can see it reports to Sentry or an alarm, and tells the owner even when the app is closed | Partly (operator alarms only) |
-| 10 | Test traffic in prod signals | Our own runs are tagged and never page; local runs never send as `production` | Partly |
-| 11 | Silencing recurring issues | No archive, ignore, `expectedDenial` or "resolved" without a named root cause and a guard | Not yet |
-| 12 | Alarms that cannot fire | An alarm's threshold must be reachable by one real failure of that path | Partly |
-| 13 | Dropping the cause | A wrapper error keeps the underlying cause and the provider's reason | Partly |
-| 14 | Blanket tolerance | Tolerate an expected failure by name; fail on everything else | Fixed in the package repos; no CI check |
-| 15 | Mirrored copies that drift | A rule copied across repos has one source or a parity test | Partly |
-| 16 | Mongo predicates that lie | Multi-field array matches use `$elemMatch`; boundary values (`limit 0`, null) get a branch | Not yet |
-| 17 | Tests that fake the failing layer | One test per change runs through the real next hop and the real schema | Review only |
-| 18 | Safety nets never exercised | A renewal, refresh, backup or alarm proves it worked, not just that it ran | Partly (no-run alarms only) |
-| 19 | Expiries with no register | Anything that expires has a date in a register, an owner, and an alarm before it lapses | Not yet |
+| # | Name | Rule (one line) |
+|---|---|---|
+| 1 | Borrowed links | Draw and send only addresses we own; a third-party or signed link is an input, never a stored display value |
+| 2 | Whole-document reads | Every list read answers a named, narrow view with a hard `limit` ceiling |
+| 3 | N+1 and unbounded bursts | A screen makes a bounded, budgeted number of requests; fan-out has a concurrency cap |
+| 4 | Secrets that can reach logs | Redact at the logger and SDK boundary by the value's shape, never by variable name |
+| 5 | Error status for "nothing yet" | A page-load GET answers 200 for every state an owner can be in |
+| 6 | Unbounded background work | Every outbound call has a timeout; every poll pauses when hidden and has a time cap |
+| 7 | A cache that replaces | A shared cache has one write rule: merge by id; a replace writer is a defect |
+| 8 | Duplicate fetches per render | One request-scoped memo per backend read; two helpers asking the same question share one call |
+| 9 | Silent owner-visible failures | Anything that fails where an owner can see it reports to Sentry or an alarm, and tells the owner even when the app is closed |
+| 10 | Test traffic in prod signals | Our own runs are tagged and never page; local runs never send as `production` |
+| 11 | Silencing recurring issues | No archive, ignore, `expectedDenial` or "resolved" without a named root cause and a guard |
+| 12 | Alarms that cannot fire | An alarm's threshold must be reachable by one real failure of that path |
+| 13 | Dropping the cause | A wrapper error keeps the underlying cause and the provider's reason |
+| 14 | Blanket tolerance | Tolerate an expected failure by name; fail on everything else |
+| 15 | Mirrored copies that drift | A rule copied across repos has one source or a parity test |
+| 16 | Mongo predicates that lie | Multi-field array matches use `$elemMatch`; boundary values (`limit 0`, null) get a branch |
+| 17 | Tests that fake the failing layer | One test per change runs through the real next hop and the real schema |
+| 18 | Safety nets never exercised | A renewal, refresh, backup or alarm proves it worked, not just that it ran |
+| 19 | Expiries with no register | Anything that expires has a date in a register, an owner, and an alarm before it lapses |
+
+---
+
+## Checklist form
+
+The rules as a reviewer walks them, one per entry.
+
+1. **Borrowed links.** Store and draw only addresses we own (a key, or the stable media redirect).
+   A platform CDN URL or a signed URL is an input to copy, never a stored display value.
+2. **Narrow by default.** Every list read answers a named view, the narrowest by default; an
+   unknown view is a 400; every `limit` validator has a `.max()`; nothing crosses a
+   server-to-client boundary except an allowlist slice.
+3. **Bounded requests.** A screen's request count is pinned by a budget test; fan-out goes through
+   a concurrency cap; media signing goes through the batcher.
+4. **Redact at the boundary.** Logger serializers and Sentry `beforeSend` drop headers, cookies
+   and axios `config`; never interpolate a provider body into an error message; never print a
+   secret, even to check it exists.
+5. **"Nothing yet" is a 200.** A page-load GET answers 200 for every state an owner can be in.
+6. **Every outbound call has a timeout** below its caller's budget; every poll pauses when hidden
+   and has a time cap; an SDK socket timeout comes with an explicit `maxAttempts`.
+7. **Caches merge.** One write rule per cache, merge by id; a replace writer beside an upsert
+   writer is a defect.
+8. **One read per question per render.** Server reads go through a request-scoped memo.
+9. **No silent owner-visible failure.** It reaches Sentry or an alarm, and the owner is told even
+   with the app closed.
+10. **Our traffic is tagged.** Nothing local sends as `production`; production test runs carry the
+    run marker.
+11. **No silencing without a root cause.** No archive, ignore, `expectedDenial`,
+    `expectedStatuses` or "by design" without a named root cause, a guard, and a proof window.
+12. **Alarms must be reachable** by one real failure of the path; never `Errors` alone on a
+    serverless-express Lambda.
+13. **Keep the cause.** Rethrow with `{ cause }`; log the provider's stated reason.
+14. **Tolerate failures by name**, never a bare `||`.
+15. **One source for a shared rule**, or a parity test that moves with it.
+16. **Mongo predicates:** multi-field array conditions use `$elemMatch`; `limit(0)` and null get a
+    branch.
+17. **One real-hop test per change** (real next hop, real schema); assert the exact set.
+18. **Prove the safety net works**, not just that it ran; exercise an unexercised renewal before
+    its date.
+19. **Every expiry is registered**, with a date, an owner and an alarm.
 
 ---
 
@@ -67,13 +108,13 @@ or profile image field.
 - Proposed lint (portal): `vivreal/no-platform-image-src`. An `src` expression reading
   `profileImageUrl`, `avatarUrl`, `logoUrl`, `mediaUrls` or `getPostMedia(...).url` outside
   `AccountPicture` and `getPostMedia` is an error. Red proof: a fixture `<img src={p.profileImageUrl} />`.
-- Proposed DB query (weekly, fleet-ops health watcher): count documents in `Vivreal.groups` and
-  every pod's `collection_objects` and `integration_objects` where any string field matches the
-  signed-marker regex. Alert on more than 0, with an `https://` positive control.
+- Proposed DB query (weekly, fleet-ops health watcher): count documents in every collection that
+  stores tenant, content or integration records where any string field matches the signed-marker
+  regex. Alert on more than 0, with an `https://` positive control.
 - Proposed walk check: zero image requests to `fbcdn.net`, `cdninstagram.com`, `tiktokcdn*.com`,
   `licdn.com`, `twimg.com` on /social and Channels.
 
-**Enforced today.** Not yet. Precedents that follow the rule: Stripe product images (CMS
+**Precedents that follow the rule.** Stripe product images (CMS
 `src/shared/stableMediaUrl.js`), rich text stores keys only, OG images re-sign per request, order
 emails send no signed logo.
 
@@ -100,10 +141,7 @@ size awareness.
 - Proposed telemetry (portal): a `portal.proxy.oversize` log over a per-route budget, default 256 KB.
 - Proposed size budget (Templates): the served home page's RSC flight carries no `pageConfigs` key
   and stays under a budget.
-- Sentry: "Large HTTP payload" issues alert instead of being archived.
-
-**Enforced today.** Partly. Sentry's performance detector creates the issues, but nothing blocks a
-new whole-document read.
+- Sentry: an alert rule on "Large HTTP payload" issues; never archive them.
 
 ---
 
@@ -126,10 +164,7 @@ outside `src/lib/media/signedMediaBatcher.ts` (portal).
   the EXACT route set and once-each count.
 - Proposed lint (all repos): `Promise.all` over a `.map` whose callback awaits a network call must
   go through a named `mapWithConcurrency(n, ...)` helper.
-- Sentry: an alert rule on new `performance_n_plus_one_api_calls` issues instead of archiving.
-
-**Enforced today.** Partly. The batcher exists but is opt in. The N+1 detector fires but its issue
-is archived.
+- Sentry: an alert rule on new `performance_n_plus_one_api_calls` issues; never archive them.
 
 ---
 
@@ -160,9 +195,6 @@ byte.
 - Precedent to copy: CMS `src/shared/refreshOAuthToken.js` keeps the provider reason in structured
   fields, never in the message text.
 
-**Enforced today.** Partly. Some service loggers scrub, the on-call error notifier redacts before
-Discord, and Sentry's org scrubber is on. Not every service yet (the source catalog lists which).
-
 ---
 
 ## 5. An error status used to mean "nothing yet"
@@ -184,8 +216,6 @@ suppression layers added to quiet it then hide real 404s.
   path has an id segment.
 - Proposed Sentry query (daily triage): `http.response.status_code:[400,403,404]` on GETs to our
   APIs grouped by route, as a trend.
-
-**Enforced today.** Not yet. `expectedDenial` is this anti-pattern institutionalised.
 
 ---
 
@@ -211,8 +241,8 @@ or a recursive `setTimeout` poll with no visibility check.
 - Proposed portal test: every `setInterval` poll site is registered in a list that a test checks
   for a `visibilitychange` handler.
 
-**Enforced today.** Not yet. Precedents: `AbortSignal.timeout` in a few CMS call sites, and the CMS
-stuck-publish sweep bounds a hung publish. Inverse trap: an SDK socket timeout arms the SDK's own
+**Precedents.** `AbortSignal.timeout` on an outbound call, and a stuck-publish sweep that bounds a
+hung publish. Inverse trap: an SDK socket timeout arms the SDK's own
 retry, so it needs `maxAttempts` beside it.
 
 ---
@@ -236,8 +266,6 @@ whole list on every change.
 - Proposed lint: a context setter keyed by profile may be written only through named `merge*`
   helpers (`no-restricted-syntax` on the computed-key spread pattern in `src/contexts/`).
 
-**Enforced today.** Not yet.
-
 ---
 
 ## 8. Duplicate fetches per render
@@ -257,8 +285,6 @@ including a large site view.
 - Proposed Sentry query (weekly): server transactions where a `span.description` repeats within a
   trace, grouped by transaction.
 
-**Enforced today.** Not yet.
-
 ---
 
 ## 9. Owner-visible failures that report nowhere
@@ -266,9 +292,9 @@ including a large site view.
 **Rule.** If an owner can see it fail, it reaches Sentry or an alarm, and the owner hears about it
 even when the app is closed (push or email), in owner words, with the fix.
 
-**Why it hurts owners.** They find out from their customers. Image failures raise no Sentry issue,
-a failed scheduled post notifies only over the websocket, and a dead social connection can sit
-unnoticed for weeks.
+**Why it hurts owners.** They find out from their customers. A failed image can raise no error at
+all, a failed scheduled post can notify only over a live socket, and a dead social connection can
+sit unnoticed for weeks.
 
 **How to spot it.** `onError={() => hide()}` on an image. `.catch(() => {})` on a read whose result
 renders. A failure branch that only emits a socket event. An `expired` status write with no
@@ -280,10 +306,7 @@ notification beside it.
   `markSocialAccountExpired`.
 - Proposed portal: image `onError` reports a sampled breadcrumb with host (not URL) to Sentry, so a
   borrowed-link regression (entry 1) becomes visible.
-- Existing alarms to keep: `VR-CMS-API-social-credential-dead` and
-  `VR-Secure-API-social-credential-dead`.
-
-**Enforced today.** Partly, for operators only. Nothing reaches the owner when the app is closed.
+- An operator alarm per service on a social credential marked dead.
 
 ---
 
@@ -303,8 +326,6 @@ have saturated Atlas; a local build caused a burst of refusals).
 a deploy-derived environment with an anti-silencing REFUSE test (the `stable` branch must resolve to
 `production`), a signed run marker, a tenant class by group, and alert rules scoped to `production`
 plus one volume rule on `production-test`.
-
-**Enforced today.** Partly (local env set to `local`, alert rules scoped to `production`).
 
 ---
 
@@ -329,8 +350,6 @@ next to a suppression.
   `expectedDenial`, `expectedStatuses`, `ignoreErrors` or a Sentry `beforeSend` drop must name a
   `docs/` root-cause file in the same commit message.
 
-**Enforced today.** Not yet.
-
 ---
 
 ## 12. Alarms that cannot fire
@@ -340,8 +359,8 @@ it. Never alarm a serverless-express service on Lambda `Errors` alone. Sweep for
 ALARM, because CloudWatch notifies only on a transition.
 
 **Why it hurts owners.** The failure happens and nobody knows: a 2-of-3 alarm cannot fire on a
-single failing minute, a billing alarm needing 5 errors cannot fire on a path with a handful of
-invocations a fortnight, serverless-express turns a handled 500 into a successful invocation, and an
+single failing minute, a threshold of several errors cannot fire on a path with a handful of
+invocations, serverless-express turns a handled 500 into a successful invocation, and an
 alarm already red never notifies again.
 
 **How to spot it.** `DatapointsToAlarm` greater than 1 on a low-volume path. `MetricName: Errors`
@@ -353,9 +372,7 @@ on an Express Lambda. A threshold copied from a busy path.
   failure cannot breach.
 - Proposed scheduled check: `describe-alarms --state-value ALARM` with `StateUpdatedTimestamp` older
   than 24 h pages again.
-- Existing: Secure's `alarm-verifier` stack.
-
-**Enforced today.** Partly (the alarm verifier, plus many 1-of-1 alarms). Not fleet-wide.
+- A scheduled verifier that fires each alarm's path on purpose and confirms the alarm transitions.
 
 ---
 
@@ -378,8 +395,6 @@ a provider's refusal reason thrown away cannot be acted on.
 - Proposed test pattern: a REFUSE test that a refused provider call's log line contains the
   provider's error code field.
 
-**Enforced today.** Partly.
-
 ---
 
 ## 14. Blanket tolerance for one expected failure
@@ -398,8 +413,6 @@ shape tolerates the read and then fails loudly on the missing value.
 `# tolerated: <named condition>` comment. Strip comments before matching
 (`vivreal-workflow:verification-discipline`).
 
-**Enforced today.** Fixed in the package repos. No check prevents a new one.
-
 ---
 
 ## 15. Mirrored copies that drift
@@ -417,8 +430,6 @@ filename in two backend repos.
 **Guard.** Proposed fleet-ops sweep: list files with the same basename across backend repos, plus
 comments matching `must match|ported|mirror`. Each needs a parity test name in a register file.
 Diff the copies weekly.
-
-**Enforced today.** Partly (some cross-repo parity tests).
 
 ---
 
@@ -443,8 +454,6 @@ projection after a multi-predicate array match.
 - Proposed test pattern: every sweep query gets a REFUSE fixture whose array splits the conditions
   across two elements and must NOT match.
 
-**Enforced today.** Not yet.
-
 ---
 
 ## 17. Tests that fake the layer where the failure lives
@@ -464,8 +473,6 @@ the question is which.
 **Guard.** The shared-standards red proof (the new test run at the base commit in a read-only
 worktree must go red), and the reviewer checklist item 13, which asks for the real-hop test by name.
 
-**Enforced today.** Review only.
-
 ---
 
 ## 18. Safety nets never exercised
@@ -484,9 +491,7 @@ month; a probe can mark every account of one platform dead on its first run.
 - Proposed metric and alarm per renewer: `LastSuccessfulRenewalAge` per provider, alarming when an
   active account's token is inside its renew window and no success was logged in 2 ticks.
 - Proposed synthetic exercise: renew one internal account per provider weekly, on purpose, and
-  alarm on refusal. The Vivreal Content accounts are the canary.
-
-**Enforced today.** Partly. "No-run" alarms exist; they prove a run, not a renewal.
+  alarm on refusal. An internal account the team owns is the canary.
 
 ---
 
@@ -496,9 +501,9 @@ month; a probe can mark every account of one platform dead on its first run.
 has a row in one register: its date, whether it renews itself, who owns it, and the alarm that fires
 before it lapses.
 
-**Why it hurts owners.** A date nobody wrote down is an outage nobody scheduled: unrotated secrets,
-non-expiring personal access tokens, domains at outside registrars, user tokens with an operator
-alarm but no owner warning, and platform review dates recorded nowhere.
+**Why it hurts owners.** A date nobody wrote down is an outage nobody scheduled: a
+secret, credential, certificate, domain or platform review date that lapses with no warning to the
+person who could have renewed it.
 
 **How to spot it.** A stored `tokenExpiry`, `expiresAt`, `NotAfter`, `Expiry` or `expires_in` with
 no reader that alarms. A credential created in a console with no ticket.
@@ -510,5 +515,3 @@ no reader that alarms. A credential created in a console with no ticket.
   covers Meta, Atlas and Google.
 - Proposed alarm: any register row inside 30 days that does not renew itself pages the owner by
   email; inside 7 days it pages on-call.
-
-**Enforced today.** Not yet.
