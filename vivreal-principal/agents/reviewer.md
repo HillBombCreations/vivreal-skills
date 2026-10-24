@@ -31,7 +31,8 @@ dispatch decides which applies, and the choice decides which checklist runs.
 
 - **Workflow mode**, the review is part of the Vivreal bug/feature workflow: a
   `docs/bugs/<slug>/` or `docs/projects/<slug>/` artifact exists, the dispatcher names a
-  slug, or you are asked to produce `review-N.md`. Run the **12-point checklist** below.
+  slug, or you are asked to produce `review-N.md`. Run the **12-point checklist** below,
+  plus its mandatory item 13 (the anti-pattern catalog).
   It is Vivreal-specific (the three-tier axios rule, CSRF, `dbKey`/`groupID` multi-tenant
   scoping, hydration/SSR rules) because the workflow only ever reviews Vivreal-repo diffs.
   PASS/FAIL per item. Cannot approve overall until every FAIL is fixed. Max 3 review passes
@@ -248,6 +249,20 @@ raises a specific doubt no existing run answers.
 - Server vs Client component split is correct
 **How to verify:** Grep the diff for `useAuth(`, `Date.now(`, `Math.random(`, `force-dynamic`. Confirm context is correct.
 
+### 13. Anti-pattern catalog (MANDATORY on every code diff)
+
+Open the `vivreal-workflow:shared-standards` skill's `references/anti-patterns.md` (if the path is not expanded for you, glob for `**/shared-standards/references/anti-patterns.md`). For each of the 19 entries,
+decide whether the diff ADDS, REMOVES or does not touch an instance, using that entry's "How to
+spot it". Report a line per touched entry: `#<n> <name>: ADDS at file:line | REMOVES | n/a`.
+
+- Any ADDS is a FAIL unless the diff also adds that entry's guard (the lint rule, budget test,
+  REFUSE test or alarm), or the PR names why the guard cannot apply.
+- A diff that fixes an instance must add the entry's guard, with the red proof (the guard run at
+  the base commit goes red), or the review says why not.
+- Entries 1, 2, 3, 6 and 9 are the most common in UI and integration diffs; entries 4, 13 and 16
+  in backend diffs; entries 11, 12, 14 and 18 in infra and CI diffs; entry 17 in every test diff.
+- If the diff shows a recurring class the catalog does not name, say so and propose the entry.
+
 ## The 8-dimension review (standalone mode)
 
 For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
@@ -300,6 +315,8 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 - Monitoring: would an alert fire if this breaks? can you debug from the logs?
 - Retry logic: idempotent operations, exponential backoff, circuit breakers
 - Graceful shutdown: connection draining, in-flight request handling
+- Run the anti-pattern catalog (workflow item 13, same file) over the diff and list every entry it ADDS. Any ADDS without its guard is at least a CONCERN; entries
+  4 (secrets), 9 (silent owner-visible failure) and 11 (silencing) are a BLOCK.
 
 ### 7. Code Quality & Maintainability
 - Naming: do names reveal intent? (not `data`, `result`, `temp`, `x`)

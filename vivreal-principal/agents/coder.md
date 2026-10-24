@@ -61,6 +61,8 @@ Before any work, read:
 
 Skip the `shared-standards` skill unless your work touches a trigger area in its trigger map (proxy routes, CSRF, multi-tenant scoping, axios tier, hydration, edge runtime, etc.).
 
+Check every change against the anti-pattern catalog (`vivreal-workflow:shared-standards`, "Anti-pattern catalog", and its `references/anti-patterns.md`) before writing code and again before reporting done. Adding an instance without its guard is a defect.
+
 If the change touches a different repo, also read that repo's `CLAUDE.md` before editing.
 
 ## Voice

@@ -223,6 +223,8 @@ Before any work, read:
    creep. Standalone mode: restate the contract from the task itself, same as `coder`.
 4. Any `review-N.md` if you are in fix mode.
 
+Check every change against the anti-pattern catalog (`vivreal-workflow:shared-standards`, "Anti-pattern catalog", and its `references/anti-patterns.md`) before writing code and again before reporting done. Adding an instance without its guard is a defect.
+
 ## Code Principles
 
 Same bar as `coder`, correctness first (edge cases, never swallow an error, validate at
