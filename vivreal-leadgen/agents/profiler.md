@@ -311,6 +311,20 @@ Map signals to Studio angles honestly:
 
 Same Golden Rule: only when the signal is `true`/`false` as required, never from `null`.
 
+### The angle code (`angleCode`)
+
+Every profile with an `outreachAngle` also carries an `angleCode`: ONE code from the closed
+list `redesign | mobile-fix | seo | ecommerce | rebrand | agent-readiness` (the
+`OUTREACH_ANGLES` list in `packages/leadgen/lib/outreachAngles.js`, which `save-review.js`
+and `confirm-angles.js` both check). The sentence and the code are two fields with two jobs:
+`outreachAngle` is the pitch merged into the email, `angleCode` is the slug the portal's
+angle filter matches (it is seeded as the contact's `angle`). Pick the code for the main
+pain your sentence names, for example `mobile-fix` when the angle is the phone-broken site
+above. Use `null` when none of the six fits; never invent a code and never put a sentence
+there, because `save-review.js` refuses the whole entry. A profile with a sentence but no
+code still saves (with a WARN) and seeds the sentence as its angle, but the portal filter
+can never match it, so leave `angleCode` null only when no code honestly fits.
+
 ### Batch Processing
 
 When profiling multiple domains, process them in parallel where possible. For each domain, read its `_index.json` first, then the key pages. Output all profiles together for user review.
@@ -350,6 +364,7 @@ Each prospect profile must be a JSON object with these fields:
   "notAFit": false,
   "notAFitReason": "Set notAFit:true ONLY for a clear non-prospect (media company, nonprofit, large enterprise, franchise chain, or tech company) or a hard exclusion (3 or more locations, closed permanently, or one of the lead's industry exclusions from the batch file, named by its id; see the Fit section) and put the one-line reason here. Otherwise leave notAFit:false and this null. There is NO 0-100 CMS-fit score anymore, any in-target small business is a fit.",
   "outreachAngle": "1-2 sentence personalized pitch connecting this business's specific content/publishing pain to Vivreal's create once, publish everywhere. Reference their tools, channels, and workflow, NOT generic CMS benefits. Use Vivreal's brand voice: direct, confident, practical.",
+  "angleCode": "one of redesign | mobile-fix | seo | ecommerce | rebrand | agent-readiness, or null. The CODE naming the angle's main pain, for the portal's angle filter. A code only, lower case, exactly as listed: the pitch sentence goes in outreachAngle. Any other value makes save-review.js refuse the entry.",
   "personalizationHook": "ONE specific thing you noticed, written like a real person texting a friend (casual, ONE sentence of at most 25 words ending with a period, 'I' experience, a little tentative), NOT an auditor. No em or en dash, none of the words under 'Never use these words' in brand/voice.md, owner-visible language only (save-review.js refuses the entry otherwise). A flaw is OPTIONAL: honest praise tied to a benefit works just as well for a clean good-fit site. Gain-framed, never a verdict, signal- or text-verifiable, never invented. Write one for every good-fit lead.",
   "seasonalHook": "A timely reason outreach lands NOW: the business's real upcoming busy season + their location's real events + the content bottleneck that creates. Honest (see rules). null if the industry isn't in-season for them or they produce no content.",
   "industryPersonalization": "Short noun phrase WITH article that completes 'running ___ business' (Touch 3), e.g. 'a salon', 'an HVAC company', 'a barbershop'. Derive from the real industry. null to fall back to categories[0].",
