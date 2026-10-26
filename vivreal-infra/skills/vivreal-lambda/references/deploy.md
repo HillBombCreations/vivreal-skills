@@ -66,4 +66,4 @@ aws cloudformation deploy ...
 
 ## Sources of truth
 
-Each backend's `C:\repos\<repo>\CLAUDE.md` under "Deployment" / "IAM" / arm64 sections. Memory: deploy gotchas in `project_admin_analytics_integration.md`, size-limit fix in the outreach deploy entries.
+Each backend's `${VIVREAL_REPOS}/<repo>/CLAUDE.md` under "Deployment" / "IAM" / arm64 sections. Memory: deploy gotchas in `project_admin_analytics_integration.md`, size-limit fix in the outreach deploy entries.

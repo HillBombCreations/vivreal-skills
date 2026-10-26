@@ -240,7 +240,7 @@ tracked artifacts", so `ref-unresolved` contributes **two** errors there, not ze
 
 **Never flagged.** Any other `${...}` placeholder (`${VIVREAL_REPOS}/...`) is
 unresolvable by design → skip silently. Absolute paths outside the target tree
-(`C:/repos/...`, `/c/repos/...`) → skip silently. Agents in this repo cite
+(a drive-letter path such as `D:/work/...` or `/d/work/...`) → skip silently. Agents in this repo cite
 cross-repo absolute paths constantly; flagging them manufactures a second false
 positive class as large as the first.
 

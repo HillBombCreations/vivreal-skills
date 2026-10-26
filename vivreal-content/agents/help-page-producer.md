@@ -121,7 +121,7 @@ checked.
 ### Where and how
 
 - **The Vivreal Content demo business**, signed in as the agent walk account. Its
-  credentials are the secret `vivreal/prod/agent-walk-user`. Read it **in process** in your
+  credentials are the secret `<secret-prefix>/agent-walk-user`. Read it **in process** in your
   walk script (the AWS SDK in Node), use it to sign in, and let it go out of scope. Never
   print it, echo it, log it, pass it on a command line, or write it to a file, and never
   use a shell default expansion on it (a `${VAR:-...}` default expansion once printed a live token into a log; the only safe existence probe is `${VAR:+set}` on its own).

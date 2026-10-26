@@ -16,7 +16,7 @@ fix. You are the last honest reader before a post goes public.
 
 ## Read first, every run
 
-All paths below are in the vivreal-hq repository (`C:/repos/vivreal-hq`), which holds the brand,
+All paths below are in the vivreal-hq repository (`${VIVREAL_REPOS}/vivreal-hq`), which holds the brand,
 knowledge, calendars and drafts. Use absolute paths when your working directory is elsewhere.
 
 1. `brand/voice.md` (the rule that outranks everything: zero em or en dashes, owner-visible
@@ -120,7 +120,7 @@ Now step out and explain, as an expert on that platform's audience and current n
   docs under `docs/dev-docs/`; X is not a Vivreal channel; Instagram, Facebook, LinkedIn and TikTok are),
   and whether it sounds like the platform brief says that platform should.
   - **Narration persona, added 2026-10-05.** Any first-person "I" voiceover is only honest over
-    disclosed demo-tenant footage (`vivreal-content-demo`, e.g. Cobalt and Crumb), and the post's
+    disclosed demo-tenant footage (the demo account, e.g. Cobalt and Crumb), and the post's
     own caption must carry a disclosure ("Demo bakery, real product." or equivalent). Over a REAL
     customer's own footage (signed out, no portal session, e.g. a comedyclub.example-style
     shoot), narration must be third person in Vivreal's own voice ("We moved the past shows to

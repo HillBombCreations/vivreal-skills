@@ -19,7 +19,7 @@ Last synced: 2026-10-21 against VR_Client_API `origin/stable` (tag v2.17.3, the 
 - You ARE the Client Stack Expert. Do not say "As an expert, I would..."
 
 ## Scope boundary (HARD RULE)
-`${VIVREAL_REPOS}` = the parent directory of this repo (run `Get-Item ..` / `cd .. && pwd` to resolve, typically `C:\repos`).
+`${VIVREAL_REPOS}` = the parent directory of this repo (run `Get-Item ..` / `cd .. && pwd` to resolve).
 You may only Read/Grep/Glob inside:
 - ${VIVREAL_REPOS}/VR_Client_API
 - ${VIVREAL_REPOS}/VR_Client_Auth
@@ -75,7 +75,7 @@ Load `vivreal-workflow:verification-discipline`: a zero is only evidence once th
 - **Site chrome comes from the TOP-LEVEL site fields, not the `siteDetails.values` mirror (2026-09-29).** The site document holds each chrome subsystem twice; VR_Secure_API writes only the top level, so the nested mirror goes stale on the first save. This service now emits the top-level copies, which is what fixed "saved in Studio, never changed live" for the announcement bar and friends.
 - **CORS anchors the Amplify origin to Vivreal's own app ids**, not to `*.amplifyapp.com` (2026-09-27), and the Site MCP checkout accepts an `amplifyapp.com` origin only on that anchor.
 - **The approvals switch hides a held social post** from the public feed (2026-10-01).
-- VR_Client_Auth: `@hillbombcreations/schemas`, secrets in `vivreal/prod/client-auth`. The authorizer routes on the persisted `group.dbKey` (see DB routing above). Serverless Framework, `nodejs22.x` (read `serverless.yml` `runtime:`; the old "still Node 18" note is wrong).
+- VR_Client_Auth: `@hillbombcreations/schemas`, secrets in `<secret-prefix>/client-auth`. The authorizer routes on the persisted `group.dbKey` (see DB routing above). Serverless Framework, `nodejs22.x` (read `serverless.yml` `runtime:`; the old "still Node 18" note is wrong).
 - **Public content GET filter-drop fix**: the `getCollectionObjects` route was silently dropping requested filter keys when a collection had >50 items or a sparse field, it now falls back correctly instead of returning an incomplete result set. Filter fan-out is now bounded server-side: validator caps `filters` at 12 keys (`Joi.object().max(12)`), existence checks sliced to 5.
 - **Media-signing completeness sweep (2026-08)**: sites with no `mediaFields` registry now get page/hero/cta/chrome media signed too, closed gaps in the cta subtree (band-variant `art[]`), the two wordmark seats (`hero.wordmark.image`, `footer.wordmark.imageKey`), `hero.collage[]`/`hero.overlays[]`, and per-binding `sectionConfig` media.
 - **VR_Client_API now has ESLint + a 100%-branch-coverage gate + husky pre-push** (measures `src/**`, not a hand-enumerated allowlist).
@@ -107,7 +107,7 @@ Load `vivreal-workflow:verification-discipline`: a zero is only evidence once th
 - Timeout budget: authorizer 290s but should respond in <500ms p99; client API 30s but should respond in <2s p99.
 - Cold start: this is the highest-traffic backend, provisioned concurrency may be justified at scale.
 - Reserved concurrency was raised once for crawler bursts and then LOWERED on 2026-09-21 because each container holds Mongo pools against a shared Atlas connection cap (`vivreal-hq/docs/projects/atlas-connection-fixes-2026-09-15/spec.md`); the ConcurrentExecutions alarm was recalibrated to the new ceiling in the same change, so read both from `sam-template.yaml`. Alarms on Throttles, ConcurrentExecutions and Duration p95 exist behind the optional `AlarmNotificationArn` param, plus a `MonitoringSubscription` (CacheHitRate) + CloudWatch dashboard for the edge cache and a locked-down `ClientApiCloudFrontLogsBucket` (SSE, 90d expiry).
-- Secrets Phase 2: env resolves from `vivreal/prod/client-api` + `vivreal/prod/core` (Secrets Manager) + SSM params; media-signing env unchanged (`CDN_BASE_URL`, `CLOUDFRONT_SIGNING_KEY_PAIR_ID` in SSM, `CLOUDFRONT_SIGNING_PRIVATE_KEY` in `vivreal/prod/client-api`).
+- Secrets Phase 2: env resolves from `<secret-prefix>/client-api` + `<secret-prefix>/core` (Secrets Manager) + SSM params; media-signing env unchanged (`CDN_BASE_URL`, `CLOUDFRONT_SIGNING_KEY_PAIR_ID` in SSM, `CLOUDFRONT_SIGNING_PRIVATE_KEY` in `<secret-prefix>/client-api`).
 
 ### MongoDB consistency & performance
 - Multi-tenant via authorizer-injected `database` context. Same dbKey routing as CMS API.

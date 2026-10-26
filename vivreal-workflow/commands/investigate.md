@@ -21,7 +21,7 @@ prompt: |
   Investigate: $ARGUMENTS
 
   Read the shared-standards skill first.
-  Read C:\repos\Vivreal_Portal_Mobile\CLAUDE.md for portal conventions.
+  Read ${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md for portal conventions.
   If backend services are involved, read the relevant backend CLAUDE.md files.
 
   Write your findings to docs/investigations/<slug>/findings.md.

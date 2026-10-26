@@ -51,7 +51,7 @@ Rule of thumb: reproducer + user impact = bug -> /coordinator. Planned/explorato
 
 ## Phase 1 - Investigation (ALWAYS)
 
-Dispatch `researcher`. Prompt must include: read the `shared-standards` skill first, read `C:\repos\Vivreal_Portal_Mobile\CLAUDE.md`, read `brief.md`, read relevant backend `CLAUDE.md` files if backend is in scope, read `C:\repos\Vivreal_Docs` if docs site is in scope. Tailor the investigation:
+Dispatch `researcher`. Prompt must include: read the `shared-standards` skill first, read `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md`, read `brief.md`, read relevant backend `CLAUDE.md` files if backend is in scope, read `${VIVREAL_REPOS}/Vivreal_Docs` if docs site is in scope. Tailor the investigation:
 
 - AUDIT - enumerate every issue with file:line + severity + category; do not propose fixes
 - FEATURE - map existing patterns the new code must fit; identify reuse and collisions
@@ -158,7 +158,7 @@ Failure conditions: agent error/empty/refuse, missing or malformed artifact, stu
 | Agent system | AI_AGENT_SYSTEM.md, BACKEND_APIS.md (sec 12) |
 | Email | aws-ses-email-guide.md, BACKEND_APIS.md |
 | Security | BACKEND_APIS.md (sec 8), insights_architecture.md, ARCHITECTURE.md (sec 9) |
-| Docs site itself | C:\repos\Vivreal_Docs (list content/** and src/app/**) |
+| Docs site itself | ${VIVREAL_REPOS}/Vivreal_Docs (list content/** and src/app/**) |
 
 ## Quick reference
 

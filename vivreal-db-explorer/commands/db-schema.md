@@ -1,7 +1,7 @@
 ---
 name: db-schema
 description: Show the Mongoose schema definition, indexes, and a sample document for any Vivreal MongoDB collection
-allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text), Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
+allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" --query SecretString --output text), Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
 user-invocable: true
 ---
 
@@ -13,11 +13,12 @@ Shows the full picture of a MongoDB collection: Mongoose schema definition (from
 
 The MCP server is normally **already connected**, the `vivreal-db-explorer` plugin launches it via
 `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets Manager
-(`vivreal/prod/main-api`) at startup. Try your first MCP call directly. If it returns "not connected"
+(the secret named by the `VIVREAL_DB_SECRET_ID` environment variable; its value is in vivreal-hq
+`docs/infra/secret-names.md`) at startup. Try your first MCP call directly. If it returns "not connected"
 source the string yourself and call `mcp__mongodb__connect`, do **NOT** ask the user to paste one:
 
 ```bash
-aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api --query SecretString --output text | node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"
+aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" --query SecretString --output text | node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"
 ```
 
 Run it exactly as written, on one line: this command's `allowed-tools` pre-approves those two
@@ -49,10 +50,10 @@ Search these locations for the schema definition:
 
 | Repo | Schema Locations |
 |---|---|
-| VR_CMS_API | `C:\repos\VR_CMS_API\src\models\` |
-| VR_Secure_API | `C:\repos\VR_Secure_API\src\models\` or inline in services |
-| VR_Main_API | `C:\repos\VR_Main_API\src\models\` |
-| Vivreal-Schemas | `C:\repos\Vivreal-Schemas\` (shared schemas) |
+| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/src/models/` |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/src/models/` or inline in services |
+| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/src/models/` |
+| Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas/` (shared schemas) |
 
 Search strategy:
 1. Grep for the collection name (singular form) + `Schema` in the model directories

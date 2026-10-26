@@ -28,7 +28,7 @@ color: green
 2. Verify `packages/content-studio/capture-assets/auth.storageState.json` exists. If
    missing, return `auth_expired` with the two refresh commands from
    `packages/content-studio/CLAUDE.md`, run from that package: `npx tsx dev/g2-capture/record-auth.ts`
-   (a fresh login as `vivreal-content-demo`), then `npx tsx dev/refresh-auth-state.ts` (rebuilds
+   (a fresh login as the demo account), then `npx tsx dev/refresh-auth-state.ts` (rebuilds
    localStorage and dismisses the install prompt).
 3. **Gate: a `qa-walker` walk of the exact flow you are about to shoot must
    exist and be clean before you film.** Same owner rule `tutorial-maker` runs
@@ -567,7 +567,7 @@ Skip it for a social-only library session that no page uses.
   opening (then closing) dialogs.
 - Never sign in as any identity outside the "Which login" table (in
   `vivreal-knowledge:vivreal-accounts-and-writes`) without the owner's OK
-  first, and never use `vivreal/qa/walk-accounts#scratch-owner` on any business but QA v5 scratch.
+  first, and never use the `scratch-owner` key of the QA account bundle on any business but QA v5 scratch.
 - Never swap a name, number or label in the page before a capture.
 - Never film any flow without a clean `qa-walker` walk of it first on the
   current build (see First actions above).

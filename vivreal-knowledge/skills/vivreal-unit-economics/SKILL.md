@@ -1,16 +1,16 @@
 ---
 name: vivreal-unit-economics
-description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS: gross margin per customer, the cost stack (AWS, MongoDB Atlas, AI), overage revenue, infra cost at scale, runway, or whether a change dents the ~80% margin floor. Teaches where the real numbers live: tier-quotas pricing, the AWS bill as a decomposition (tax plus an untaxed Registrar pass-through), Amplify build minutes, Atlas by cluster rung, overage and spending caps, and that DB tier tracks PEAK CONCURRENCY not signups. Customer inference is RETIRED as a cost axis. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, AWS bill, AWS tax, Cost Explorer, Amplify build minutes, Amazon Registrar, domain cost, pass-through, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. Grounds the `finance-auditor` agent; for GTM/funnel economics use the growth agents.'
+description: 'Use when reasoning about Vivreal''s COST, MARGIN, PRICING, or UNIT ECONOMICS: gross margin per customer, the cost stack (AWS, MongoDB Atlas, AI), overage revenue, infra cost at scale, runway, or whether a change dents the margin floor. Teaches where the real numbers live: tier-quotas pricing, the AWS bill as a decomposition (tax plus an untaxed Registrar pass-through), Amplify build minutes, Atlas by cluster rung, overage and spending caps, and that DB tier tracks PEAK CONCURRENCY not signups. Customer inference is RETIRED as a cost axis. Triggers on: unit economics, gross margin, pricing, overage, spending cap, AWS cost, AWS bill, AWS tax, Cost Explorer, Amplify build minutes, Amazon Registrar, domain cost, pass-through, Atlas cost, M10/M20/M30, Anthropic cost, prompt caching, AI quota, runway, margin floor, scale ladder, peak concurrency, CAC payback. Grounds the `finance-auditor` agent; for GTM/funnel economics use the growth agents.'
 ---
 
-Last synced: 2026-10-19. **A stamp only means anything if every hand-patch moves it.** This one
+Last synced: 2026-10-25. **A stamp only means anything if every hand-patch moves it.** This one
 sat at 2026-07-30 while facts were edited in underneath it, so it stopped meaning "everything
 before this date, nothing after" and became decoration. Bump it whenever you touch a fact here,
 or delete the line rather than leaving a date nobody can rely on.
 
 # Vivreal Unit Economics: cost, margin & pricing model
 
-The internal cost/margin/profitability model for Vivreal. This is the source-of-truth digest for any margin or pricing reasoning, and the grounding for the **`finance-auditor`** agent. Lean body; the scale ladder + AI-optimization detail live in `references/cost-model.md`.
+The internal cost/margin/profitability model for Vivreal. This is the source-of-truth digest for any margin or pricing reasoning, and the grounding for the **`finance-auditor`** agent. Lean body; the bill-reading method, the margin model and the AI-optimization detail live in `references/cost-model.md`.
 
 > **Sources of truth, and the order to trust them in.** Pricing and quota constants:
 > `@hillbombcreations/tier-quotas` `src/tierQuotas.ts`, which is authoritative and which also
@@ -18,8 +18,13 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 > headroom: `db.adminCommand({serverStatus: 1})`, which is permitted on M10 (and was on M0) and
 > returns `connections.current` and `connections.available` directly. Infrastructure spend: the
 > AWS bill and the MongoDB invoice, which are two separate bills. **Everything below is
-> reasoning and magnitude. Where a number is pinnable, this file points at the pin rather than
+> reasoning and method. Where a number is pinnable, this file points at the pin rather than
 > copying it, because a copy is wrong in two places at once the moment it moves.**
+>
+> **This repository is PUBLIC, so it carries the method and no figures.** The margin floor and
+> the live figures are in the private vivreal-hq repo at `docs/finance/unit-economics.md` (read
+> with your local checkout). That file is where the measured bill, the fixed infra cost, the
+> blended revenue and the scale ladder live; update them there, never here.
 
 ## Pricing & blended revenue
 
@@ -28,7 +33,7 @@ The internal cost/margin/profitability model for Vivreal. This is the source-of-
 pricing-constant source of truth including the Stripe price ids. Read them there before quoting
 a single figure to anyone, internally or in copy.
 
-**Count paying customers by `stripeSubscriptionID`, never by `tier`.** Several paid-tier groups are comped by hand and pay nothing (measured read-only 2026-10-15: 5 groups on `pro`, 0 with a Stripe subscription), so MRR, ARPU and margin computed from the tier distribution report revenue that does not exist.
+**Count paying customers by `stripeSubscriptionID`, never by `tier`.** Several paid-tier groups are comped by hand and pay nothing (the measured count is in the private figures file), so MRR, ARPU and margin computed from the tier distribution report revenue that does not exist.
 
 Three specific traps this table used to walk into:
 
@@ -46,41 +51,40 @@ Three specific traps this table used to walk into:
 
 - The blended figure and the tier mix are estimates that move with the customer base. **Recompute the mix from `Vivreal.groups` before using it in an argument**, and take the prices from the package. Annual plans exist as real Stripe prices in `TIER_DISPLAY`.
 - **AI capability flags.** AI was gated in two dimensions. The metered `agentActions` quota is now `0` everywhere, so what remains live is the binary capability flags. `TIER_FLAGS` in `src/tierQuotas.ts` carries `aiSiteEditing` and `aiComponentGen`. **Read which tier gets which from the file.** Helpers mirror `canHidePoweredBy`, plus `lowestTierWithFlag()` so consumers derive the required tier rather than hardcoding one. `ENFORCEMENT_MANIFEST` entries are mandatory: it is a total Record over the flags, so omitting one fails the build and the tests. **A manifest row is only true if the path the product actually calls runs the gate**, so check the caller before believing a row.
-- **Gross margin improves with scale** because fixed infra amortizes, but do not quote a blended ~84-90% without re-deriving it: the 2026-10-17 margin check put the top paid tier above the ~80% floor at typical use and the entry paid tier below it, because per-site rebuilds (Amplify build minutes) are the largest per-customer cost. Payment processing is the other per-customer cost that matters. Model inference is no longer a per-customer cost at all.
+- **Gross margin improves with scale** because fixed infra amortizes, but never quote a blended margin without re-deriving it per tier against the floor (the floor and the last margin check are in the private figures file). Per-site rebuilds (Amplify build minutes) are the largest per-customer cost, so a cheap tier with frequent rebuilds is where the floor breaks first. Payment processing is the other per-customer cost that matters. Model inference is no longer a per-customer cost at all.
 
 ## The cost stack (three bills, two off the AWS invoice)
 
-1. **AWS is a DECOMPOSITION, not a constant, and it is NOT flat.** Measured from Cost Explorer
-   (`UnblendedCost`, the prod payer account), the bill ran **$37.46, $30.27, $36.58, $62.13,
-   $167.45, $206.37** for 2026-04 through 2026-09. Any answer built on "about $35 a month,
-   flat" is low several times over. Model it as:
+1. **AWS is a DECOMPOSITION, not a constant, and it is NOT flat.** Read it from Cost Explorer
+   (`UnblendedCost`, the prod payer account), one closed month at a time. It has grown several
+   times over across 2026, so any answer built on a remembered flat monthly figure is wrong.
+   Model it as:
 
    ```
-   monthly_bill = usage * 1.091 + domain_registrations
+   monthly_bill = usage * (1 + tax_rate) + domain_registrations
    ```
 
-   - **Tax is about 9.1 per cent of USAGE, and only of usage.** Measured 9.05, 9.04, 9.10,
-     9.08, 9.12, 9.09 per cent for six straight months. It is one of the steadiest numbers in
-     the whole model, so treat a rate that appears to have moved as a composition error first.
-   - **Amazon Registrar is a SEPARATE, UNTAXED record type** that entered the bill in 2026-08
-     at **$71.00**, then **$87.00** in 2026-09. It is a domain pass-through, so it belongs
-     against domain revenue, not against infrastructure. It is also exactly what made the rate
-     look like it moved when it had not: tax over the WHOLE 2026-08 bill reads 4.8 per cent,
-     tax over usage reads 9.12 per cent like every other month. **Group by `RECORD_TYPE`
-     before reasoning about the rate at all.**
-   - **The usage line that moves is Amplify, and it is BUILD minutes.** $11.32 (2026-04) to
-     $57.05 (2026-09), level with $56.88 in 2026-08, of which **66 to 81 per cent is build
-     duration rather than hosting**. Builds are billed per minute, so this line tracks
+   - **Tax applies to USAGE, and only to usage.** The rate has been one of the steadiest numbers
+     in the whole model month over month, so treat a rate that appears to have moved as a
+     composition error first.
+   - **Amazon Registrar is a SEPARATE, UNTAXED record type.** It is a domain pass-through, so it
+     belongs against domain revenue, not against infrastructure. It is also exactly what makes
+     the rate look like it moved when it has not: tax divided by the WHOLE bill drops in any
+     month with domain registrations, while tax divided by usage stays put. **Group by
+     `RECORD_TYPE` before reasoning about the rate at all.**
+   - **The usage line that moves is Amplify, and it is BUILD minutes.** Most of the Amplify line
+     is build duration rather than hosting. Builds are billed per minute, so this line tracks
      **DEPLOYS**, not customer count and not traffic. A redeploy sweep across customer sites
      is a real and immediate bill.
-   - Also rising: **WAF** ($0 to $9.94, new in 2026-07), **CloudWatch** ($2.10 to $7.23),
-     **Secrets Manager** ($1.08 to $5.84, per secret per month). **WorkMail is FALLING**,
-     $15.39 down to $3.09, so it is no longer the biggest line despite older text saying so.
-   - **Lambda is still $0** (free-tier absorbed) and **Bedrock is still absent**, which keeps
+   - Also rising: **WAF** (new in 2026-07), **CloudWatch** (alarms, custom metrics, log
+     volume), **Secrets Manager** (per secret per month). **WorkMail is FALLING**, so it is no
+     longer the biggest line despite older text saying so.
+   - **Lambda is still free-tier absorbed** and **Bedrock is still absent**, which keeps
      confirming AI is the direct Anthropic API, not Bedrock.
 
    The Atlas tier step does not change this line: Atlas is a different bill entirely (below).
-2. **MongoDB Atlas, billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). $0 free → **~$60 M10** → **~$150 M20** → **~$400+ M30**. One cluster holds all tenant DBs, you don't pay per database.
+   The measured monthly series, by record type and by service, is in the private figures file.
+2. **MongoDB Atlas, billed directly by MongoDB, NOT on the AWS bill.** This is a real lever and it tracks **PEAK CONCURRENCY, not signup count** (see below). Each cluster rung (free, M10, M20, M30) costs a step more; price a rung from the MongoDB invoice, not a remembered list price. One cluster holds all tenant DBs, you don't pay per database.
 3. **Customer inference: RETIRED as a cost axis, 2026-09-18.** `agentActions` is `0` on every
    tier including enterprise, so no group can enter the agent loop and there is no per-customer
    Claude API spend. This was a deliberate owner decision to stop paying for customer inference,
@@ -107,24 +111,28 @@ The Atlas cost lever is driven by **simultaneous in-flight backend requests**, n
 - **Implication for forecasting:** model the DB-tier step from a peak-concurrency projection, not a signup count. A traffic burst forces the upgrade long before raw customer count would.
 - **The current tier is M10 (since 2026-10-17): 1,500 connections per node, 15 new connections per second per node, no data-transfer quota.** The M10 invoice figure is not yet recorded; read the MongoDB invoice before quoting a monthly cost, and do not model it from a list price. History: on M0 Free, in 2026-10 the limit that bit was BYTES, not connections (10 GB out per rolling 7 days, then about 90 KB/s); Flex was chosen 2026-10-14 and never switched to. Origin egress still scales with live sites times payload (CloudFront refreshes each continuously visited site about once a minute), so keep payloads slim. Mechanics: `vivreal-atlas-topology`.
 
-## The scale ladder (revenue at the ~$45 blended)
+## The scale ladder (how to build it)
 
-| Customers | MRR (~$45 blended) | Likely Atlas tier |
-|---|---|---|
-| 50 | **~$2.25k/mo** | M10 (~$60) |
-| 500 | **~$22.5k/mo** | M10→M20 |
-| 1,000 | **~$45k/mo** | M20 |
-| 5,000 | **~$225k/mo** | M20→M30 |
+The ladder itself, with its blended figure and per-rung MRR, is in the private figures file. The
+method that produces it:
 
-**Fixed infra is about $195/mo on the September close with M10 budgeted** (2026-09 AWS usage
-$109.41 plus $9.96 tax, Atlas M10 budgeted at $60 to $65 from the hourly rate, GitHub Team and one
-non-product domain renewal). The M10 line is a budget until the first MongoDB invoice is read, and
-October is running well above September; **re-derive from the October close and the invoice**
-(Cost Explorer `UnblendedCost` grouped by `RECORD_TYPE`, method in `references/cost-model.md`)
-before quoting either. **Only quote a closed month.** A mid-month read understates: the September
-figure this file carried was read on the 24th and was 30% low, which made fixed infra look half
-its size. Do not add WorkMail on top of the AWS total, it is already inside it. Domains sold to
-customers are excluded on purpose, being an untaxed pass-through against domain revenue.
+```
+blended_ARPU = sum over paid tiers of (price from TIER_DISPLAY * share of PAYING groups on that tier)
+MRR(rung)    = paying_customers(rung) * blended_ARPU
+```
+
+Count paying groups by `stripeSubscriptionID`, take the prices from the package, recompute the
+mix from `Vivreal.groups`, and pair each rung with the Atlas tier its PEAK CONCURRENCY needs (not
+its customer count).
+
+**Fixed infra** is the sum of: AWS usage plus its tax for a CLOSED month, the Atlas line from the
+MongoDB invoice (a budget from the hourly rate only until the first invoice is read), GitHub, and
+any non-product domain renewals. Derive it from Cost Explorer `UnblendedCost` grouped by
+`RECORD_TYPE` (method in `references/cost-model.md`). **Only quote a closed month.** A mid-month
+read understates badly, and once made fixed infra look half its real size. Do not add WorkMail on
+top of the AWS total, it is already inside it. Domains sold to customers are excluded on purpose,
+being an untaxed pass-through against domain revenue. The current figure is in the private
+figures file.
 
 The margin-improves-with-scale conclusion survives, but the mechanism has changed and matters:
 the biggest usage line is now **Amplify build minutes, which scale with DEPLOY activity rather
@@ -145,7 +153,7 @@ variable cost that a per-customer model will miss entirely.
 
 ## Read the reference for
 
-- The full **scale ladder** with per-tier margin math, the parameterized margin model, and the AWS line-item breakdown → `references/cost-model.md`.
+- The **bill-reading method** by record type and by service, the parameterized per-customer margin model, and how to build the scale ladder → `references/cost-model.md` (the figures themselves are in the private vivreal-hq file named above).
 - The **AI cost mechanics** (action = one tool call; agentic loop = N+1 model calls; the uncached vs cached vs Haiku-for-routine exposure table) → `references/cost-model.md`.
 
 ## Boundary (do not confuse with growth)

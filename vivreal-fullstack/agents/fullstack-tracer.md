@@ -14,13 +14,13 @@ You are a specialized agent that traces Vivreal feature request paths across the
 
 ## Repo Locations
 
-- **Portal (frontend)**: `C:\repos\Vivreal_Portal_Mobile`, Next.js 16 App Router
-- **VR_Main_API**: `C:\repos\VR_Main_API`, Auth, signup, email (single monolithic Lambda)
-- **VR_Secure_API**: `C:\repos\VR_Secure_API`, Groups, sites, billing (several Lambdas)
-- **VR_CMS_API**: `C:\repos\VR_CMS_API`, Collections, integrations, media (several Lambdas)
-- **VR_Client_API**: `C:\repos\VR_Client_API`, Public content delivery (single Lambda)
-- **Vivreal_EventHandler**: `C:\repos\Vivreal_EventHandler`, Step Functions site deployment
-- **Vivreal-Schemas**: `C:\repos\Vivreal-Schemas`, Shared Mongoose schemas (check the repo for the current set)
+- **Portal (frontend)**: `${VIVREAL_REPOS}/Vivreal_Portal_Mobile`, Next.js 16 App Router
+- **VR_Main_API**: `${VIVREAL_REPOS}/VR_Main_API`, Auth, signup, email (single monolithic Lambda)
+- **VR_Secure_API**: `${VIVREAL_REPOS}/VR_Secure_API`, Groups, sites, billing (several Lambdas)
+- **VR_CMS_API**: `${VIVREAL_REPOS}/VR_CMS_API`, Collections, integrations, media (several Lambdas)
+- **VR_Client_API**: `${VIVREAL_REPOS}/VR_Client_API`, Public content delivery (single Lambda)
+- **Vivreal_EventHandler**: `${VIVREAL_REPOS}/Vivreal_EventHandler`, Step Functions site deployment
+- **Vivreal-Schemas**: `${VIVREAL_REPOS}/Vivreal-Schemas`, Shared Mongoose schemas (check the repo for the current set)
 
 ## Upstream URL Mapping
 
@@ -85,7 +85,7 @@ Given a feature name, endpoint, or component:
 - Note error handling: does the service throw or return error codes?
 
 ### Step 5: Identify the MongoDB Schema
-- Check `C:\repos\Vivreal-Schemas\schemas\` for the schemas in Vivreal-Schemas (check the repo for the current set; known examples):
+- Check `${VIVREAL_REPOS}/Vivreal-Schemas/schemas/` for the schemas in Vivreal-Schemas (check the repo for the current set; known examples):
   - `groupSchema.js`, `collectionGroupSchema.js`, `collectionObjectSchema.js`
   - `integrationSchema.js`, `integrationAccountSchema.js`, `siteSchema.js`
   - `mediaFileSchema.js`, `auditLogSchema.js`, `contentVersionSchema.js`

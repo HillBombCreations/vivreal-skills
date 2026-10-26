@@ -157,7 +157,7 @@ keeps an audit from becoming a rewrite.
 > Migrate **[URL]** into Vivreal for **[customer/group]**.
 > Follow the full pipeline, crawl → ingest → collections/integrations → site → assemble → audit, with the parity standard, both audit passes (live-DOM sweep + local render vs live), and stop at each human gate (pre-flight, pre-creation, cutover) for my approval.
 
-Migration is operated FROM `C:\repos\Vivreal_Site_Migrator`, open a session there and run
+Migration is operated FROM `${VIVREAL_REPOS}/Vivreal_Site_Migrator`, open a session there and run
 **`/migrate <url>`** (its in-repo command with the 3 approval gates). From any other repo, the
 `vivreal-migrator-knowledge` skill supplies the pipeline map, heuristics, and the renderer
 capability manifest (`capabilities/CAPABILITIES.md`).
@@ -178,7 +178,7 @@ goal is a reusable template, not a customer's real content.
 >
 > **[Produce:]** Expand **[calendar row / this brief]** into platform-ready drafts with per-platform limits and the on-voice self-check.
 
-Content work is operated FROM `C:\repos\vivreal-hq` (the standalone `vivreal-content` repo was
+Content work is operated FROM `${VIVREAL_REPOS}/vivreal-hq` (the standalone `vivreal-content` repo was
 consolidated into it 2026-08-03 and is now dead source, frozen at that commit), its in-repo
 `content-planner` agent and the specialists it directs (`carousel-editor`, `footage-recorder`,
 `short-form-editor`, `linkedin-editor`, `social-video-director`, `guide-writer`,

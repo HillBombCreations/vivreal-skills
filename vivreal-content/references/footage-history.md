@@ -58,8 +58,8 @@ are new refusals to film in their place. All of that is in the unsafe table belo
 
 **Two caveats that apply to every number below.**
 
-1. **The walks ran as Justin on the Vivreal group. We film `vivreal-content-demo` (Cobalt
-   Crumb).** Product behaviour carries across: sheet geometry, timings, broken screens, the
+1. **The walks ran as Justin on the Vivreal group. We film the demo
+   account.** Product behaviour carries across: sheet geometry, timings, broken screens, the
    words on the buttons. Tenant content does not. The 30 pages, the 157 lists, the four
    social links and the "one site" dashboard all belong to the Vivreal group. Never caption
    a demo-tenant shot with a Vivreal-group number, and expect different counts on screen.
@@ -291,7 +291,7 @@ before the floating AI assistant was removed (2026-09-24), and before X and Goog
 removed from the product entirely. **Treat any 2026-09-08 "do not film" as a question, not an
 answer**, which is that list's own stated principle.
 
-Walked signed in as the demo tenant (`vivreal-content-demo`, group Vivreal Content) at **both 1440
+Walked signed in as the demo tenant (the demo account, group Vivreal Content) at **both 1440
 and 390**, on the deployed `stable` line, not `main`. Every surface settled before it was read.
 
 **Confirmed GONE from the live portal, at both widths, on all eleven surfaces:** any X or
@@ -535,7 +535,7 @@ of the folder still works.
 shows 4.8s at 1440 and 1.5s at 390. The **first** page load of a browser session is the slow one;
 the same page is much faster later in the run. Plan the pre-roll for the slow case.
 
-**9. Node cannot `import` a Windows absolute path.** `import { chromium } from 'C:/repos/...'` throws
+**9. Node cannot `import` a Windows absolute path.** `import { chromium } from 'D:/work/...'` throws
 `ERR_UNSUPPORTED_ESM_URL_SCHEME`. This compounds the `npx tsx -e` trap in the third-pass section
 above: write the probe as a `.cjs` file using `require('C:/...')`, or put a `.mts` inside the package
 whose `node_modules` you need and run `npx tsx` from there. Two probes were lost to this.
@@ -881,7 +881,7 @@ phantom outage mid-shoot.
 
 ### Session and state, before the first frame
 
-- **Tenant: `vivreal-content-demo` only.** Never `justin@vivreal.io`, which resolves to 20
+- **Tenant: the demo account only.** Never `justin@vivreal.io`, which resolves to 20
   groups including real customers. filming-hygiene.md is the rule; this is the reminder.
   (2026-10-14: superseded by the agent's "Accounts and owner-approved writes".)
 - **Demo tenant site slots are scarce** (9 of 10 used on 2026-08-30; read `get-group-usage`
