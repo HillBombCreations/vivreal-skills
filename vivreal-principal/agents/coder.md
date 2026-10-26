@@ -316,7 +316,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 
 - **Export `VIVREAL_REPOS` into the git hook's own shell.** The portal's cross-repo parity test
   compares its lockfile against a **sibling checkout on disk** and skips with a warning when the
-  variable is missing, so it silently falls through to `C:\repos\Vivreal_Templates`, which is
+  variable is missing, so it silently falls through to the default sibling checkout of `Vivreal_Templates`, which is
   parked on an old branch at a renderer version the fleet left behind, while the lockfiles on the
   deployed lines have moved. It then reports a version mismatch that is not real. Cost one rejected
   push. Set it in the hook's environment, not just in your shell, and confirm which parity

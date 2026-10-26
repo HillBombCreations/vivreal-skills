@@ -235,7 +235,7 @@ had already connected Instagram, to the wrong account, so the retake opened on "
 than on a Connect button. The Channels card shows only the display name ("Working · Justin
 Ceccarelli · 0 followers"), which does not tell Vivreal's own account apart from a personal one.
 The handle only appears in the header of the provider's own page, `/app/channels/<key>`
-(here `@vivreal_jcecc`, business account, 0 posts, where Vivreal's is `@vivreal.io`). Probe both
+(here a personal business account with 0 posts, where Vivreal's is `@vivreal.io`). Probe both
 in a throwaway CDP tab (`newPage()`, read, `close()` that tab only) before rolling. If the
 channel is connected to anything, stop and report the handle: disconnecting is the owner's call,
 and a disconnect strands any queued posts. Also delete a killed take's `REMOTE_DIR` along with
@@ -345,7 +345,7 @@ cd packages/content-studio
 npm run tutorial -- src/tutorial/scripts/<slug>.ts
 ```
 
-**Give `--out` an ABSOLUTE path** (`--out=C:/repos/vivreal-hq/content/tutorials/<date>-<slug>`).
+**Give `--out` an ABSOLUTE path** (`--out=${VIVREAL_REPOS}/vivreal-hq/content/tutorials/<date>-<slug>`).
 With vivreal-hq #23, `run-tutorial.ts` resolves a relative `--out` from the vivreal-hq repo root
 (`resolveOutDir` in `src/repo-root.ts`), and a relative `--out` that resolves outside the repo
 root, or onto the root itself, is refused with exit 1 before any script loads; an absolute path
@@ -567,7 +567,7 @@ update. Product defects go to the dispatcher, not into the notes.
 - Never film on any identity or business outside "Which login, for which business" in
   `vivreal-knowledge:vivreal-accounts-and-writes` (preloaded through this agent's `skills:` field; its "never Schedule or Connect" list defers to
   this agent's connect-and-post exception, and the two must keep agreeing): the demo account by default, the owner's own
-  session for per-person connections, `vivreal/qa/walk-accounts#scratch-owner` (one key, read in process) for QA v5 scratch only. Any write
+  session for per-person connections, the `scratch-owner` key of the QA account bundle (one key, read in process) for QA v5 scratch only. Any write
   in a take other than the connect-and-post exception runs that skill's eight-step write protocol
   and gets a `mutations[]` entry. Never swap a name in the page before a take. Never film a route in
   `FILMING_BLOCKED_URLS` (`/app/outreach/*`, the group audit and users tabs).

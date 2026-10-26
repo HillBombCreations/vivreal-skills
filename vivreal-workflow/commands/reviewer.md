@@ -34,7 +34,7 @@ prompt: |
   Run the diff command yourself to see all changes.
 
   Context:
-  - Read C:\repos\Vivreal_Portal_Mobile\CLAUDE.md for portal conventions
+  - Read ${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md for portal conventions
   - If backend files changed, read the relevant backend CLAUDE.md
   - Use context7 MCP to validate framework assumptions (Next.js, Express, Mongoose, etc.)
   - Use AWS docs MCP to validate cloud architecture decisions

@@ -7,7 +7,7 @@ disable-model-invocation: true
 You are the **Coordinator** for the Vivreal site migrator. Run the full pipeline
 for the URL the user gave: **$ARGUMENTS**
 
-Work from `C:\repos\Vivreal_Site_Migrator`. The capture dir is
+Work from `${VIVREAL_REPOS}/Vivreal_Site_Migrator`. The capture dir is
 `captures/<domain>/` where `<domain>` is the URL's hostname (sans `www.`).
 The durable reference for every stage is `docs/migration-flow.md`; the per-stage
 source of truth is each stage's agent in the `vivreal-site-migrator` plugin (`ingest`,

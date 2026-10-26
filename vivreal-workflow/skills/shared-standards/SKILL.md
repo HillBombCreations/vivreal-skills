@@ -484,8 +484,10 @@ the line still BUILDS. For anything that matters, confirm by behaviour on the li
 | `vivreal-websocket` | `VR_Secure_API/websocket/` | `.github/workflows/websocket.yml` |
 | `Vivreal-Media-CDN` | `VR_Secure_API/cloudformation/media-cdn.yaml` | `.github/workflows/media-cdn.yml` |
 
-### Secrets Manager (per-service `vivreal/prod/*`: secrets-audit Phase 2, 2026-07)
-The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`vivreal/prod/secure-api`, `vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/client-auth`, `vivreal/prod/main-api`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `/vivreal/prod/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
+### Secrets Manager (per-service `<secret-prefix>/*`: secrets-audit Phase 2, 2026-07)
+**Names are written with a placeholder prefix, because this repository is PUBLIC.** `<secret-prefix>/` is the Secrets Manager prefix, `<ssm-prefix>/` the SSM parameter prefix (it has a leading slash), `<qa-secret-prefix>/` the QA secret prefix; resolve them from the private vivreal-hq repo at `docs/infra/secret-names.md` (read with your local checkout). Never write a real prefix back into this repo: its check-definitions gate fails on one.
+
+The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`<secret-prefix>/secure-api`, `<secret-prefix>/cms-api`, `<secret-prefix>/client-api`, `<secret-prefix>/client-auth`, `<secret-prefix>/main-api`, `<secret-prefix>/analytics`, `<secret-prefix>/oncall`, `<secret-prefix>/site-deployment`) plus shared secrets (`<secret-prefix>/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `<ssm-prefix>/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
 
 ### Reading and verifying a CloudFormation deploy
 

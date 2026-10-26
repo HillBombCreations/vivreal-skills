@@ -94,7 +94,7 @@ before the Facebook, LinkedIn and TikTok takes.
 - **Disconnecting a wrong account works in the UI** (the footage-recorder 2026-10-02 note that
   "Account actions" is unreachable is stale for this): `/app/channels/instagram`,
   `[data-testid=ig-open-settings]`, `button[aria-label="Account actions"]`, the sheet names the
-  handle ("Justin Ceccarelli, @vivreal_jcecc", read it there too), `[data-testid=account-disconnect]`,
+  handle (the display name and the personal handle, read it there too), `[data-testid=account-disconnect]`,
   then `[data-testid=account-disconnect-confirm-action]`. Rehearse to the dialog and press
   `account-disconnect-keep` first if unsure. The card then moves to "Add another" with a Connect button.
 - **A disconnected provider's Connect is `[data-testid=channel-offer-<key>] button`**, there is no

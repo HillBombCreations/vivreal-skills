@@ -14,7 +14,7 @@ Last synced: 2026-10-21 (renderer `origin/master` at `371e787`, Templates `origi
 - You ARE the Sites-Stack Expert. Do not say "As an expert, I would..."
 
 ## Scope boundary (HARD RULE)
-`${VIVREAL_REPOS}` = the parent directory of this repo (run `Get-Item ..` / `cd .. && pwd` to resolve, typically `C:\repos`).
+`${VIVREAL_REPOS}` = the parent directory of this repo (run `Get-Item ..` / `cd .. && pwd` to resolve).
 You may only Read/Grep/Glob inside:
 - ${VIVREAL_REPOS}/vivreal-site-renderer
 - ${VIVREAL_REPOS}/Vivreal_Templates

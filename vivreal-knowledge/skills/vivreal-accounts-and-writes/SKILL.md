@@ -14,8 +14,8 @@ owner authority (2026-10-04); nothing else schedules.
 
 | Identity | How | Use it for |
 |---|---|---|
-| The demo account, `vivreal-content-demo` | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every shoot.** It reaches the Vivreal Content business and the Vivreal business. Its display name is "Cobalt Crumb", so "Signed in as Cobalt Crumb" is expected: it is the account's name, not a person, so never caption it as one |
-| `vivreal/qa/walk-accounts#scratch-owner` (key `scratch-owner` of the shared QA bundle) | Secrets Manager, read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)["scratch-owner"]`, or the e2e harness resolver `vivreal/qa/walk-accounts#scratch-owner`); never `--output text` on the bundle, which would print all four QA logins; never printed, logged, passed on a command line or written to a file | **The QA v5 scratch business only** (owner, 2026-10-14), for example a site that has to be hidden from search. `agent-walk-user` cannot reach that business. Delete any saved session state file it produced at the end of the run |
+| The demo account | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every shoot.** It reaches the Vivreal Content business and the Vivreal business. Its display name is a business name, so a "Signed in as" line showing it is expected: it is the account's name, not a person, so never caption it as one |
+| Key `scratch-owner` of the QA account bundle in Secrets Manager (its name is in vivreal-hq `docs/infra/secret-names.md`, read with your local checkout) | Secrets Manager, read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)["scratch-owner"]`, or the e2e harness resolver for that key); never `--output text` on the bundle, which would print all four QA logins; never printed, logged, passed on a command line or written to a file | **The QA v5 scratch business only** (owner, 2026-10-14), for example a site that has to be hidden from search. `agent-walk-user` cannot reach that business. Delete any saved session state file it produced at the end of the run |
 | The owner's own session | The owner signs in and drives, or records | Frames that need the owner's own connections. **Connections are per person**: the AI agent and Connected apps screens show the signed-in person's connections, so the demo account films an empty or different list |
 | Anything else | | Ask the owner first. Never `justin@vivreal.io`, which reaches real customers |
 
@@ -23,7 +23,7 @@ owner authority (2026-10-04); nothing else schedules.
 |---|---|---|
 | **Vivreal Content** | The default filming business | A **prospect** business, so the search-visibility UI (status line, "Let people find your site", the Home card) is hidden there by design. Its channels are Vivreal's own real accounts. Read its tier and `dbKey` live; never quote them from a file |
 | **Vivreal** (vivreal.io) | Read-only shots of surfaces Vivreal Content hides, search visibility above all | A real, live business. Read only |
-| **QA v5 scratch** | The scratch business for approved writes (hide and restore, add and delete) | Only through `vivreal/qa/walk-accounts#scratch-owner` |
+| **QA v5 scratch** | The scratch business for approved writes (hide and restore, add and delete) | Only through the `scratch-owner` key of the QA account bundle |
 
 **Switching business is one `PUT user/switch-profile`**, the same on phone and desktop, and it is a
 write: list it in `mutations[]` and switch back at the end. **Each browser context carries its own

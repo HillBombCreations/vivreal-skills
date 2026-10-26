@@ -286,18 +286,18 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 | **Vivreal** | Surfaces Vivreal Content hides | A real live business: read only. Staff surfaces are in the admin app, not in its portal nav |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
-or written to a file): Vivreal Content `vivreal/prod/agent-walk-user` (its own secret, never bundled). The QA
+or written to a file): Vivreal Content `<secret-prefix>/agent-walk-user` (its own secret, never bundled). The QA
 logins `canlook`, `empty-owner`, `scratch-owner` (QA v5 scratch) and `scratch2-owner` (scratch-2) are KEYS of one
-secret, `vivreal/qa/walk-accounts` (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
-`JSON.parse(...)[key]`, or the e2e harness resolver `vivreal/qa/walk-accounts#<key>`), never `--output text` on
-the bundle, which would print all four. `vivreal/qa/square-sandbox` and `admin-operator` (TOTP) stay separate
+secret, the QA account bundle (its name is in vivreal-hq `docs/infra/secret-names.md`) (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
+`JSON.parse(...)[key]`, or the e2e harness resolver for that key), never `--output text` on
+the bundle, which would print all four. `<qa-secret-prefix>/square-sandbox` and `admin-operator` (TOTP) stay separate
 secrets. `scratch3-owner`, `scratch4-owner`, `canedit` and `free-walker` were retired with their businesses
-(2026-10-16). List secrets by name only (`aws secretsmanager list-secrets --filters Key=name,Values=vivreal/qa/
+(2026-10-16). List secrets by name only (`aws secretsmanager list-secrets --filters Key=name,Values=<qa-secret-prefix>/
 --query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`. `agent-walk-user` cannot reach the scratch businesses. Delete any saved
 session state file a walk produced at the end of the run.
 
 **"No credential for that tenant" is a claim to check against the bundle, not a blocker.** The
-per-tenant QA secrets were merged into `vivreal/qa/walk-accounts` on 2026-10-17, so a missing
+per-tenant QA secrets were merged into the QA account bundle on 2026-10-17, so a missing
 standalone `scratch2-owner` secret does not mean the login is gone. List the bundle's keys in
 process before reporting a sign-in as unavailable (a v7 release step was wrongly deferred for
 exactly this, 2026-10-20).
@@ -344,7 +344,7 @@ existed. So before ANY local walk:
    need a write.
 4. **Record every service's head.** `node e2e.js heads` prints each worktree's commit and any local
    change; paste it into the matrix header. The launcher runs FIXED worktrees (`e2e-portal`,
-   `e2e-templates`, `e2e-mcp` and the API ones under `C:/repos/_wt`), so an unmerged PR is invisible
+   `e2e-templates`, `e2e-mcp` and the API ones under `${VIVREAL_REPOS}/_wt`), so an unmerged PR is invisible
    to a walk unless you move to it.
 5. **When the brief names a PR,** point that service at the PR head with
    `node e2e.js move <svc> <sha>`, then a FULL `stop` and `start` so every guard check runs again, and

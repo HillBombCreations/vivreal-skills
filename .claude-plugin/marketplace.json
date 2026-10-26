@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.29.0"
+    "version": "1.30.0"
   },
   "plugins": [
     {
@@ -32,7 +32,7 @@
     {
       "name": "vivreal-infra",
       "source": "./vivreal-infra",
-      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service vivreal/prod/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Also ships the WRITE-CAPABLE infra-engineer agent, which takes an infrastructure change from decision to deployed, the deliberate counterpart to vivreal-ops's read-only charter rather than a relaxation of it. Distinct from vivreal-knowledge's per-repo digests, this is the plumbing that crosses repos. Skills load passively from intent."
+      "description": "Auto-invoked CROSS-CUTTING infrastructure & architecture knowledge skills spanning the whole Vivreal AWS stack: Lambda packaging/deploy + reserved-concurrency scaling (vivreal-lambda, with the Mongo-connection ceiling), API Gateway + Cognito + the Client API key authorizer, the Step Functions + Amplify site-deploy pipeline, IAM + Secrets Manager (per-service <secret-prefix>/*), MongoDB Atlas topology/ops, the media CDN + S3 + CloudFront signing, the WebSocket real-time API, and the cross-repo web-push notification pipeline (vivreal-notifications). Also ships the WRITE-CAPABLE infra-engineer agent, which takes an infrastructure change from decision to deployed, the deliberate counterpart to vivreal-ops's read-only charter rather than a relaxation of it. Distinct from vivreal-knowledge's per-repo digests, this is the plumbing that crosses repos. Skills load passively from intent."
     },
     {
       "name": "vivreal-sentry",
@@ -47,7 +47,7 @@
     {
       "name": "vivreal-product",
       "source": "./vivreal-product",
-      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough), qa-walker (drives the live portal and customer sites in a real browser against a validation matrix and reports what is actually broken), social-critic (per-platform audience reaction plus a social-savvy critique of produced social drafts, POST / FIX / DO NOT POST), regular-user, and template-critic (judges a built Vivreal template against the real-world exemplar it was designed from, visually and structurally, read-only). All advisory, they evaluate and recommend; fixes route to coder, vivreal-content's content-planner or the editor that made the asset, or designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agent (which designs and builds)."
+      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough), qa-walker (drives the live portal and customer sites in a real browser against a validation matrix and reports what is actually broken), social-critic (per-platform audience reaction plus a social-savvy critique of produced social drafts, POST / FIX / DO NOT POST), regular-user, and template-critic (judges a built Vivreal template against the real-world exemplar it was designed from, visually and structurally, read-only). All advisory, they evaluate and recommend; fixes route to coder, vivreal-content's content-planner or the editor that made the asset, or designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agent (which designs and builds)."
     },
     {
       "name": "vivreal-fullstack",

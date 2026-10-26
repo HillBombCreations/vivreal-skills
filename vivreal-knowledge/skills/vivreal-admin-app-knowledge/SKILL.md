@@ -57,8 +57,8 @@ wording by owner decision; portal campaigns keep theirs (see `vivreal-knowledge:
   read and turns a 403 into a named refusal (`src/lib/adminSession/rosterCheck.ts`). Adding an
   operator means the pool AND the list.
 - **Secrets are read at run time, never from env in production.** `src/lib/secrets` reads
-  `CTX_SECRET` from `vivreal/prod/ctx` and the session key plus the pool client secret from
-  `vivreal/prod/admin-app` through the compute role, and logs only a VersionId. Outside production
+  `CTX_SECRET` from `<secret-prefix>/ctx` and the session key plus the pool client secret from
+  `<secret-prefix>/admin-app` through the compute role, and logs only a VersionId. Outside production
   (vitest, `next dev`) the environment is the only source.
 
 ## Calling the fleet: four rules in `src/lib/upstream`
@@ -108,7 +108,7 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
 - **VR-Ops-Read**: read-only, behind explicit denies on every write action. Actions: `overview`,
   `writeAuditLog`, `deployedSha`, `costSnapshot` and `costSnapshotRead`, `siteHosts`,
   `featureSignals`, `searchCheckRead`, `sentryIssues`, `clickupTasks` (`lambda/ops-read/src/index.js`;
-  read the dispatch for the current list). Its third-party read tokens live in `vivreal/prod/ops-read`
+  read the dispatch for the current list). Its third-party read tokens live in `<secret-prefix>/ops-read`
   with a rotation table in the package CLAUDE.md. Its log group keeps 400 days on purpose.
 - **VR-Ops-Write**: three named actions on named resources, `runAuditor`, `sendTestAlert`,
   `purgeCdn`, each written to `/vivreal/ops-write-audit`. `purgeCdn` plans by default and writes

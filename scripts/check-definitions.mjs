@@ -38,6 +38,11 @@
  *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
  *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
  *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
+ *  11. A private-material leak, anywhere, because this repository is PUBLIC: a file under
+ *      `docs/projects/` (project working papers belong in the private vivreal-hq repo), a
+ *      personal handle, a Windows home or OneDrive path, a machine-local repo path (write
+ *      `${VIVREAL_REPOS}/<Repo>`), a Secrets Manager or SSM name prefix (write the
+ *      placeholder), or a dollar figure in the unit-economics skill or the finance-auditor.
  *
  * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
  * that LOADS an agent as a skill, since an agent has no skill entry to load.
@@ -61,7 +66,7 @@
  * that is red no matter what is as useless as one that is green no matter what.
  */
 
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, rmSync, rmdirSync } from 'node:fs';
 import { join, relative, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -733,7 +738,7 @@ const DELETED_BEHAVIOUR = [
     why: 'a tier does not map to a database and has not for some time. Say that the placement is STORED on the group and read back.',
     allowLine: REMOVAL_VOCABULARY,
   },
-  // H306. A DELETED ROUTE, ADVERTISED BY A SKILL AN AGENT LOADS.
+  // A DELETED ROUTE, ADVERTISED BY A SKILL AN AGENT LOADS.
   //
   // A route named in a skill is, to the agent reading it, a fact. The only
   // feedback an agent gets from calling one of these is a 403 from API
@@ -820,6 +825,79 @@ function ruleAwsAccountId(files) {
   }
 }
 
+// ------------------------------------------------- rule 8: no private material
+// THIS REPOSITORY IS PUBLIC. On 2026-10-26 a review found a private security audit, Windows
+// home paths, a personal handle, real cost and revenue figures and secret names published
+// here. Each pattern below is one of those shapes. Like the account-id rule, every pattern
+// is ASSEMBLED from fragments, so this file never contains the literal it hunts and the
+// no-poison control cannot be tripped by the checker itself.
+//
+// `docs/projects/` is matched as a FILE PATH, not as text. The text form is the workflow's
+// own artifact convention (`docs/projects/<slug>/design.md`) and several agents read and
+// write real project files in the private repos they run in, so banning the string would
+// break them. What must never happen again is a private working paper committed here.
+const BSL = String.fromCharCode(92);
+const SEP = '[' + BSL + BSL + '/]';
+const LEAK_PATTERNS = [
+  {
+    re: new RegExp('jc' + 'ecc', 'i'),
+    msg: 'a personal handle or user name. Name the role ("the owner"), not the person.',
+  },
+  {
+    re: new RegExp('[A-Za-z]:' + SEP + 'Users' + SEP, 'i'),
+    msg: 'a Windows home directory path, which names a person and their machine.',
+  },
+  {
+    // A path segment, so a process name in a never-kill list is not a hit.
+    re: new RegExp('One' + 'Drive(?: - [^' + BSL + BSL + '/' + BSL + 'n]*)?' + SEP, 'i'),
+    msg: 'a OneDrive path, which names a personal sync folder.',
+  },
+  {
+    re: new RegExp('(?:C:' + SEP + 'repos(?![A-Za-z0-9_-])|/c/' + 'repos/)', 'i'),
+    msg: 'a machine-local repo path. Write ${VIVREAL_REPOS}/<Repo>.',
+  },
+  {
+    re: new RegExp('viv' + 'real/(?:prod|qa)/'),
+    msg:
+      'a Secrets Manager or SSM name prefix. Write <secret-prefix>/, <ssm-prefix>/ or <qa-secret-prefix>/; ' +
+      'the real names are in the private vivreal-hq repo.',
+  },
+];
+// Files that carried real cost and revenue figures. The method stays public; the numbers
+// live in the private vivreal-hq repo at docs/finance/unit-economics.md.
+const FIGURE_SCOPE = /(?:^|\/)skills\/vivreal-unit-economics\/|(?:^|\/)agents\/finance-auditor\.md$/;
+const DOLLAR_FIGURE = new RegExp(BSL + '$' + BSL + 's?[0-9]');
+
+function rulePublicLeaks(files) {
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (rel.startsWith('docs/projects/')) {
+      fail(
+        'public-leak',
+        rel,
+        'a file under docs/projects/. Project working papers are private: keep them in vivreal-hq, not in this PUBLIC repo.',
+      );
+    }
+    if (!/\.(md|json|js|cjs|mjs|ps1|ya?ml|txt|sh)$/.test(rel)) continue;
+    const lines = readFileSync(abs, 'utf8').split('\n');
+    const figures = FIGURE_SCOPE.test(rel);
+    lines.forEach((line, i) => {
+      for (const p of LEAK_PATTERNS) {
+        // Report the rule, never the matched value, so the report does not republish it.
+        if (p.re.test(line)) fail('public-leak', `${rel}:${i + 1}`, p.msg);
+      }
+      if (figures && DOLLAR_FIGURE.test(line)) {
+        fail(
+          'public-leak',
+          `${rel}:${i + 1}`,
+          'a dollar figure in the unit economics. Keep the method here; the figures live in the private ' +
+            'vivreal-hq repo at docs/finance/unit-economics.md.',
+        );
+      }
+    });
+  }
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -833,6 +911,7 @@ function runAll(files) {
   ruleDashes(files);
   ruleDeletedBehaviour(files);
   ruleAwsAccountId(files);
+  rulePublicLeaks(files);
 }
 
 /**
@@ -841,6 +920,20 @@ function runAll(files) {
  * exists because a gate that cannot fail reports a clean run forever.
  */
 const FIXTURE_PLUGIN = 'vivreal-selftest-fixture';
+// The docs/projects poison has to sit at the real path the rule guards, outside the fixture
+// plugin, so it gets its own directory and its own cleanup.
+const SELFTEST_DOCS_DIR = 'vivreal-selftest-fixture';
+
+/** Remove the docs/projects poison and any directory it created, never anything else. */
+function removeDocsPoison() {
+  rmSync(join(ROOT, 'docs', 'projects', SELFTEST_DOCS_DIR), { recursive: true, force: true });
+  try {
+    // Only succeeds when empty, so a real docs/projects tree is never touched.
+    rmdirSync(join(ROOT, 'docs', 'projects'));
+  } catch {
+    // ENOENT (never created) or ENOTEMPTY (real files there, which the clean run reports).
+  }
+}
 
 function selfTest() {
   // The fixture is a real plugin directory at the repo root, because the rules key
@@ -895,7 +988,7 @@ function selfTest() {
       body: 'no frontmatter at all\n',
     },
     {
-      // H306. A route that no longer exists, advertised as if it does. The
+      // A route that no longer exists, advertised as if it does. The
       // fixture says it plainly and carries none of the removal vocabulary,
       // because a rule that only fires on a sentence nobody writes is a rule
       // that never fires.
@@ -1080,6 +1173,71 @@ function selfTest() {
       path: join(tmp, 'skills', 'dquote-break', 'SKILL.md'),
       body: '---\nname: dquote-break\ndescription: "say "hi" here"\n---\n\nbody\n',
     },
+    // Rule 8, one poison per leak shape. Each value is ASSEMBLED, for the same reason the
+    // account id above is, and each case pins its own message with `match` so a sibling
+    // pattern cannot stand in for it.
+    {
+      rule: 'public-leak',
+      match: 'a file under docs/projects/',
+      label: 'public-leak: a private working paper',
+      path: join(ROOT, 'docs', 'projects', SELFTEST_DOCS_DIR, 'findings.md'),
+      body: '# findings\n\nnothing here\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a personal handle',
+      label: 'public-leak: a personal handle',
+      path: join(tmp, 'skills', 'handle', 'SKILL.md'),
+      body: '---\nname: handle\ndescription: fixture\n---\n\nPost from @someone_' + 'jc' + 'ecc today.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a Windows home directory path',
+      label: 'public-leak: a Windows home path',
+      path: join(tmp, 'skills', 'home', 'SKILL.md'),
+      body: '---\nname: home\ndescription: fixture\n---\n\nRead C:' + BSL + 'Users' + BSL + 'someone' + BSL + 'kit.txt first.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a OneDrive path',
+      label: 'public-leak: a OneDrive path',
+      path: join(tmp, 'skills', 'sync', 'SKILL.md'),
+      body: '---\nname: sync\ndescription: fixture\n---\n\nThe kit is at D:/sync/One' + 'Drive/Desktop/kit.txt.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a machine-local repo path',
+      label: 'public-leak: a machine-local repo path',
+      path: join(tmp, 'skills', 'local-path', 'SKILL.md'),
+      body: '---\nname: local-path\ndescription: fixture\n---\n\nRead `C:' + BSL + 'repos' + BSL + 'VR_CMS_API' + BSL + 'CLAUDE.md`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a Secrets Manager or SSM name prefix',
+      label: 'public-leak: a secret name prefix',
+      path: join(tmp, 'skills', 'secret-name', 'SKILL.md'),
+      body: '---\nname: secret-name\ndescription: fixture\n---\n\nRead `CLUSTER_URL` from `viv' + 'real/prod/main-api`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a dollar figure in the unit economics',
+      label: 'public-leak: a dollar-figure table',
+      path: join(tmp, 'skills', 'vivreal-unit-economics', 'references', 'cost-model.md'),
+      body: '# cost model\n\n| Customers | MRR |\n|---|---|\n| 50 | ~' + '$' + '2.25k/mo |\n',
+    },
+    {
+      // The ALLOW half: the workflow's placeholder path, the repo variable and the secret
+      // placeholders are exactly what the leak messages tell an author to write, so they
+      // must never trip the rule. A dollar sign that is not a figure must not either.
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: the placeholders it asks for',
+      path: join(tmp, 'skills', 'vivreal-unit-economics', 'SKILL.md'),
+      body:
+        '---\nname: vivreal-unit-economics\ndescription: fixture\n---\n\n' +
+        'Write `docs/projects/<slug>/design.md`. Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md`, ' +
+        'then `<secret-prefix>/main-api` and `<ssm-prefix>/shared/name`. Prices come from `$TIER_DISPLAY`.\n',
+    },
   ];
 
   let allCanFail = true;
@@ -1124,6 +1282,7 @@ function selfTest() {
     // green no matter what.
     failures.length = 0;
     rmSync(tmp, { recursive: true, force: true });
+    removeDocsPoison();
     const i = PLUGIN_DIRS.indexOf(FIXTURE_PLUGIN);
     if (i >= 0) PLUGIN_DIRS.splice(i, 1);
     runAll(walk(ROOT));
@@ -1138,6 +1297,7 @@ function selfTest() {
     }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
+    removeDocsPoison();
     failures.length = 0;
     warnings.length = 0;
   }

@@ -35,8 +35,8 @@ group doc 2026-09-27. It is the ONLY group in `pod_02`, placed there
 deliberately by the owner to keep Vivreal's own content tenant off the shared
 placement, so ONE tenant in a placement is intent and not an abandoned
 migration. Earlier text here named the retired paid tier and its database placement,
-and that database placement is now dropped, holding zero groups) · demo user
-`vivreal-content-demo` (the owner's Vivreal Content sign-in). Set `VR_GROUP_ID` to that
+and that database placement is now dropped, holding zero groups) · demo user:
+the demo account (the owner's Vivreal Content sign-in). Set `VR_GROUP_ID` to that
 `_id` and `VR_DB_KEY` to the group's own stored `dbKey`, read live from its group
 document (never typed from this file; the loader's preflight refuses a mismatch),
 and skip the provisioning CLI entirely,

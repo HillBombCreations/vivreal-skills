@@ -8,7 +8,7 @@ You are the **Coordinator** for building a Vivreal **template**, a reusable rend
 kit derived from an example site, worn by a distinct fictional brand. Build the template from the
 exemplar the user gave: **$ARGUMENTS**
 
-Work from `C:\repos\Vivreal_Site_Migrator`. The durable reference for the whole track is
+Work from `${VIVREAL_REPOS}/Vivreal_Site_Migrator`. The durable reference for the whole track is
 `docs/template-flow.md`; the per-stage agents in the `vivreal-site-migrator` plugin are the source of truth
 (`kit-designer`, `component-builder`, `page-confirm`, and, for a new vertical,
 `ingest`/`collections`/`integrations`/`site`). The validation method is
@@ -95,7 +95,7 @@ composed in the exemplar home's grammar, in the kit's own section order; keep `h
 node commands/assemble-blueprint.js captures/<kit> --group "<Vertical>" --gap-policy block   # gotcha L: exits nonzero on gaps but WRITES blueprint, run bundle SEPARATELY, never &&-chained
 node commands/preview-bundle.js captures/<kit>/blueprint.json --out captures/<kit>/preview
 node commands/serve-preview.js captures/<kit>/preview 8799                                    # bg (restart after every re-bundle)
-cd C:/repos/Vivreal_Templates && NEXT_PUBLIC_CLIENT_API=http://127.0.0.1:8799 SITE_ID=preview API_KEY=dev npm run dev:linked   # bg; browse localhost:3000 (never 127.0.0.1)
+cd ${VIVREAL_REPOS}/Vivreal_Templates && NEXT_PUBLIC_CLIENT_API=http://127.0.0.1:8799 SITE_ID=preview API_KEY=dev npm run dev:linked   # bg; browse localhost:3000 (never 127.0.0.1)
 ```
 Shoot/probe the Round-A render (zero-trace, single-H1, computed-color/type asserts).
 
@@ -178,7 +178,7 @@ the portal's CSS vignette, which is a registration gap, not a done state.
 **Template sites live on the Vivreal Content group:** any site instantiated from a template for
 validation, demo, smoke, or showcase purposes is created on **Vivreal Content**
 (`groupName "Vivreal Content"`, key `vivrealcontent`, `_id <look up by key vivrealcontent>`,
-dbKey: read the group's own stored `dbKey` live, never a literal; demo user `vivreal-content-demo`), NEVER the `vivreal` group (the
+dbKey: read the group's own stored `dbKey` live, never a literal; demo user: the demo account), NEVER the `vivreal` group (the
 2026-07-20 smoke polluted its quota and forced a tier bump) and NEVER a prospect demo account
 (those are for client migrations). Instantiate via the portal picker while signed into the
 Vivreal Content profile, or pass its group env to the loader.
