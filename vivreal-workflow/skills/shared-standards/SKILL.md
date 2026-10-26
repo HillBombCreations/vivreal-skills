@@ -103,6 +103,7 @@ three searches returned three different incomplete answers.
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
 | Dispatching a deploy workflow, or claiming a stack updated | "Reading and verifying a CloudFormation deploy" |
 | Backports, cherry-picks, "did this fix reach `release/*`" | "Proving a fix reached a line" |
+| Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog", which points to [references/anti-patterns.md](references/anti-patterns.md) |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
 
 If a task obviously spans multiple trigger areas, read each relevant section once. Do not eager-load adjacent sections.
@@ -608,6 +609,17 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 - **Lambda:** Stateless. No warm-instance assumptions. Reuse SDK clients across invocations.
 - **Reliability:** Retries with exponential backoff for external calls. Idempotency keys for state-changing ops.
 - **Security-by-default:** Validate input at every boundary. Escape output. Allowlist over blocklist.
+
+## Anti-pattern catalog (check every diff)
+
+Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
+the 19 rules in checklist form, then each entry with how to spot it and its guard (source of
+truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
+evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
+when its tests pass.
+
+When you find a new recurring class, add it to the catalog in the same PR as the fix (vivreal-hq
+source first, then this plugin copy), with its evidence and its guard.
 
 ## Workflow rules: additions to the original 7
 8. Read `docs/ecosystem/` docs and the relevant repo CLAUDE.md before forming hypotheses. They contain knowledge that grep cannot surface.
