@@ -9,7 +9,7 @@ description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops ba
 
 Source of truth: `VR_Secure_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.
 
-Last synced: 2026-10-21 against `origin/stable` at `32c3bcf1` (tag v2.22.6, the v7.2 hotfix line; read the tag)
+Last synced: 2026-10-28 against `origin/stable` at `0d955d82` (tag v2.23.1; read the tag; per-skill baseline in vivreal-skills `scripts/skill-sources.json`)
 
 The authenticated-ops backend: group/team mgmt, site creation+deploy+template instantiation, Stripe billing/subscriptions/overage, domain purchase+transfer, Square token lifecycle, profile switching, roles, AI agent, per-site analytics reads. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 22 on every function since 2026-10-02; arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `CLAUDE.md` at `origin/stable` for full route lists (`test/unit/claudeMdClaims.test.js` binds its function counts and runtime claim to the generated template).
 
@@ -101,6 +101,22 @@ tier id is the case to think about: nothing rewrites it when a package folds a t
 
 - **Two Cognito pools, and an HTTP route binds to ONE.** The `/api/admin/*` routes (count the `Path: /api/admin` events in `cloudformation/`, never quote a number: they sit in `getGroupInformation.yaml` and, for the four admin push routes, `userAndAuth.yaml`) use `MyAdminCognitoAuthorizer`, the dedicated admin pool (`Vivreal-Admin-Identity`, MFA), so a customer-pool token is rejected at the gateway there. **One exception on purpose:** `PUT /api/admin/groups/{groupID}/prospect` takes the DEFAULT (customer pool) authorizer, because the site loader signs in there and sends no `x-user-ctx`; its controller gates on `ADMIN_EMAILS`. Read each event's `Auth` block before assuming the pool. `PUT /api/group/featureFlags` accepts either pool; every other route inherits the customer pool.
 - `iam simulate-principal-policy` on the role (the granted actions `allowed`, a control `implicitDeny`) is only a PRE-CHECK: a simulation evaluates the resource ARN and context keys you hand it, and twice in v7 it passed grants the real call then denied. The proof of a grant is the first real call (`vivreal-infra:vivreal-iam-secrets`).
+
+## v2.23.0 and v2.23.1 (read at `origin/stable` `0d955d82`)
+
+New functions in `cloudYamls/allRoutes.yaml`, with their triggers:
+- **`AdsConversionExportFunction`** (`dist/adsConversionExport`), Schedule `cron(5 14 * * ? *)`: stages the day's Google Ads offline conversion rows before Google's 09:00 Los Angeles fetch.
+- **`MarketingRollupFunction`**, Schedule `cron(35 9 * * ? *)`: nightly copy of Google Analytics, Ads cost and Search Console numbers into mainDb, which the admin Marketing page reads through `GET /api/admin/marketing/funnel` (#385).
+- **`ShopifyRefreshOneFunction`** (`dist/shopifyRefreshOne`), NO events: invoked synchronously only by VR_CMS_API's `CreateAndUpdateIntegrations` role (`ShopifyRefreshOneInvokerRoleArn`, a parameter so a CMS role suffix change is an override, not an edit).
+
+New behaviour:
+- **`POST` and `GET /api/migration-request`** (`src/getGroupInformation/api/controllers/migrationRequest.js`, #364): an owner asks to move an existing site into the app from the portal.
+- **Shopify expiring offline tokens** (#377): a refresh lease, a keep-alive, the single-shop refresh above, a flagged install, an owner notice and alarms.
+- **Staff paid notice** (#380): staff are notified when a business starts or upgrades a plan.
+
+## vivreal-domain-search (the public domain service, a separate repo)
+
+`vivreal-domain-search` (deploys from `main`) is the public, read-only domain service behind `domains-api.vivreal.io`: CloudFront with `X-Origin-Verify` in front of a Lambda Function URL, read-only mainDb, the shared parking WAF and limiter table, a 6-hour cache. It serves `GET /public/parked` and the public search endpoints. Its `src/shared/tldAllowlist.js` is the TWIN of Secure's `src/createSites/services/sellableTlds.js` and the guard in `createDomainTransfer.js`; change both together. Read its README at `origin/main` before quoting its routes.
 
 ## v7 to v7.2 (live 2026-10-20/21, tags v2.22.1 to v2.22.6)
 - **The business time zone (v7.1).** `PUT /api/group/timezone` (UpdateGroup, `setGroupTimeZone`) lets an admin or the owner set `groups.timezone`. Every write is a compare-and-set on `expectedTimezone`, the zone the caller last saw (`null` for none), so the portal's automatic first save never replaces a zone someone already set; a lost race answers the stored zone with `applied: false`. `createGroup` stores a zone at creation too. Both go through `canonicalTimeZone` (`src/shared/timeZone.js`: canonical IANA name, `UTC` accepted, fixed offsets refused, `InvalidTimeZone` otherwise), the same rule VR_Client_API serves with. The write is verified by reading the field back, because a stale strict schema strips it silently.

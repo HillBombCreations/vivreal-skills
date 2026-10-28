@@ -1,6 +1,6 @@
 # Admin app pages, and what each reads
 
-Read at vivreal-hq `origin/main` `28bb8b4a` (2026-10-20). Paths are under `packages/admin-app/`. The
+Read at vivreal-hq `origin/deploy/admin-app` `08f2d444` (2026-10-27), every `src/app/*/page.tsx` on that branch. Paths are under `packages/admin-app/`. The
 nav is `src/components/AppShell/ShellNav.tsx` and the home cards are `src/lib/hub/cards.ts`; re-read
 both before quoting this list, since pages get added.
 
@@ -17,7 +17,10 @@ it. "Secure" means VR_Secure_API through `src/lib/upstream` (admin pool bearer p
 | `/outreach/sequences` | sequences and one sequence's people | `api/outreach/sequences` (a test always goes to the signed-in operator) |
 | `/outreach/review` | the preview review queue | `api/outreach/preview` (a review code is a ten-minute link to the portal's public review page) |
 | `/outreach/import` Import leads | the leadgen `--emit` seed file, parsed in the page and again on the server | `api/outreach/import` (businesses, then people; a non-seed file is refused) |
-| `/suppressions` | Outreach suppressions | `api/outreach/suppressions` (add is `manual` only; remove needs `confirm: true`) |
+| `/outreach/suppressions` | Outreach suppressions (`src/lib/upstream/outreach/suppressions.ts`) | `api/outreach/suppressions` (add is `manual` only; remove needs `confirm: true`) |
+| `/suppressions` | none: a permanent redirect to `/outreach/suppressions`, query string kept | none |
+| `/inbound` | VR_Outreach_API `GET /inbound` as `/admin/inbound` through `callOutreach` (vivreal.io /contact and /migrate, help.vivreal.io /contact) | none |
+| `/marketing` | Secure `GET /api/admin/marketing/funnel` (`src/lib/upstream/marketing.ts`), global admin only | none |
 | `/monitoring` | Ops-read `overview` (alarms, stuck alarms, metrics, subscriptions, budgets) and `featureSignals`; the CDN target list | `api/opsWrite/runAuditor`, `sendTestAlert`, `purgeCdn` (VR-Ops-Write); `api/writeLog` reads its audit back |
 | `/errors` | Ops-read `sentryIssues` | none |
 | `/tickets` Tickets and bugs | Ops-read `clickupTasks` (two lists, GET only) | none |
@@ -25,6 +28,9 @@ it. "Secure" means VR_Secure_API through `src/lib/upstream` (admin pool bearer p
 | `/audit` | Secure `GET /api/admin/groups`; then `api/audit` re-resolves the group's database server side and reads VR_CMS_API `GET /tenant/auditLog` | none |
 | `/usage` | Secure `GET /api/admin/groups`, `/api/admin/groups/:groupID/usage` and `/usage-by-person` | none |
 | `/economics` | Ops-read `costSnapshotRead` (daily snapshot) plus Secure groups for the per-business split | none |
+| `/releases` | Ops-read `releases`, `deployedSha` and `searchCheckRead` (`src/lib/opsRead/client.ts`) | none |
+| `/database` | Ops-read `database` (`src/lib/opsRead/database.ts`): CloudWatch `Vivreal/Mongo` and atlas-monitor census lines | none |
+| `/more` | the session only; the phone menu of every page not on the tab bar | none |
 | `/deployed` Deployed sites | Ops-read `deployedSha` (from the health watcher's own log line) and `searchCheckRead` | none |
 | `/admin-analytics` | Secure `/api/admin/analytics/google-analytics/traffic`, `/funnel`, `/clarity/engagement`, `/api/admin/attribution` | none |
 | `/team` | the admin pool's user state for the three roster addresses (`src/lib/adminSession/cognito.ts`) | `api/admin/invite-resend` (only a not-yet-enrolled roster member), `api/admin/mfa-reset` (caller must be on the admin email list) |

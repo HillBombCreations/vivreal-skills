@@ -1,6 +1,6 @@
 ---
 name: vivreal-cms
-description: Use when working with Vivreal CMS through the Vivreal MCP server, managing content collections and items, scheduling social posts across channels, deploying sites, handling Stripe billing, or any task referencing vivreal.io, the Vivreal portal, or the Vivreal API. Teaches the canonical multi-step workflow (set-active-group → discover schema → operate on content) and the gotchas that cause silent failures.
+description: Use when working with Vivreal CMS through the Vivreal MCP server, managing content collections and items, scheduling social posts across channels, deploying sites, handling Stripe billing, or any task referencing vivreal.io, the Vivreal portal, or the Vivreal API. Teaches the canonical multi-step workflow (set-active-group → discover schema → operate on content) and the gotchas that cause silent failures. Not this one for the VR-MCP-Server code itself, use vivreal-knowledge:vivreal-mcp-server-knowledge.
 ---
 
 # Vivreal CMS

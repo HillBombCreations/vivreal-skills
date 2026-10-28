@@ -9,7 +9,7 @@ description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach bac
 
 Source of truth: `VR_Outreach_API` `README.md` (it has no `CLAUDE.md`) (and the docs it links) at `origin/main`.
 
-Last synced: 2026-10-20 against `origin/main` at `ea6eb28` (#95, live since 2026-10-19; Node 22 since 2026-10-02)
+Last synced: 2026-10-28 against `origin/main` at `3878d27` (a merge here is the deploy; Node 22 since 2026-10-02; per-skill baseline in vivreal-skills `scripts/skill-sources.json`)
 
 The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (Node 22, `nodejs22.x` in `template.yaml`; AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Its CRM client is vivreal-hq `packages/admin-app` since v7; the portal reaches only the public booking, demo-link and studio-demo routes through `src/app/api/proxy/outreach/*`.
 
@@ -45,6 +45,10 @@ Deploys on push to `main` only → prod stack `VR-Outreach-API` (`.github/workfl
 - **Demo tracking**: `GET /demo-link/{code}` (short studio-demo redirect), `POST /studio-demo/visit`, admin `GET /studio-demo/visits` + `/visits/summary`.
 - **Test sends**: `POST /test-send` (per-step, prod-safe), admin `POST /test-thread-send` (staggered thread), `POST /_test/fire-step` (non-prod only).
 - **Suppressions**: list/add/remove. **Segments**: group-info, list (+ admin CRUD).
+
+## `GET /inbound`: the admin Inbound read, three gates
+
+`src/api/routes/inbound.js`, mounted in `src/index.js` as `app.use('/inbound', ...)`. The admin app calls it as `GET /admin/inbound` (`stripAdminPrefix` maps it). It lists contact messages and migration requests sent from Vivreal's own sites (`src/db/websiteInboundClient.js`), `?limit=1..100&cursor=`, newest first, `{ items, nextCursor, hasMore }`; a cursor it did not hand out is a 400. **Three gates, in order:** `authMiddleware`, then `requireInternalCohort` (a ctx from any group outside the internal cohort is refused), then `requireGlobalAdmin` (`ADMIN_EMAILS` plus `x-user-ctx`, else 403), because the cohort alone would admit every member, from the portal too, and these rows are real people's names and free text. Read only; nothing a visitor wrote is logged or sent to Sentry; every answer, refusals included, is `Cache-Control: no-store, private`.
 
 ## v7 (merged #95, live since 2026-10-19; a merge here is the deploy)
 - **The CRM's client is the admin app now.** The portal's outreach CRM was deleted in portal v0.37 (v7); its pages and API routes live in vivreal-hq `packages/admin-app` (`src/app/outreach/{pipeline,sequences,import,review}`, `src/app/api/outreach/*`, the hot-lead weights in `src/lib/outreach/hotScore.ts`). The portal keeps only the public booking, demo-link and studio-demo proxies. Fix outreach forward in the admin app, never by reviving the portal pages.

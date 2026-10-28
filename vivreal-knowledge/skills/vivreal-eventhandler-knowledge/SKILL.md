@@ -7,7 +7,7 @@ description: 'Use when working in Vivreal_EventHandler, the AWS Step Functions s
 Source of truth: `Vivreal_EventHandler` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
 
-Last synced: 2026-10-20 against `origin/main` at `19e8102` (#95; no `stable` here, a merge to `main` is the deploy)
+Last synced: 2026-10-28 against `origin/main` at `8b27efd` (no `stable` here, a merge to `main` is the deploy; per-skill baseline in vivreal-skills `scripts/skill-sources.json`)
 Last extended: 2026-09-16 (stored buildSpec vs `buildSpec.js`, the `SITE_RENDER_MODE` fleet fix)
 
 # Vivreal_EventHandler: knowledge digest
@@ -26,7 +26,7 @@ SeedCollections → CreateGithubBranch → CreateAmplifyApp → StartAmplifyDepl
 
 ASL **state names are PascalCase** (`SeedCollections`, `MarkLive`, `MarkFailed`); the Lambda/handler names are camelCase. The `checkDomainAssociaion` typo survives only in the Lambda name / ASL `Resource` ARN (`vh-site-deployment-checkDomainAssociaion`), the ASL *state* is `CheckDomainAssociation`. Renaming requires coordinated updates.
 
-Each state is its own Lambda named `vh-${stage}-{name}` (e.g. `vh-prod-seedCollections`); the ASL `Resource` ARNs reference `vh-site-deployment-{name}`. (The old `vh_site_deployment_*` underscore form is wrong.) The `serverless.yml` functions block now declares **several Lambdas**: 12 site-deploy (incl. `updateSiteEnvVars` + `subdomainCleanup`), 9 `domainPurchase*`, 6 `domainTransfer*`.
+Each state is its own Lambda named `vh-${stage}-{name}` (e.g. `vh-prod-seedCollections`); the ASL `Resource` ARNs reference `vh-site-deployment-{name}`. (The old `vh_site_deployment_*` underscore form is wrong.) The `serverless.yml` functions block declares the site-deploy steps, the `domainPurchase*` and `domainTransfer*` sagas and the scheduled jobs below; re-derive the roster and every count from `serverless.yml` at the deploy SHA before quoting one. Functions added since the last count include `siteStateAudit`, `indexNowReconcile`, `indexNowFlush`, `domainTransferResendTransferAuthorization`, `siteTileSweep`, `parkingPoolReclaim` and `siteThumbnail` (a container image, `docker/siteThumbnail.Dockerfile`).
 
 - **`seedCollections`** is the front state, added to fix a 504: it lifted the (then ~17+) sequential CMS-API invokes out of the API Gateway 29s / Lambda 30s budget (`POST /api/siteCollectionData` now <5s). It now **writes collection groups + default objects DIRECTLY to mainDb + the tenant DB** via the `@hillbombcreations/schemas` shapes, **no CMS-API invokes** (`seedCollections/index.js`). Reads `seed.author` + optional `seed.token` + `templateType`, `seed.author` is now asserted BEFORE the blank short-circuit, so the automated env-var rebuild synthesizes a system identity, and calls the seed builders in `src/shared/seeding/` (`buildCollectionGroups`/`buildDefaultObjects`/`buildPages`/`buildPageBlocks.js`/`buildFromManifest.js`; `buildPageBlocks` gained musician format arms `panorama` + `discography`), then writes `pages`/`collectionGroups`/`integrationsUsed` back to the site doc. Entry quotas come from `getTierQuotas(group.tier).entries` (`@hillbombcreations/tier-quotas`). Idempotent: a non-empty `collectionGroups` array on the site doc makes the step a no-op. Failure → `MarkFailed`; partial seeds cleaned up by `VR_Secure_API/deleteSite`.
 
@@ -76,6 +76,14 @@ The bucket is `bucketOf(group)` (VR_Secure_API `src/shared/groupBucket.js`): the
 - Renderer-oracle parity fixture (`test/fixtures/renderer-oracle/`): a vendored snapshot of the renderer's `dist/composition/`. Its version is stated in exactly ONE place, the README's "Sync anchor" section; read it there, and never write it anywhere else.
 - `sync_conflict` status is **legacy only**, `VR_Secure_API/templateSyncWebhook.js` was deleted in Phase 2 (2026-07-15); nothing writes it anymore.
 - **Migration script** (reusable): `scripts/migrate-to-channel-branch.js`, dry-run default, `--execute`, `--app-id`, `--profile`, `--region`, `--db-keys`, separate verify-first `--delete-old-branches` pass; needs `CLUSTER_URL`. Gotcha: Amplify returns the apex subdomain prefix as `null` but UpdateDomainAssociation requires `""`.
+
+## Scheduled jobs (read at `origin/main` `8b27efd`)
+
+Every schedule is a classic EventBridge rule (`rate(...)`/`cron(...)`), each overridable per stage by an env var named in `custom:` of `serverless.yml`, and each scheduled function has `reservedConcurrency: 1` as a runaway ceiling.
+- **`siteStateAudit`** (daily, `SITE_STATE_AUDIT_CRON`): read-only audit of every Templates site against its declared expected state (`src/shared/siteState/expectedState.js`: render mode, env keys, build spec, domain, branch). Publishes ONE metric, the drifting-site count, which `SiteStateDriftAlarm` pages on; `SiteStateAuditMissedRunAlarm` catches a run that never happened. Opens no Mongo connection.
+- **IndexNow**: `indexNowReconcile` (daily) enqueues one FIFO message per live site; `indexNowFlush` (SQS, batch 1, reserved and maximum concurrency both 2, and the match is deliberate) diffs the site's sitemap against its stored snapshot and submits what changed. The release lever is SSM `/vivreal/prod/indexnow/mode` (`off`, `shadow`, `on`; missing means off), read on every invocation, because a merge to `main` deploys the stack.
+- **`subdomainCleanup`**, **`revalidateHookCleanup`** (twice weekly, so a missed-run alarm can look back far enough), **`siteTileSweep`**, **`parkingPoolReclaim`**, **`domainPurchaseReconciliation`** (every 15 minutes).
+- **Persisted deploy stage status** (#104): `seeding`, `creating_branch` and `creating_app` now write `deployment.status`, `message` and `updatedAt` onto the site document as they broadcast (`src/shared/persistDeployStage.js`), as a compare-and-set that never moves a site backwards; a brand-new site created as `deploying` with no app yet counts as pre-pipeline.
 
 ## v7 and v7.1 (merged and live 2026-10-19/20; a merge here is the deploy)
 - **New apps build only when asked (V7.247, #92).** `createAmplifyApp` creates every app with `enableAutoBuild: false` and a `vivreal:buildTier` tag (`src/shared/amplify/costTags.js`, `buildTierFor`): `live` by default, `demo` or `qa` only on an exact match of a listed group id, so every unknown fails toward `live`. A redeploy keeps a tier the app already carries (TagResource would otherwise reset a backfilled or overridden tier). The Templates promote starts release builds by this tag, live tier only; demos catch up weekly (`vivreal-infra:vivreal-site-deploy-pipeline`).

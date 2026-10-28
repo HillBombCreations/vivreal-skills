@@ -793,7 +793,12 @@ function ruleDeletedBehaviour(files) {
 // No allowlist, deliberately. There is no legitimate 12-digit run anywhere in this
 // repository today, so an exemption list would only be a place for the next one to
 // hide. Write the profile and the region, or write <account-id>.
-const ACCOUNT_ID = /(?<![0-9])[0-9]{12}(?![0-9])/;
+//
+// Shape, not exemption: the run must not touch a hex letter on either side, because a
+// 40-hex git SHA (every `synced` in scripts/skill-sources.json, R14) routinely holds a
+// 12-digit run, and an account id never sits inside a hex token. An ARN, a bucket name
+// or a bare id is still bounded by `:`, `-`, `/` or a space, and still fails.
+const ACCOUNT_ID = /(?<![0-9a-fA-F])[0-9]{12}(?![0-9a-fA-F])/;
 
 /** first three and last three digits only, so a report can name a hit without republishing it */
 const maskAccount = (v) => `${v.slice(0, 3)}...${v.slice(-3)}`;

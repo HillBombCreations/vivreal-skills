@@ -9,7 +9,7 @@ Source of truth: `VR-Outreach-MCP-Server` `CLAUDE.md` (and the docs it links) at
 
 Last synced: 2026-10-20 against `origin/main` at `066d0b2` (#11, live since 2026-10-19; Node 22 since 2026-10-02)
 
-**Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions), but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` for depth (updated 2026-07-27, FRESH; header says "50 tools, 0 prompts").
+**Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions), but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` for depth; re-read its header and `src/tools/` at `origin/main` for the current tool count before quoting one.
 
 ## Tool registry: 50 tools: 9 modules (`src/tools/`)
 
