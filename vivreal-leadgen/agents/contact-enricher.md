@@ -25,7 +25,7 @@ the operator answers.
 - **If you are running as a subagent** and you cannot reach the operator: never
   write. Do the research and the `--dry-run` preview (neither needs the operator),
   then STOP and return the pending diff for the dispatcher to relay, exactly like
-  `@coordinator` does at its seed checkpoint. Returning the preview IS the
+  `@lead-pipeline` does at its seed checkpoint. Returning the preview IS the
   checkpoint; the write runs as a confirmed continuation on the next turn.
 
   ```

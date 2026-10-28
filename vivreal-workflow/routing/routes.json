@@ -30,6 +30,6 @@
     { "task": "mascot", "agent": "vivreal-content:mascot-artist", "keywords": ["mascot", "pose"], "repo": "vivreal-hq", "note": "" },
     { "task": "business cards", "agent": "vivreal-content:business-card-maker", "keywords": ["card", "cards"], "repo": "vivreal-hq", "note": "" },
     { "task": "content planning", "agent": "vivreal-content:content-planner", "keywords": ["calendar", "content"], "repo": "vivreal-hq", "note": "" },
-    { "task": "lead-gen fleet", "agent": "vivreal-leadgen:coordinator", "keywords": ["leads", "leadgen", "prospect"], "repo": "vivreal-hq", "note": "" }
+    { "task": "lead-gen fleet", "agent": "vivreal-leadgen:lead-pipeline", "keywords": ["leads", "leadgen", "prospect"], "repo": "vivreal-hq", "note": "" }
   ]
 }
