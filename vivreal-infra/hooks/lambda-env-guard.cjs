@@ -76,14 +76,38 @@ function queryValue(segment) {
 }
 
 /**
+ * The first container a JMESPath query selects whole, or null. `@`, `Configuration`,
+ * `Functions` and `Versions` each hold one or more FunctionConfigurations; selected with no
+ * `.field` after them (an index, `[]`, `[*]` or a `[?filter]` keeps whole elements) they print
+ * the environment. A container inside `keys(...)` yields names only and is left alone.
+ */
+function wholeContainer(query) {
+  // A filter keeps whole elements, so it is judged as `[]`. Its body can name `@` and fields
+  // that are never output, so it is removed before the scan.
+  const q = query.replace(/\[\?[^\]]*\]/g, '[]');
+  const re = /(@|\bConfiguration\b|\bFunctions\b|\bVersions\b)((?:\[[^\]]*\])*)/g;
+  let m;
+  while ((m = re.exec(q)) !== null) {
+    if (/keys\s*\(\s*$/.test(q.slice(0, m.index))) continue;
+    const next = q.slice(m.index + m[0].length).trimStart()[0];
+    if (next === '.') continue;
+    return m[1] + m[2];
+  }
+  return null;
+}
+
+/**
  * Why this segment must be refused, or null when it is fine.
  *
- * A projection is safe when it does not reach into `Environment` at all, or
- * when it reaches it only through `keys(`, which returns names and no values.
+ * A projection is safe when it reaches `Environment` only through
+ * `keys(Environment.Variables)`, which returns names and no values, and never selects a
+ * whole FunctionConfiguration container (see wholeContainer).
  */
 function refusalFor(segment) {
-  if (!/(^|\s)aws(\s|$)/.test(segment)) return null;
-  if (!/\blambda\b/.test(segment)) return null;
+  // aws, aws.exe or aws.cmd, bare or at the end of a path, in either case: PowerShell runs
+  // `aws.exe` and `& '.../AWSCLIV2/aws.exe'`, which `(^|\s)aws(\s|$)` did not match.
+  if (!/(^|[\s\\/&"'(])aws(\.exe|\.cmd)?(?=[\s"']|$)/i.test(segment)) return null;
+  if (!/\blambda\b/i.test(segment)) return null;
 
   // The trailing guard is a negative lookahead and NOT \b, because a hyphen is
   // itself a word boundary: /\bget-function\b/ matches inside
@@ -102,11 +126,22 @@ function refusalFor(segment) {
     );
   }
 
-  if (/\bEnvironment\b/.test(query) && !/keys\s*\(\s*Environment/.test(query)) {
+  // keys(Environment.Variables) returns names only. Strip each exact use and judge what is
+  // left: a keys() anywhere used to excuse the whole query, so a values read beside it passed.
+  const rest = query.replace(/keys\s*\(\s*Environment\.Variables\s*\)/g, '');
+  if (/\bEnvironment\b/.test(rest)) {
     return (
-      'this --query reaches into Environment without keys(). Narrowing to the variables ' +
-      'OBJECT selects the container and prints everything inside it, which is how ' +
-      'CLUSTER_URL leaked on 2026-09-30 and again on 2026-10-02.'
+      'this --query reaches into Environment other than through keys(Environment.Variables). ' +
+      'Narrowing to the variables OBJECT selects the container and prints everything inside it, ' +
+      'which is how CLUSTER_URL leaked on 2026-09-30 and again on 2026-10-02.'
+    );
+  }
+
+  const whole = wholeContainer(rest);
+  if (whole) {
+    return (
+      'this --query selects "' + whole + '" whole, and a whole FunctionConfiguration carries ' +
+      'Environment.Variables without the query ever naming it. Project named fields from it instead.'
     );
   }
 
@@ -117,8 +152,12 @@ const GUIDANCE = [
   '',
   'Permitted shapes:',
   "  --query 'keys(Environment.Variables)'        names only, no values",
-  "  --query '[FunctionName,Runtime,State]'       anything that never names Environment",
+  "  --query '[FunctionName,Runtime,State]'       named fields, never a whole object",
+  "  --query 'Configuration.[Runtime,State]'      for get-function",
   "  --query 'Functions[].[FunctionName,Runtime]' for list-functions",
+  '',
+  'Refused even when the query never names Environment: @, Configuration, Functions[0],',
+  'Versions[] or any other selection of a whole FunctionConfiguration, which prints it.',
   '',
   'If you genuinely need a variable\'s value, read it in a process and never echo it.',
   'The only safe existence probe for a variable is ${VAR:+set} ALONE, with no :- default:',
@@ -150,12 +189,31 @@ const CASES = [
   ['block', "aws lambda list-functions --query 'Functions[].Environment.Variables'"],
   // Writes that echo the config back are the same exposure.
   ['block', 'aws lambda update-function-configuration --function-name f --timeout 30'],
+  // A projection that selects a whole container prints Environment without naming it
+  // (PR #60 review H1, each probed through the real hook and passed before this fix).
+  ['block', 'aws lambda get-function --function-name f --query Configuration'],
+  ['block', 'aws lambda list-functions --query "Functions[0]"'],
+  ['block', 'aws lambda get-function-configuration --function-name f --query @'],
+  ['block', "aws lambda get-function --function-name f --query '{c: Configuration}'"],
+  ['block', "aws lambda list-versions-by-function --function-name f --query 'Versions[?Version==`1`]'"],
+  // keys() anywhere used to excuse the whole query, so a values read rode beside it.
+  ['block', 'aws lambda get-function-configuration --function-name f --query "[keys(Environment.Variables), Environment.Variables]"'],
+  // The PowerShell spellings: aws.exe, by bare name or by full path.
+  ['block', 'aws.exe lambda get-function-configuration --function-name f'],
+  ['block', "& 'C:/Program Files/Amazon/AWSCLIV2/aws.exe' lambda get-function --function-name f"],
+  ['block', 'AWS.EXE lambda list-functions'],
 
   // The sanctioned shapes must be permitted, or the hook is useless.
   ['allow', "aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'"],
   ['allow', "aws lambda get-function-configuration --function-name f --query '[Runtime,State,LastUpdateStatus]' --output text"],
   ['allow', "aws lambda list-functions --query 'Functions[].[FunctionName,Runtime]' --output text"],
   ['allow', "aws lambda get-function-configuration --function-name f --query 'keys( Environment.Variables )'"],
+  // A container followed by a field or a multiselect is a projection, not the container.
+  ['allow', "aws lambda get-function --function-name f --query 'Configuration.[Runtime,State]' --output text"],
+  ['allow', "aws lambda list-functions --query 'Functions[0].FunctionName'"],
+  ['allow', "aws lambda list-functions --query 'Functions[?Runtime==`nodejs20.x`].FunctionName'"],
+  ['allow', "aws lambda get-function-configuration --function-name f --query 'keys(@)'"],
+  ['allow', 'aws.exe lambda get-alias --function-name f --name live'],
   // Unrelated calls must pass untouched.
   ['allow', 'aws cloudformation describe-stacks --stack-name VR-Main-API'],
   ['allow', 'aws lambda get-alias --function-name f --name live'],
@@ -213,6 +271,6 @@ process.stdin.on('end', () => {
   }
   const why = decide(payload.tool_name, (payload.tool_input || {}).command || '');
   if (!why) process.exit(0);
-  console.error('REFUSED by block-unprojected-lambda-reads: ' + why + '\n' + GUIDANCE);
+  console.error('REFUSED by vivreal-infra lambda-env-guard:' + why + '\n' + GUIDANCE);
   process.exit(2);
 });
