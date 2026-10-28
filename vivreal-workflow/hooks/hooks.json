@@ -1,5 +1,5 @@
 {
-  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session).",
+  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session). At session start in a Vivreal checkout, print who owns which task. Before a general-purpose dispatch whose first word is a routed task, deny it with the owning agent named.",
   "hooks": {
     "PostToolUse": [
       {
@@ -8,6 +8,29 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/package-nudge.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-routing.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-guard.cjs\"",
             "timeout": 10
           }
         ]

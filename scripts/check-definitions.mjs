@@ -39,6 +39,7 @@
  *      go through ${VIVREAL_REPOS}.
  *  12. A plugin changed since the merge base whose plugin.json version did not go up. An
  *      unbumped plugin does not reinstall. Needs git and a base ref; without them it warns.
+ *  13. A route in `<plugin>/routing/routes.json` whose agent has no agent file.
  *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
  *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
  *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
@@ -948,6 +949,34 @@ function ruleVersionBump() {
   }
 }
 
+// ------------------------------------------------- rule 13: routes resolve (R13)
+// A route to an agent that does not exist sends every matching dispatch nowhere. Every
+// `agent` in a `<plugin>/routing/routes.json` must be an existing `<plugin>/agents/<name>.md`.
+function ruleRoutesResolve(files) {
+  const rels = files.map((abs) => norm(relative(ROOT, abs)));
+  const agents = new Set(
+    rels.map((r) => r.match(/^([^/]+)\/agents\/([^/]+)\.md$/)).filter(Boolean).map((m) => `${m[1]}:${m[2]}`),
+  );
+  for (const rel of rels.filter((r) => /^[^/]+\/routing\/routes\.json$/.test(r))) {
+    let routes;
+    try {
+      routes = JSON.parse(readFileSync(join(ROOT, rel), 'utf8')).routes;
+    } catch (e) {
+      fail('routes-resolve', rel, `does not parse: ${e.message}`);
+      continue;
+    }
+    if (!Array.isArray(routes) || routes.length === 0) {
+      fail('routes-resolve', rel, 'holds no routes array, so nothing here was checked');
+      continue;
+    }
+    routes.forEach((r, i) => {
+      if (!agents.has(r.agent)) {
+        fail('routes-resolve', `${rel} route ${i + 1}`, `"${r.agent}" (${r.task}) is not an agent file in this repo`);
+      }
+    });
+  }
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -963,6 +992,7 @@ function runAll(files) {
   ruleAwsAccountId(files);
   ruleMachinePaths(files);
   ruleVersionBump();
+  ruleRoutesResolve(files);
 }
 
 /**
@@ -1226,6 +1256,20 @@ function selfTest() {
       body:
         '---\nname: pathless\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
         'Read `${VIVREAL_REPOS}/x/CLAUDE.md` first.\n',
+    },
+    {
+      rule: 'routes-resolve',
+      label: 'routes-resolve: a route to no agent',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':ghost', keywords: ['x'], repo: '*' }] }),
+    },
+    {
+      rule: 'routes-resolve',
+      kind: 'clean',
+      label: 'routes-resolve: a route to a real agent',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['x'], repo: '*' }] }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
     },
   ];
 
