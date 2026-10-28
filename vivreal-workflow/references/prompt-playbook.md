@@ -65,7 +65,7 @@ review it, then **`/implement`**.
 > Trace the request end-to-end from the telemetry, browser → proxy → backend Lambda → MongoDB → WebSocket, and tell me where it failed and why. If the cause looks like infrastructure (throttling, Atlas saturation, timeouts), confirm it against the live AWS/Atlas metrics.
 
 "Trace end-to-end from telemetry" + a Sentry ID triggers `sentry`; the "if infra, confirm against
-live metrics" clause chains into `vivreal-ops`. Automated by **`/sentry-to-aws`**.
+live metrics" clause chains into `vivreal-ops`. Automated by **`/sentry-trace --aws`**.
 
 ---
 
@@ -227,7 +227,7 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | `/vuln-fix` | Dependency vulnerability resolution (0-vuln gate) |
 | `/bump-package` | Bump a shared dep across all consumer repos |
 | `/db-query` / `/db-schema` | Safe tenant-scoped MongoDB query / schema lookup |
-| `/sentry-trace` / `/sentry-to-aws` | Telemetry tracing; chain into live AWS/Atlas metrics |
+| `/sentry-trace [--aws]` | Telemetry tracing; `--aws` chains into live AWS/Atlas metrics |
 | `/growth-report` / `/funnel-analysis` | Analytics dashboards and funnel drop-off analysis |
 | `/deploy-status` | Live deploy status of a customer site |
 | `/proxy-route` | Generate a factory-based portal proxy route |

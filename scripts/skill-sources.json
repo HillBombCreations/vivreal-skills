@@ -159,10 +159,6 @@
       }
     ]
   },
-  "vivreal-knowledge/sentry-infra-bridge": {
-    "sources": "none",
-    "why": "external services (Sentry, CloudWatch, Atlas metrics), read live"
-  },
   "vivreal-knowledge/sentry-tracer": {
     "sources": "none",
     "why": "external service (Sentry), read live through the Sentry MCP"
