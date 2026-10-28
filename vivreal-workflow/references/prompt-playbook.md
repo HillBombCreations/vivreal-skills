@@ -95,7 +95,7 @@ contract. Deterministic equivalent: **`/design`**.
 
 "Adversarial," "rate each finding," "explain why," "don't approve until fixed" maps to the
 `reviewer` agent's 13-point PASS/FAIL gate (workflow mode). Deterministic equivalents:
-**`/reviewer`** or **`/bug-review`**.
+**`/reviewer`** (with a slug for the 13-point bug-fix review).
 
 ---
 
@@ -217,14 +217,13 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | Command | Use it for |
 |---|---|
 | `/coordinator` | Full bug fix: research → plan → approve → implement → review → document → PR |
-| `/research` | Research a bug end-to-end (produces `research.md`) |
-| `/investigate` | Deep investigation of any technical question (no artifacts needed) |
+| `/research` | Research a bug end-to-end (produces `research.md`), or investigate any technical question (produces `findings.md`); `--slug` names the folder |
 | `/plan` | Research + write implementation plan + auto-review the plan |
 | `/design` | Architecture decision, 2 to 3 options with tradeoffs + recommendation |
 | `/orchestrate` | Non-bug work: features, refactors, audits, migrations |
 | `/implement` | Principal-level implementation of an approved plan |
-| `/reviewer` / `/bug-review` | Final adversarial review gate |
-| `/test` / `/write-tests` | Regression / e2e tests |
+| `/reviewer [slug]` | Final adversarial review gate; a slug runs the 13-point bug-fix review |
+| `/test` | Regression / e2e tests (the tester holds the test quality rules) |
 | `/vuln-fix` | Dependency vulnerability resolution (0-vuln gate) |
 | `/bump-package` | Bump a shared dep across all consumer repos |
 | `/db-query` / `/db-schema` | Safe tenant-scoped MongoDB query / schema lookup |

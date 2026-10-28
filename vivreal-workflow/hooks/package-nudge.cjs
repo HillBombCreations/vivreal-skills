@@ -23,7 +23,7 @@ try {
   if (fs.existsSync(marker)) process.exit(0);
   try { fs.writeFileSync(marker, '1'); } catch (e) {}
 
-  const msg = `You changed a package.json. If this is a shared @hillbombcreations/* bump (schemas, site-renderer, tier-quotas, tenant-db, email-brand), dispatch the \`package-publisher\` agent or follow the \`vivreal-package-update\` skill to move the pin across ALL consumer repos. Patch the lockfile entry surgically (only that package's \`version\`, \`resolved\` and \`integrity\`, taken from \`npm view <pkg>@<version> dist.tarball\` and \`dist.integrity\`), then verify with \`npm ci\` (or \`npx -y npm@10 ci --dry-run\`). Never delete \`package-lock.json\` and never run \`npm install\` on Windows: it prunes Linux-only optional dependencies and has broken this fleet's lockfiles before.`;
+  const msg = `You changed a package.json. If this is a shared @hillbombcreations/* bump (schemas, site-renderer, tier-quotas, tenant-db, email-brand), dispatch the \`package-publisher\` agent (or run \`/bump-package\`) to move the pin across ALL consumer repos. Patch the lockfile entry surgically (only that package's \`version\`, \`resolved\` and \`integrity\`, taken from \`npm view <pkg>@<version> dist.tarball\` and \`dist.integrity\`), then verify with \`npm ci\` (or \`npx -y npm@10 ci --dry-run\`). Never delete \`package-lock.json\` and never run \`npm install\` on Windows: it prunes Linux-only optional dependencies and has broken this fleet's lockfiles before.`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: msg } }));
 } catch (e) { /* fail open */ }
 process.exit(0);

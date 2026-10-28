@@ -314,6 +314,199 @@ Only annotate code that is **genuinely unreachable**: a path gated by a hardcode
 
 100% coverage forces you to execute every branch, which surfaces real defects (a `CustomError` class called without `new` masking the true AWS error; a silent fallback hiding a failure). When a branch reveals a bug, **fix the source and report it (file:line, before/after)**, do not contort the test to accommodate the bug. Behavior-preserving dead-branch removal (an unreachable `|| ''`) is also fair game and often the cleanest way to a real 100%.
 
+## Test quality rules
+
+Folded from the retired `/write-tests` command. They apply to every portal e2e spec I write, and the
+categories apply to backend tests where they fit. Before writing, read `e2e/TESTING.md`, read every file that
+renders the UI under test, and gap-fill any existing spec rather than duplicating it. Use `global-setup` for public
+pages and `auth-setup` for authenticated ones, import from `e2e/fixtures` (never `@playwright/test` directly), and add
+a missing `data-testid` to the component. Server-side fetches bypass `page.route()`; say so in the spec.
+
+### The checklist
+
+For every component/feature, work through each category and write at least one test per applicable item. Skip items with a comment explaining why they don't apply.
+
+#### A. Render correctness
+- [ ] Page/component mounts without crashing
+- [ ] All expected headings, labels, and static copy are visible
+- [ ] Data-testid attributes exist for all interactive and observable elements
+- [ ] Loading/skeleton state renders while async data is in flight
+- [ ] Empty state renders with correct message (not blank, not error)
+- [ ] Populated state renders all expected items when data is present
+
+#### B. Numeric and data display safety
+- [ ] No `NaN`, `undefined`, `Infinity`, or raw `-1` appears in rendered output when API returns zero/null values
+- [ ] Percentages computed from quota/total handle `quota=0` without division-by-zero
+- [ ] Bytes/file sizes format as human-readable strings (KB/MB/GB), not raw integers
+- [ ] Counts render as `0` (not blank or NaN) when used=0 but quota>0
+- [ ] Unlimited quotas (`quota=-1`) render "Unlimited", not "-1"
+- [ ] Not-included quotas (`quota=0`) render "--" or "Not included", not "0/0" or "NaN%"
+- [ ] Numbers that overflow 100% clamp to 100%, not 101%+
+
+#### C. Error and exception states
+- [ ] API 500 error: component renders graceful fallback, not crash/blank
+- [ ] API 401 error: triggers expected behavior (redirect to login or error message)
+- [ ] Completely missing fields (null/undefined props): component renders with safe defaults
+- [ ] Network timeout / empty response: component shows error or empty state, not frozen spinner
+- [ ] Form submission failure: error message visible, form not cleared
+
+#### D. Interaction and user flows
+- [ ] Primary action (create/save/submit button) triggers the correct API call
+- [ ] API request body contains the expected fields and values
+- [ ] Success path: UI updates to reflect the confirmed change (dialog closes, item appears/disappears)
+- [ ] Cancel/dismiss: no API call is made, state is unchanged
+- [ ] Destructive action (delete/reject): confirmation step exists before API call fires
+
+#### E. Accessibility (WAI-ARIA)
+Follow [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/) for all role/property expectations.
+
+**Interactive element names**
+- [ ] All buttons, links, and inputs have an accessible name, test with `getByRole('button', { name: /…/ })` or assert `aria-label` attribute
+- [ ] Icon-only buttons have an explicit `aria-label` (e.g. close, delete, toggle icons)
+- [ ] Links have descriptive text, avoid "click here" or "read more" without context
+
+**Landmark roles and structure**
+- [ ] Page has a primary landmark (`<main>` or `role="main"`)
+- [ ] Heading hierarchy is logical (h1 → h2 → h3); no skipped levels on a single page
+- [ ] Navigation regions use `<nav>` with a distinct `aria-label` (e.g. `aria-label="Primary"`)
+
+**Form accessibility**
+- [ ] Every form input is associated with a `<label>` via `for`/`id` or `aria-label`
+- [ ] Required fields use `aria-required="true"` or the `required` attribute
+- [ ] Validation error messages are linked to their input via `aria-describedby`
+- [ ] Submit buttons are not disabled via CSS alone, use the `disabled` attribute
+
+**Widget roles and states (ARIA patterns)**
+- [ ] Progress bars: `role="progressbar"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+- [ ] Toggle buttons: `aria-pressed="true/false"` reflects current state
+- [ ] Dialogs: focus is trapped inside the dialog and restored on close; `role="dialog"` with `aria-labelledby`
+- [ ] Expandable sections: `aria-expanded="true/false"` on the trigger matches visibility of the panel
+- [ ] Checkboxes / radios: `aria-checked` or native `checked` matches visual state
+- [ ] Tabs: `role="tablist"` + `role="tab"` with `aria-selected`; active panel has `role="tabpanel"`
+- [ ] Menus: `role="menu"` + `role="menuitem"`; keyboard navigation (arrow keys, Escape) works
+
+**Live regions and dynamic content**
+- [ ] Status messages (success toasts, loading state) are in an `aria-live="polite"` region
+- [ ] Error messages (form errors, API errors) are in an `aria-live="assertive"` region or auto-focused
+- [ ] Loading spinners have `aria-label` or are paired with a visually-hidden status text
+
+**Keyboard navigation**
+- [ ] All interactive elements reachable via Tab key (no keyboard traps outside dialogs)
+- [ ] Custom widgets follow ARIA keyboard conventions: Enter/Space to activate, Escape to dismiss, arrow keys for composite widgets
+
+**How to write accessibility assertions in Playwright:**
+```typescript
+// Prefer role-based queries (most reliable against a11y regressions)
+await expect(page.getByRole('button', { name: /Submit/i })).toBeVisible();
+await expect(page.getByRole('dialog', { name: /Confirm delete/i })).toBeVisible();
+
+// Verify ARIA attributes
+await expect(page.locator('[role="progressbar"]')).toHaveAttribute('aria-valuenow');
+await expect(page.getByRole('button', { name: /Close/i })).toHaveAttribute('aria-label');
+
+// Verify disabled state (not just opacity)
+await expect(page.getByRole('button', { name: /Submit/i })).toBeDisabled();
+
+// Verify aria-expanded on a trigger
+await expect(page.getByRole('button', { name: /Expand/i })).toHaveAttribute('aria-expanded', 'false');
+await page.getByRole('button', { name: /Expand/i }).click();
+await expect(page.getByRole('button', { name: /Expand/i })).toHaveAttribute('aria-expanded', 'true');
+
+// Check heading exists with correct level
+await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+// Verify live region present
+await expect(page.locator('[aria-live]')).toBeAttached();
+```
+
+#### F. Responsive / breakpoint behavior
+- [ ] At mobile width (375px): no horizontally overflowing content, all controls reachable
+- [ ] At tablet width (768px): layout switches correctly (e.g. side-by-side vs stacked)
+- [ ] At desktop width (1280px): full layout renders without collapsed/hidden primary content
+- [ ] Tab-only UI elements (hidden mobile / hidden desktop): test via URL deep-link, not click
+
+#### G. Permission / role gating
+- [ ] Admin/owner-gated UI is hidden when `canApprove`/`canManage` is false
+- [ ] Admin/owner-gated UI is visible when permissions are true (auth fixture seeds `isOwner: true, isAdmin: true`)
+- [ ] Feature-gated UI (paid-tier only): free-tier gate renders correctly in default SSR state
+
+#### H. Real-time / WebSocket injection
+- [ ] If the feature listens to `socket:*` events, wait for `__reactProps` hydration before dispatching
+- [ ] Injected item appears in the list without page reload
+- [ ] Injected item with edge-case data (missing fields) renders without crash
+
+### Required patterns
+
+**Hydration wait before clicking or injecting:**
+```typescript
+await page.waitForFunction(
+  () => {
+    const el = document.querySelector('[data-testid="my-element"]');
+    return !!el && Object.keys(el).some((k) => k.startsWith('__reactProps'));
+  },
+  undefined,
+  { timeout: 10_000 });
+```
+
+**postDataJSON (synchronous, use try/catch, not .catch()):**
+```typescript
+let body: Record<string, unknown> | null = null;
+try { body = route.request().postDataJSON() as Record<string, unknown>; } catch { /* no body */ }
+```
+
+**SSR-dependent mock with graceful skip:**
+```typescript
+const hasMockedData = await page.locator('text=Expected Value').first().isVisible().catch(() => false);
+if (!hasMockedData) {
+  // SSR timing limitation, assert NaN guard still holds
+  const text = await page.locator('[data-testid="my-panel"]').first().textContent();
+  expect(text).not.toContain('NaN');
+  return;
+}
+// Full assertions when SSR mock landed
+```
+
+**NaN/exception guard test:**
+```typescript
+// Use innerText() not textContent(), textContent() includes Next.js inline <script>
+// serialization which contains the literal word "undefined", causing false positives.
+const panelText = await page.locator('[data-testid="my-panel"]').first().innerText();
+expect(panelText).not.toContain('NaN');
+expect(panelText).not.toContain('undefined');
+expect(panelText).not.toContain('Infinity');
+```
+
+**Responsive breakpoint test:**
+```typescript
+await page.setViewportSize({ width: 375, height: 812 }); // mobile
+// ... assert layout
+await page.setViewportSize({ width: 1280, height: 720 }); // desktop
+// ... assert layout
+```
+
+### Running a spec
+
+```bash
+PLAYWRIGHT_EXTERNAL_WEBSERVER=1 npx playwright test --project=chromium e2e/your-feature.spec.ts
+```
+
+If another agent may be running e2e on this machine, set `VR_HARNESS_OFFSET` (an integer
+from 0 to 400, where 0 is the default ports, so use a non-zero value) so this run gets its own app and mock-upstream ports and dist dir instead of
+attaching to a sibling's server (`fleet-concurrency`, "Fixed ports").
+
+Tests MUST:
+- FAIL on the current code if they're regression guards for a known bug
+- PASS on the fixed/current code
+- NOT use `waitForTimeout` except as a last resort (prefer `waitFor`, `toBeVisible`, `waitForFunction`)
+- Assert what the page RENDERS or what an element RESOLVES to (computed style, visible text, the
+  served response), never only what the source declares, and never pass because a mock stood in
+  for the layer the change touched. The v7 false greens are in the `verification-discipline`
+  skill, "A faked layer hides exactly the failure it fakes".
+
+New mocks go in `e2e/fixtures/api-mocks.ts`, new data in `e2e/fixtures/test-data.ts`, and the file count and
+File Structure table in `e2e/TESTING.md` are updated in the same change. My report lists every checklist item
+skipped and why.
+
 ## Test verification protocol
 
 1. Write the test FIRST. For a guard or validation, write it as a REFUSE case (feeds the bad

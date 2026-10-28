@@ -1,6 +1,6 @@
 ---
 description: Principal-level code review with deep expertise in system design, security, performance, cloud architecture, data structures, and algorithms. Works on any diff, no bug artifacts needed. The final gate before shipping.
-argument-hint: <"current diff" | branch name | PR URL | slug | (no args = review unstaged changes)>
+argument-hint: '[slug] | "staged" | "all" | branch name | PR URL | (no args = review unstaged changes)'
 ---
 
 You are dispatching the reviewer agent. The user invoked `/reviewer` with: **$ARGUMENTS**
@@ -11,8 +11,26 @@ You are dispatching the reviewer agent. The user invoked `/reviewer` with: **$AR
 2. **"staged"** → review staged changes (`git diff --staged`)
 3. **Branch name** → review branch vs main (`git diff main...<branch>`)
 4. **PR URL** → fetch PR diff via `gh pr diff <number>`
-5. **Slug** (kebab-case, matches `docs/bugs/<slug>/`) → review changes related to that bug fix
+5. **Slug** (kebab-case, matches `docs/bugs/<slug>/`) → **slug mode** below, the adversarial 13-point bug-fix review (this replaced `/bug-review`)
 6. **"all"** → review all uncommitted changes (`git diff HEAD`)
+
+## Slug mode (a bug fix with research.md and plan.md)
+
+1. Verify `docs/bugs/<slug>/research.md` and `docs/bugs/<slug>/plan.md` exist; if either is missing, say so and fall back to a principal review of the diff.
+2. Determine the pass number: count existing `docs/bugs/<slug>/review-*.md` files, plus one.
+3. Tell the user: "Dispatching reviewer pass <N> for `<slug>`."
+4. Dispatch:
+
+```
+description: Adversarial review pass <N> for <slug>
+subagent_type: reviewer
+prompt: Adversarial review of bug fix <slug>. This is pass <N>. Read the shared-standards skill, docs/bugs/<slug>/research.md, docs/bugs/<slug>/plan.md and any prior review docs. Run git diff to see changes. Walk the 13-point checklist (item 13, the anti-pattern catalog, is mandatory) with PASS/FAIL/N-A per item. Cite file:line for every FAIL. Write your verdict to docs/bugs/<slug>/review-<N>.md. Approval requires ALL 13 items PASS or N-A.
+```
+
+5. Read the `Verdict:` line from `docs/bugs/<slug>/review-<N>.md`, append the metrics block below to `docs/bugs/<slug>/metrics.md` with `verdict` set to PASS or FAIL, and show the FAIL items.
+6. On `Verdict: FAIL`, suggest: "Run `/implement <slug>` to address the FAIL items, then `/reviewer <slug>` again." On `Verdict: PASS`, suggest: "Run `/document <slug>`."
+
+Every other input takes the principal review below.
 
 ## Setup
 

@@ -37,7 +37,7 @@ test('a package.json edit gets the surgical-lockfile advice', (t) => {
   assert.equal(run.status, 0);
   const msg = messageFrom(run.stdout);
   assert.match(msg, /package-publisher/);
-  assert.match(msg, /vivreal-package-update/);
+  assert.doesNotMatch(msg, /vivreal-package-update/);
   assert.match(msg, /surgically/);
   assert.match(msg, /`npm ci`/);
   assert.match(msg, /npx -y npm@10 ci --dry-run/);
