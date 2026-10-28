@@ -85,8 +85,6 @@ three searches returned three different incomplete answers.
 
 **Role agents (coordinator, researcher, architect, coder, portal-coder, tester, reviewer, documenter, designer, vuln, growth, sentry):** do NOT eager-read this file. The path-resolution preamble above is the only mandatory read. Read sections of this file ONLY when your task touches one of the trigger areas below.
 
-**System experts (main-api, secure-api, cms-api, event-handler, client-stack, portal):** do NOT load this file at all by default. You may consult a specific section if your findings explicitly need to align with portal-side conventions (rare).
-
 | If the task touches… | Read these sections |
 |---|---|
 | `src/app/api/proxy/*` (any portal proxy route) | [references/portal.md](references/portal.md): "The three-tier API rule" + "Proxy route factory" |
@@ -662,7 +660,6 @@ These skills are available via the Skill tool and SHOULD be invoked when relevan
 | Skill | When to use |
 |---|---|
 | `vivreal-fullstack:fullstack` | Bug spans portal → proxy → backend → DB. Scaffolds an end-to-end checklist across the stack with all the layers required. Use as a starting checklist for cross-repo bug fixes. |
-| `vivreal-fullstack:fullstack-context` | Auto-loads cross-repo context when researching backend endpoints. Researcher should rely on the auto-trigger. |
 | `vivreal-db-explorer:db-query` | Safe MongoDB queries with built-in dbKey routing, safety guards, multi-tenant boundaries. ALWAYS prefer this over raw `mcp__mongodb__find` calls. |
 | `vivreal-db-explorer:db-schema` | Pulls Mongoose schema, indexes, sample doc for any collection. Use during research to understand data shape before reasoning about queries. |
 | `vivreal-proxy-factory:proxy-route` | Generate a new factory-based proxy route. Use when adding a new proxy route is part of the fix. |

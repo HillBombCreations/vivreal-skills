@@ -5,6 +5,8 @@ description: 'Use when working in VR_CMS_API, Vivreal''s Content Management Syst
 
 # VR_CMS_API: knowledge digest
 
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
 Last synced: 2026-10-20 against `origin/stable` (tag v2.16.2, the v7.1 hotfix line; read the tag, do not trust this one)
 
 The CMS backend: collections, collection objects, integrations, media uploads, inbound platform webhooks, audit logging, content versioning, content go-live scheduling. Maps to `NEXT_PUBLIC_CMS_URL`. Express + serverless-express on Lambda (Node 22 on every function since 2026-10-02, CMS CLAUDE.md:41; arm64), JavaScript, MongoDB/Mongoose, Cognito JWT via API Gateway, SAM. `CLAUDE.md` at `origin/stable` (`git show origin/stable:CLAUDE.md`) is the first read; source wins wherever the two disagree.
@@ -144,8 +146,8 @@ Load `vivreal-workflow:verification-discipline`: a zero is only evidence once th
 
 ## Lambda and MongoDB checklist (ported from the `cms-api` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
@@ -161,3 +163,18 @@ packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated he
 
 - Bulk import: use `insertMany` with `ordered: false` for partial-failure tolerance.
 - Versioning: increment `version` atomically with `$inc`, prune via tail-deletion bounded by `maxVersionsPerObject`.
+
+## Facts moved from the retired expert agent (2026-10-28)
+
+- **Connection teardown identity (fixed v2.7.2, #173).** Every connection that ever sat in `connObj[dbKey]` keeps its `disconnected`/`error`/`close` handlers for the life of the process; they used to delete THE SLOT, so a dead connection's teardown removed the entry a live request had just been given (`TypeError: Cannot read properties of undefined` on `dynamicDb[dbKey].<model>`; the `null` form came from `createMainDb`). All handlers are identity-guarded now (`if (connObj[dbKey] === entry)` in `createTenantDb.js`). Signature if it returns: the first request after an idle gap past `maxIdleTimeMS`, reconnect-length duration, an immediate successful retry. Do not go looking at the data.
+- **The module-map re-read is still the wider surface.** `handleTenantRoutes.js` keeps the handle `connect()` returns, but only for its own idempotency ledger; the services still re-read the mutable `dynamicDb[...]` map after more awaits, which a superseded teardown can empty. Count it with every spelling (`git grep -o "dynamicDb\[[^]]*\]" -- src`; `dynamicDb[key]` is most of it), never `dynamicDb[dbKey]` alone. The wrapper also refuses a `key` that is not the requesting group's own placement, so a caller cannot read another group's database by naming it.
+- **Studio ordering must agree with Client API by construction (#172).** The CMS default sort is `objectValue.order` then `_id`, the same pair the public read uses. Items sharing a `createdAt` millisecond ordered "correctly" before only by an unspecified `$setUnion` tiebreak, so never copy `createdAt` ordering to either side.
+- **Collection-name lowercasing.** `createMainDb` takes `collection` as the mongoose MODEL name; with no `collectionName`, mongoose lowercases and pluralizes it, so a camelCase registration silently splits from a service that pins the name (`domainOrders` vs `domainorders`). Always pass `collectionName`; two collections both carrying a schema's full index set is the tell.
+- **`test/unit/bulk-import-refuses-subscribers.test.js` times out at 2000 ms on the FIRST full-suite run after `npm ci`** and passes every run after (cold module load). Re-run, then run the file alone as the tiebreaker; do not raise the timeout.
+- **Collection-object updates are optimistically concurrent** (2026-09-28): echo `__v` and a stale write gets a 409 instead of silent last-write-wins.
+- **Bookings diary read** `GET /tenant/bookings` (getCollectionInfo, siteRole `bookings`). Its fix is the general trap: Mongo `limit(0)` means NO limit, so a caller asking to skip a read gets the whole collection.
+- HandleMedia Lambda: presigned S3 upload URLs. **The bucket is `bucketOf(group)`** (`@shared/bucketOf`): the stored `group.bucket` wins, else `${group.type}-${group.key}`. Never assume a `vivreal-` prefix (some groups are `collection-<key>`); the `vivreal-` prefix on media URLs is the CloudFront path (`buildMediaUrl.js`), not the bucket.
+- Multi-tenant via `dynamicDb[dbKey]`. dbKey is the tenant DATABASE name STORED on the group, read back by `resolvePlacement(group)` and never computed from a tier. A slugified per-group database is legacy drift, not the model, and at least one of those has no group pointing at it.
+- Approval workflow: `collectionObject.approvalStatus` enum (`draft`/`pending_review`/`approved`/`rejected`), gated by `collectionGroup.approvalRequired`.
+- `collectionGroup.siteRole` is the stable discriminator for built-in site forms (subscribers, reviews, reservations, etc.), orthogonal to `type` and `system`.
+- Multi-account social: a provider can have several connected accounts; integration posts target a specific account (`integration_accounts` model).

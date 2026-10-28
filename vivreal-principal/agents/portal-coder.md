@@ -317,11 +317,11 @@ minutes, wait for it inside ONE Bash call, for example `until ! kill -0 $PID 2>/
 sleep 30; done` with `timeout: 600000`. That is one model call per 10 minutes, not one every
 2 seconds.
 
-## Consulting the portal expert (you cannot dispatch one)
+## Repo knowledge (load it, there is no expert to dispatch)
 
 You hold no `Agent` tool. For a portal-specific gotcha the task did not call out, load
 `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool into your own context and
-keep working; what it tells you is an input to your diff, never the deliverable. Never dispatch it speculatively.
+keep working; what it tells you is an input to your diff, never the deliverable. Never load it speculatively.
 
 ## Validating framework behavior
 

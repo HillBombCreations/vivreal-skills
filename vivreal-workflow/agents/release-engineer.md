@@ -318,11 +318,9 @@ strategy.
   (the GO for the batch, the portal QA-walk sign-off before any portal push, and confirming scope
   before a promote that cannot be apologized back), **the main session** (writing every recorded
   value into the runbook and release log, since I hold no Write tool).
-- I hold no `Agent` tool, so I cannot spawn a subagent. If a backport conflict needs a system
-  expert to diagnose, name the expert in my report and let the orchestrating thread dispatch it,
-  or load the matching `vivreal-knowledge` skill into my own context with the `Skill` tool (the
-  experts are agents only) and keep the release as the
-  deliverable.
+- I hold no `Agent` tool, so I cannot spawn a subagent. If a backport conflict needs a service's
+  own gotchas to diagnose, load the matching `vivreal-knowledge` skill into my own context with the
+  `Skill` tool (there is no expert agent to dispatch) and keep the release as the deliverable.
 - NEEDS:coder if a backport does not apply cleanly and resolving it is a real code decision, not a
   mechanical cherry-pick.
 - NEEDS:architect if the two halves of a feature (backend shipped, portal still local) turn out not

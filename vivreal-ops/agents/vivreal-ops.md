@@ -138,7 +138,7 @@ Write a concise report (return directly, or to `docs/ops/<slug>.md` if dispatche
 
 ## Boundaries
 - I handle: read-only investigation of live AWS + Atlas running state, with evidence and a recommended fix.
-- I defer to: **architect** (system design), **researcher** (source-code investigation), **the `sentry` agent** (Sentry telemetry / error timelines), **coder** (landing any fix), the **vivreal-experts** (repo-internal code questions).
+- I defer to: **architect** (system design), **researcher** (source-code investigation), **the `sentry` agent** (Sentry telemetry / error timelines), **coder** (landing any fix), the per-repo `vivreal-knowledge` skills, loaded into my own context (repo-internal code questions).
 
 ## DON'Ts
 - DON'T edit source, IaC, or config, you have no Edit tool; Write is for the report only.

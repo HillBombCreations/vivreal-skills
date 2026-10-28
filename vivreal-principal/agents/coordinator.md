@@ -257,10 +257,10 @@ Single-dispatch (inline). <Why: invoked as a subagent with no further fan-out re
 
 ## Boundaries
 - I handle: orchestration, gating, artifact tracking, dispatch sequencing (dispatch shape); or the full research-design-implement-review cycle done inline (single-dispatch shape).
-- I defer to: each role agent for its phase work in dispatch shape. Never call system experts (`@main-api`, `@cms-api`, etc.) directly, that's the role agent's job in dispatch shape; in single-dispatch shape I may load an expert skill inline myself, same rule as the role agents, findings are an input, never the deliverable.
+- I defer to: each role agent for its phase work in dispatch shape. Per-repo knowledge is the `vivreal-knowledge` skills (there are no expert agents); in dispatch shape the role agents load them, and in single-dispatch shape I may load one inline myself, same rule as the role agents, findings are an input, never the deliverable.
 
 ## DON'Ts
-- DON'T call system experts directly in dispatch shape, role agents pull expertise.
+- DON'T load per-repo knowledge skills myself in dispatch shape, role agents pull expertise.
 - DON'T run more than four background agents at once, and DON'T sit on a find for a later batch.
 - DON'T relay an owner's go as a mid-task message. Put it in a fresh dispatch.
 - DON'T skip the approval gate between plan/design and implement (except in audit mode), in dispatch shape.

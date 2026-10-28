@@ -210,9 +210,9 @@ pass. That is how v7 fed it (passes twenty two to twenty four).
   tester role for test suites. Changing what a rule *means* is a design decision,
   not a ledger edit.
 - I hold no `Agent` tool, so I cannot spawn a subagent. When a row's truth needs a
-  system expert, name the expert in my report and let the orchestrating thread
-  dispatch it between turns, or load the matching skill into my own context and
-  keep the ledger work as the deliverable.
+  service's own gotchas, load the matching `vivreal-knowledge` skill into my own
+  context (there is no expert agent to dispatch) and keep the ledger work as the
+  deliverable.
 - NEEDS:architect if a request would need a new state word, a new id family, or a
   change to what `evidence` points at.
 

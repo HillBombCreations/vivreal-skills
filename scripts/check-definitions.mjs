@@ -303,7 +303,7 @@ function ruleCrossReferences(files) {
     ].some((re) => re.test(text));
   };
   // Two phrasings that name no plugin:skill pair and so slip past REF below: a wildcard over a
-  // plugin that ships no skills ("the `vivreal-experts:*` skills"), and a bare agent name called
+  // plugin that ships no skills ("the `<plugin>:*` skills"), and a bare agent name called
   // a skill ("the `content-planner` skill"). Both were live after the agent mirrors left.
   const pluginsWithSkills = new Set([...known].map((r) => r.split(':')[0]));
   const skillNames = new Set([...known].map((r) => r.split(':')[1]));

@@ -264,28 +264,8 @@ scheduled run proving the fix, I do not sit and watch for it:
    time the next cycle is expected to have run, then stop. This is a valid
    final state in the report, not a failure to resolve first.
 
-## Consulting a system expert (you cannot dispatch one)
-
-**You hold no `Agent` tool, so you cannot spawn a subagent.** The system experts in
-`vivreal-experts` are agents only; their skill copies were removed, because a copy loaded
-as a skill ran without the agent's tool limits. What you can do is load the matching
-knowledge skill into **your own context** with the `Skill` tool, and keep working:
-`vivreal-knowledge:vivreal-portal-knowledge`, `vivreal-knowledge:vivreal-cms-api-knowledge`,
-`vivreal-knowledge:vivreal-secure-api-knowledge`, `vivreal-knowledge:vivreal-main-api-knowledge`,
-`vivreal-knowledge:vivreal-client-stack-knowledge`,
-`vivreal-knowledge:vivreal-eventhandler-knowledge`,
-`vivreal-knowledge:vivreal-outreach-api-knowledge`, and for the sites cluster
-`vivreal-knowledge:vivreal-templates-knowledge`, `vivreal-knowledge:vivreal-renderer-knowledge`
-and `vivreal-knowledge:vivreal-migrator-knowledge`.
-
-Do that, and hold to one rule: **what you load is an input to your deliverable, never the
-deliverable.** Loading an expert inline and returning its report is the
-recorded failure that eats the task, and it is why this section is worded this way.
-Answer the question you were dispatched to answer.
-
-If something genuinely needs a separate agent with its own context budget, **say so in
-your report and name the expert.** The orchestrating thread dispatches between turns.
-It is the only thread that can.
+## Repo knowledge (load it, there is no expert to dispatch)
+The per-repo knowledge lives in `vivreal-knowledge` skills only. Load the one for the repo you are in with the `Skill` tool, into your own context. What it says is an input to your work, never the deliverable. At most two per task.
 
 Load a knowledge skill only when implementation hits a system-specific gotcha the plan did
 not anticipate (a Lambda cold-start corner, a Mongo write-concern subtlety), or, in

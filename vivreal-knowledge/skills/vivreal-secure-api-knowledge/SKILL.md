@@ -5,6 +5,8 @@ description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops ba
 
 # VR_Secure_API: knowledge digest
 
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
 Last synced: 2026-10-21 against `origin/stable` at `32c3bcf1` (tag v2.22.6, the v7.2 hotfix line; read the tag)
 
 The authenticated-ops backend: group/team mgmt, site creation+deploy+template instantiation, Stripe billing/subscriptions/overage, domain purchase+transfer, Square token lifecycle, profile switching, roles, AI agent, per-site analytics reads. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 22 on every function since 2026-10-02; arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `CLAUDE.md` at `origin/stable` for full route lists (`test/unit/claudeMdClaims.test.js` binds its function counts and runtime claim to the generated template).
@@ -143,8 +145,8 @@ Load `vivreal-workflow:verification-discipline`. This is the highest-blast-radiu
 
 ## Lambda and MongoDB checklist (ported from the `secure-api` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
@@ -162,3 +164,16 @@ packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated he
 - Profile switch atomically updates `activeGroupID` on the user doc and re-issues the `active_ctx` JWT, verify the order doesn't leak across requests.
 - Group creation: insert + S3 bucket creation must roll back together on partial failure (idempotent retry).
 - Index audit: `groupID`, `userID`, `stripeSubscriptionID`, `cognitoSub` must be indexed; `groupID + userID` compound index for membership queries.
+
+## Facts moved from the retired expert agent (2026-10-28)
+
+- **Ctx tokens are audience-bound (H6006, 2026-09-27).** Each service verifies with a key DERIVED from `CTX_SECRET` (`HMAC(CTX_SECRET, 'vivreal/ctx/v2/<service>')`) and checks `aud`; the admin gate requires `exp` and accepts only tokens addressed to this service. A token minted for one service is not valid at another, so a hand-minted test token must name the right audience.
+- **Test suite is 100/100/100/100 coverage with a husky pre-push gate** (no GitHub Actions test workflow in this repo), the pre-merge review + the local husky gate are the ONLY checks before code lands on `main`; `git push --no-verify` bypasses the gate.
+- Account self-serve deletion (`userAndAuth/services/deleteAccount.js` + `preflightAccountDeletion.js`) and video-transcode bounding (`createSites/services/S3Functions/mediaHelperFns/createVideoObject.js`) shipped this window, mind them when tracing account lifecycle or media upload paths.
+- **W6 read-flip:** the 6 tier-driven fields (entries/seats/sites/apiCalls/cdnBytes/agentActions) read LIVE from `getTierQuotas(group.tier)` at every gate (`joinGroup`, `acceptRequest`, agent metering, `getAgentContext`, `instantiateTemplate`, `createSiteCollectionData`, `createSiteWithExistingCollections`, `getGroupInfo` v1+legacy, `updateEmail` serializers). `updateGroupTier` + `handleSubscriptionEnd` STOPPED writing those fields. The per-group `agentUsage.quota` override is GONE from `checkAgentQuota` (`src/agent/services/metering.js`), past-quota agent use requires `overageBilling.enabled` and hard-stops at the spending cap; `mediaUsage.quota` is the only admin-override quota left (W7). Downgrade to a 0-access target is now a preflight violation.
+- Step Functions site-deploy fires from the `createSites` Lambda, but only when `site.siteInfo.mode === "hosted_by_us"` (api/controllers/createSiteCollectionData.js); the state machine ARN is the `STATE_MACHINE_ID` env var, resolved from SSM (`/vivreal/prod/secure-api/state-machine-id`, in `cloudformation/createSites.yaml`), NOT a CloudFormation export. (The `Create-Site-State-Machine` IAM policy IS from CFN, likely the source of the "CFN export" wording.) Cross-stack invocation: the deploy-pipeline Lambdas live in the EventHandler stack and are named `vh-${stage}-<step>` in `Vivreal_EventHandler/serverless.yml`; CI deploys with `--stage site-deployment`, so the deployed names are `vh-site-deployment-seedCollections`, `vh-site-deployment-createAmplifyApp`, `vh-site-deployment-markSiteLive` and so on (hyphens; an underscore spelling is only how the Lambda-tool MCP names its tools).
+- Billing files use `config.stripeSecretKey` (commit `c653b85`), do not inline a hardcoded Stripe key.
+- **A 502 the code never emitted is a payload-size 413.** If the handler logged success, the REPORT line shows healthy memory and duration, and the body (`{"message":"Internal server error"}`) appears nowhere in the repo, the response passed Lambda's 6 MB ceiling and API Gateway substituted its own body. The site-version list did exactly this (each row carried a whole site snapshot; fixed v2.10.1 with an allowlist projection, `SITE_VERSION_LIST_PROJECTION`, and `src/shared/responseSizeGuard.js`, which makes a route refuse in owner words with an `errorCode`). Use an ALLOWLIST projection, not `{ field: 0 }`, so the next Mixed field cannot re-inflate the list. The version DETAIL route still carries a snapshot.
+- **`POST /api/site/cutover-state` is live** (`setSiteCutoverState`, merged #211): a global-admin gate on top of the owner/admin check, plus a compare-and-swap whose readback re-verifies the site on all four identity fields including `deployment.appId`. Its caller, `Vivreal_Site_Migrator#46`, merged 2026-09-09. `APPROVED_CANONICAL_ORIGIN` is hardcoded to `https://vivreal.io`.
+- **A release-line-only PR can regress production on the next promote.** A commit that exists only on `release/vX.Y` is removed by the next cut-and-promote. Diff the release line against `main` by file content, not by PR number, before every promote.
+- **Deployed versions belong to the deployed line, not to this file.** Read them: `git show <line>:package.json` for a service version, the consumer lockfile for a package pin, the release JSON endpoint (more than once) for the portal, and the registry for a published package. Every version this file used to name went stale inside two weeks, and a stale version reads exactly like a current one.

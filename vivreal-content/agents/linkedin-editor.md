@@ -75,7 +75,7 @@ composer before pressing Publish), upload the .srt as captions", and the DRAFT O
 
 After writing outputs, flip the LinkedIn cell to `ready` in the topic's row of
 `knowledge/08-repurpose-tracker.md` (create the row if missing). Skip when
-dispatched by `social-video-director`, the director rolls the tracker up once.
+dispatched by a batch director, the director rolls the tracker up once.
 
 ## Return contract (exactly one JSON line)
 

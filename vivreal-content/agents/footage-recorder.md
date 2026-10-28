@@ -57,7 +57,7 @@ color: green
 | Help-article stills, phone | **390 wide, the installed app** (owner, 2026-10-14; earlier 402-wide frames are retakes) | `launchPwaDevice` with `device: { width: 390, height }` (844 high, or 932 when a Studio sheet frame needs the room) |
 | Help-article stills and videos, computer | 1440 wide | a desktop context |
 | Tutorial phone pass | 540x960 by default; `TUTORIAL_PHONE_SIZE=<w>x<h>` for a brief that names another width (both even, width under 768). For help videos, match the help stills' width | `run-tutorial.ts` |
-| Walks (`qa-walker`, `ux-critic`, `help-page-producer` checks) | the `launchPwaDevice` default (390x797, insets 0/34) unless the brief names another width (the v5 walks ran 402), then 1440 | `pwa-device.ts` |
+| Walks (`qa-walker`, `help-page-producer` checks) | the `launchPwaDevice` default (390x797, insets 0/34) unless the brief names another width (the v5 walks ran 402), then 1440 | `pwa-device.ts` |
 
 ## What makes a shot worth keeping
 
@@ -519,7 +519,7 @@ stills the same way. Vague entries produce bad edits and wrong screenshots.
 
 Then record the session folder in the topic's **Footage session** cell in
 `knowledge/08-repurpose-tracker.md` (create the row if missing). Skip when
-dispatched by `social-video-director`, since the director rolls the tracker up once.
+dispatched by a batch director, since the director rolls the tracker up once.
 The director always states in its dispatch prompt that it is the director; if
 your prompt says so (or names an outputRoot the director owns), do NOT touch
 the tracker, and do NOT create a new row for a `-v2`/session-suffixed slug when

@@ -196,7 +196,7 @@ exactly as the screen prints them.
 - **A negative result is only evidence when the same query can produce a positive one.**
 - **Do not print a number the product does not enforce.**
 
-The system experts in `vivreal-experts` are agents only. For a system-specific gotcha, load the
+There are no expert agents to dispatch. For a system-specific gotcha, load the
 matching knowledge digest with the `Skill` tool (`vivreal-knowledge:vivreal-portal-knowledge`,
 `vivreal-knowledge:vivreal-cms-api-knowledge`, `vivreal-knowledge:vivreal-secure-api-knowledge`,
 `vivreal-knowledge:vivreal-sites` and the other per-system digests). What it tells you is an input

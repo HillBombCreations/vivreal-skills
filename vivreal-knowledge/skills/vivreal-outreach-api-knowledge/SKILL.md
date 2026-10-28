@@ -5,6 +5,8 @@ description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach bac
 
 # VR_Outreach_API: knowledge digest
 
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
 Last synced: 2026-10-20 against `origin/main` at `ea6eb28` (#95, live since 2026-10-19; Node 22 since 2026-10-02)
 
 The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (Node 22, `nodejs22.x` in `template.yaml`; AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Its CRM client is vivreal-hq `packages/admin-app` since v7; the portal reaches only the public booking, demo-link and studio-demo routes through `src/app/api/proxy/outreach/*`.
@@ -110,13 +112,12 @@ The **sender doc** (Outreach Senders) owns `fromAddress`/`fromName`/`replyToAddr
 
 ## Companions
 
-- **`outreach-api` expert agent** (vivreal-experts), read-only deep analysis with citations.
 - **`vivreal-outreach-mcp-knowledge`**, the 50-tool MCP server fronting this API. **`vivreal-db`**, Mongo query rules. **`vivreal-atlas-topology`**, connection/ops. **`vivreal-iam-secrets`**, CTX_SECRET rotation. **`vivreal-admin-app-knowledge`**, the admin app that is this API's CRM client; **`vivreal-portal-knowledge`**, the public outreach proxies the portal keeps.
 
 ## Lambda and MongoDB checklist (ported from the `outreach-api` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 

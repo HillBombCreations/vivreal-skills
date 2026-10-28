@@ -5,19 +5,14 @@
     "email": "justin@vivreal.io"
   },
   "metadata": {
-    "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; system-expert agents, auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
-    "version": "1.30.0"
+    "description": "Vivreal Claude Code agents, workflows, skills, and tooling, installable from any repo. Principal-level generalist agents work everywhere; auto-invoked knowledge skills (per-repo digests + cross-cutting infrastructure + design-system/unit-economics/brand-voice), active Sentry tracing, a read-only live-infrastructure ops investigator, read-only product/business audit agents (finance, marketing, UX), and the bug/feature workflow target the Vivreal ecosystem.",
+    "version": "1.31.0"
   },
   "plugins": [
     {
       "name": "vivreal-principal",
       "source": "./vivreal-principal",
       "description": "Repo-agnostic principal-level agents: coordinator, coder, portal-coder, architect, researcher, reviewer, designer, and growth-auditor. The coordinator, coder, architect, researcher, and reviewer each merge a standalone principal-level mode with the Vivreal bug/feature workflow's artifact-driven mode (an approved plan.md/design.md is an OPTIONAL input, followed with zero scope creep when given, otherwise the agent runs standalone). coder covers every repository except Vivreal_Portal_Mobile; portal-coder is the dedicated split for that one repo (SOLO/PARALLEL/INTEGRATE modes), because several coders sharing its heavy pre-commit/pre-push gates throttled each other into false results. Auto-dispatched for design+build, audits, refactors, code review, and GTM analysis in any repository."
-    },
-    {
-      "name": "vivreal-experts",
-      "source": "./vivreal-experts",
-      "description": "Read-only system-expert consultants for the Vivreal backends and portal (cms-api, secure-api, main-api, client-stack, event-handler, outreach-api, portal, sites-stack). Auto-dispatched when working inside a Vivreal ecosystem repo and you need that system's gotchas."
     },
     {
       "name": "vivreal-workflow",
@@ -47,12 +42,12 @@
     {
       "name": "vivreal-product",
       "source": "./vivreal-product",
-      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), ux-critic (dual-lens naive-user + UX-designer usability critique of portal and customer-site screens, with a Playwright walkthrough), qa-walker (drives the live portal and customer sites in a real browser against a validation matrix and reports what is actually broken), social-critic (per-platform audience reaction plus a social-savvy critique of produced social drafts, POST / FIX / DO NOT POST), regular-user, and template-critic (judges a built Vivreal template against the real-world exemplar it was designed from, visually and structurally, read-only). All advisory, they evaluate and recommend; fixes route to coder, vivreal-content's content-planner or the editor that made the asset, or designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agent (which designs and builds)."
+      "description": "READ-ONLY product & business audit agents: finance-auditor (unit economics, gross margin, AWS/Atlas/Anthropic cost stack, scale economics, ~80% margin-floor guard), marketing-auditor (brand-voice + marketing best-practices critique of customer-facing copy), qa-walker (drives the live portal and customer sites in a real browser against a validation matrix and reports what is actually broken), social-critic (per-platform audience reaction plus a social-savvy critique of produced social drafts, POST / FIX / DO NOT POST), regular-user (the naive-owner usability lens), and template-critic (judges a built Vivreal template against the real-world exemplar it was designed from, visually and structurally, read-only). All advisory, they evaluate and recommend; fixes route to coder, vivreal-content's content-planner or the editor that made the asset, or designer. Grounded in the vivreal-unit-economics, vivreal-brand-voice, and vivreal-design-system knowledge skills. Distinct from the growth agents (funnel/conversion/retention economics) and the designer agent (which designs and builds)."
     },
     {
       "name": "vivreal-fullstack",
       "source": "./vivreal-fullstack",
-      "description": "Cross-repo context loading, end-to-end feature scaffolding, and full-stack request tracing, the fullstack-tracer agent, the fullstack-context auto-loader skill, and the /fullstack scaffold command."
+      "description": "End-to-end feature scaffolding across the Vivreal repos, the /fullstack scaffold command. End-to-end request traces belong to vivreal-principal's researcher."
     },
     {
       "name": "vivreal-proxy-factory",
@@ -82,7 +77,7 @@
     {
       "name": "vivreal-content",
       "source": "./vivreal-content",
-      "description": "Vivreal's social and content production fleet, migrated out of vivreal-hq's local .claude directory. content-planner plans the cross-platform calendar (LinkedIn, Instagram, Facebook and TikTok); footage-recorder captures shared portal footage into the library; short-form-editor, linkedin-editor, carousel-editor, and social-video-director (the batch coordinator over the first two) turn that footage into platform-tailored DRAFT posts; guide-writer turns a footage session into a voice-checked blog draft and tutorial-maker into a scripted or live how-to (Meta App Review takes included); help-page-producer runs the verify-first help-centre backlog; mascot-artist re-poses the Vivreal duck mascot from its 3D model in Blender (headless, flat colours, inked outlines) and iterates on owner feedback. business-card-maker makes the Vivreal business cards from vivreal-hq's card script (front plus a portrait back whose round QR credits the card), shows the owner both sides and copies the print files to the owner's folder. Every editor is draft only, a human publishes. Plus the matching /carousel, /guide, /help-page, /instagram, /linkedin, /record, /social, /tiktok, /tutorial, and /business-card commands. Distinct from vivreal-product's social-critic (which critiques a finished draft) and template-critic (which judges a built template). Repo-specific run notes live in the working repo's docs/agent-notes/, read by the agent when present."
+      "description": "Vivreal's social and content production fleet, migrated out of vivreal-hq's local .claude directory. content-planner plans the cross-platform calendar (LinkedIn, Instagram, Facebook and TikTok); footage-recorder captures shared portal footage into the library; short-form-editor, linkedin-editor and carousel-editor turn that footage into platform-tailored DRAFT posts; guide-writer turns a footage session into a voice-checked blog draft and tutorial-maker into a scripted or live how-to (Meta App Review takes included); help-page-producer runs the verify-first help-centre backlog; mascot-artist re-poses the Vivreal duck mascot from its 3D model in Blender (headless, flat colours, inked outlines) and iterates on owner feedback. business-card-maker makes the Vivreal business cards from vivreal-hq's card script (front plus a portrait back whose round QR credits the card), shows the owner both sides and copies the print files to the owner's folder. Every editor is draft only, a human publishes. Plus the matching /carousel, /guide, /help-page, /linkedin, /record, /tutorial, and /business-card commands. Distinct from vivreal-product's social-critic (which critiques a finished draft) and template-critic (which judges a built template). Repo-specific run notes live in the working repo's docs/agent-notes/, read by the agent when present."
     },
     {
       "name": "vivreal-leadgen",
@@ -92,7 +87,7 @@
     {
       "name": "vivreal-site-migrator",
       "source": "./vivreal-site-migrator",
-      "description": "The Vivreal_Site_Migrator agent fleet, migrated out of that repo's local .claude directory (master-branch, no CI; a push here deploys nothing). Turns a live site or a design exemplar into a Vivreal site/template through a staged pipeline: ingest classifies a raw crawl into a ContentInventory; collections and integrations model its collection groups and integration signals; site assembles the page/format/binding structure last; kit-designer scouts a design exemplar and writes the identity-kit brief; component-builder builds or matches the aesthetic; page-confirm and studio-confirm prove render-level and Studio-editability fidelity; studio-registrar closes any portal registration gap a kit or migration opens; migration-estimator costs a migration before anyone commits to it; cutover is the USER-GATED agent that loads an approved blueprint into production. Plus the /migrate and /template commands. Distinct from vivreal-experts:sites-stack (read-only consultant on the deployed renderer/Templates stack) and vivreal-product:template-critic (judges the finished result against its exemplar)."
+      "description": "The Vivreal_Site_Migrator agent fleet, migrated out of that repo's local .claude directory (master-branch, no CI; a push here deploys nothing). Turns a live site or a design exemplar into a Vivreal site/template through a staged pipeline: ingest classifies a raw crawl into a ContentInventory; collections and integrations model its collection groups and integration signals; site assembles the page/format/binding structure last; kit-designer scouts a design exemplar and writes the identity-kit brief; component-builder builds or matches the aesthetic; page-confirm and studio-confirm prove render-level and Studio-editability fidelity; studio-registrar closes any portal registration gap a kit or migration opens; migration-estimator costs a migration before anyone commits to it; cutover is the USER-GATED agent that loads an approved blueprint into production. Plus the /migrate and /template commands. Distinct from the vivreal-knowledge renderer and Templates skills (the deployed renderer/Templates stack) and vivreal-product:template-critic (judges the finished result against its exemplar)."
     },
     {
       "name": "vivreal-ads",

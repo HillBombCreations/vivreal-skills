@@ -17,7 +17,7 @@ saying "use the applicable skills":
 2. **Workflow role-agents**, `researcher` → `architect` → `coder` → `reviewer`, chained
    through artifacts in `docs/bugs/<slug>/` or `docs/projects/<slug>/`.
 3. **Auto-invoked specialists**, keyed on **trigger words** (nouns and symptoms), e.g.
-   a Sentry ID → `sentry`, `VR_Secure_API` billing → the `secure-api` expert
+   a Sentry ID → `sentry`, `VR_Secure_API` billing → `vivreal-secure-api-knowledge`
    "churn"/"funnel" → `growth-advisor`.
 
 > **"Please use the applicable skills" is a weak trigger.** Auto-invocation keys on
@@ -26,7 +26,7 @@ saying "use the applicable skills":
 
 **Three habits that make every prompt land better:**
 
-1. **Name the repo/system** whenever you know it, strongest single trigger (pulls the right expert).
+1. **Name the repo/system** whenever you know it, strongest single trigger (pulls the right knowledge skill).
 2. **State the phase you want**, investigate-only, plan-then-stop, or plan-and-implement.
 3. **State the definition of done and the approval gate**, "show me the plan first",
    "until the scan is clean", "lint + type-check passes". Turns a vague request into a checkable contract.
@@ -40,7 +40,7 @@ saying "use the applicable skills":
 > Investigate it end-to-end across the stack, find the root cause (not just the symptom), then write a fix plan and implement it.
 > Cite file:line for the root cause, pull Sentry telemetry if a trace ID is given, and run lint + type-check before you call it done. Pause and show me the plan before making changes if the blast radius is non-trivial.
 
-Naming the **Sentry ID** auto-pulls the `sentry` agent; naming the **service** pulls its expert;
+Naming the **Sentry ID** auto-pulls the `sentry` agent; naming the **service** pulls its knowledge skill;
 "root cause not symptom" + "cite file:line" matches the researcher contract. Deterministic
 equivalent: **`/coordinator`** (full bug pipeline with a review gate).
 
@@ -73,8 +73,8 @@ live metrics" clause chains into `vivreal-ops`. Automated by **`/sentry-to-aws`*
 
 > Explain how **[feature, e.g. "media signing for live sites" or "publish gating"]** works end-to-end. Trace the full path: frontend component → proxy route → backend controller → service → MongoDB. Cite file:line and flag any gotchas or footguns I should know before changing it. Don't edit anything, this is read-only.
 
-"Trace the full path … frontend → proxy → backend → Mongo" + "read-only" is the `fullstack-tracer`
-contract. "Don't edit" keeps it in investigation mode.
+"Trace the full path … frontend → proxy → backend → Mongo" + "read-only" is the `researcher`'s
+end-to-end trace contract. "Don't edit" keeps it in investigation mode.
 
 ---
 
@@ -124,8 +124,8 @@ Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth-
 > Critique this screen/flow: **[URL or page, e.g. the site-creation flow]**.
 > Walk it as (a) a non-technical user, where would they get stuck or confused?, and (b) a UX designer, clicks, friction, cognitive load, findability of the primary action. Check it at mobile and desktop widths. Read-only; just tell me what to fix and route the fix, don't redesign it.
 
-The dual-lens phrasing triggers `ux-critic`, which can walk the running screen via Playwright.
-"Read-only, don't redesign" keeps it out of `designer` build mode.
+The dual-lens phrasing triggers `designer` in critique mode, which can walk the running screen via
+Playwright; `regular-user` adds the naive-owner pass. "Read-only, don't redesign" keeps `designer` out of build mode.
 
 ---
 
@@ -181,7 +181,7 @@ goal is a reusable template, not a customer's real content.
 Content work is operated FROM `C:\repos\vivreal-hq` (the standalone `vivreal-content` repo was
 consolidated into it 2026-08-03 and is now dead source, frozen at that commit), its in-repo
 `content-planner` agent and the specialists it directs (`carousel-editor`, `footage-recorder`,
-`short-form-editor`, `linkedin-editor`, `social-video-director`, `guide-writer`,
+`short-form-editor`, `linkedin-editor`, `guide-writer`,
 `help-page-producer`, `tutorial-maker`) own calendars, drafts, and rendered assets (the tooling
 moved out of the portal 2026-06-25; `content-creator` and its sub-specialists were retired
 2026-08-06). From anywhere else: voice/copy *critique* routes to `marketing-auditor`, and
@@ -194,22 +194,22 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 
 | You want… | Put this in the prompt | Routes to |
 |---|---|---|
-| A specific backend's gotchas | The repo name (`VR_Secure_API`, `VR_CMS_API`, `VR_Client_API`, `VR_Main_API`, `VR_Outreach_API`, `Vivreal_EventHandler`, the portal) | the matching read-only **expert** |
+| A specific backend's gotchas | The repo name (`VR_Secure_API`, `VR_CMS_API`, `VR_Client_API`, `VR_Main_API`, `VR_Outreach_API`, `Vivreal_EventHandler`, the portal) | the matching per-repo **knowledge skill** (`vivreal-<repo>-knowledge`) |
 | Production telemetry | A **Sentry ID/URL**, "trace end-to-end", "what happened when I…" | `sentry` |
 | Live infra state | "throttling", "Atlas saturation", "Step Functions execution", "reserved concurrency" | `vivreal-ops` |
 | Cost/margin | "gross margin", "can we afford", "cost at N customers" | `finance-auditor` |
 | Funnel/conversion numbers | "signups", "churn", "funnel", "WoW", "acquisition" | `growth-advisor` |
 | Copy/voice critique | "is this on-brand", "audit this copy/email/headline" | `marketing-auditor` |
-| Usability of a screen | "is this confusing", "fewer clicks", "walk this as a new user" | `ux-critic` |
+| Usability of a screen | "is this confusing", "fewer clicks", "walk this as a new user" | `designer` (critique) + `regular-user` |
 | Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth-advisor` for interpretation) |
-| Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `cms-api` / `secure-api` / `client-stack` experts (Square spans all three) |
+| Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `vivreal-cms-api-knowledge` / `vivreal-secure-api-knowledge` / `vivreal-client-stack-knowledge` (Square spans all three) |
 | Site migration | "migrate this site", "cutover", "parity audit", a source-site URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/migrate` |
 | Reusable template / identity kit | "build a template from", "identity kit", "template picker variant", an exemplar URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/template` |
 | Restyle an already-live site | "restyle", "new look for <live site>", "apply the kit to the live site" | `vivreal-migrator-knowledge` (restyle mode); operate from `Vivreal_Site_Migrator` (`scripts/restyle-live-site.js` runbook) |
-| Renderer/Templates/site-loader internals | the repo name (`vivreal-site-renderer`, `Vivreal_Templates`, `site-loader`), "page format 404", "COMPOSE_FORMATS", "renderer release" | the read-only **`sites-stack` expert** + `vivreal-renderer-knowledge`/`vivreal-templates-knowledge` |
-| Content scheduling / go-live | "scheduled content didn't publish", "publishDate", "go-live", "content golive schedule" | `cms-api` expert + `vivreal-cms-api-knowledge` (content go-live scheduler) |
-| The AI assistant surface | "AI FAB", "agent drawer", "EditPlan", "AI assistant not showing", "agent quota" | `vivreal-agent-knowledge` (+ `portal`/`secure-api` experts per side) |
-| Push notifications | "push notification", "web push", "notification queue", "user wasn't notified" | `vivreal-notifications` (+ `main-api` expert for the consumer) |
+| Renderer/Templates/site-loader internals | the repo name (`vivreal-site-renderer`, `Vivreal_Templates`, `site-loader`), "page format 404", "COMPOSE_FORMATS", "renderer release" | `vivreal-renderer-knowledge` / `vivreal-templates-knowledge` / `vivreal-migrator-knowledge` |
+| Content scheduling / go-live | "scheduled content didn't publish", "publishDate", "go-live", "content golive schedule" | `vivreal-cms-api-knowledge` (content go-live scheduler) |
+| The AI assistant surface | "AI FAB", "agent drawer", "EditPlan", "AI assistant not showing", "agent quota" | `vivreal-agent-knowledge` (+ `vivreal-portal-knowledge` / `vivreal-secure-api-knowledge` per side) |
+| Push notifications | "push notification", "web push", "notification queue", "user wasn't notified" | `vivreal-notifications` (+ `vivreal-main-api-knowledge` for the consumer) |
 | Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-hq` |
 
 ## Slash-command quick reference

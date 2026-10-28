@@ -5,6 +5,8 @@ description: 'Use when working in the Vivreal public content-delivery stack: VR_
 
 # VR_Client_API + VR_Client_Auth: knowledge digest
 
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
 Last synced: 2026-10-21 against VR_Client_API `origin/stable` (tag v2.17.3, the v7.2 hotfix line; read the tag)
 
 The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth`, a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth, VR_Client_API's CLAUDE.md was refreshed 2026-10-03 and documents both CloudFront distributions, the frozen allowlist and the delivery-quote route.
@@ -136,8 +138,8 @@ Load `vivreal-workflow:verification-discipline`: a zero is only evidence once th
 
 ## Lambda and MongoDB checklist (ported from the `client-stack` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
@@ -157,3 +159,15 @@ packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated he
 - Mostly read-only. The writes are the public form arms (`POST /tenant/definedCollectionObject`: sign-ups, reviews and the other site forms; the contact store) and the sign-up bookkeeping above (the pending flip, the rejoin claim). Each is a conditional write scoped by `groupID` and the list's `collectionObj.refID`.
 - Index audit: every customer-facing query must hit an index. `groupID + publishDate + archived` compound index for collection objects.
 - Read concern: `local` is fine for content; consider `majority` if there's read-after-write coupling with CMS API writes.
+
+## Facts moved from the retired expert agent (2026-10-28)
+
+- **Media URLs are signed at REQUEST time, not render time (2026-09-28, P0C).** `buildMediaUrl.js` now returns a stable link to this API's own `GET /media` route (`MEDIA_REDIRECT_BASE_URL`, on `client.vivreal.io`), which signs fresh on every request and 302-redirects to the signed `media.vivreal.io` object, so an ISR page cached longer than a signature's TTL no longer serves dead images. Exception, on purpose: `richTextImageUrls.js` still signs inline rich-text images immediately, because the renderer's sanitiser drops any inline `<img>` whose src does not start with the media host, and those signed links DO expire inside cached HTML. So "a picture went blank on a cached page" is a rich-text inline image until proven otherwise. A media key with an unpaired surrogate or a parenthesis used to 500 or blank; both fixed 2026-09-30.
+- **The public read sorts by `{ 'objectValue.order': 1, _id: 1 }`** (`DEFAULT_COLLECTION_OBJECT_SORT`, `src/services/tenant/HelpFunctions/collectionObjectOrder.js`, shared by the composed read and the SSR door so they cannot drift; fixed v2.8.1, #79, after eleven months of index-scan order). The second key makes it a total order: without it a plan-cache eviction could reorder every list on every site with no content edit. Where no item carries an `order`, the result is insertion order, which is what Studio's "Original order" promises. A requested `sort=order:asc` is prefixed to `objectValue.order` and carries an `_id` tiebreak.
+- **Known residual, not a defect: MongoDB sorts a missing field BEFORE any number**, so on a partly-numbered list the un-numbered items go first. "Missing last" is not expressible in a `find` sort and the aggregation rewrite was judged not worth it.
+- **Still sorted by `createdAt`, deliberately:** `getIntegrationObjects.js` here, and `getCollectionGroups.js` + `getIntegrationObjects.js` in VR_CMS_API.
+- **Two cache layers sit between a promote and a visitor, and the second one is the one people forget.** Site DATA is served through the client API distribution `E2K0Y8B8GTBFS0`, which holds each content read for its `s-maxage` window (read it off the controller); invalidating only the site distribution leaves this API serving the old body. For a SITE-RECORD change: write the record, invalidate `E2K0Y8B8GTBFS0`, wait past that window, then let the site regenerate (or redeploy its Amplify branch).
+- **A collection-object save reaches a live site in seconds** (measured 12 and 26 s to vivreal.io home with no invalidation and no redeploy, once its stored Amplify buildSpec was fixed; see `vivreal-templates-knowledge`). vivreal.io also has a THIRD layer: CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`) in front of Amplify's own, honouring `stale-while-revalidate`, so the first visitor after an origin refresh can still get the old copy once.
+- **A `fetch failed` from a Templates site is not necessarily this API failing.** Amplify compute freezes each site's process between requests, so the first request after an idle gap could reuse a dead keep-alive socket and fail before TLS without ever reaching VR_Client_API (Templates #158 retries such reads on a fresh connection; look for `[clientFetch] connection failed ... retry n` in the site's compute log). Check that log before blaming this stack; this API's own logs show nothing for those requests.
+- **A cold apex under a rapid sweep answers 504, and it is not an outage.** A CloudFront cache miss on the apex can take seconds while `www` is a hit. Re-request one at a time before filing.
+- **Deployed versions belong to the deployed line, not to this file.** Read them: `git show <line>:package.json` for a service version, the consumer lockfile for a package pin, the release JSON endpoint (more than once) for the portal, and the registry for a published package. Every version this file used to name went stale inside two weeks, and a stale version reads exactly like a current one.

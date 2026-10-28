@@ -55,4 +55,4 @@ Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SH
 
 ## Companions
 
-`vivreal-outreach-api-knowledge` (the backend it fronts), `vivreal-mcp-server-knowledge` (the CMS sibling this clones), `outreach-api` expert agent (deep read-only analysis), `vivreal-iam-secrets` (CTX_SECRET rotation).
+`vivreal-outreach-api-knowledge` (the backend it fronts), `vivreal-mcp-server-knowledge` (the CMS sibling this clones), `vivreal-iam-secrets` (CTX_SECRET rotation).

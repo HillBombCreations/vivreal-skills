@@ -17,14 +17,14 @@ For each repo below, run `git -C <path> log --since=<baseline> --format='%h %ad 
 
 | Source repo | Skills files that mirror it |
 |---|---|
-| `Vivreal_Portal_Mobile` | `vivreal-experts/agents/portal.md`, `vivreal-knowledge/skills/vivreal-portal-knowledge`, `vivreal-knowledge/skills/vivreal-design-system` (+`references/portal-components.md`), `vivreal-proxy-factory/hooks/hooks.json` (**the manual-route allowlist, recount with a grep for missing `createProxyHandler` imports**), `vivreal-workflow/skills/shared-standards` (proxy counts) |
-| `VR_Outreach_API` | `vivreal-experts/agents/outreach-api.md`, `vivreal-knowledge/skills/vivreal-outreach-api-knowledge` |
+| `Vivreal_Portal_Mobile` | `vivreal-knowledge/skills/vivreal-portal-knowledge`, `vivreal-knowledge/skills/vivreal-design-system` (+`references/portal-components.md`), `vivreal-proxy-factory/hooks/hooks.json` (**the manual-route allowlist, recount with a grep for missing `createProxyHandler` imports**), `vivreal-workflow/skills/shared-standards` (proxy counts) |
+| `VR_Outreach_API` | `vivreal-knowledge/skills/vivreal-outreach-api-knowledge` |
 | `VR-Outreach-MCP-Server` | `vivreal-knowledge/skills/vivreal-outreach-mcp-knowledge` |
-| `VR_CMS_API` | `vivreal-experts/agents/cms-api.md`, `vivreal-knowledge/skills/vivreal-cms-api-knowledge` |
-| `VR_Secure_API` | `vivreal-experts/agents/secure-api.md`, `vivreal-knowledge/skills/vivreal-secure-api-knowledge`, `shared-standards` Lambda table, `vivreal-fullstack/*` (**recount Lambdas from `cloudYamls/allRoutes.yaml`, NOT `allRoutes.packaged.yaml`, and never count the separate websocket stack**) |
-| `VR_Main_API` | `vivreal-experts/agents/main-api.md`, `vivreal-knowledge/skills/vivreal-main-api-knowledge` |
-| `VR_Client_API` + `VR_Client_Auth` | `vivreal-experts/agents/client-stack.md`, `vivreal-knowledge/skills/vivreal-client-stack-knowledge` |
-| `Vivreal_EventHandler` | `vivreal-experts/agents/event-handler.md`, `vivreal-knowledge/skills/vivreal-eventhandler-knowledge`, `vivreal-infra/skills/vivreal-site-deploy-pipeline`, `vivreal-infra/skills/vivreal-deploy-tracker` |
+| `VR_CMS_API` | `vivreal-knowledge/skills/vivreal-cms-api-knowledge` |
+| `VR_Secure_API` | `vivreal-knowledge/skills/vivreal-secure-api-knowledge`, `shared-standards` Lambda table, `vivreal-fullstack/*` (**recount Lambdas from `cloudYamls/allRoutes.yaml`, NOT `allRoutes.packaged.yaml`, and never count the separate websocket stack**) |
+| `VR_Main_API` | `vivreal-knowledge/skills/vivreal-main-api-knowledge` |
+| `VR_Client_API` + `VR_Client_Auth` | `vivreal-knowledge/skills/vivreal-client-stack-knowledge` |
+| `Vivreal_EventHandler` | `vivreal-knowledge/skills/vivreal-eventhandler-knowledge`, `vivreal-infra/skills/vivreal-site-deploy-pipeline`, `vivreal-infra/skills/vivreal-deploy-tracker` |
 | `vivreal-site-renderer` | `vivreal-knowledge/skills/vivreal-renderer-knowledge`, `vivreal-knowledge/skills/vivreal-sites`, `vivreal-knowledge/skills/vivreal-design-system` |
 | `Vivreal_Templates` | `vivreal-knowledge/skills/vivreal-templates-knowledge`, `vivreal-knowledge/skills/vivreal-sites` |
 | `VR-MCP-Server` | `vivreal-knowledge/skills/vivreal-mcp-server-knowledge`, `vivreal-cms/skills/vivreal-cms` (tool count) |
@@ -32,7 +32,7 @@ For each repo below, run `git -C <path> log --since=<baseline> --format='%h %ad 
 | `vivreal-hq` (content planning/production slice; the standalone `vivreal-content` repo was consolidated into it 2026-08-03 and is frozen dead source, do not git-log it for drift) | `vivreal-knowledge/skills/vivreal-brand-voice` (**canonical anchor = `brand/voice.md`, now the repo-root authority, cross-check `knowledge/01-voice-and-rules.md`'s ban list/competitive frame against the skill**), `vivreal-knowledge/skills/vivreal-content-knowledge`, `vivreal-product/agents/marketing-auditor.md` (ban list must match; also check its `content-planner`/specialist routing and its `packages/content-studio` paths for the voice-check script and video playbook) |
 | `Vivreal_Site_Migrator` | `vivreal-knowledge/skills/vivreal-migrator-knowledge` |
 | `Vivreal-Tier-Quotas` | `vivreal-knowledge/skills/vivreal-unit-economics` (+`references/cost-model.md`), `vivreal-product/agents/finance-auditor.md` (**AI quota values**) |
-| `Vivreal-Schemas` | `shared-standards` repo table, `vivreal-fullstack/skills/fullstack-context` schema list |
+| `Vivreal-Schemas` | `shared-standards` repo table |
 | `vivreal-hq` `packages/admin-app` (the admin app, the staff hub since v7) | `vivreal-knowledge/skills/vivreal-admin-app-knowledge` (+`references/pages.md`), `shared-standards` vivreal-hq row and deploy-trigger row (merge deploys nothing; `deploy/admin-app` fast-forward), `vivreal-product/agents/qa-walker.md` (admin app walks), `vivreal-infra/skills/vivreal-notifications` (admin push surface) |
 | `vivreal-hq` `packages/fleet-ops` (alarms, deploy role, e2e-local, coverage checks) | `vivreal-infra/skills/vivreal-observability`, `vivreal-infra/skills/vivreal-iam-secrets` and `vivreal-infra/agents/infra-engineer.md` (deploy role), `vivreal-infra/skills/vivreal-deploy-proof` |
 | `vivreal-hq` `packages/leadgen` | `vivreal-leadgen/agents/*` (the plugin mirrors this package's pipeline and write paths) |

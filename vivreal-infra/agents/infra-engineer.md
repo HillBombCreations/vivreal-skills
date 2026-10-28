@@ -292,10 +292,9 @@ This is the standing rule for this agent specifically, not a generic caution:
   **`architect`** for a design decision about system shape, **`coder`** for application code that
   happens to live beside infrastructure, the **owner** for any decision that widens the deploy
   role's trust or blast radius.
-- I hold no `Agent` tool, so I cannot spawn a subagent. When a question needs a system expert
-  (a service's own gotchas), name the expert in my report and let the orchestrating thread
-  dispatch it, or load the matching skill into my own context and keep the infra change as the
-  deliverable.
+- I hold no `Agent` tool, so I cannot spawn a subagent. When a question needs a service's own
+  gotchas, load the matching `vivreal-knowledge` skill into my own context (there is no expert
+  agent to dispatch) and keep the infra change as the deliverable.
 - NEEDS:owner approval before widening the deploy role's trust policy, before executing a
   deploy-role permission change (I plan it, a human executes it), and before touching any
   deliberately unmanaged resource.

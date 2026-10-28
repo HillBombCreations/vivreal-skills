@@ -5,6 +5,8 @@ description: 'Use when working in VR_Main_API, Vivreal''s public/unauthenticated
 
 # VR_Main_API: knowledge digest
 
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
 Last synced: 2026-10-21 against `origin/stable` (tag v2.15.2, the v7.2 hotfix line; read the tag)
 
 The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 22 on every function, arm64; `sam-template.yaml` `Runtime: nodejs22.x`), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `C:\repos\VR_Main_API\CLAUDE.md` for the full route list (refreshed 2026-10-02).
@@ -75,8 +77,8 @@ Prod serves `stable`, never `main`. The shared model (cut, staggered Monday prom
 
 ## Lambda and MongoDB checklist (ported from the `main-api` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
@@ -93,3 +95,11 @@ packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated he
 - Write paths: user creation (verify it uses `findOneAndUpdate` with `upsert: true` and `setOnInsert` to avoid race conditions on duplicate signups), the email spine (`emailEvents` claim-first inserts, `suppressions`, `leads`), and the claim flow (`claimTokenSchema` model, `services/claim/`).
 - No multi-document transactions are needed, flag any unnecessary `session.startTransaction()` calls.
 - Index audit: `email`, `cognitoSub`, `stripeCustomerID` should all be unique-indexed.
+
+## Facts moved from the retired expert agent (2026-10-28)
+
+- Cognito JWT verification via `aws-jwt-verify`, version mismatch with Lambda runtime causes silent auth failures.
+- Pino logger initialized per-handler, duplicate transports leak memory across warm invocations.
+- **The login payload carries `sub` (2026-10, v2.12.0).** It never did before, so every portal per-user check that compared against `sub` failed; and the signup duplicate-email and duplicate-username guards never fired until the same release.
+- **Meta data deletion and deauthorize now purge for real.** A Meta deletion invokes VR_CMS_API's invoke-only `/tenant/integrations/purgeAccount` (scoped invoke grant) so the synced posts AND their pictures go; a pending deletion request is re-driven rather than stranded, a groupId-only row is marked for review because it cannot name what it owes, an empty account list no longer reports a completed purge, and the deletion backlog is alarmed.
+- A separate WAF stack (`waf-template.yaml`, its own deploy workflow) fronts the API, with a much tighter rate ceiling on the one route that mails a stranger; a WAFv2 `Description` over 256 characters fails the deploy silently.

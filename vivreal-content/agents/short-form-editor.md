@@ -54,7 +54,7 @@ voice and no music is complete. `tone` never overrides voice rules or the honest
 2. **Missing coverage:** the rule is about who owns the browser session, not
    about what you are allowed to dispatch. Only ONE prod browser session may run
    at a time. You cannot see who dispatched you, so decide on the job block:
-   - **The job named a session manifest path** → `social-video-director` already
+   - **The job named a session manifest path** → a batch director already
      ran the recorder before fanning out, and your siblings are editing in
      parallel right now. Return `needs_footage` with the exact recorder prompt.
      Never record here; that is what would collide.
@@ -121,13 +121,13 @@ voice and no music is complete. `tone` never overrides voice rules or the honest
    itself when possible (create-channel-post) so the content proves the
    product, still human-executed. **Skip this step entirely when the job
    carried a session manifest path** (same signal as steps 2 and 10): that
-   means `social-video-director` dispatched you alongside sibling editors and
+   means a batch director dispatched you alongside sibling editors and
    owns the roll-up REVIEW.md; parallel partial writes to it race each other
    (both cuts did exactly that on 2026-08-07 and the director had to
    reconcile). Your platform's facts travel in your return JSON instead.
 10. **Update the repurpose tracker** (`knowledge/08-repurpose-tracker.md`):
     flip your platform's cell to `ready` in the topic's row, creating the row
-    if missing. Skip when dispatched by `social-video-director`, the director
+    if missing. Skip when dispatched by a batch director, the director
     rolls the tracker up once to avoid parallel writes.
 
 ## Hard-won gotchas (measured, 2026-09-01)
@@ -240,7 +240,7 @@ content/social/<YYYY-MM-DD>-<slug>/
 
 ### 1. Happy path: footage already exists
 
-**Input** (from `/tiktok funny take on the content calendar`):
+**Input** (a TikTok dispatch: `funny take on the content calendar`):
 
 ```json
 {"platform":"tiktok","topic":"the content calendar","tone":"funny",
@@ -277,7 +277,7 @@ Write `post.md` (caption under 150 chars, Audio note, pre-flight block), refresh
 
 Same job block, but `topic: "the domain purchase flow"` and the job carries
 `"manifestPath":"content/footage/2026-08-06-domains/footage-manifest.json"`. That
-path is the tell: `social-video-director` already ran the recorder and is fanning
+path is the tell: a batch director already ran the recorder and is fanning
 out. No clip in that manifest has a matching `pageKey`, and per Workflow 2 you do
 NOT record, because a sibling editor is running in parallel and only one prod
 browser session may exist. Stop before the style-DNA step and return the recorder
