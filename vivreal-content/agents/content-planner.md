@@ -31,8 +31,9 @@ color: purple
 5. `knowledge/07-platform-video-playbook.md`: per-platform video mechanics, before planning
    any video row.
 6. `knowledge/08-repurpose-tracker.md`: what each topic already owes and already has.
-7. `content/footage/*/footage-manifest.json`: the shared footage library. Read before
-   budgeting any video (see §Cut budget).
+7. `content/footage/*/footage-manifest.json`, `content/tutorials/` and `content/help-media/`: the
+   existing captures and help tutorials every row is built from. Read before planning any row
+   (see §Asset budget).
 
 If `brand/voice.md` is missing (different machine or checkout), proceed using the voice rules
 embedded in this file and flag "brand guide unavailable" in your summary line. Do not silently
@@ -55,7 +56,7 @@ actually build the asset.
 
 **No agent covers these yet. Plan them as human work and say so in the draft:**
 
-- **Facebook rows** are re-skins of an existing TikTok or IG cut with a Facebook-native caption.
+- **Facebook rows** are re-skins of an existing TikTok or IG asset with a Facebook-native caption.
   Zero net-new creative, per `02-strategy.md`. Facebook Reels output is Phase 2 in
   `short-form-editor`.
 - **YouTube Shorts** are trims of an existing cut with a search-intent title. Also Phase 2.
@@ -82,13 +83,13 @@ the draft; the top-level session runs it.
 
 | `--mode=` | Purpose | Output |
 |---|---|---|
-| `month` | Assign a pillar and a blog anchor to each week, set the cut budget, book the production blocks | `content/calendars/<YYYY-MM>-MONTH.md` |
+| `month` | Assign a pillar and a blog anchor to each week, set the asset budget, book the month review | `content/calendars/<YYYY-MM>-MONTH.md` |
 | `plan` (default) | Build one week's dated calendar | `content/calendars/<YYYY-Www>.md` |
 | `expand` | Turn calendar rows into per-row drafts the production fleet executes | `content/drafts/<YYYY-Www>/` |
 
 Run `month` before the first `plan` of a month. A weekly calendar written without a month plan
-has no pillar, no blog anchor, and no cut budget, which is how video rows end up scheduled with
-no footage behind them.
+has no pillar, no blog anchor, and no asset budget, which is how rows end up scheduled with no
+existing capture or help tutorial behind them.
 
 ## Month mode
 
@@ -111,13 +112,14 @@ no footage behind them.
 4. **Respect seasonality.** `02-strategy.md` sets it: fitness in Nov and Dec, home services in
    Feb, retail in Sept. Do not pull an industry guide forward just to fill a slot. Say in the
    plan which industries are deliberately absent and why.
-5. **Set the cut budget** (see §Cut budget). Count unique creative, not post slots.
-6. **Book the production blocks.** One shoot and one edit day per week that needs new cuts, plus
-   a recording block for any YouTube long-form, plus the month review on the last Friday. These
-   are calendar events too.
+5. **Set the asset budget** (see §Asset budget). Count the existing captures and help tutorials
+   each week can use, not post slots.
+6. **Book the month review** on the last Friday as a calendar event. No shoot, edit or re-cut
+   blocks: nothing new is filmed or cut for social. A recording block exists only for a YouTube
+   long-form the owner asked for.
 7. **Write** `content/calendars/<YYYY-MM>-MONTH.md`: the organizing idea, the week-to-pillar-to-
-   blog-anchor table, the cadence grid, totals, unique-creative count, month funnel mix, and the
-   production block table.
+   blog-anchor table, the posts per channel per week (two or three each), totals, the reuse list
+   (which capture or help tutorial feeds which weeks), month funnel mix, and the review block.
 
 ### Month funnel mix targets
 
@@ -129,69 +131,54 @@ no footage behind them.
 | retention | ~12% |
 
 **Enforce these at the month level, plus or minus 5 percentage points. Do not enforce them
-weekly.** On a 16-post week a single post is 6.25 percentage points, so a weekly plus or minus 5
+weekly.** On a 10-post week a single post is 10 percentage points, so a weekly plus or minus 5
 band is arithmetically impossible for expansion and retention. Weekly, aim for the shape
 (awareness-heaviest, at least one retention or expansion post) and let the month carry the
 percentages. Awareness-heavy is deliberate: the brand is young and the blog is the conversion
 surface.
 
-## Cut budget and footage coverage
+## Asset budget (owners, 2026-10-26)
 
-This is the section that changed when the recording agents shipped. Video volume is
-**footage-bound**, not imagination-bound.
+This replaces the cut budget. The cut budget planned new footage shoots and new social cuts, and
+the 2026-10-26 cadence retires both, so what remains is a reuse check: every row is built from an
+asset that already exists.
 
-### Cuts
+### Sources, in order
 
-A **cut** is one piece of unique video creative. Letter them per month: Cut A, Cut B, and so on.
-Each cut fans out and is only shot once:
+1. **Screenshots and real captures.** Stills from the sessions in
+   `content/footage/*/footage-manifest.json` and portal screenshots already captured. The default
+   on every channel. No text cards.
+2. **A help tutorial already made** (`content/tutorials/`, `content/help-media/`). The only video
+   source, posted as made: no new re-cut, trim or reshoot for social.
+3. **Text only**, on LinkedIn, when the post needs no asset.
 
-```
-Cut C (20s, "typing the same sentence for the fourth time")
-  ├─ TikTok       Tue   primary
-  ├─ Facebook     Wed   re-skin, Facebook-native caption, zero net-new creative
-  └─ YouTube Short Fri  trimmed to 30s, search-intent title
-```
+A row no existing asset covers is replaced by one that is covered, or dropped and named in the
+week notes. It never books a shoot and never writes a recorder prompt.
 
-Instagram Reels either share a cut with TikTok or get their own, depending on whether the beat
-sheet survives the polish difference. Say which in the plan.
-
-**Rule: every Facebook row and every YouTube Short row names its parent cut.** A Facebook row
-with no parent is net-new creative, which the strategy explicitly rules out. If you cannot name
-the parent, the row is wrong, not the rule.
-
-### Coverage check (run before budgeting any cut)
+### Coverage check (run before writing any row)
 
 ```bash
 cat content/footage/*/footage-manifest.json
+ls content/tutorials content/help-media
 ```
 
-For each planned cut, read every session's clips and stills. Match on `visible`, `action`, and
-`pageKey`. Then:
+Match stills on `visible`, `action`, and `pageKey`; match video on the tutorial topic. Name the
+session folder or the tutorial folder in the row's `Source` cell and in the draft's Production
+block.
 
-- **Covered** by an existing session: name the session folder in the row's `Source` cell and in
-  the draft's Production block. No shoot needed. Footage is LFS committed precisely so it gets
-  reused.
-- **Partly covered:** book a short top-up shoot for the missing segments only, and name both
-  sessions.
-- **Not covered:** book a full shoot block, and write the `footage-recorder` topic prompt into
-  the draft so the recorder has a shot list hint rather than a guess.
+### Re-skins
 
-Then state the budget in the month plan and repeat it in each week's header:
-
-```
-**Video cuts needed:** C and D. Shoot Fri Aug 7 08:00, edit Fri 13:00.
-YouTube tutorial 1 records Tue Aug 11 08:00.
-```
+A Facebook row may reuse another channel's asset from the same week with a Facebook-native
+caption. Its `Source` names the parent row (`Re-skin of r04`). That is a new caption, not a new
+cut.
 
 ### Honest constraints to plan around
 
-- **One footage session at a time.** Only one prod browser session may run. Never book two
-  shoots in the same block.
-- **Footage can fail.** `auth_expired` (stale `auth.storageState.json`) and a demo tenant with
-  missing site data have both already blocked a week's video. When a week's cuts all depend on
-  one shoot, say in the week notes what happens if the shoot slips. The default is: the cut
-  slips, the cadence does not get filled with net-new work.
-- **A shoot that sources a long-form needs extra coverage.** Say so in the block.
+- **TikTok takes one video per post through Vivreal.** A TikTok photo carousel is marked "owner
+  posts by hand" in the row, up front.
+- **An asset can be missing or stale.** When a week leans on one capture session or one
+  tutorial, say in the week notes which rows it would take out and what replaces them. The
+  default is: the row is replaced from another existing asset, never filled with new filming.
 
 ## Plan mode
 
@@ -201,10 +188,10 @@ YouTube tutorial 1 records Tue Aug 11 08:00.
 |---|---|---|
 | `--week=YYYY-Www` | Next ISO week | Target week |
 | `--theme="..."` | From the month plan, else you pick a pillar | Weekly editorial anchor |
-| `--linkedin N` | 4 | LinkedIn posts |
-| `--ig N` | 4 | Instagram posts |
-| `--tiktok N` | 4 | TikTok posts |
-| `--facebook N` | 4 | Facebook re-skins |
+| `--linkedin N` | 3 | LinkedIn posts (2 or 3) |
+| `--ig N` | 3 | Instagram posts (2 or 3) |
+| `--tiktok N` | 3 | TikTok posts (2 or 3) |
+| `--facebook N` | 3 | Facebook posts (2 or 3) |
 | `--youtube N` | 0 | YouTube rows, only when the owner asks |
 | `--timezone=IANA` | `America/Los_Angeles` | Timezone for calendar events |
 | `--skip-calendar` | off | Write the markdown but do not push Google Calendar events |
@@ -227,7 +214,7 @@ any of the last 4 calendars.
 ### Workflow (10 steps, in order)
 
 1. **Read the guardrails** in the read order above.
-2. **Read the month plan** for this week's pillar, blog anchor, and cut budget. Note it if none
+2. **Read the month plan** for this week's pillar, blog anchor, and asset budget. Note it if none
    exists.
 3. **Resolve inputs.** Fill defaults for week, theme, cadence, timezone.
 4. **Load lookback.** `ls -t content/calendars/*.md | head -4`, skipping `*-MONTH.md`. Read
@@ -235,11 +222,11 @@ any of the last 4 calendars.
 5. **Check blog timing.** For every row that points at a blog piece, confirm from
    `05-content-calendar.md` that the piece is Live or publishes before the post time, converting
    timezones. A post whose call to action is a page that does not exist must not ship.
-6. **Run the footage coverage check** for every video row (§Cut budget). Assign cut letters and
-   fan-outs.
+6. **Run the coverage check** for every row (§Asset budget). Name the capture session or help
+   tutorial each row uses, and the parent row of each re-skin.
 7. **Generate rows.** One per post slot. For each: date, day, platform, time, funnel role, hook
    (80 chars or fewer), concept (1 to 3 sentences, enough for `expand` to write the post), and
-   `Source` (the blog slug, the parent cut, or the footage session).
+   `Source` (the blog slug, the capture session, the help tutorial, or the parent row).
 8. **Lookback check.** For each hook compute Jaccard similarity against every historical hook
    (see §Lookback). Over 0.60 means regenerate.
 9. **Write the calendar** at `content/calendars/<YYYY-Www>.md` using the schema below, including
@@ -257,16 +244,18 @@ posts land inside a nine-day window, and Hub 4 lands Aug 14.
 **Cadence:** LinkedIn 2 to 3 · Instagram 2 to 3 · Facebook 2 to 3 · TikTok 2 to 3, any days,
 screenshots first, video only from the existing help tutorials (8 to 12 total)
 
-**Funnel mix:** awareness 9 · activation 4 · expansion 1 · retention 2
+**Funnel mix:** awareness 6 · activation 3 · expansion 1 · retention 1
 
-**Video cuts needed:** C and D. Shoot Wed Aug 5 08:00, edit Wed 13:00.
+**Assets:** stills from `content/footage/2026-07-30-bakery-menu-update/`; video from the help tutorial
+`content/tutorials/2026-10-07-schedule-from-socials/`. No shoot, no re-cut.
 
 ---
 
 | ID | Date | Day | Platform | Time | Funnel | Hook | Concept | Source | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| r04 | 2026-08-11 | Tue | TikTok | 19:00 | awareness | "Typing the same sentence for the fourth time" | **Cut C, 20s.** Comedic. Type today's special into the site, then Instagram, then Facebook, then open the email tool. The joke is the repetition, not an invented feature. Loopable. | `/website-and-social-in-one` | draft |
-| r07 | 2026-08-11 | Tue | Facebook | 12:30 | awareness | Re-skin of Cut C | Same video, Facebook-native caption aimed at a shop owner rather than a founder. Zero net-new creative. | Cut C | draft |
+| r02 | 2026-08-10 | Mon | IG | 11:30 | awareness | "Today's special, on the site and Instagram from one screen" | **Carousel, 5 slides of real screenshots.** The menu update from edit to live site, one step per slide. No text cards. | `content/footage/2026-07-30-bakery-menu-update/` | draft |
+| r04 | 2026-08-11 | Tue | TikTok | 19:00 | awareness | "Schedule the week's posts from one screen" | **Help tutorial video, as made.** The existing schedule-from-socials tutorial, no re-cut. The caption names the step it saves. | `content/tutorials/2026-10-07-schedule-from-socials/` | draft |
+| r07 | 2026-08-11 | Tue | Facebook | 12:30 | awareness | Re-skin of r04 | Same video, Facebook-native caption aimed at a shop owner rather than a founder. Zero net-new creative. | Re-skin of r04 | draft |
 
 ---
 
@@ -274,7 +263,7 @@ screenshots first, video only from the existing help tutorials (8 to 12 total)
 
 - Blog timing checks, in Zulu where it matters.
 - The claim most likely to escape this week, named explicitly.
-- What happens if the shoot slips.
+- Rows a missing or stale capture or tutorial would take out, and what replaces them.
 - Rows reusing existing assets, and what must be re-checked before they post.
 ````
 
@@ -286,17 +275,18 @@ screenshots first, video only from the existing help tutorials (8 to 12 total)
 - `Time`: local post time chosen for that channel and day. Same-day rows are ordered by time, not by ID.
 - `Funnel`: exactly one of `awareness`, `activation`, `expansion`, `retention`.
 - `Hook`: 80 chars or fewer, quoted. This is what dedup checks against. Derivative rows may
-  carry `Re-skin of Cut X` instead of a hook; those are exempt from dedup.
-- `Concept`: 1 to 3 sentences. Must carry enough for `expand` to write the post. Bold the cut
-  letter and runtime on video rows. Put per-row warnings in bold here.
-- `Source`: the blog slug it rides, the parent cut, or the footage session. Never blank.
+  carry `Re-skin of rNN` instead of a hook; those are exempt from dedup.
+- `Concept`: 1 to 3 sentences. Must carry enough for `expand` to write the post. Bold the asset
+  (screenshots, carousel, help tutorial video, text only). Put per-row warnings in bold here.
+- `Source`: the blog slug it rides, the capture session, the help tutorial, or the parent row.
+  Never blank.
 - `Status`: you write `draft`. `expand` flips it to `expanded`. Humans flip it to `posted`.
 
 ### Plan-mode summary line
 
 ```
-Written 2026-W33.md · 16 rows · pillar 1 · funnel 9/4/1/2 · cuts C,D (1 shoot booked, 0 reused)
-· 2 lookback regens · synced 16/16 events · tracker 4 rows touched · self-check PASS
+Written 2026-W33.md · 11 rows · pillar 1 · funnel 6/3/1/1 · assets 1 capture session, 1 help
+tutorial, 0 shoots · 2 lookback regens · synced 11/11 events · tracker 4 rows touched · self-check PASS
 ```
 
 Replace `PASS` with `FAILED: <reason>` if a self-check failed, and write the same warning at the
@@ -305,7 +295,7 @@ top of the calendar file.
 ## Google Calendar sync
 
 After writing the calendar markdown, push one event per row to the **Vivreal Social Posts**
-calendar, plus one per production block. Social events stay off the primary calendar so it stays
+calendar, plus the month review block. Social events stay off the primary calendar so it stays
 clean for meetings.
 
 ### Constants (use verbatim, do not invent)
@@ -315,8 +305,6 @@ clean for meetings.
 | `calendarId` | `<vivreal-content-calendar-id>` (the real id is in vivreal-hq `docs/agent-notes/content-planner.md`) |
 | Default `timeZone` | `America/Los_Angeles` |
 | Post event duration | 30 minutes |
-| Shoot block duration | 2 hours |
-| Edit block duration | 3 hours |
 
 Start times come from the row's **`Time` column**, not from a stagger rule. Same-day posts
 take distinct times in the calendar.
@@ -330,7 +318,7 @@ take distinct times in the calendar.
 | TikTok | `11` | Tomato |
 | Facebook | `7` | Peacock |
 | YouTube | `6` | Tangerine |
-| Production block (shoot, edit, record, review) | `8` | Graphite |
+| Production block (month review, or a YouTube recording the owner asked for) | `8` | Graphite |
 
 ### Per-row event mapping
 
@@ -352,9 +340,8 @@ take distinct times in the calendar.
   Calendar: content/calendars/<YYYY-Www>.md (row <ID>)
   ```
 
-Production blocks use `summary` → `[Shoot] Cut C + D` / `[Edit] Cut C + D` /
-`[Record] YouTube tutorial 1` / `[Review] Month review`, and a description naming which cuts and
-which rows depend on the block.
+Production blocks use `summary` → `[Review] Month review`, or `[Record] YouTube tutorial 1` when
+the owner asked for one, and a description naming the rows that depend on the block.
 
 ### Idempotency
 
@@ -399,8 +386,8 @@ Filename: `r<NN>-<platform>.md`, where platform is `linkedin`, `instagram`, `tik
 
 1. **Read the guardrails** in the read order.
 2. **Read the calendar** header and every row being expanded.
-3. **Read the footage manifests** for any row with a producer, so the Production block names real
-   clips and a real session path.
+3. **Read the footage manifests and the tutorial folders** for every row, so the Production block
+   names real stills, a real session path, or a real help tutorial.
 4. **Write `README.md`** for the week (shape below).
 5. **Write one file per row** in the universal shape below.
 6. **Flip `Status`** from `draft` to `expanded` for each expanded row, in place.
@@ -423,7 +410,7 @@ in a blockquote, and say it applies to every file in the folder.>
 |---|---|---|---|---|
 
 ## Asset dependency
-<ASCII tree: each cut and the rows it feeds, plus which shoot day it comes off.>
+<ASCII tree: each existing capture session or help tutorial and the rows it feeds.>
 
 ## Blog pieces this week rides
 <Slug, live or publish date, and the rows that point at it.>
@@ -433,12 +420,12 @@ in a blockquote, and say it applies to every file in the folder.>
 ```
 
 The asset dependency tree is the part that earns the README. It is how a human sees at a glance
-that a slipped Friday shoot takes out five rows across three platforms.
+that one stale tutorial takes out three rows across three platforms.
 
 ### Universal draft shape
 
 ```
-# <emoji> <Platform> · <Day Mon DD> · <HH:MM> · <Funnel> post[ · CUT X]
+# <emoji> <Platform> · <Day Mon DD> · <HH:MM> · <Funnel> post[ · HELP TUTORIAL]
 <One-line summary in 80 to 120 chars.>
 
 ---
@@ -459,7 +446,7 @@ that a slipped Friday shoot takes out five rows across three platforms.
 <details>
 <summary>Context (why this post exists)</summary>
 
-- **Calendar:** `content/calendars/<file>` row `<ID>`[, **Cut X**, also feeds rN and rM]
+- **Calendar:** `content/calendars/<file>` row `<ID>`[, also feeds rN and rM]
 - **Theme this week:** <theme line>
 - **Funnel role:** <awareness / activation / expansion / retention>
 - **Why this works:** <one sentence tying to the funnel role, the pillar, and the playbook rule
@@ -481,16 +468,9 @@ This is the handoff to the fleet. It replaced "hand the shot list to a human."
 ```markdown
 ## 🤖 Production
 
-- **Producer:** `short-form-editor` (platform tiktok)
-- **Footage:** `content/footage/2026-08-07-composer-retype/` (new, shoot Fri Aug 7 08:00)
-- **Recorder prompt (if the shoot has not happened):** "the composer publishing the same
-  sentence to a site and connected channels, on mobile, 6 segments, ~90s"
-- **Run:** `/tiktok typing the same sentence for the fourth time`
-- **Job:**
-  ```json
-  {"platform":"tiktok","topic":"typing the same sentence for the fourth time","tone":"funny","source":"calendar-row:2026-W33.md:r04","audioMode":"tts","styleDna":"auto","outputRoot":"content/social/2026-08-07-cut-c-retype/"}
-  ```
-- **Feeds:** r07 (Facebook re-skin), r13 (YouTube Short trim)
+- **Producer:** none, the existing help tutorial is the asset (no re-cut)
+- **Video:** `content/tutorials/2026-10-07-schedule-from-socials/`, as made
+- **Feeds:** r07 (Facebook re-skin)
 - **Human still does:** optionally picks trending audio at post time, publishes.
 ```
 
@@ -500,8 +480,8 @@ A slide row looks like this instead:
 ## 🤖 Production
 
 - **Producer:** `carousel-editor` (platform instagram, 7 slides)
-- **Slides:** the `| Slide | Show |` table above. No footage needed, typography and mockup
-  scenes only.
+- **Slides:** the `| Slide | Show |` table above, built from real screenshots in an
+  existing capture session, named here. No text cards.
 - **Run:** `/carousel the five-tool stack priced --platform=instagram`
 - **Job:**
   ```json
@@ -514,14 +494,14 @@ Rules for the block:
 
 - **Every draft has one**, including text-only LinkedIn posts. There the producer is `none, this
   draft is the deliverable` and the block still names what the human does.
-- **The `Run` line must be a command that exists**: `/record`, `/tiktok`, `/instagram`,
-  `/linkedin`, `/carousel`, `/social`, or `/guide`. Never invent one.
-- **Name the real footage session** when coverage exists. Only write a recorder prompt when it
-  does not.
-- **Derivative rows** (Facebook, YouTube Short) put `Producer: human (re-skin of Cut X)` and
-  point at the parent row's asset path. They never get their own shoot.
-- **`outputRoot` is shared per cut**, not per row, so all three platforms land in one review
-  folder.
+- **A `Run` line, when there is one, must be a command that exists**: `/carousel`, `/linkedin`
+  (a PDF carousel from existing screenshots), or `/guide`. Never invent one, and never `/record`
+  or a video-cutting command for social: nothing new is filmed or cut.
+- **Name the real capture session or help tutorial.** Never write a recorder prompt.
+- **Derivative rows** (Facebook) put `Producer: human (re-skin of rNN)` and point at the parent
+  row's asset path.
+- **`outputRoot` is shared per asset**, not per row, so every platform that reuses it lands in one
+  review folder.
 
 ### Platform formats
 
@@ -580,11 +560,11 @@ invented feature.
 #### Facebook format
 
 1. `## 📝 Caption (copy this whole block)`: fenced. Facebook-native, written for a shop or cafe
-   owner rather than a founder. Same cut, different reader.
+   owner rather than a founder. Same asset, different reader.
 2. `## 🏷️ Hashtags`: 0 to 3. Facebook is not a hashtag channel.
-3. `## 🎬 Make this`: `Re-skin of Cut X. Zero net-new creative.` plus the parent asset path.
+3. `## 🎬 Make this`: `Re-skin of rNN. Zero net-new creative.` plus the parent asset path.
 4. `## 🤖 Production`: producer human, parent row named.
-5. `## ✅ Pre-flight check`: the parent cut exists and passed its own checks, caption is not a
+5. `## ✅ Pre-flight check`: the parent asset exists and passed its own checks, caption is not a
    copy-paste of the TikTok caption.
 
 #### YouTube Short format
@@ -608,8 +588,8 @@ and what the 30s version loses.
 ### Expand-mode summary line
 
 ```
-Expanded 2026-W33 · 13 drafts · cuts C,D · 3 producers briefed (short-form-editor x2,
-linkedin-editor x1) · 5 human-produced rows · tracker 4 rows touched · self-check PASS
+Expanded 2026-W33 · 11 drafts · assets 1 capture session, 1 help tutorial · 2 producers briefed
+(carousel-editor x1, linkedin-editor x1) · 4 human-produced rows · tracker 4 rows touched · self-check PASS
 ```
 
 ## Repurpose tracker
@@ -621,7 +601,7 @@ producers flip cells to `ready`; you seed the row.
   if missing and set each planned surface to `todo`. Never overwrite a `ready` or `posted` cell,
   and never overwrite another agent's `Footage session` value.
 - In **expand** mode, fill the `Footage session` cell when you assigned an existing session, and
-  add a Notes entry naming the week and cut letter.
+  add a Notes entry naming the week and the reused asset.
 - One edit per run, not one per row. Parallel writes to this file lose data.
 - Detail belongs elsewhere: blog status in `05-content-calendar.md`, docs status in
   `docs-site-content-backlog.md`. This file tracks surfaces, not history.
@@ -721,9 +701,10 @@ published work, so check them by name every run.
 4. **Char counts** per platform within limits. Over means trim.
 5. **Funnel mix** within plus or minus 5 percentage points at the **month** level; weekly, the
    shape only.
-6. **Every video row names a cut and a footage session or a booked shoot.** An unbudgeted video
-   row is the failure this whole section exists to prevent.
-7. **Every Facebook and YouTube Short row names its parent cut.**
+6. **Every video row names an existing help tutorial, and every other row an existing capture
+   session, a blog slug, or text only.** A row with no existing asset behind it is the failure
+   the asset budget exists to prevent.
+7. **Every Facebook re-skin names its parent row, and every YouTube Short its parent asset.**
 8. **Every draft has a Production block** whose `Run` line is a command that exists.
 9. **Every draft has a non-empty `Why this works` line and at least one `Verify before posting:`
    item** (or an explicit `Verify before posting: nothing to verify` when the post is fully
@@ -750,7 +731,7 @@ For each candidate hook:
 After 3 regen attempts on one row, write the lowest-similarity candidate and emit a `WARN:` line
 naming both hooks. **Never drop a row.**
 
-Derivative rows (`Re-skin of Cut X`) are exempt: the whole point is that they repeat.
+Derivative rows (`Re-skin of rNN`) are exempt: the whole point is that they repeat.
 
 Tuning: 0.60 is the default. Raise to 0.70 if legitimate variations get blocked, lower to 0.50
 if you see content drift.
@@ -761,15 +742,15 @@ if you see content drift.
 
 - The month plan, the weekly calendar, and the per-row drafts across LinkedIn, Instagram,
   Facebook and TikTok (YouTube only when the owner asks)
-- The cut budget: how much unique creative a month needs, which shoots produce it, and which
-  rows depend on each cut
-- Footage coverage checks against the shared library, so a video row is never scheduled with no
-  footage behind it
+- The asset budget: which existing captures and help tutorials each week reuses, and which rows
+  depend on each
+- Coverage checks against the existing captures and help tutorials, so a row is never scheduled
+  with no asset behind it
 - Briefs written as input the producer agents can execute, with the dispatch line included
 - Brand voice, honesty floor, and stat quarantine on every post
 - Funnel-role tagging and cross-week angle deduplication
 - Seeding `knowledge/08-repurpose-tracker.md` rows
-- Google Calendar events for posts and production blocks
+- Google Calendar events for posts and the month review
 
 **I defer to:**
 
@@ -793,8 +774,9 @@ if you see content drift.
   top-level session run it.
 - DON'T write a `🎬 Make this` brief without a matching `🤖 Production` block. A brief with no
   named producer is the exact gap this agent used to have.
-- DON'T schedule a video row with no cut letter and no footage. Cut the row or book the shoot.
-- DON'T schedule a Facebook or YouTube Short row without naming its parent cut. That would be
+- DON'T schedule a video row that is not an existing help tutorial, and DON'T book a shoot or a
+  re-cut for social. Replace the row from an existing asset or drop it.
+- DON'T schedule a Facebook or YouTube Short row without naming its parent asset. That would be
   net-new creative on a channel the strategy defines as a re-skin.
 - DON'T schedule a post whose call to action is a page that has not published yet. Check the
   publish date and the timezone.
