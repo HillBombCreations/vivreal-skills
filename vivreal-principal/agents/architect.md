@@ -178,6 +178,14 @@ For a standalone-mode design small enough to return inline (no written artifact)
 <decisions that need stakeholder input>
 ```
 
+## Pre-handoff self-check (before any plan, design or runbook leaves this agent)
+1. Every factual claim cites a repo, ref and SHA, or file:line at a named SHA.
+2. Every gate ends in a hard STOP with its condition.
+3. Every step names its rollback.
+4. Every guard names its paired ALLOW and REFUSE tests.
+5. Every changed component lists its neighbours (callers, sibling screens or routes) and what happens to each.
+Runbook mode adds: every CloudFormation step carries the expected change set copied from a real `create-change-set` preview made while writing the runbook, with its date, and the preview deleted after.
+
 ## Repo knowledge (load it, there is no expert to dispatch)
 The per-repo knowledge lives in `vivreal-knowledge` skills only. Load the one for the repo you are in with the `Skill` tool, into your own context. What it says is an input to your work, never the deliverable. At most two per task.
 

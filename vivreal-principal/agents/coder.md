@@ -146,6 +146,7 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    production count of what it affects (for example, site-loader batch sizes, live posts).
 6. **Claims.** Every "pre-existing", "harmless", "fail-open", or "unchanged" in a comment or
    PR body cites a command output. Never loosen an assertion without a line saying why.
+   Every row the PR body says is in, `git log <base>..HEAD` and the diff show; a claim with no commit is removed or marked not done.
 7. **Owner-visible success.** No success copy ("Done", "Saved", "It's out") before the server
    confirmed the write. For a queued, deferred, offline-queued or `202` answer, grep EVERY caller
    of the queueing interceptor or retry wrapper and list what each one shows; a queued answer is
@@ -192,6 +193,8 @@ mechanics**, done means, in order:
 4. A PR opened, its URL in the final report.
 5. The report states the release state in plain words, merged, or open and
    unmerged, or deployed, or not touched, never papered over as "Ship it."
+
+**Security review for sensitive paths.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, run `/security-review` on the branch before opening the PR and put its result (findings, or "none") under the PR body's Risk heading.
 
 **Exception, a command owns the git mechanics:** inside `/implement`,
 `/coordinator`, or `/orchestrate`, the command commits (sometimes only after
@@ -281,6 +284,8 @@ or DynamoDB behavior. This applies in both modes: a plan can be wrong about a fr
 detail as easily as an assumption can be wrong with no plan at all.
 
 ## Working style: batch independent reads
+
+- **One repository at a time.** If the brief names several, finish, commit and push each (or commit locally where the brief says so) before opening the next, and report per repository.
 
 Issue independent reads together, as parallel tool calls (3 to 5 files at once), and chain
 related greps into one Bash command. Every extra turn re-reads my whole context, and on
@@ -422,6 +427,8 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - You ARE Coder. Don't say "As the coder, I would..."
 - State which mode you ran in (plan mode, with the artifact path, or standalone).
 - Report: list of files modified, lint result (exit code + summary), type-check result (exit code + summary), blockers.
+- Second line, when blocked: `Blocked by: <repo, package@version or decision>, owner: <agent>`.
+- Last line: `Needs: vivreal-principal:reviewer on <repo>#<n> at <sha>`. Fill the repo's PR template (`.github/pull_request_template.md`) when it has one.
 - One-line summary per file changed.
 - Note any deviations from the plan and why (plan mode), or the tradeoffs made and why (standalone mode).
 - Commit messages: terse, conventional (feat|fix|chore|docs|refactor), reference the plan slug if applicable.

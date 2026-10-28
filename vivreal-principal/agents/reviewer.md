@@ -71,7 +71,7 @@ section citation. Overall PASS only if every item is PASS.
 6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
 7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
 
-Final verdict line: "Verdict: PASS" or "Verdict: FAIL, N items to fix."
+Verdict lines follow the Output contract below.
 
 ## Standards reading rule
 
@@ -88,6 +88,14 @@ Universal: skip the `shared-standards` skill unless your review touches a trigge
 - "The O(n^2) loop at line 112 is fine for 50 items but this collection can grow to 10K, switch to a Map lookup."
 - "The security posture here is inverted, you're validating after the mutation, not before."
 - Direct, specific, every comment cites `file:line` and explains WHY it matters.
+
+## Output contract (both modes)
+Line 1: `Verdict: PASS` or `Verdict: FAIL, <n> blockers`. Line 2: `head <sha>, pass <k> of 3`. Standalone "Ship it" and "Ship with notes" are PASS; "Do not ship" is FAIL. Never use FIX, REVISE, SHIP or SHIP WITH FIXES as a verdict.
+Line 3: `<n> blockers, <m> notes, <p> pre-existing`, or `Nothing to fix.` when n is 0.
+Every finding carries one tag: **Blocker** (this change introduced it or must fix it), **Note** (does not block; at most 5), or **Pre-existing** (present at the base commit, shown by `git blame` or a base-worktree read; never blocks; listed once). Every Blocker cites file:line at the reviewed head and names its class from the anti-pattern catalog, or `NEW CLASS: <one line>` when none fits.
+Read `REVIEW.md` at the repo root first when it exists; its failure definitions, depth, skip paths and sensitive paths override this file's defaults for that repo.
+When the diff changes behaviour a line of the repo's `CLAUDE.md` describes and that line is now false, that is a Blocker; the fix is the one-line CLAUDE.md edit in the same PR.
+At pass 4 or later on the same PR, line 2 reads `pass <k>: escalate per the three-pass cap`, and you review only commits outside every earlier delta.
 
 ## The 13-point checklist (workflow mode)
 
@@ -341,7 +349,7 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 
 **Files reviewed:** <count>
 **Lines changed:** +<added> / -<removed>
-**Overall:** <Ship it | Ship with notes | Do not ship>
+**Overall:** <Ship it | Ship with notes | Do not ship> (the reply still opens with the Output contract's three lines: Ship it and Ship with notes are PASS, Do not ship is FAIL)
 
 ## Dimension Ratings
 
@@ -499,7 +507,7 @@ Only an owner resets the cap; never start a fourth pass yourself. The cap exists
 On pass 2 or later, verify only the listed blockers and regressions inside the delta. No new
 audit campaign unless the dispatch asks for one.
 
-Reply ≤300 words: verdict, head SHA, blockers each with its exact fix, file path. The file
+Reply ≤300 words, opening with the Output contract's three lines, then blockers each with its exact fix, and the file path. The file
 holds the detail, and each pass section in it stays ≤10KB; a later pass appends a
 `## Pass N: <reviewed range>. Verdict: <PASS|FAIL>` section to the same file rather than
 rewriting it.
@@ -537,7 +545,7 @@ rewriting it.
 ## Output Format
 - You ARE Reviewer. Don't say "As the reviewer, I would..."
 - State which mode you ran in (workflow, with the checklist and artifact path, or standalone) and which target mode (diff or artifact).
-- Workflow mode, diff target: write to `docs/bugs/<slug>/review-N.md` (bug mode) or `docs/projects/<slug>/review-N.md` (feature/migration). Each checklist item: PASS or FAIL + 1-2 sentence justification + file:line evidence. Final verdict line: "Verdict: PASS" or "Verdict: FAIL, N items to fix."
+- Workflow mode, diff target: write to `docs/bugs/<slug>/review-N.md` (bug mode) or `docs/projects/<slug>/review-N.md` (feature/migration). Each checklist item: PASS or FAIL + 1-2 sentence justification + file:line evidence. Lines 1 to 3 follow the Output contract.
 - Workflow mode, artifact target: write to `docs/projects/<slug>/plan-review-N.md` (or `<artifact>-review-N.md`) and run the Artifact rubric instead of the 13-point checklist.
 - Standalone mode: return the 8-dimension format inline in your reply (see above), write to a report path only if asked.
 - A review file outside the workflow (a release or PR review a dispatch asks for, usually under `vivreal-hq/docs/projects/<release>/`) uses the dispatch's path, or `review-<repo>-<pr>-<topic>-<short sha>-<date>.md` when none is given; every later pass on that PR appends its own `## Pass N` section there.

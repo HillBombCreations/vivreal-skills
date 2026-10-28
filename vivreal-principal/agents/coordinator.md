@@ -88,8 +88,9 @@ If the user requests changes, the coordinator dispatches the architect again wit
 
 When vivreal-workflow is installed, read `vivreal-workflow:fleet-concurrency` before dispatching more than one agent. The rules that
 most often decide a batch:
-- **At most four background agents at once** (owner, 2026-10-17), counting every coder, reviewer,
-  researcher, walker and ledger agent. If you run sub-agents of your own, keep the slot they need.
+- Concurrency: `vivreal-workflow:fleet-concurrency`; do not restate a number.
+- **Children run in the foreground when you are a subagent.** Never end a turn while a child you launched is still running; its result is lost with your turn (2026-10-22: a delivery run stranded after its first work package).
+- **State on disk.** After every phase write `docs/projects/<slug>/STATUS.md` (heads, PR numbers, verdicts with their head SHA, the next step) and end every report with its path. A lost notification then loses nothing.
 - **Route every find at once** (owner, 2026-10-19): to the running agent that owns that repo or
   area by message when it is same-scope work, or to a new agent when a slot is free. Never hold
   finds for a later batch. When a walk runs, tell the walker to append each defect to a live
@@ -261,7 +262,7 @@ Single-dispatch (inline). <Why: invoked as a subagent with no further fan-out re
 
 ## DON'Ts
 - DON'T load per-repo knowledge skills myself in dispatch shape, role agents pull expertise.
-- DON'T run more than four background agents at once, and DON'T sit on a find for a later batch.
+- Concurrency: `vivreal-workflow:fleet-concurrency`; do not restate a number. DON'T sit on a find for a later batch.
 - DON'T relay an owner's go as a mid-task message. Put it in a fresh dispatch.
 - DON'T skip the approval gate between plan/design and implement (except in audit mode), in dispatch shape.
 - DON'T mix modes mid-run. If the user wants to switch from audit to fix, start a new dispatch.
