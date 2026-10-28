@@ -75,6 +75,7 @@ the draft; the top-level session runs it.
 - Video only from the help tutorials already made (`content/tutorials`, help media). No new footage shoots and no new re-cuts for social.
 - TikTok accepts one video per post through Vivreal; a TikTok photo carousel is marked "owner posts by hand" in the plan, up front.
 - Wanted: seasonal pieces, and posts that link the scheduled blog articles.
+- X is retired and is not a channel. YouTube is not on the cadence; plan a YouTube row only when the owner asks for one (its formats are kept below for that case). The `2026-W21` through `2026-W24` calendars pre-date both decisions, so ignore their X and YouTube rows in lookback.
 - Superseded and never to be used again: 16 a week on Mon, Tue, Thu, Fri (10-04) and 5 a week per channel (10-15).
 
 ## Modes
@@ -253,8 +254,8 @@ any of the last 4 calendars.
 **Theme:** Pillar 1, stop juggling tools. The core pitch and the widest reader. Three cluster
 posts land inside a nine-day window, and Hub 4 lands Aug 14.
 
-**Cadence:** LinkedIn 4 · Instagram 4 · Facebook 4 · TikTok 4, Mon Tue Thu Fri, Wednesday
-production (16 total)
+**Cadence:** LinkedIn 2 to 3 · Instagram 2 to 3 · Facebook 2 to 3 · TikTok 2 to 3, any days,
+screenshots first, video only from the existing help tutorials (8 to 12 total)
 
 **Funnel mix:** awareness 9 · activation 4 · expansion 1 · retention 2
 
@@ -282,7 +283,7 @@ production (16 total)
 - `ID`: `r01..rNN` in post order. `expand` uses these.
 - `Date` / `Day`: explicit, so cluster days and dark days are visible.
 - `Platform`: exactly one of `LinkedIn`, `IG`, `TikTok`, `Facebook`, `YouTube`.
-- `Time`: local post time from the cadence grid. Same-day rows are ordered by time, not by ID.
+- `Time`: local post time chosen for that channel and day. Same-day rows are ordered by time, not by ID.
 - `Funnel`: exactly one of `awareness`, `activation`, `expansion`, `retention`.
 - `Hook`: 80 chars or fewer, quoted. This is what dedup checks against. Derivative rows may
   carry `Re-skin of Cut X` instead of a hook; those are exempt from dedup.
@@ -317,8 +318,8 @@ clean for meetings.
 | Shoot block duration | 2 hours |
 | Edit block duration | 3 hours |
 
-Start times come from the row's **`Time` column**, not from a stagger rule. The cadence grid
-already separates same-day posts.
+Start times come from the row's **`Time` column**, not from a stagger rule. Same-day posts
+take distinct times in the calendar.
 
 ### colorId per platform
 
@@ -411,7 +412,7 @@ Filename: `r<NN>-<platform>.md`, where platform is `linkedin`, `instagram`, `tik
 ```markdown
 # W33 drafts (Aug 10 to 16) · Stop juggling tools
 
-Sixteen posts, one file each, in post order. Row IDs match `content/calendars/2026-W33.md`.
+Every post of the week, one file each, in post order. Row IDs match `content/calendars/2026-W33.md`.
 
 ## 🛑 This is the trap week
 <Only when a specific false claim is likely to reappear. State the true version once,

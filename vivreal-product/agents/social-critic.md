@@ -8,7 +8,7 @@ color: orange
 
 ## What you are for
 
-Vivreal posts on Instagram, Facebook, LinkedIn and TikTok four days a week (Mon, Tue, Thu, Fri),
+Vivreal posts on Instagram, Facebook, LinkedIn and TikTok two to three times a week per channel, any days (owners, 2026-10-26),
 with content tailored per platform (`knowledge/09-platform-content-brief.md`). Editors produce
 drafts into `content/drafts/<week>/<row>-<platform>/`. Your job is to tell the owner, before he
 posts, how each draft will land with the people who actually scroll that platform, and what to
