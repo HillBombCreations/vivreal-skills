@@ -32,7 +32,7 @@ function messageFrom(stdout) {
 }
 
 test('a package.json edit gets the surgical-lockfile advice', (t) => {
-  const run = runHook('C:\\repos\\X\\package.json');
+  const run = runHook('D:\\work\\X\\package.json');
   t.after(() => fs.rmSync(run.marker, { force: true }));
   assert.equal(run.status, 0);
   const msg = messageFrom(run.stdout);

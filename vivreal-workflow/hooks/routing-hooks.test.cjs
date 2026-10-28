@@ -24,6 +24,8 @@ function run(hook, payload, env) {
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-routes-'));
 const portal = path.join(root, 'Vivreal_Portal_Mobile');
 fs.mkdirSync(portal, { recursive: true });
+const cms = path.join(root, 'VR_CMS_API');
+fs.mkdirSync(cms, { recursive: true });
 const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'not-vivreal-'));
 test.after(() => {
   fs.rmSync(root, { recursive: true, force: true });
@@ -37,10 +39,10 @@ function decisionOf(stdout) {
   return out;
 }
 
-test('REFUSE: a general-purpose "Fix ..." dispatch is denied with the coder route', () => {
+test('REFUSE: a general-purpose "Fix ..." dispatch in a Vivreal repo is denied with the coder route', () => {
   const r = run(
     GUARD,
-    { cwd: elsewhere, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'Fix the route' } },
+    { cwd: cms, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'Fix the route' } },
     { VIVREAL_REPOS: root },
   );
   assert.equal(r.status, 0);
@@ -51,7 +53,7 @@ test('REFUSE: a general-purpose "Fix ..." dispatch is denied with the coder rout
 });
 
 test('REFUSE: a dispatch with no subagent_type is treated as general-purpose', () => {
-  const r = run(GUARD, { cwd: elsewhere, tool_input: { description: 'Review this diff' } }, { VIVREAL_REPOS: root });
+  const r = run(GUARD, { cwd: cms, tool_input: { description: 'Review this diff' } }, { VIVREAL_REPOS: root });
   assert.match(decisionOf(r.stdout).permissionDecisionReason, /vivreal-principal:reviewer/);
 });
 
@@ -67,7 +69,7 @@ test('REFUSE in the portal names portal-coder, not coder', () => {
 test('ALLOW: a named coder dispatch passes untouched', () => {
   const r = run(
     GUARD,
-    { cwd: elsewhere, tool_input: { subagent_type: 'vivreal-principal:coder', description: 'Fix the route' } },
+    { cwd: cms, tool_input: { subagent_type: 'vivreal-principal:coder', description: 'Fix the route' } },
     { VIVREAL_REPOS: root },
   );
   assert.equal(r.status, 0);
@@ -77,7 +79,7 @@ test('ALLOW: a named coder dispatch passes untouched', () => {
 test('ALLOW: a "[gp]" general-purpose dispatch passes', () => {
   const r = run(
     GUARD,
-    { cwd: elsewhere, tool_input: { subagent_type: 'general-purpose', description: '[gp] Fix the route' } },
+    { cwd: cms, tool_input: { subagent_type: 'general-purpose', description: '[gp] Fix the route' } },
     { VIVREAL_REPOS: root },
   );
   assert.equal(r.stdout, '');
@@ -86,10 +88,42 @@ test('ALLOW: a "[gp]" general-purpose dispatch passes', () => {
 test('ALLOW: a general-purpose dispatch with no routed first word passes', () => {
   const r = run(
     GUARD,
-    { cwd: elsewhere, tool_input: { subagent_type: 'general-purpose', description: 'Summarise the thread' } },
+    { cwd: cms, tool_input: { subagent_type: 'general-purpose', description: 'Summarise the thread' } },
     { VIVREAL_REPOS: root },
   );
   assert.equal(r.stdout, '');
+});
+
+test('ALLOW: outside a Vivreal repo the guard stays silent on a routed first word', () => {
+  // The plugin installs at user scope, so this hook fires in every repo on the machine.
+  // DC2 scopes routing to Vivreal checkouts; the same "Fix ..." the REFUSE case denies must pass here.
+  for (const description of ['Fix the route', 'Explain the failing test', 'Review this diff']) {
+    const r = run(
+      GUARD,
+      { cwd: elsewhere, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '', `denied "${description}" outside Vivreal`);
+  }
+});
+
+test('REFUSE: a keyword with a digit (ga4) routes', () => {
+  const r = run(
+    GUARD,
+    { cwd: cms, tool_input: { subagent_type: 'general-purpose', description: 'GA4 numbers for last week' } },
+    { VIVREAL_REPOS: root },
+  );
+  assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-growth-analytics:growth/);
+});
+
+test('REFUSE: a dispatch on the legacy Task tool name is still judged', () => {
+  const r = run(
+    GUARD,
+    { cwd: cms, tool_name: 'Task', tool_input: { subagent_type: 'general-purpose', description: 'Fix the route' } },
+    { VIVREAL_REPOS: root },
+  );
+  assert.equal(decisionOf(r.stdout).permissionDecision, 'deny');
 });
 
 test('session hook prints nothing outside a Vivreal checkout (control)', () => {
