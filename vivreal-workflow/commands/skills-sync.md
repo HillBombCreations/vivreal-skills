@@ -1,101 +1,42 @@
 ---
-description: Audit vivreal-skills docs for drift against the source repos, reads the last sync date from docs/SYNC.md, git-logs every source repo since, maps changed areas to the skills files that document them, and emits a drift checklist. Report-only; it does not edit.
-argument-hint: "[optional: --since=YYYY-MM-DD to override the SYNC.md baseline, or a repo name to audit just one repo]"
+description: Report which vivreal-skills knowledge and infra skills are stale, per skill, against each skill's own synced SHA in scripts/skill-sources.json. Runs scripts/skill-drift.mjs from a vivreal-skills worktree at origin/main, then names the changed files and the PRs that touched them. Report-only; it does not edit.
+argument-hint: "[optional: a skill name, or a repo name, to narrow the report]"
 ---
 
-You are the **drift auditor** for the `vivreal-skills` plugin repo (`${VIVREAL_REPOS}/vivreal-skills`). Your job: measure what changed in the Vivreal source repos since the last docs sync and produce a checklist of skills-repo files that likely need updating. You REPORT, you do not edit any file.
+You are the **drift auditor** for the `vivreal-skills` marketplace. You REPORT; you do not edit any file.
 
-## Step 1: Establish the baseline
+## Step 1: Run the monitor from origin/main
 
-Read `${VIVREAL_REPOS}/vivreal-skills/docs/SYNC.md` and take the **latest date** in the sync-log table as the baseline. If the user passed `--since=YYYY-MM-DD` in `$ARGUMENTS`, use that instead. If `$ARGUMENTS` names a repo, restrict the audit to it.
+Never read a parked local checkout. From `${VIVREAL_REPOS}/vivreal-skills`, `git fetch origin`, then make a scratch
+worktree at `origin/main` (`git worktree add --detach <scratch> origin/main`) and run, inside it:
 
-## Step 2: Measure drift per source repo
+```bash
+node scripts/skill-drift.mjs --json
+```
 
-For each repo below, run `git -C <path> log --since=<baseline> --format='%h %ad %s' --date=short` and classify drift as none / low (<5 commits) / medium (5 to 20) / high (>20). For medium+ repos, also check whether the repo's own CLAUDE.md kept up: `git -C <path> log -1 --format='%ad' --date=short -- CLAUDE.md`, if the CLAUDE.md date is well before HEAD's, flag it (the skills docs treat CLAUDE.md as source of truth, so a stale CLAUDE.md poisons the digest).
+The baselines are per skill, in `scripts/skill-sources.json` (`synced` is the commit each skill was last synced
+against). The script reads GitHub only. **Exit 2 is VOID, never "nothing stale"**: a `gh api` call failed (a repo
+name typo, an unknown SHA, no auth) or fewer sources were compared than the file lists. Report the errors and stop.
+Remove the scratch worktree when done.
 
-## Step 3: Map drift to skills files (the hotspot map)
+## Step 2: For each stale row, name the files and the PRs
 
-| Source repo | Skills files that mirror it |
-|---|---|
-| `Vivreal_Portal_Mobile` | `vivreal-knowledge/skills/vivreal-portal-knowledge`, `vivreal-knowledge/skills/vivreal-design-system` (+`references/portal-components.md`), `vivreal-proxy-factory/hooks/hooks.json` (**the manual-route allowlist, recount with a grep for missing `createProxyHandler` imports**), `vivreal-workflow/skills/shared-standards` (proxy counts) |
-| `VR_Outreach_API` | `vivreal-knowledge/skills/vivreal-outreach-api-knowledge` |
-| `VR-Outreach-MCP-Server` | `vivreal-knowledge/skills/vivreal-outreach-mcp-knowledge` |
-| `VR_CMS_API` | `vivreal-knowledge/skills/vivreal-cms-api-knowledge` |
-| `VR_Secure_API` | `vivreal-knowledge/skills/vivreal-secure-api-knowledge`, `shared-standards` Lambda table, `vivreal-fullstack/*` (**recount Lambdas from `cloudYamls/allRoutes.yaml`, NOT `allRoutes.packaged.yaml`, and never count the separate websocket stack**) |
-| `VR_Main_API` | `vivreal-knowledge/skills/vivreal-main-api-knowledge` |
-| `VR_Client_API` + `VR_Client_Auth` | `vivreal-knowledge/skills/vivreal-client-stack-knowledge` |
-| `Vivreal_EventHandler` | `vivreal-knowledge/skills/vivreal-eventhandler-knowledge`, `vivreal-infra/skills/vivreal-site-deploy-pipeline`, `vivreal-infra/skills/vivreal-deploy-tracker` |
-| `vivreal-site-renderer` | `vivreal-knowledge/skills/vivreal-renderer-knowledge`, `vivreal-knowledge/skills/vivreal-sites`, `vivreal-knowledge/skills/vivreal-design-system` |
-| `Vivreal_Templates` | `vivreal-knowledge/skills/vivreal-templates-knowledge`, `vivreal-knowledge/skills/vivreal-sites` |
-| `VR-MCP-Server` | `vivreal-knowledge/skills/vivreal-mcp-server-knowledge`, `vivreal-cms/skills/vivreal-cms` (tool count) |
-| `VR_Analytics_API` | `vivreal-knowledge/skills/vivreal-analytics-knowledge`, `vivreal-growth-analytics/*` (**check the DEPLOY-GATED status line, flip it when resources go live**) |
-| `vivreal-hq` (content planning/production slice; the standalone `vivreal-content` repo was consolidated into it 2026-08-03 and is frozen dead source, do not git-log it for drift) | `vivreal-knowledge/skills/vivreal-brand-voice` (**canonical anchor = `brand/voice.md`, now the repo-root authority, cross-check `knowledge/01-voice-and-rules.md`'s ban list/competitive frame against the skill**), `vivreal-knowledge/skills/vivreal-content-knowledge`, `vivreal-product/agents/marketing-auditor.md` (ban list must match; also check its `content-planner`/specialist routing and its `packages/content-studio` paths for the voice-check script and video playbook) |
-| `Vivreal_Site_Migrator` | `vivreal-knowledge/skills/vivreal-migrator-knowledge` |
-| `Vivreal-Tier-Quotas` | `vivreal-knowledge/skills/vivreal-unit-economics` (+`references/cost-model.md`), `vivreal-product/agents/finance-auditor.md` (**AI quota values**) |
-| `Vivreal-Schemas` | `shared-standards` repo table |
-| `vivreal-hq` `packages/admin-app` (the admin app, the staff hub since v7) | `vivreal-knowledge/skills/vivreal-admin-app-knowledge` (+`references/pages.md`), `shared-standards` vivreal-hq row and deploy-trigger row (merge deploys nothing; `deploy/admin-app` fast-forward), `vivreal-product/agents/qa-walker.md` (admin app walks), `vivreal-infra/skills/vivreal-notifications` (admin push surface) |
-| `vivreal-hq` `packages/fleet-ops` (alarms, deploy role, e2e-local, coverage checks) | `vivreal-infra/skills/vivreal-observability`, `vivreal-infra/skills/vivreal-iam-secrets` and `vivreal-infra/agents/infra-engineer.md` (deploy role), `vivreal-infra/skills/vivreal-deploy-proof` |
-| `vivreal-hq` `packages/leadgen` | `vivreal-leadgen/agents/*` (the plugin mirrors this package's pipeline and write paths) |
-| `Vivreal-Mongo-Connection` (`@hillbombcreations/tenant-db`, `mongo-connection`) | `vivreal-knowledge/skills/vivreal-tenancy`, `vivreal-infra/skills/vivreal-atlas-topology`, `vivreal-knowledge/skills/vivreal-db` |
-| `VR_OnCall_Webhook` (alarm push bridge, ops monitors) | `vivreal-infra/skills/vivreal-notifications`, `vivreal-infra/skills/vivreal-observability`, `shared-standards` repo-table row |
-| `VR_OnCall_Agent` / `Vivreal_SSR_Landing` / `vivreal-edit-extractor` | `shared-standards` repo-table rows only |
+A row is stale when `matching` is above 0. Keep `$ARGUMENTS`' skill or repo filter if one was given. For each stale
+row, list its `first` file names (say when `filesTruncated` is true: GitHub lists 300 files at most), then the PRs
+that touched those files since `synced`:
 
-Cross-cutting checks to run every audit regardless of drift:
-1. **Count claims.** Do not compare against a number written in this file or in any skill.
-   **There are no reference numbers here on purpose.** Derive each one from the deployed
-   line, then grep the skills repo for any hardcoded value of the same shape and flag every
-   hit, current or stale, because a correct hardcoded value is a defect that has not fired
-   yet. `node scripts/check-definitions.mjs` fails on the shapes this repo has already been
-   burned by. Derive:
-   - **Secure Lambda roster**: count `AWS::Serverless::Function` in `cloudYamls/allRoutes.yaml`
-     NOT `allRoutes.packaged.yaml`, and never count the separate websocket stack.
-   - **Portal proxy-route count**: `route.ts` files under `src/app/api/proxy/` on
-     `origin/stable`. Classify factory versus manual by the `_helpers/createProxyHandler`
-     **module path**, never a string grep: a manual route can import a single helper from
-     that same module without using the factory.
-   - **MCP tool rosters**: read `src/tools/catalog.ts` in each MCP server. Both servers have
-     had a CLAUDE.md that overstated the count.
-   - **Package versions** (renderer, schemas, tier-quotas, tenant-db, site-loader):
-     `package.json` on the package deployed line for what is published, and the CONSUMER
-     lockfile for what actually runs. **The renderer and the migrator have no `main`; their
-     line is `origin/master`.** Confirm a published version on the registry, because the
-     publish job runs `npm publish || echo skipping` and a green workflow is not a publish.
-   - **Tier ladder and quota values**: `src/tierQuotas.ts`. Assert the SET of tier names, not
-     a count of them, because a retired tier now normalises to `free` instead of erroring.
-   Pair every zero-result grep with a positive control in the same run, same tool, same
-   pattern style, same path shape. See the `verification-discipline` skill.
-2. **`Last synced:` stamps**: list every expert/knowledge file whose stamp predates a medium+ drift repo it mirrors.
-3. **Prompt playbook** (`vivreal-workflow/references/prompt-playbook.md` + `docs/prompt-playbook.md` stub + `commands/promptify.md`): does any new platform capability deserve a scenario or trigger-row?
-4. **Line-number citations**: grep the expert and knowledge docs for `file.ext:NN` citations.
-   Policy is function, route and file names only, because a line number rots in weeks. Flag
-   offenders. Same rule for anything else a command could have produced: a version, a count
-   a quota, an app id, a job number. **A bare mechanical value in a skill is a defect even
-   when it is currently correct.**
+```bash
+gh api "repos/HillBombCreations/<repo>/compare/<synced>...<ref>" --paginate --jq '.commits[].commit.message' | grep -o '#[0-9]\+' | sort -u
+```
 
-## Step 4: Emit the report
+A `diverged` status means `synced` is not an ancestor of the ref (a rewritten or wrong SHA); report it as its own
+finding.
 
-Output a drift report: per-repo drift level + themes (one line each), the flagged stale CLAUDE.mds, then a **checklist of skills files to update** ordered by severity, each with 1-2 bullets of WHAT is stale. End with a pointer to Step 5 below for the hand-off, fixing the source-repo CLAUDE.mds first (digests cite them), then the skills files, then bumping plugin versions + `marketplace.json`, appending a row to `docs/SYNC.md`, and refreshing the installed cache (see the release-mechanics notes in SYNC.md / project memory).
+## Step 3: Report
 
-Do NOT edit anything. If the user wants the fixes applied, they'll say so, the report is the deliverable.
+| Skill | Repo@ref | Commits ahead | Matching files | First files | PRs |
+|---|---|---|---|---|---|
 
-## Step 5: Hand-off (still no edits from this command)
-
-A report nobody owns applying is a report nobody applies. This command stays report-only
-by design, it does not become auto-edit, so state the follow-through explicitly instead of
-leaving it implied:
-
-1. **Per plugin group in the checklist**, dispatch `vivreal-principal:researcher` to correct
-   the files, citing the source `file:line` the drift was measured against (the source repo,
-   not a line number inside the skills file itself, see the Line-number citations check).
-   One dispatch per plugin group, not one dispatch for the whole report, so a bad correction
-   in one group never blocks or contaminates another.
-2. **The researcher bumps that plugin's version** (and `marketplace.json` if the plugin set
-   or count changed) as part of the same pass, per this repo's own version-bump rule: a new
-   agent, skill, or command is a minor bump, a correction to existing content is a patch.
-3. **The researcher commits**, `git commit --only <explicit paths>`, never `git add -A`. It
-   does not push. No researcher-authored dispatch pushes on its own initiative.
-4. **The coordinator (the orchestrating thread) pushes** after reviewing the researcher's
-   diff, and appends the sync row to `docs/SYNC.md`.
-
-If the user wants this run immediately rather than handed off, say so explicitly and dispatch
-per the steps above, this command still does not do it inline.
+Then: sources compared out of sources listed, the skills with `sources: "none"` (not watched, with their `why`), and
+the skills that are current. The fix for a stale skill is a sync PR that re-reads the facts at the ref tip and moves
+that skill's `synced` in `scripts/skill-sources.json` in the same commit; this command does not make it.

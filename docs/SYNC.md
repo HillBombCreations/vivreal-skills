@@ -1,6 +1,6 @@
 # Docs-sync log
 
-One row per sync of the vivreal-skills docs against the source repos. The `/skills-sync` command reads the **latest date in this table** as the baseline for its drift audit. Add a row every time a sync lands.
+Baselines are per skill in `scripts/skill-sources.json`; this table is the human log. `/skills-sync` runs `scripts/skill-drift.mjs`, which reads those baselines, not this table. Add a row every time a sync lands, and move the synced skills' `synced` SHAs in the same commit.
 
 | Date | Skills commit | Scope |
 |---|---|---|

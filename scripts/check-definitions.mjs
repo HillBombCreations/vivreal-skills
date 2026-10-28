@@ -40,6 +40,9 @@
  *  12. A plugin changed since the merge base whose plugin.json version did not go up. An
  *      unbumped plugin does not reinstall. Needs git and a base ref; without them it warns.
  *  13. A route in `<plugin>/routing/routes.json` whose agent has no agent file.
+ *  14. A vivreal-knowledge or vivreal-infra skill with no entry in scripts/skill-sources.json,
+ *      an entry for a skill that no longer exists, or a `synced` that is not 40 hex. The
+ *      stale-skill monitor (scripts/skill-drift.mjs) can only watch what is listed there.
  *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
  *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
  *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
@@ -982,6 +985,63 @@ function ruleRoutesResolve(files) {
   }
 }
 
+// ------------------------------------------------- rule 14: skill sources (R14)
+// scripts/skill-drift.mjs watches exactly the skills listed in scripts/skill-sources.json. A
+// skill missing from it is never reported stale, so its absence reads as freshness.
+const SOURCED_PLUGINS = ['vivreal-knowledge', 'vivreal-infra'];
+const SHA40 = /^[0-9a-f]{40}$/;
+
+/** The pure decision, driven directly by the self-test. `skills` is a Set of `<plugin>/<skill>`. */
+function skillSourcesFindings(skills, doc) {
+  const out = [];
+  for (const key of [...skills].sort()) {
+    if (!Object.prototype.hasOwnProperty.call(doc, key)) out.push({ where: key, msg: 'has no entry in scripts/skill-sources.json' });
+  }
+  for (const [key, entry] of Object.entries(doc)) {
+    if (!skills.has(key)) {
+      out.push({ where: key, msg: 'is listed in scripts/skill-sources.json but no such skill exists' });
+      continue;
+    }
+    if (entry.sources === 'none') {
+      if (typeof entry.why !== 'string' || !entry.why.trim()) out.push({ where: key, msg: '`sources: "none"` needs a `why`' });
+      continue;
+    }
+    if (!Array.isArray(entry.sources) || entry.sources.length === 0) {
+      out.push({ where: key, msg: '`sources` is neither "none" nor a non-empty list' });
+      continue;
+    }
+    entry.sources.forEach((src, i) => {
+      if (!src.repo || !src.ref || !Array.isArray(src.paths) || src.paths.length === 0) {
+        out.push({ where: `${key} source ${i + 1}`, msg: 'needs `repo`, `ref` and a non-empty `paths`' });
+      }
+      if (!SHA40.test(String(src.synced))) out.push({ where: `${key} source ${i + 1}`, msg: '`synced` is not a 40-hex SHA' });
+    });
+  }
+  return out;
+}
+
+function ruleSkillSources(files) {
+  const skills = new Set(
+    files
+      .map((abs) => norm(relative(ROOT, abs)).match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/))
+      .filter((m) => m && SOURCED_PLUGINS.includes(m[1]))
+      .map((m) => `${m[1]}/${m[2]}`),
+  );
+  const rel = 'scripts/skill-sources.json';
+  let doc;
+  try {
+    doc = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
+  } catch (e) {
+    fail('skill-sources', rel, `does not parse or is missing: ${e.message}`);
+    return;
+  }
+  if (skills.size === 0) {
+    fail('skill-sources', rel, 'found no vivreal-knowledge or vivreal-infra skill, so nothing was checked');
+    return;
+  }
+  for (const f of skillSourcesFindings(skills, doc)) fail('skill-sources', f.where, f.msg);
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -998,6 +1058,7 @@ function runAll(files) {
   ruleMachinePaths(files);
   ruleVersionBump();
   ruleRoutesResolve(files);
+  ruleSkillSources(files);
 }
 
 /**
@@ -1333,6 +1394,26 @@ function selfTest() {
       console.log(
         `  ${got ? 'RED   ' : 'GREEN '} ${b.label.padEnd(34)} ` +
           (correct ? '(correct)' : b.want ? '(THIS CHECK CANNOT FAIL)' : '(THIS CHECK REFUSES A VALID CHANGE)'),
+      );
+      if (!correct) allCanFail = false;
+    }
+
+    // R14 reads one fixed file, so its control drives the pure decision directly too.
+    const sha = 'a'.repeat(40);
+    const src = (over) => ({ repo: 'R', ref: 'main', paths: ['src/'], synced: sha, ...over });
+    const sourceCases = [
+      { label: 'skill-sources: a skill with no entry', want: 1, skills: ['p/a', 'p/b'], doc: { 'p/a': { sources: [src()] } } },
+      { label: 'skill-sources: an entry with no skill', want: 1, skills: ['p/a'], doc: { 'p/a': { sources: [src()] }, 'p/gone': { sources: [src()] } } },
+      { label: 'skill-sources: a short synced SHA', want: 1, skills: ['p/a'], doc: { 'p/a': { sources: [src({ synced: 'abc1234' })] } } },
+      { label: 'skill-sources: none with no why', want: 1, skills: ['p/a'], doc: { 'p/a': { sources: 'none' } } },
+      { label: 'skill-sources: every skill listed', want: 0, skills: ['p/a', 'p/b'], doc: { 'p/a': { sources: [src()] }, 'p/b': { sources: 'none', why: 'external API' } } },
+    ];
+    for (const c of sourceCases) {
+      const got = skillSourcesFindings(new Set(c.skills), c.doc).length;
+      const correct = got === c.want;
+      console.log(
+        `  ${got ? 'RED   ' : 'GREEN '} ${c.label.padEnd(34)} ` +
+          (correct ? '(correct)' : c.want ? '(THIS CHECK CANNOT FAIL)' : '(THIS CHECK REFUSES A VALID FILE)'),
       );
       if (!correct) allCanFail = false;
     }
