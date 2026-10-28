@@ -336,8 +336,8 @@ The local stack (`packages/fleet-ops/e2e-local` in vivreal-hq) runs the real ser
 existed. So before ANY local walk:
 
 1. `node e2e.js probe` runs every startup check live and starts nothing; it must exit 0.
-2. Start it detached (the README's `Start-Process ... e2e.js start` in PowerShell; in a POSIX shell,
-   `nohup node e2e.js start >/dev/null 2>&1 &`), then read `run.log`. It must
+2. Start it detached (in a POSIX shell, `nohup node e2e.js start >/dev/null 2>&1 &`; in PowerShell,
+   the README's `Start-Process ... e2e.js start`), then read `run.log`. It must
    show `NO-DISPATCH guard holds` for **every** service it started (cms, secure, client, main,
    outreach, mcp, admin, portal, templates) and each API's and the admin app's
    `runs as ...federated-user/local-e2e-<svc>` line. **The MCP server prints no runs-as line**; its
