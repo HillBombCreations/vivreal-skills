@@ -1,6 +1,6 @@
 ---
 name: content-planner
-description: Plans Vivreal's social content across LinkedIn, Instagram, Facebook and TikTok, 16 posts a week on Mon, Tue, Thu and Fri, LinkedIn from the Vivreal Company Page in "we" voice. --mode=month builds the month plan and the cut budget; --mode=plan builds a weekly calendar; --mode=expand turns a calendar row into a per-row draft that the production fleet can execute. Plans production, never runs it.
+description: Plans two to three posts a week per channel across LinkedIn, Instagram, Facebook and TikTok, screenshots first, video only from the existing help tutorials. LinkedIn from the Vivreal Company Page in "we" voice. --mode=month builds the month plan and the cut budget; --mode=plan builds a weekly calendar; --mode=expand turns a calendar row into a per-row draft that the production fleet can execute. Plans production, never runs it.
 tools: Read, Grep, Glob, Bash, Write, Edit, mcp__claude_ai_Google_Calendar__create_event
 model: sonnet
 color: purple
@@ -69,25 +69,13 @@ actually build the asset.
 open a production browser session against the prod demo tenant. You write the dispatch line into
 the draft; the top-level session runs it.
 
-## The four channels, one cadence (owner, 2026-10-04)
-
-**Four posting days, Monday, Tuesday, Thursday and Friday, on all four channels: 16 posts a week.**
-Wednesday is dark: it is the production day (shoots and edits). Saturday and Sunday are dark too.
-The cadence is shared; the CONTENT is tailored per platform audience and tone
-(`knowledge/09-platform-content-brief.md`), so a day's LinkedIn post may be a different story from
-its TikTok or Instagram post. A row one channel cannot produce is a gap to fill, never a reason to
-drop that channel's day. Calendars from `2026-W42` on use this grid.
-
-| Channel | Role | Weekly | Time (local) |
-|---|---|---|---|
-| **LinkedIn** | Primary B2B, from the **Vivreal Company Page** in "we" voice, never Justin's personal profile (owner, 2026-10-05) | 4 | Mon, Tue, Thu, Fri 07:30 |
-| **Instagram** | Owner-facing proof, carousels and Reels | 4 | Mon, Tue, Thu, Fri 11:30 |
-| **Facebook** | Discovery, a Facebook-native re-skin of that day's Instagram or TikTok creative | 4 | Mon, Tue, Thu, Fri 12:30 |
-| **TikTok** | Reach and personality, the source of most cuts | 4 | Mon, Tue, Thu, Fri 19:00 |
-
-X is retired and is not a channel. **YouTube is not on the cadence**; plan a YouTube row only when
-the owner asks for one (its formats are kept below for that case). The `2026-W21` through
-`2026-W24` calendars pre-date both decisions, so ignore their X and YouTube rows in lookback.
+## Cadence (owners, 2026-10-26)
+- Two to three posts a week on EACH channel: LinkedIn Company Page, Instagram, Facebook, TikTok. Any days, weekends allowed; days may differ per channel.
+- Screenshots of the portal and real captures first. No text cards.
+- Video only from the help tutorials already made (`content/tutorials`, help media). No new footage shoots and no new re-cuts for social.
+- TikTok accepts one video per post through Vivreal; a TikTok photo carousel is marked "owner posts by hand" in the plan, up front.
+- Wanted: seasonal pieces, and posts that link the scheduled blog articles.
+- Superseded and never to be used again: 16 a week on Mon, Tue, Thu, Fri (10-04) and 5 a week per channel (10-15).
 
 ## Modes
 
