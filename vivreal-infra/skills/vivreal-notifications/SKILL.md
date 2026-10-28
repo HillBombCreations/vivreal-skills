@@ -32,6 +32,18 @@ producer → vivreal-notification-queue (SQS, batch size 1, + DLQ) → Notificat
 - **A staff type with no admin device logs a warning** (`no admin-app device subscribed for a staff alert`) and delivers nothing. A customer group with no devices stays quiet. So "the alarm push never arrived" starts with: is an admin device subscribed at all?
 - **Release order for this split** (v7 runbook S11 and S17b): Secure's admin push routes and the admin app, then an admin device subscribed, then Main's consumer, then the OnCall bridge, then the portal. Shipping the consumer before a device subscribes means alarm pushes reach nobody. **v7 shipped Main and the bridge with S11 deferred** (owner, 2026-10-20), so for a missing alarm push check for an admin device subscription first.
 
+## Staff and infra types (VR_Main_API `src/notificationConsumer/lambda.js` at `origin/stable`, read 2026-10-28)
+
+| Type | Recipient | `staffOnly` | Category |
+|---|---|---|---|
+| `infra.alarm` | `INTERNAL_ALARM_RECIPIENT` (pinned operator) | no | `infraAlerts` |
+| `infra.error` | `INTERNAL_ALARM_RECIPIENT` (pinned operator) | no | `infraAlerts` |
+| `staff.signup` | `INTERNAL_STAFF_AUDIENCE` | `true` | `signup` |
+| `staff.paid` | `INTERNAL_STAFF_AUDIENCE` | `true` | `paid` |
+| `staff.upgrade` | `INTERNAL_STAFF_AUDIENCE` | `true` | `paid` |
+
+`staffOnly: true` also drops every device whose email is not on the current `ADMIN_EMAILS`. All five are opt-in. Re-read the `TYPE_POLICY` table on the deployed line before relying on this. OnCall_Webhook pushes errors to the admin app (`infra.error`); the ClickUp filing retired 2026-10-27.
+
 ## Gotchas
 
 - **Don't confuse the three channels**: WebSocket (live, in-app, `WS_ENDPOINT`/`WS_TABLE`), web-push (this pipeline, offline), email (Main's EmailConsumer/lifecycle templates). A "user wasn't notified" bug needs the channel identified first.

@@ -230,7 +230,7 @@ Each of these was a real STOP or correction in the v7 window (vivreal-hq
   and lockfile needs `npm ci --prefix <that dir>` before packaging, or the zip ships without its
   dependencies (the ops-monitors error notifier, v7). Read the deploy script for every nested
   lockfile before packaging.
-- **Stack proofs must survive the local env-read hook.** The hook blocks any
+- **Stack proofs must survive the env-read hook** (`vivreal-infra` `hooks/lambda-env-guard.cjs`). The hook blocks any
   `Environment.Variables` projection, including a lone `SENTRY_RELEASE`. Prove each function with
   `LastModified`, `CodeSha256` and `TracingConfig` (new values after the deploy time), plus the
   stack status and `LastUpdatedTime`, and record that substitution as a deviation.

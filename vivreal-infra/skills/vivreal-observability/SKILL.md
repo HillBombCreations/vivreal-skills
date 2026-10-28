@@ -205,6 +205,12 @@ Read the lifecycle rule rather than assuming the fleet policy applies.
 
 ---
 
+## VR_OnCall_Webhook: errors reach a person by push
+A new Sentry error becomes one staff web push in the admin app (`src/errorPush.js` at `origin/main`): claim, format, `SendMessage` to `vivreal-notification-queue`, consumed by VR_Main_API as type `infra.error`, opened at the admin app's Errors page. It REPLACED the ClickUp filing (owners, 2026-10-27), so it is the only delivery to a human on that path. An enqueued push is not a delivered one: delivery also needs the `infraAlerts` switch on and an admin-app device subscribed (`surface: "admin"`); the consumer logs `no-subscriptions` when there is none. See `vivreal-notifications`.
+
+## fleet-ops e2e-local: the guarded local stack
+vivreal-hq `packages/fleet-ops/e2e-local` (`node e2e.js start`) runs the portal, the admin app, Vivreal_Templates, the five APIs and VR-MCP-Server locally from worktrees under `E2E_WT_ROOT` (set it to `$VIVREAL_REPOS/_wt`), each API as `federated-user/local-e2e-<svc>`. Minting those identities needs `sts:GetFederationToken` on your own AWS identity; each scoped policy must fit its 2048-character limit. `run.log` must show the NO-DISPATCH guard holding for every service. Details and ports: that package's `README.md`.
+
 ## Where the other half of this lives
 
 - **Application errors and traces:** the `vivreal-sentry` plugin. Note in particular that
