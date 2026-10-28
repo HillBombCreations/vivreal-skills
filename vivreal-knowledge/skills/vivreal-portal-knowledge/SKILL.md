@@ -97,6 +97,8 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix), 
 
 ## Deploy model: release train
 
+**Portal push rule (owners, 2026-10-28).** A portal branch is pushed and opened as a PR as soon as its gates pass. The QA walk happens on the pushed PR head, before MERGE. Merge needs a passing review at the current head and an owner's QA-walk sign-off for that head; push needs neither.
+
 `main` is an Amplify build canary with NO production traffic; prod is CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`) in front of the Amplify `stable` branch (the distribution is NOT CFN-managed), and the portal promotes LAST in the Monday stagger. The shared model (cut, promote, backport as a patch) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`. Portal specifics: the cut writes a served `public/release.json` (`curl https://vivreal.io/app/release.json`, more than once, an edge POP can serve the previous release), and **Amplify autobuild fires only for never-built commits**, so a rollback or re-promote to an already-built commit repoints `stable` with NO build; also run `aws amplify start-job --app-id <portal-amplify-app-id> --branch-name stable --job-type RELEASE`.
 
 ## Before you report an absence
