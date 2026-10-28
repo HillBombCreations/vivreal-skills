@@ -535,7 +535,7 @@ of the folder still works.
 shows 4.8s at 1440 and 1.5s at 390. The **first** page load of a browser session is the slow one;
 the same page is much faster later in the run. Plan the pre-roll for the slow case.
 
-**9. Node cannot `import` a Windows absolute path.** `import { chromium } from 'C:/repos/...'` throws
+**9. Node cannot `import` a Windows absolute path.** `import { chromium } from '<drive>:/...'` (any drive-letter path) throws
 `ERR_UNSUPPORTED_ESM_URL_SCHEME`. This compounds the `npx tsx -e` trap in the third-pass section
 above: write the probe as a `.cjs` file using `require('C:/...')`, or put a `.mts` inside the package
 whose `node_modules` you need and run `npx tsx` from there. Two probes were lost to this.

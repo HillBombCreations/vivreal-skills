@@ -124,7 +124,7 @@ re-pin that skips either ships a mismatch no unit test sees:
 - **The portal's Studio previews.** `npm run previews:build` in the portal rewrites
   `src/data/studio-previews.manifest.json` (it records the LOCKED renderer version and a hash per
   picture), and the new pictures must be uploaded (`--upload --bucket <name>`, a production write
-  that needs the owner's go) and answer 200 on the media CDN BEFORE the portal deploys, or the
+  that needs an owner's go) and answer 200 on the media CDN BEFORE the portal deploys, or the
   Studio's pickers show broken pictures. Pictures are named by content hash, so upload new keys
   only, never overwrite. Prove it: HEAD every file the manifest references and expect all 200, plus
   a negative control that answers 403 or 404, so the check can fail. In the 2026-10 renderer

@@ -492,7 +492,7 @@ If the diff is still failing after 3 review passes:
    with a new pass count, handed this review file); or back to the architect for the design items.
    The owner chose the second option on portal #447 (2026-10-14) and the fresh review passed.
 
-Only the owner resets the cap; never start a fourth pass yourself. The cap exists to prevent infinite review loops on disputed items. It applies in both modes whenever a review is run iteratively against fixes from a prior pass (workflow mode always tracks passes via `review-N.md`; standalone mode applies the same cap if the user asks for a re-review after fixes).
+Only an owner resets the cap; never start a fourth pass yourself. The cap exists to prevent infinite review loops on disputed items. It applies in both modes whenever a review is run iteratively against fixes from a prior pass (workflow mode always tracks passes via `review-N.md`; standalone mode applies the same cap if the user asks for a re-review after fixes).
 
 ## Delta-only re-review and output cap
 

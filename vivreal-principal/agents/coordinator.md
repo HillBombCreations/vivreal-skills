@@ -96,13 +96,13 @@ most often decide a batch:
   `*-defects.md` file as it finds it, and watch that file with one background wait so research
   starts mid-walk. One retest still closes the walk.
 - **A widened authority needs a fresh dispatch.** A message may narrow an agent's work or add
-  same-scope work. Merge, release, a production write, a real-account action, or the owner's go for
+  same-scope work. Merge, release, a production write, a real-account action, or an owner's go for
   any of them goes in the FIRST prompt of a new dispatch; a well-built agent refuses it as a
   message. Run an owner-approved one-shot (one production command, a change set) yourself in
   this thread instead of relaying it to an agent (v7.1).
 - **Releases go to `vivreal-workflow:release-engineer` (when vivreal-workflow is installed) with the go inside the prompt.** For a
   multi-repo window, dispatch it per runbook batch in RUNBOOK mode, naming the steps in order and
-  the owner's go for each, rather than per repo.
+  an owner's go for each, rather than per repo.
 - **Publish every pending shared package first, then one consumer bump pass** through
   `package-publisher` (vivreal-workflow, when installed). A coder that needs a package change mid-build reports it rather than
   publishing and bumping on its own.

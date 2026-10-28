@@ -345,7 +345,7 @@ cd packages/content-studio
 npm run tutorial -- src/tutorial/scripts/<slug>.ts
 ```
 
-**Give `--out` an ABSOLUTE path** (`--out=C:/repos/vivreal-hq/content/tutorials/<date>-<slug>`).
+**Give `--out` an ABSOLUTE path** (`--out=${VIVREAL_REPOS}/vivreal-hq/content/tutorials/<date>-<slug>`).
 With vivreal-hq #23, `run-tutorial.ts` resolves a relative `--out` from the vivreal-hq repo root
 (`resolveOutDir` in `src/repo-root.ts`), and a relative `--out` that resolves outside the repo
 root, or onto the root itself, is refused with exit 1 before any script loads; an absolute path

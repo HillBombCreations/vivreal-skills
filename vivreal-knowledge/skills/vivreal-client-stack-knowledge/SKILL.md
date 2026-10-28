@@ -1,15 +1,17 @@
 ---
 name: vivreal-client-stack-knowledge
-description: 'Use when working in the Vivreal public content-delivery stack: VR_Client_API (the public backend customer sites call for content and Stripe/Square checkout) and VR_Client_Auth (the Lambda authorizer validating per-group API keys), the ONLY backend pair on API-key auth, not Cognito. Covers the TWO CloudFront distributions (media.vivreal.io signed media vs the client.vivreal.io API edge cache), the /tenant/* + /sites/:siteId routes, payments-provider resolution, tier→database mapping, signed srcset derivatives, frozenCheck (a paused group is read only, not dark), the Site MCP allowlist, and the publishDate gate. Triggers on: VR_Client_API, VR_Client_Auth, client authorizer, signed URL, CloudFront, edge cache, client.vivreal.io, CDN cache, frozenCheck, API key auth, tier database mapping, frozen group, publishDate gate, Square checkout, site MCP, stale or missing content on live site. Source of truth: C:\repos\VR_Client_API\CLAUDE.md + C:\repos\VR_Client_Auth\CLAUDE.md.'
+description: 'Use when working in the Vivreal public content-delivery stack: VR_Client_API (the public backend customer sites call for content and Stripe/Square checkout) and VR_Client_Auth (the Lambda authorizer validating per-group API keys), the ONLY backend pair on API-key auth, not Cognito. Covers the TWO CloudFront distributions (media.vivreal.io signed media vs the client.vivreal.io API edge cache), the /tenant/* + /sites/:siteId routes, payments-provider resolution, tier→database mapping, signed srcset derivatives, frozenCheck (a paused group is read only, not dark), the Site MCP allowlist, and the publishDate gate. Triggers on: VR_Client_API, VR_Client_Auth, client authorizer, signed URL, CloudFront, edge cache, client.vivreal.io, CDN cache, frozenCheck, API key auth, tier database mapping, frozen group, publishDate gate, Square checkout, site MCP, stale or missing content on live site. Source of truth: `VR_Client_API` and `VR_Client_Auth` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
 ---
 
 # VR_Client_API + VR_Client_Auth: knowledge digest
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
+Source of truth: `VR_Client_API` and `VR_Client_Auth` `CLAUDE.md` (and the docs it links) at `origin/stable`.
+
 Last synced: 2026-10-21 against VR_Client_API `origin/stable` (tag v2.17.3, the v7.2 hotfix line; read the tag)
 
-The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth`, a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `C:\repos\VR_Client_API\CLAUDE.md` and `C:\repos\VR_Client_Auth\CLAUDE.md` for depth, VR_Client_API's CLAUDE.md was refreshed 2026-10-03 and documents both CloudFront distributions, the frozen allowlist and the delivery-quote route.
+The **public content-delivery stack**: deployed customer sites (Vivreal_Templates) call `VR_Client_API` to fetch content + run Stripe/Square checkout + send emails, and every request first passes `VR_Client_Auth`, a tiny custom Lambda authorizer that validates the group's API key and injects tenant context. **This pair is the only Vivreal backend using API-key auth (not Cognito).** Read `${VIVREAL_REPOS}/VR_Client_API/CLAUDE.md` and `${VIVREAL_REPOS}/VR_Client_Auth/CLAUDE.md` for depth, VR_Client_API's CLAUDE.md was refreshed 2026-10-03 and documents both CloudFront distributions, the frozen allowlist and the delivery-quote route.
 
 ## TWO CloudFront distributions: never conflate them
 

@@ -35,6 +35,10 @@
  *   8. A reference to behaviour that has been deleted from the product.
  *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
  *      buys a reader nothing that a profile name and a region do not.
+ *  11. A literal machine path (a drive-letter clone root, a user home) outside docs/. Paths
+ *      go through ${VIVREAL_REPOS}.
+ *  12. A plugin changed since the merge base whose plugin.json version did not go up. An
+ *      unbumped plugin does not reinstall. Needs git and a base ref; without them it warns.
  *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
  *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
  *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
@@ -64,6 +68,7 @@
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join, relative, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const norm = (p) => p.split(sep).join('/');
@@ -820,6 +825,129 @@ function ruleAwsAccountId(files) {
   }
 }
 
+// ------------------------------------------------- rule 11: machine paths (R11)
+// A literal clone path works on one machine and silently reads a stale or absent tree on every
+// other. Paths go through ${VIVREAL_REPOS}. The patterns are built from character codes so this
+// file never holds the strings it refuses. docs/ is history and is not scanned.
+const BSL = String.fromCharCode(92);
+const MACHINE_PATH = new RegExp(
+  [
+    '[Cc]:[' + BSL + BSL + '/]repos\\b',
+    '/c' + '/repos\\b',
+    '[Cc]:[' + BSL + BSL + '/]Users[' + BSL + BSL + '/]',
+    '(^|[^A-Za-z0-9_.$}-])/Users/[A-Za-z0-9._-]+/',
+    '(^|[^A-Za-z0-9_.$}-])/home/[A-Za-z0-9._-]+/',
+  ].join('|'),
+);
+// The one sanctioned example of the variable's VALUE, in the shared-standards preamble the plan
+// quotes verbatim. Exact line text, so any other use of the same path still fails.
+const MACHINE_PATH_EXAMPLE = 'with forward slashes (for example `' + 'C:' + '/repos`)';
+
+function ruleMachinePaths(files) {
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (rel.startsWith('docs/') || rel.startsWith('.agy/')) continue;
+    if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
+    const lines = readFileSync(abs, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      if (line.includes(MACHINE_PATH_EXAMPLE)) return;
+      const m = MACHINE_PATH.exec(line);
+      if (!m) return;
+      fail(
+        'machine-path',
+        `${rel}:${i + 1}`,
+        `a literal machine path ("${m[0].trim()}") only exists on one machine. ` +
+          'Write `${VIVREAL_REPOS}/<repo>/...` in prose, or `"$VIVREAL_REPOS/<repo>/..."` in shell.',
+      );
+    });
+  }
+}
+
+// --------------------------------------------------- rule 12: version bump (R12)
+// An unbumped plugin does not reinstall, so a merged change never reaches a machine. Every
+// plugin directory changed since the merge base must carry a plugin.json version above the
+// base's. A directory absent at HEAD (deleted) or at the base (new) is skipped.
+function semverGreater(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  if (pa.some(Number.isNaN) || pb.some(Number.isNaN)) return false;
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
+/** Pure decision, so the self-test can drive it without a git history. */
+function versionBumpFindings(changedDirs, baseVersionOf, headVersionOf) {
+  const out = [];
+  for (const dir of [...changedDirs].sort()) {
+    const base = baseVersionOf(dir);
+    const head = headVersionOf(dir);
+    if (base === null || head === null) continue; // new or deleted plugin
+    if (!semverGreater(head, base)) {
+      out.push({ dir, base, head });
+    }
+  }
+  return out;
+}
+
+let gitContextCache;
+function gitContext() {
+  if (gitContextCache !== undefined) return gitContextCache;
+  gitContextCache = null;
+  const run = (args) =>
+    execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  const baseRef = process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main';
+  try {
+    const mb = run(['merge-base', 'HEAD', baseRef]);
+    const changed = run(['diff', '--name-only', mb])
+      .split('\n')
+      .filter(Boolean)
+      .map((p) => p.split('/')[0]);
+    const baseVersionOf = (dir) => {
+      try {
+        return JSON.parse(run(['show', `${mb}:${dir}/.claude-plugin/plugin.json`])).version ?? null;
+      } catch {
+        return null;
+      }
+    };
+    gitContextCache = { baseRef, mb, changed: new Set(changed), baseVersionOf };
+  } catch {
+    gitContextCache = null;
+  }
+  return gitContextCache;
+}
+
+function headVersionOf(dir) {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, dir, '.claude-plugin', 'plugin.json'), 'utf8')).version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function ruleVersionBump() {
+  const ctx = gitContext();
+  if (!ctx) {
+    warn(
+      'version-bump',
+      '(git)',
+      'no git history or no base ref (origin/main, or origin/$GITHUB_BASE_REF), so the version-bump rule DID NOT RUN.',
+    );
+    return;
+  }
+  for (const f of versionBumpFindings(ctx.changed, ctx.baseVersionOf, headVersionOf)) {
+    fail(
+      'version-bump',
+      `${f.dir}/.claude-plugin/plugin.json`,
+      `${f.dir} changed since ${ctx.baseRef} (merge base ${ctx.mb.slice(0, 7)}) but its version ${f.head} ` +
+        `is not above the base's ${f.base}. An unbumped plugin does not reinstall.`,
+    );
+  }
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -833,6 +961,8 @@ function runAll(files) {
   ruleDashes(files);
   ruleDeletedBehaviour(files);
   ruleAwsAccountId(files);
+  ruleMachinePaths(files);
+  ruleVersionBump();
 }
 
 /**
@@ -1080,6 +1210,23 @@ function selfTest() {
       path: join(tmp, 'skills', 'dquote-break', 'SKILL.md'),
       body: '---\nname: dquote-break\ndescription: "say "hi" here"\n---\n\nbody\n',
     },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: a literal clone root',
+      path: join(tmp, 'agents', 'pathy.md'),
+      body:
+        '---\nname: pathy\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nRead ' +
+        'C:' + '/repos/x/CLAUDE.md first.\n',
+    },
+    {
+      rule: 'machine-path',
+      kind: 'clean',
+      label: 'machine-path: the variable form',
+      path: join(tmp, 'agents', 'pathless.md'),
+      body:
+        '---\nname: pathless\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'Read `${VIVREAL_REPOS}/x/CLAUDE.md` first.\n',
+    },
   ];
 
   let allCanFail = true;
@@ -1117,6 +1264,28 @@ function selfTest() {
       );
       if (!correct) allCanFail = false;
       for (const f of written) rmSync(f.path, { force: true });
+    }
+
+    // R12 needs a git history to see a change, so its control drives the pure decision directly.
+    const bumpCases = [
+      { label: 'version-bump: changed, not bumped', want: 1, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.2.0' } },
+      { label: 'version-bump: changed, version lowered', want: 1, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.1.9' } },
+      { label: 'version-bump: changed and bumped', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.3.0' } },
+      { label: 'version-bump: plugin deleted at HEAD', want: 0, dirs: ['gone'], base: { gone: '1.0.0' }, head: {} },
+      { label: 'version-bump: plugin new since base', want: 0, dirs: ['fresh'], base: {}, head: { fresh: '0.1.0' } },
+    ];
+    for (const b of bumpCases) {
+      const got = versionBumpFindings(
+        new Set(b.dirs),
+        (d) => b.base[d] ?? null,
+        (d) => b.head[d] ?? null,
+      ).length;
+      const correct = got === b.want;
+      console.log(
+        `  ${got ? 'RED   ' : 'GREEN '} ${b.label.padEnd(34)} ` +
+          (correct ? '(correct)' : b.want ? '(THIS CHECK CANNOT FAIL)' : '(THIS CHECK REFUSES A VALID CHANGE)'),
+      );
+      if (!correct) allCanFail = false;
     }
 
     // The other half of the control: with the poison gone, the repo must come back

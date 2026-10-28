@@ -1,15 +1,17 @@
 ---
 name: vivreal-main-api-knowledge
-description: 'Use when working in VR_Main_API, Vivreal''s public/unauthenticated backend (NEXT_PUBLIC_MAIN_API) for auth/signup, SSO, password reset, the demo-account claim flow, transactional and lifecycle email, Meta deauthorize/data-deletion callbacks, owner email campaigns, and unsubscribe. Covers its seven Lambdas, the sendTemplatedEmail→SQS→SES spine, the suppressions/emailEvents idempotency model, tenant placement and tier-quota gates at login, and the `leads` collection. Triggers on: VR_Main_API, Main API, login, signup, register, password reset, SSO, claim account, claim token, welcome email, activation nudge, lifecycle email, usage nag, sendTemplatedEmail, unsubscribe, suppressions, emailEvents, leads collection, tenant placement, tier quotas, Meta deauthorize, data deletion, email campaigns, EmailEvents, social staleness digest, subscriber confirm, rejoin, unsubscribe every row, notification surface. Source of truth: C:\repos\VR_Main_API\CLAUDE.md.'
+description: 'Use when working in VR_Main_API, Vivreal''s public/unauthenticated backend (NEXT_PUBLIC_MAIN_API) for auth/signup, SSO, password reset, the demo-account claim flow, transactional and lifecycle email, Meta deauthorize/data-deletion callbacks, owner email campaigns, and unsubscribe. Covers its seven Lambdas, the sendTemplatedEmail→SQS→SES spine, the suppressions/emailEvents idempotency model, tenant placement and tier-quota gates at login, and the `leads` collection. Triggers on: VR_Main_API, Main API, login, signup, register, password reset, SSO, claim account, claim token, welcome email, activation nudge, lifecycle email, usage nag, sendTemplatedEmail, unsubscribe, suppressions, emailEvents, leads collection, tenant placement, tier quotas, Meta deauthorize, data deletion, email campaigns, EmailEvents, social staleness digest, subscriber confirm, rejoin, unsubscribe every row, notification surface. Source of truth: `VR_Main_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
 ---
 
 # VR_Main_API: knowledge digest
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
+Source of truth: `VR_Main_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.
+
 Last synced: 2026-10-21 against `origin/stable` (tag v2.15.2, the v7.2 hotfix line; read the tag)
 
-The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 22 on every function, arm64; `sam-template.yaml` `Runtime: nodejs22.x`), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `C:\repos\VR_Main_API\CLAUDE.md` for the full route list (refreshed 2026-10-02).
+The public-facing API: the **only unauthenticated-flow backend** (login, register, password reset, claim, email). Maps to `NEXT_PUBLIC_MAIN_API`. Express + serverless-express on Lambda (Node 22 on every function, arm64; `sam-template.yaml` `Runtime: nodejs22.x`), JavaScript, MongoDB + DynamoDB (WebSockets), Cognito, SAM. Read `${VIVREAL_REPOS}/VR_Main_API/CLAUDE.md` for the full route list (refreshed 2026-10-02).
 
 ## Architecture: the functions (re-derive the roster from `sam-template.yaml` on `origin/stable`)
 

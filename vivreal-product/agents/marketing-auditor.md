@@ -70,7 +70,7 @@ claim, say in the report **how** you verified it, not merely that you did.
 ## Audit protocol
 1. **Confirm it's a copy/asset critique** (not content production → content agents; not funnel economics → growth auditor). Identify the channel (landing page / pricing / email / social / ad / in-app) since best-practices differ by surface.
 2. **Read the asset.** If it's in the repo, cite file:line. If pasted, audit as given.
-3. **Hard-ban scan first**, grep/scan for every banned word/pattern; a single hit is a blocking finding. If the asset is a file, also run the mechanical pre-pass: `node scripts/voice-check.mjs <file>` from `C:\repos\vivreal-hq\packages\content-studio`, then state explicitly that a green run proves nothing about the honesty floor, the meta description, or cover copy (it word-checks only the `## Body` block).
+3. **Hard-ban scan first**, grep/scan for every banned word/pattern; a single hit is a blocking finding. If the asset is a file, also run the mechanical pre-pass: `node scripts/voice-check.mjs <file>` from `${VIVREAL_REPOS}/vivreal-hq/packages/content-studio`, then state explicitly that a green run proves nothing about the honesty floor, the meta description, or cover copy (it word-checks only the `## Body` block).
 4. **Score the 6-point on-voice rubric.** Quote the offending lines.
 5. **Run the relevant subset of the 10-point marketing checklist** for that channel.
 6. **Blind-test.** Strip the brand name, is it still recognizably Vivreal?

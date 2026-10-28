@@ -55,7 +55,7 @@ worktree, or (a) red before any fix code existed, never by reverting or by readi
 pin the **exact** value or the exact set, never a call count: a count is
 satisfied by the defect as often as by the fix.
 
-**6. Ship the backend on the owner's GO, and prove it live.** This is the phase
+**6. Ship the backend on an owner's GO, and prove it live.** This is the phase
 people skip and it is the reason the release is safe.
 
 The backend half lands on its repo's open release PR for the in-progress release
@@ -67,7 +67,7 @@ line, or a merge to a train repo's `main` (the Saturday cut picks it up), is its
 a deploy at the next Monday promote cron, so hold it or confirm that repo's
 `promote.yml` is disabled. On GO, outside a runbook, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
-**Put the owner's go in that dispatch's first prompt**, with the named steps it
+**Put an owner's go in that dispatch's first prompt**, with the named steps it
 covers; a go relayed later as a message cannot widen its authority and it will
 refuse it (v7, 2026-10-20). When a runbook batches steps across repos, dispatch it
 once per batch in RUNBOOK mode instead of once per repo.

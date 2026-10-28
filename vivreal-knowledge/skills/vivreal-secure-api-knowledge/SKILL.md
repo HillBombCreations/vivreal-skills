@@ -1,11 +1,13 @@
 ---
 name: vivreal-secure-api-knowledge
-description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops backend (NEXT_PUBLIC_SECURE_URL) for groups, sites, billing, profiles, roles, Square and Shopify tokens, template instantiation, domains and site analytics. Covers the SAM stack and its websocket and media-CDN siblings, instantiateTemplateWorker, the scheduled jobs, `dbKey`-query-param routing (NOT `key`), the 7-step add-a-route checklist (502 if the SAM event is missed), Stripe downgrade preflight, overage and spending caps, the payments-provider mutex, tier-quotas sentinels (-1 unlimited / 0 no access), encrypted creds, owner/admin gates, and the cross-tenant IDOR fix pattern. Triggers on: VR_Secure_API, group management, site creation, billing, downgrade preflight, profileSwitch, overage billing, spending cap, createSites, instantiateTemplate, domain transfer, dbKey, Square refresh, Shopify refresh, featureFlags, page routes, pageFields, withSiteRole, socialGrantProbe, domain renewal, registrant. Source of truth: CLAUDE.md at origin/stable.'
+description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops backend (NEXT_PUBLIC_SECURE_URL) for groups, sites, billing, profiles, roles, Square and Shopify tokens, template instantiation, domains and site analytics. Covers the SAM stack and its websocket and media-CDN siblings, instantiateTemplateWorker, the scheduled jobs, `dbKey`-query-param routing (NOT `key`), the 7-step add-a-route checklist (502 if the SAM event is missed), Stripe downgrade preflight, overage and spending caps, the payments-provider mutex, tier-quotas sentinels (-1 unlimited / 0 no access), encrypted creds, owner/admin gates, and the cross-tenant IDOR fix pattern. Triggers on: VR_Secure_API, group management, site creation, billing, downgrade preflight, profileSwitch, overage billing, spending cap, createSites, instantiateTemplate, domain transfer, dbKey, Square refresh, Shopify refresh, featureFlags, pageFields, withSiteRole, domain renewal. Source of truth: `VR_Secure_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
 ---
 
 # VR_Secure_API: knowledge digest
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
+Source of truth: `VR_Secure_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.
 
 Last synced: 2026-10-21 against `origin/stable` at `32c3bcf1` (tag v2.22.6, the v7.2 hotfix line; read the tag)
 

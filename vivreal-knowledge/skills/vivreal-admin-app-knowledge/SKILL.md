@@ -1,9 +1,11 @@
 ---
 name: vivreal-admin-app-knowledge
-description: 'Use when working on, walking, deploying or reasoning about the internal admin app (vivreal-hq packages/admin-app), the invite-only, sign-in-only staff hub that holds every staff surface since v7 (outreach CRM, sign-ups, monitoring, errors, tickets, flags, audit, usage, economics, deployed sites, team, staff push), covering where it lives, its own identity pool and session, how it calls the fleet with no active_ctx, the deploy by fast-forwarding deploy/admin-app, its two ops Lambdas, what each page reads, and the restyle, Releases and Database pages that are planned but not shipped.'
+description: 'Use when working on, walking, deploying or reasoning about the internal admin app (vivreal-hq packages/admin-app), the invite-only, sign-in-only staff hub that holds every staff surface since v7 (outreach CRM, sign-ups, monitoring, errors, tickets, flags, audit, usage, economics, deployed sites, team, staff push), covering where it lives, its own identity pool and session, how it calls the fleet with no active_ctx, the deploy by fast-forwarding deploy/admin-app, its two ops Lambdas, what each page reads, and the restyle, Releases and Database pages that are planned but not shipped. Source of truth: `vivreal-hq` `packages/admin-app/CLAUDE.md` (and the docs it links) at `origin/deploy/admin-app`.'
 ---
 
 # The internal admin app
+
+Source of truth: `vivreal-hq` `packages/admin-app/CLAUDE.md` (and the docs it links) at `origin/deploy/admin-app`.
 
 Last synced: 2026-10-20 (vivreal-hq `origin/main` `28bb8b4a`; `deploy/admin-app` at `482b746a`, an
 ancestor of `main` with no `packages/admin-app` commits between them)

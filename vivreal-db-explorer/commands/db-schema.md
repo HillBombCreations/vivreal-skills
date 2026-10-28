@@ -49,10 +49,10 @@ Search these locations for the schema definition:
 
 | Repo | Schema Locations |
 |---|---|
-| VR_CMS_API | `C:\repos\VR_CMS_API\src\models\` |
-| VR_Secure_API | `C:\repos\VR_Secure_API\src\models\` or inline in services |
-| VR_Main_API | `C:\repos\VR_Main_API\src\models\` |
-| Vivreal-Schemas | `C:\repos\Vivreal-Schemas\` (shared schemas) |
+| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API/src/models/` |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API/src/models/` or inline in services |
+| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API/src/models/` |
+| Vivreal-Schemas | `${VIVREAL_REPOS}/Vivreal-Schemas/` (shared schemas) |
 
 Search strategy:
 1. Grep for the collection name (singular form) + `Schema` in the model directories

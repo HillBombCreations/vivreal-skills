@@ -84,7 +84,7 @@ real accounts) need a fresh dispatch.
    full runs; only the push needs to carry the real gate, the pre-push is the single full run.
    Stage by explicit pathspec, never `git add -A`, never a bare `git commit`. Export
    `VIVREAL_REPOS=<the parity sibling path the dispatcher gives>` in the SAME shell invocation
-   as the push (for example `VIVREAL_REPOS=C:/repos/_wt/parity git push ...`), setting it only
+   as the push (for example `VIVREAL_REPOS="$VIVREAL_REPOS/_wt/parity" git push ...`), setting it only
    in your own shell and not the hook's leaves the cross-repo parity check falling back to a
    parked sibling and reporting a mismatch that is not real. Never `--no-verify` on the push
    itself unless the dispatch says so, a hook failure is a bug to fix, read what actually

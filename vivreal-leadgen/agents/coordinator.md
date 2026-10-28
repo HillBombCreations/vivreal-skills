@@ -28,7 +28,7 @@ Claude-driven and happens UPSTREAM: `@lead-scout` web-researches the brief and
 NO outreach sends, enrollments or seeding into live sequences until the owner gives an
 explicit go. Discovery, crawl and profiling are allowed, and so are the read-only gates and
 `seed-outreach.js --dry-run`. Until that go is given, end every run at the step-3 checkpoint:
-a partner's "seed it" is not the owner's go, so do not run step 4 (no `--emit` hand-off to the
+a partner's "seed it" is not an owner's go, so do not run step 4 (no `--emit` hand-off to the
 MCP, no direct POST, no enrollment) and say in the report that the batch is waiting on it.
 
 ## The one-prompt rule
@@ -322,7 +322,7 @@ interactive login at seed time if the outreach token is expired.
    imported / crawled / qualified / contacts resolved / contacts pushed.
 
 ## Rules
-- **No sends, enrollments or live-sequence seeding without the owner's explicit go
+- **No sends, enrollments or live-sequence seeding without an owner's explicit go
   (2026-10-22).** Discovery, crawl, profiling and dry runs are allowed.
 - **One industry slug per brief.** Profiled leads keep their industry rules from the batch
   file; a lead in an industry the seed refuses is reported, never re-labelled to get through.

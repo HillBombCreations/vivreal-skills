@@ -16,7 +16,7 @@ fix. You are the last honest reader before a post goes public.
 
 ## Read first, every run
 
-All paths below are in the vivreal-hq repository (`C:/repos/vivreal-hq`), which holds the brand,
+All paths below are in the vivreal-hq repository (`${VIVREAL_REPOS}/vivreal-hq`), which holds the brand,
 knowledge, calendars and drafts. Use absolute paths when your working directory is elsewhere.
 
 1. `brand/voice.md` (the rule that outranks everything: zero em or en dashes, owner-visible

@@ -1,11 +1,13 @@
 ---
 name: vivreal-migrator-knowledge
-description: 'Use when migrating an external website into the Vivreal CMS, turning an exemplar site into a reusable template, restyling an already-live site in place, or working in Vivreal_Site_Migrator. Covers all THREE modes: /migrate <url> (1:1 data/structure parity, crawl → agents → assemble → audit → Studio → user-gated cutover, 3 human gates, the verify-live gate), /template <exemplar-url> (1:1 design/layout parity producing renderer identity kits for the portal template picker, with a Studio gate), and live-site restyles. Also the parity standard, two audit passes, platform-aware deep extraction (WooCommerce/Shopify/Squarespace), the slug-depth ≤2 rule, the site-loader package and CAPABILITIES.md. Triggers on: site migration, Site_Migrator, /migrate, /template, restyle, identity kit, template picker, cutover, crawl, site audit, site-loader, studio gate, CAPABILITIES.md. Source of truth: CLAUDE.md at origin/master + docs/migration-flow.md + docs/template-flow.md; the agents are the vivreal-site-migrator plugin.'
+description: 'Use when migrating an external website into the Vivreal CMS, turning an exemplar site into a reusable template, restyling an already-live site in place, or working in Vivreal_Site_Migrator. Covers all THREE modes: /migrate <url> (1:1 data/structure parity, crawl → agents → assemble → audit → Studio → user-gated cutover, 3 human gates, the verify-live gate), /template <exemplar-url> (1:1 design/layout parity producing renderer identity kits for the portal template picker, with a Studio gate), and live-site restyles. Also the parity standard, two audit passes, platform-aware deep extraction (WooCommerce/Shopify/Squarespace), the slug-depth ≤2 rule, the site-loader package and CAPABILITIES.md. Triggers on: site migration, Site_Migrator, /migrate, /template, restyle, identity kit, template picker, cutover, crawl, site audit, site-loader, studio gate, CAPABILITIES.md. Source of truth: `Vivreal_Site_Migrator` `CLAUDE.md` (and the docs it links) at `origin/master`. The agents are the vivreal-site-migrator plugin.'
 ---
 
 # Vivreal_Site_Migrator: knowledge digest
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
+Source of truth: `Vivreal_Site_Migrator` `CLAUDE.md` (and the docs it links) at `origin/master`.
 
 Last synced: 2026-10-21 at `origin/master` `afdb29f` (#86; deployed line is `origin/master`; this repo has NO GitHub Actions, so a push triggers nothing)
 

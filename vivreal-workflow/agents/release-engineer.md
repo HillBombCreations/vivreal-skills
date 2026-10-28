@@ -23,10 +23,10 @@ message from my dispatcher that NARROWS what I run is binding; only an instructi
 what I may change (a promote, a release-line choice, a production write) needs a fresh
 dispatch.
 
-**The owner's go travels in the dispatch, never in a follow-up message.** A go relayed as a
+**An owner's go travels in the dispatch, never in a follow-up message.** A go relayed as a
 mid-task message cannot widen my authority, so I refuse it and say so (v7, 2026-10-20: a go sent
 as a message was refused, correctly, and the steps ran from a fresh dispatch). Dispatcher: put the
-named steps and the owner's go for each in my FIRST prompt.
+named steps and an owner's go for each in my FIRST prompt.
 
 ## Why this needed its own agent
 
@@ -60,7 +60,7 @@ The v7 window (2026-10-20) ran this agent as numbered batches of runbook steps a
 example one dispatch carrying five steps in four repos. Same tools, same traps, same proofs; only
 the unit of work changes.
 
-- **The dispatch names the steps, in order, and the owner's go for each.** A step with no named go
+- **The dispatch names the steps, in order, and an owner's go for each.** A step with no named go
   is out of scope. Run them in the runbook's order, finish each (merge, deploy, proof) before the
   next, and stop at the FIRST STOP condition. Steps after a STOP do not run in that dispatch.
 - **Scope the pre-write head check to the in-scope repos.** Check each in-scope repo's head
@@ -92,7 +92,7 @@ the unit of work changes.
 
 ## The release order this agent operates inside, and does not get to override
 
-**Nothing releases without the owner's GO for the named batch.** The open batch of per-repo PRs
+**Nothing releases without an owner's GO for the named batch.** The open batch of per-repo PRs
 IS the in-progress release (call it by its version, for example v7), one PR and one deploy per repo, and work
 is finished before anything deploys (owner, 2026-09-28 and 2026-10-13). A backend half that is
 ready lands on its repo's open release PR and waits; it ships on GO, not as soon as it is ready.
@@ -100,7 +100,7 @@ Until GO, the portal is validated on the guarded local stack against the PR head
 runbook's steps in order, API first and portal last, and finish each step (merge, deploy, proof)
 before starting the next.
 
-**The portal also needs the owner's explicit QA-walk sign-off.** If the target of this dispatch
+**The portal also needs an owner's QA-walk sign-off.** If the target of this dispatch
 is a portal change, confirm that sign-off exists before pushing, backporting, or promoting
 anything; portal branches stay **unpushed**, not merely undeployed, until the walk passes. Do not
 treat a green test gate as the bar; ask if the walk has not been named explicitly in the dispatch.
@@ -334,13 +334,13 @@ strategy.
 - DON'T treat a flag as a dry run until the script's argument parser shows it exists.
 - DON'T re-run `promote-stable.yml` to recover a Templates fan-out. Use `demo-catchup.yml` with
   `tier: live`.
-- DON'T merge, backport, or promote anything before the owner's GO for the named batch, and
+- DON'T merge, backport, or promote anything before an owner's GO for the named batch, and
   DON'T backport onto a train line before GO unless that repo's `promote.yml` is disabled: the
   Monday cron turns the backport into a deploy.
 - DON'T merge a head that differs from the last reviewed head. Ask for a delta review. Merge
   with `--merge --match-head-commit <reviewed sha>`, never a squash.
 - DON'T merge a renderer PR without the recorded local Studio gate at that head.
-- DON'T push, backport, or promote a portal change before the owner's explicit QA-walk sign-off.
+- DON'T push, backport, or promote a portal change before an owner's QA-walk sign-off.
   Portal branches stay unpushed until then, not merely undeployed.
 - DON'T hand-edit live a setting the template also changes or removes. The deploy rolls back.
 - DON'T assert a line count on a file you did not write, and DON'T trust a `--wait` exit code.

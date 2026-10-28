@@ -8,21 +8,15 @@ description: Vivreal Portal shared engineering standards, the non-negotiable con
 > now resolve it through this skill, so it works from any repo. Content below is verbatim.
 
 ## Path resolution (read FIRST)
-
-This workflow uses two placeholder env vars that every agent must resolve before reading cross-repo or ecosystem files. They are NOT shell expansions you literally execute, they are placeholders this section tells you how to resolve.
-
-### `${VIVREAL_REPOS}`: root containing all Vivreal repos
-**Default convention:** all Vivreal repos are sibling directories under one parent. From the project root (where this repo lives), the parent is `..`.
-
-**Resolution rule:**
-1. If env var `VIVREAL_REPOS` is set, use it
-2. Otherwise, use the parent of this repo: `$(cd .. && pwd)`
-3. Verify by checking that `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` exists
-
-**Example resolution in Bash (use this in agent commands):**
+### `${VIVREAL_REPOS}`: the folder that holds every Vivreal clone
+Every co-owner machine sets `VIVREAL_REPOS`, with forward slashes (for example `C:/repos`), as a user environment variable AND in the `env` block of `~/.claude/settings.json`. Every Vivreal repository is cloned directly under it.
+1. If `VIVREAL_REPOS` is set, use it.
+2. If it is unset, use the parent of the current repository ONLY when that parent holds both `Vivreal_Portal_Mobile/CLAUDE.md` and `vivreal-hq/CLAUDE.md`. A worktree under `_wt/` fails this check by design.
+3. Otherwise STOP and report "VIVREAL_REPOS is unset and the parent folder is not the clone root". Never guess a path and never write a literal drive path into a command.
+Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
 ```bash
-VIVREAL_REPOS="${VIVREAL_REPOS:-$(cd .. && pwd)}"
-cat "$VIVREAL_REPOS/VR_CMS_API/CLAUDE.md"
+: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
+test -f "$VIVREAL_REPOS/Vivreal_Portal_Mobile/CLAUDE.md" || { echo "VIVREAL_REPOS does not hold the clones"; exit 1; }
 ```
 
 ### Ecosystem docs: `docs/ecosystem/`
@@ -44,6 +38,9 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 - **Setting env vars:** add to `~/.bashrc`, `~/.zshrc`, or your shell profile. Example: `export VIVREAL_REPOS="$HOME/repos"`
 
 ---
+
+## Who "an owner" is
+An owner means either co-owner, Justin or Hunter. Either one may give any GO, any QA-walk sign-off and any owner decision, for any change. Nobody else may. Never wait for one particular owner, and never treat one owner's GO as needing the other's.
 
 ## Two rules that outrank every fact below
 
@@ -375,7 +372,7 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 | VR_OnCall_Agent | `${VIVREAL_REPOS}/VR_OnCall_Agent/CLAUDE.md` | On-call agent (auto-investigates Sentry incidents via GitHub Actions) |
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
-| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/README.md` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (no CLAUDE.md, `docs/migration-flow.md` + `docs/template-flow.md` are truth; README stale) |
+| Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/CLAUDE.md` at `origin/master` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (`CLAUDE.md` at `origin/master`, plus `docs/migration-flow.md` and `docs/template-flow.md`) |
 | vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Since v7 it also holds the **admin app** (`packages/admin-app`, the only home of staff surfaces including the outreach CRM). **Merging hq `main` deploys nothing:** the admin Amplify app builds only `deploy/admin-app`, so its deploy is a fast-forward of that branch, and its three stacks and every `packages/fleet-ops` stack deploy by hand from a clean worktree at the merge (v7 release runbook, hq row). Its agents and commands live in the `vivreal-skills` marketplace, not in its `.claude/`. |
 | vivreal-content | `${VIVREAL_REPOS}/vivreal-content\` | **DEAD SOURCE.** Consolidated into `vivreal-hq` on 2026-08-03 and frozen: its last commit is that same day, while the hq content tree has moved repeatedly since. The checkout still exists and still holds its own agents and commands, which is exactly why it gets read by mistake. Read and edit content work in `vivreal-hq`, never here. |
 | Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`), whose default origin is the Vivreal_Templates Amplify app `vivreal` (`<vivreal-io-amplify-app-id>`, real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
@@ -429,7 +426,7 @@ The train is the same shape in all five repos:
   `public/release.json` marker.
 - Monday promote crons are STAGGERED, backends ahead of portal. Read the times from `on.schedule`
   in each repo's `promote.yml`; a copied time here was already wrong once. While a batch waits for
-  the owner's GO, a backport onto a line ships at the next cron, so disable `promote.yml` for the
+  an owner's GO, a backport onto a line ships at the next cron, so disable `promote.yml` for the
   train or hold the backport. `promote.yml` force-with-lease moves
   `stable` to the newest line's tip, a tagged cut ships as `vX.Y.0`; an untagged tip (backports
   landed after the cut) auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19;

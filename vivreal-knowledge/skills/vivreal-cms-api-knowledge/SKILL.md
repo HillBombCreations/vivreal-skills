@@ -1,11 +1,13 @@
 ---
 name: vivreal-cms-api-knowledge
-description: 'Use when working in VR_CMS_API, Vivreal''s Content Management System backend (NEXT_PUBLIC_CMS_URL): its API Lambdas and workers, the /tenant/* routes, dbKey-via-`key` routing, the 8-step add-a-route checklist (403 if the CloudFormation step is missed), webhook receivers, image derivatives, audit logging and versioning, sync adapters, go-live scheduling, and the arm64 layer gotcha (the full social sync is `vivreal-social-sync`). Triggers on: VR_CMS_API, CMS API, collection objects, collection groups, /tenant route, integration sync, content versioning, audit log, presignUpload, dbKey key param, Square webhook, Meta webhook, Shopify webhook, Instagram DM, instagram comments, image derivatives, media usage metering, tier quota gating, GroupFrozen, GroupPaused, content go-live, order fulfillment, dashboard insights, scheduled social sync, media export, approval gate. Source of truth: C:\repos\VR_CMS_API\CLAUDE.md, plus src/ and cloudformation/ for anything after 2026-10-02.'
+description: 'Use when working in VR_CMS_API, Vivreal''s Content Management System backend (NEXT_PUBLIC_CMS_URL): its API Lambdas and workers, the /tenant/* routes, dbKey-via-`key` routing, the 8-step add-a-route checklist (403 if the CloudFormation step is missed), webhook receivers, image derivatives, audit logging and versioning, sync adapters, go-live scheduling, and the arm64 layer gotcha (the full social sync is `vivreal-social-sync`). Triggers on: VR_CMS_API, CMS API, collection objects, collection groups, /tenant route, integration sync, content versioning, audit log, presignUpload, dbKey key param, Square webhook, Meta webhook, Shopify webhook, Instagram DM, instagram comments, image derivatives, media usage metering, tier quota gating, GroupFrozen, GroupPaused, content go-live, order fulfillment, dashboard insights, scheduled social sync, media export, approval gate. Source of truth: `VR_CMS_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
 ---
 
 # VR_CMS_API: knowledge digest
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
+Source of truth: `VR_CMS_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.
 
 Last synced: 2026-10-20 against `origin/stable` (tag v2.16.2, the v7.1 hotfix line; read the tag, do not trust this one)
 

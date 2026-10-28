@@ -184,7 +184,7 @@ notes:         <anything else the coordinator should know>
 - **The brief names one industry slug with a profile.** Seedable slugs only, unless the user
   explicitly asked for a profile-only discovery run, which is labelled `(not seedable)`. Pick
   the sequence from that profile's `sequences`; any other sequence needs the user to choose it.
-- **No sends without the owner's go.** Until the owner gives an explicit go, the brief stops
+- **No sends without an owner's go.** Until the owner gives an explicit go, the brief stops
   at the seed checkpoint (see the rule at the top).
 - **The brief names an existing sequence.** No runnable sequence listed means no brief:
   send the operator to create the sequences first (see step 1).

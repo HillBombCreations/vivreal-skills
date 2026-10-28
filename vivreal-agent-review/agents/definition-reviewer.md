@@ -40,7 +40,7 @@ folklore as spec is the exact defect this agent exists to catch.
 
 ## Worked example: input to actions to output
 
-**Input.** Target `C:/repos/vivreal-skills/vivreal-principal` checked out at commit
+**Input.** Target `${VIVREAL_REPOS}/vivreal-skills/vivreal-principal` checked out at commit
 `1c8ba15` (the claim was removed in the commit after it), no flags.
 
 **Actions.**
@@ -252,7 +252,7 @@ whenever you deviate. A deviation without a stated reason is itself a defect.
 Emit exactly this shape:
 
     ## Definition Review: <target name>
-    VERDICT: PASS   profile A   root: C:/repos/example/my-plugin
+    VERDICT: PASS   profile A   root: ${VIVREAL_REPOS}/example/my-plugin
     mode: A (agent-native)   stage 0: ran clean (agents - frontmatter parse and presence only)
     policy rules: OFF (Agency marketplace; --policy=agency to enable)
     excluded: 2 generated skill mirrors (byte-identical to agents/ or commands/ sources)
@@ -332,5 +332,5 @@ Runbook, scratch directory only, never write a script into the repo under review
 - DON'T flag a bare basename as an unresolved reference. Directory-qualified only.
 - DON'T report a claim as false when the fetch failed. Downgrade it to UNVERIFIED.
 - DON'T run the Agency policy rules unless the caller asked for them.
-- DON'T write into the target under review, or into `C:/repos/vivreal-hq`, a read-only regression corpus.
+- DON'T write into the target under review, or into `${VIVREAL_REPOS}/vivreal-hq`, a read-only regression corpus.
 - DON'T exceed the output contract, and DON'T pad a report to look thorough.

@@ -3,11 +3,11 @@ description: Audit vivreal-skills docs for drift against the source repos, reads
 argument-hint: "[optional: --since=YYYY-MM-DD to override the SYNC.md baseline, or a repo name to audit just one repo]"
 ---
 
-You are the **drift auditor** for the `vivreal-skills` plugin repo (`C:\repos\vivreal-skills`). Your job: measure what changed in the Vivreal source repos since the last docs sync and produce a checklist of skills-repo files that likely need updating. You REPORT, you do not edit any file.
+You are the **drift auditor** for the `vivreal-skills` plugin repo (`${VIVREAL_REPOS}/vivreal-skills`). Your job: measure what changed in the Vivreal source repos since the last docs sync and produce a checklist of skills-repo files that likely need updating. You REPORT, you do not edit any file.
 
 ## Step 1: Establish the baseline
 
-Read `C:\repos\vivreal-skills\docs\SYNC.md` and take the **latest date** in the sync-log table as the baseline. If the user passed `--since=YYYY-MM-DD` in `$ARGUMENTS`, use that instead. If `$ARGUMENTS` names a repo, restrict the audit to it.
+Read `${VIVREAL_REPOS}/vivreal-skills/docs/SYNC.md` and take the **latest date** in the sync-log table as the baseline. If the user passed `--since=YYYY-MM-DD` in `$ARGUMENTS`, use that instead. If `$ARGUMENTS` names a repo, restrict the audit to it.
 
 ## Step 2: Measure drift per source repo
 

@@ -1,11 +1,13 @@
 ---
 name: vivreal-renderer-knowledge
-description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site-renderer), the engine behind Vivreal_Templates sites and the portal Studio preview. Covers the publish runbook (a publish hits every site) and pre-publish compose diff, the dev-sync.js dev overlay (a green consumer run can describe unpublished code), the ImageComponent seam, the Tailwind v4 @source rule, canHidePoweredBy, checkoutIdentifier, isPageAllowed, motion presets, identity kits, and DESIGN_LANGUAGE.md. Triggers on: vivreal-site-renderer, site-renderer, @hillbombcreations/site-renderer, renderer package, ContentRenderer, PageTemplates, publish renderer, bump renderer, primitives, design language, canHidePoweredBy, checkoutIdentifier, CartAdapter, isPageAllowed, DemoRibbon, motion preset, dev:linked, dev-sync, dev overlay, dev-status, RENDERER-DEV-OVERLAY, compose diff, pre-publish check, nullOnEmpty, hideOnMobile, imageFocus. Source of truth: C:\repos\vivreal-site-renderer\CLAUDE.md + docs/DESIGN_LANGUAGE.md + docs/DEV_OVERLAY.md.'
+description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site-renderer), the engine behind Vivreal_Templates sites and the portal Studio preview. Covers the publish runbook (a publish hits every site) and pre-publish compose diff, the dev-sync.js dev overlay (a green consumer run can describe unpublished code), the ImageComponent seam, the Tailwind v4 @source rule, canHidePoweredBy, checkoutIdentifier, isPageAllowed, motion presets, identity kits, and DESIGN_LANGUAGE.md. Triggers on: vivreal-site-renderer, site-renderer, @hillbombcreations/site-renderer, renderer package, ContentRenderer, PageTemplates, publish renderer, bump renderer, primitives, design language, canHidePoweredBy, checkoutIdentifier, CartAdapter, isPageAllowed, DemoRibbon, motion preset, dev:linked, dev-sync, dev overlay, dev-status, RENDERER-DEV-OVERLAY, compose diff, pre-publish check, nullOnEmpty, hideOnMobile, imageFocus. Source of truth: `vivreal-site-renderer` `CLAUDE.md` (and the docs it links) at `origin/master`.'
 ---
 
 # vivreal-site-renderer: knowledge digest
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
+Source of truth: `vivreal-site-renderer` `CLAUDE.md` (and the docs it links) at `origin/master`.
 
 **This package publishes most weeks, and its deployed line is `origin/master`: it has no `main`.**
 Read the published version from `package.json` there, confirm it on the registry with
@@ -14,7 +16,7 @@ from the consumer lockfile. The CLAUDE.md version header lags deliberately and i
 answer. Nothing below states a current version, on purpose: every version this file has ever
 carried was wrong within a fortnight, and a stale version reads exactly like a current one.
 
-The **rendering engine** (`@hillbombcreations/site-renderer`) that turns Vivreal site config (pages + collections + pageConfigs) into a live website. Consumed by `Vivreal_Templates` (customer sites) and `Vivreal_Portal_Mobile` (Studio live-preview), both pull from GitHub Packages at build time, and also by `VR_Client_API` (the `./agent` subpath behind the Site MCP purchase tools, and the React-free `./bindings` subpath behind the `.ics` calendar feed), `VR_Secure_API` (pinned EXACTLY for the instantiation worker, with a vendored capability manifest) and `Vivreal_Site_Migrator` (kit capabilities regenerated from the published tarball). React 19 peer, next `^15||^16` peer, TypeScript, framer-motion 12, Tailwind classes in source. `C:\repos\vivreal-site-renderer\CLAUDE.md` + `docs/DESIGN_LANGUAGE.md` give depth. CLAUDE.md was refreshed 2026-09-30 and its version line (`CLAUDE.md:6`) now says to read `package.json` rather than naming a number, after it once went 23 minors stale and was believed; its feature sections still carry the version each feature SHIPPED in, which is history, not the current version. For the site product/authoring model that drives this renderer (page formats, sections, Studio↔live composePage parity) see `vivreal-sites`.
+The **rendering engine** (`@hillbombcreations/site-renderer`) that turns Vivreal site config (pages + collections + pageConfigs) into a live website. Consumed by `Vivreal_Templates` (customer sites) and `Vivreal_Portal_Mobile` (Studio live-preview), both pull from GitHub Packages at build time, and also by `VR_Client_API` (the `./agent` subpath behind the Site MCP purchase tools, and the React-free `./bindings` subpath behind the `.ics` calendar feed), `VR_Secure_API` (pinned EXACTLY for the instantiation worker, with a vendored capability manifest) and `Vivreal_Site_Migrator` (kit capabilities regenerated from the published tarball). React 19 peer, next `^15||^16` peer, TypeScript, framer-motion 12, Tailwind classes in source. `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` + `docs/DESIGN_LANGUAGE.md` give depth. CLAUDE.md was refreshed 2026-09-30 and its version line (`CLAUDE.md:6`) now says to read `package.json` rather than naming a number, after it once went 23 minors stale and was believed; its feature sections still carry the version each feature SHIPPED in, which is history, not the current version. For the site product/authoring model that drives this renderer (page formats, sections, Studio↔live composePage parity) see `vivreal-sites`.
 
 ## The installed package is not always the published one
 
@@ -33,7 +35,7 @@ working; what was missing was a way to tell afterwards. This is the skill that g
 somebody reasons about what the renderer can do, which is exactly the population that got this
 wrong, so the warning lives here.
 
-- **Detect**, the check with no false negatives: `node C:/repos/vivreal-site-renderer/scripts/dev-status.js`
+- **Detect**, the check with no false negatives: `node ${VIVREAL_REPOS}/vivreal-site-renderer/scripts/dev-status.js`
   (`npm run dev-status` here). Byte comparison of each consumer's installed package against the tarball
   that consumer's own lockfile `integrity` resolves to in the npm cache. About 0.2s per consumer, and it
   never invokes npm, so it cannot touch a lockfile. `--require-clean` exits 1 on any overlay.

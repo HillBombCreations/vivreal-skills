@@ -344,7 +344,7 @@ existed. So before ANY local walk:
    need a write.
 4. **Record every service's head.** `node e2e.js heads` prints each worktree's commit and any local
    change; paste it into the matrix header. The launcher runs FIXED worktrees (`e2e-portal`,
-   `e2e-templates`, `e2e-mcp` and the API ones under `C:/repos/_wt`), so an unmerged PR is invisible
+   `e2e-templates`, `e2e-mcp` and the API ones under `${VIVREAL_REPOS}/_wt`), so an unmerged PR is invisible
    to a walk unless you move to it.
 5. **When the brief names a PR,** point that service at the PR head with
    `node e2e.js move <svc> <sha>`, then a FULL `stop` and `start` so every guard check runs again, and

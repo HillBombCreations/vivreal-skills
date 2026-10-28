@@ -1,0 +1,32 @@
+name: check-definitions
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: check-definitions
+        run: node scripts/check-definitions.mjs
+      - name: check-definitions self-test
+        run: node scripts/check-definitions.mjs --self-test
+      - name: claude plugin validate
+        # Runs without a login: proved locally in a fresh CLAUDE_CONFIG_DIR before this file was written.
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude-config
+        run: |
+          npm i -g @anthropic-ai/claude-code
+          claude plugin validate .

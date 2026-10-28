@@ -1,5 +1,5 @@
 ---
-description: "Run a change end to end across the portal and a backend, from research to checked in, validating the portal on the guarded local stack against the backend PR heads and shipping the backend on the owner's GO, then validating in a browser and getting owner-level feedback before the portal PR. Not /orchestrate, which is the phase gated planning workflow with approval stops: this one carries the release steps and the validation through to done."
+description: "Run a change end to end across the portal and a backend, from research to checked in, validating the portal on the guarded local stack against the backend PR heads and shipping the backend on an owner's GO, then validating in a browser and getting owner-level feedback before the portal PR. Not /orchestrate, which is the phase gated planning workflow with approval stops: this one carries the release steps and the validation through to done."
 argument-hint: <what to build or fix, and whether to promote the portal or just check it in>
 disable-model-invocation: true
 ---
@@ -42,7 +42,7 @@ prompt: |
   The backend half lands on its repo's open release PR and ships only on the
   owner's GO for the batch, API first, portal last, and is PROVEN live from stack
   state before the portal lands. Before GO, validate against the backend PR heads.
-  The release-engineer dispatch carries the owner's go and the named steps in its
+  The release-engineer dispatch carries an owner's go and the named steps in its
   FIRST prompt; never relay a go as a later message.
 
   At most four background agents at once, yours included. Route every new find at

@@ -1,9 +1,11 @@
 ---
 name: vivreal-mcp-server-knowledge
-description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model and its 2026-10-09 hardening, the single canUseMcp plan gate and mcpToolCalls metering, per-area connection grants (ACCESS_NOT_GRANTED), the team and billing-portal tools that are off by default, the v6 Allow access business picker and siteStatus, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, canUseMcp, mcpToolCalls, ACCESS_NOT_GRANTED, connection grants, Allow access, siteStatus, X-App-Source, Site MCP. Source of truth: VR-MCP-Server CLAUDE.md at origin/main.'
+description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (Cognito OAuth 2.1 + PKCE on Lambda) exposing CMS-admin tools across collections, objects, media, sites, integrations, Stripe, and group management. Covers the OAuth/session model and its 2026-10-09 hardening, the single canUseMcp plan gate and mcpToolCalls metering, per-area connection grants (ACCESS_NOT_GRANTED), the team and billing-portal tools that are off by default, the v6 Allow access business picker and siteStatus, the X-App-Source header requirement, the email-from-ID-token gotcha, and how it differs from the read-only Site MCP on VR_Client_API. Triggers on: VR-MCP-Server, Vivreal MCP server, MCP tools, OAuth 2.1 PKCE, set-active-group, tools/list, canUseMcp, mcpToolCalls, ACCESS_NOT_GRANTED, connection grants, Allow access, siteStatus, X-App-Source, Site MCP. Source of truth: `VR-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/main`.'
 ---
 
 # VR-MCP-Server: knowledge digest
+
+Source of truth: `VR-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
 Last synced: 2026-10-20 against `origin/main` at `3285303` (#52, the v7 release; this repo deploys on every merge to `main`)
 
