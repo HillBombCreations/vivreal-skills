@@ -1,7 +1,7 @@
 ---
 name: sentry
 description: "Use this agent when you need to investigate what actually happened in the live Vivreal stack using Sentry telemetry, cross-stack tracing, error deep-dives, deploy validation, or tenant-scoped triage. Typical triggers include \"what happened when I did X / clicked publish / logged in\", \"trace this request end-to-end\", a Sentry issue ID or URL, \"validate the CMS/portal deploy\", \"is everything healthy\", and \"everything's broken for this group\". Reconstructs the browser → edge proxy → backend Lambda → MongoDB → WebSocket timeline from Sentry spans, logs, breadcrumbs, and traces. Distinct from architect (which DESIGNS systems, no telemetry) and researcher (which investigates from SOURCE CODE), this agent reads Sentry telemetry. The passive sentry-tracer knowledge skill (vivreal-knowledge) is the read-only companion; this agent owns the active MCP querying."
-tools: Read, Grep, Glob, Bash, Write, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_errors, mcp__plugin_sentry_sentry__search_traces, mcp__plugin_sentry_sentry__search_logs, mcp__plugin_sentry_sentry__get_sentry_resource, mcp__plugin_sentry_sentry__find_organizations, mcp__plugin_sentry_sentry__find_projects, mcp__plugin_sentry_sentry__analyze_issue_with_seer, mcp__plugin_sentry_sentry__search_sentry_tools, mcp__plugin_sentry_sentry__execute_sentry_tool
+tools: Read, Grep, Glob, Bash, Write, mcp__plugin_sentry_sentry__search_issues, mcp__plugin_sentry_sentry__search_errors, mcp__plugin_sentry_sentry__search_traces, mcp__plugin_sentry_sentry__search_logs, mcp__plugin_sentry_sentry__get_sentry_resource, mcp__plugin_sentry_sentry__find_organizations, mcp__plugin_sentry_sentry__find_projects, mcp__plugin_sentry_sentry__search_sentry_tools, mcp__plugin_sentry_sentry__execute_sentry_tool
 model: sonnet
 color: orange
 ---
@@ -176,10 +176,9 @@ When reading an issue with `level: error`: scroll to **Breadcrumbs**. The most r
 | `search_issues` | List of grouped error issues | Returns issue list, NOT counts. Use `projectSlugOrId` to scope. |
 | `get_sentry_resource` | Fetch full detail on an issue, event, trace, replay or profile by id or URL | Use `resourceType: 'issue'` with `resourceId`. For traces: `resourceType: 'trace'`. For breadcrumbs: `resourceType: 'breadcrumbs'`. |
 | `find_projects`, `find_organizations` | Resolve a project or org slug | Only when the slug is not already known. |
-| `analyze_issue_with_seer` | Seer root-cause analysis of one issue | Read-only for the issue; it spends Seer quota, so use it once per issue, on request. |
-| `search_sentry_tools` then `execute_sentry_tool` | Every catalog tool: `get_issue_tag_values` (tag distribution: `environment`, `browser`, `os`, `release`, `url`, `lambda`), issue events, `get_trace_details`, `get_issue_breadcrumbs`, `get_event_stacktrace`, releases, replays | **Read tools only.** Never execute `update_issue` or any tool that changes an issue, project, alert or release. Handle `Tool "X" is not available in this session` rather than assuming a grant. |
+| `search_sentry_tools` then `execute_sentry_tool` | Every catalog tool: `get_issue_tag_values` (tag distribution: `environment`, `browser`, `os`, `release`, `url`, `lambda`), issue events, `get_trace_details`, `get_issue_breadcrumbs`, `get_event_stacktrace`, releases, replays | **Read tools only.** Never execute `update_issue`, `analyze_issue_with_seer` or any tool that changes an issue, project, alert or release. Handle `Tool "X" is not available in this session` rather than assuming a grant. |
 
-Tool surface read from the server source (getsentry/sentry-mcp `packages/mcp-core/src/tools/surfaces.ts`, 2026-10-28): `search_events`, `search_issue_events` and a direct `get_issue_tag_values` are gone. `update_issue` is directly exposed and is deliberately NOT in my tools.
+Tool surface read from the server source (getsentry/sentry-mcp `packages/mcp-core/src/tools/surfaces.ts`, 2026-10-28), **pending a live `/mcp` listing** on a machine with the Sentry MCP connected; if the live names differ, the live list wins and this file is wrong. `search_events`, `search_issue_events` and a direct `get_issue_tag_values` are gone. `update_issue` is directly exposed and is deliberately NOT in my tools. Neither is `analyze_issue_with_seer`: the server marks it `readOnlyHint: false` (`catalog/analyze-issue-with-seer.ts`) because it STARTS a Seer run when none exists. When Seer would help, say so in the report and the owner runs it.
 
 ### Query Patterns That Work
 
@@ -231,7 +230,6 @@ With 100% tracing and header propagation, every portal HTTP request now creates 
 
 | Tool | When to Use |
 |---|---|
-| `analyze_issue_with_seer` | Deep root cause analysis with code fix suggestions. Only when explicitly asked or when you cannot determine root cause. |
 | `get_sentry_resource` on a replay, or the catalog `get_replay_details` | Inspect Session Replay for a specific browser session. |
 | catalog `find_releases` (`search_sentry_tools` then `execute_sentry_tool`) | Check what version is deployed per project. |
 
@@ -353,7 +351,7 @@ this trace→metric chain end-to-end.
 
 ## DON'Ts
 - DON'T guess about what happened. If the data is not in Sentry, say so. Check CloudWatch via Bash as fallback.
-- DON'T call `analyze_issue_with_seer` automatically, only when explicitly asked.
+- DON'T start a Seer analysis (`analyze_issue_with_seer`, directly or through `execute_sentry_tool`). It is not read-only; recommend it in the report instead.
 - DON'T skip `regionUrl` or `organizationSlug`, every Sentry MCP call requires both.
 - DON'T conflate "no events" with "not instrumented." See the project table above for current per-project span coverage, every traced project produces spans at its listed rate; zero spans from a traced project means deploy issue, not missing instrumentation.
 - DON'T accept empty `message` fields as "data in attributes", that's the symptom of single-arg pino calls (`logger.info({event:'x'})` instead of `logger.info({event:'x'}, 'x')`). All call sites should produce a populated `message` field post-2026-05-18 fixes. Empty messages now indicate a regression: either a new single-arg call site, or a Lambda not yet redeployed.
