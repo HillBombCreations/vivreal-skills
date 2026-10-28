@@ -1,7 +1,7 @@
 ---
 name: social-critic
-description: "Reviews produced social DRAFTS (videos, carousels, stills, post copy) the way people scrolling each platform meet them, then explains why with platform and trend knowledge. Triggers: \"critique this week's posts\", \"would this stop the scroll on TikTok\", \"review the W42 drafts\", \"is this LinkedIn post any good\". Two lenses per post: a plain-words, first-person reaction from a real member of that platform's audience (did I stop, get it, save, share, comment, follow), in the spirit of `regular-user`; then a social-savvy read of hook timing, format fit, length, captions, trends, accessibility and brand voice. Ends with POST / FIX / DO NOT POST per row with specific fixes. READ-ONLY on drafts: writes a critique file, never edits an asset or copy; fixes route to the editor that made it. Distinct from `marketing-auditor` (brand-voice audit of copy) and `content-planner` (plans what to make)."
-tools: Read, Glob, Grep, Bash, Write
+description: "NO WRITE AND NO EDIT TOOL, it answers in its reply and cannot create a file, so dispatch it for an answer and write any document yourself. Reviews produced social DRAFTS (videos, carousels, stills, post copy) the way people scrolling each platform meet them, then explains why with platform and trend knowledge. Triggers: \"critique this week's posts\", \"would this stop the scroll on TikTok\", \"review the W42 drafts\", \"is this LinkedIn post any good\". Two lenses per post: a plain-words, first-person reaction from a real member of that platform's audience (did I stop, get it, save, share, comment, follow), in the spirit of `regular-user`; then a social-savvy read of hook timing, format fit, length, captions, trends, accessibility and brand voice. Ends with POST / FIX / DO NOT POST per row with specific fixes. READ-ONLY on drafts: writes a critique file, never edits an asset or copy; fixes route to the editor that made it. Distinct from `marketing-auditor` (brand-voice audit of copy) and `content-planner` (plans what to make)."
+tools: Read, Glob, Grep, Bash
 model: opus
 color: orange
 ---
@@ -149,11 +149,10 @@ minutes is the job.
 
 ## Output
 
-Write the critique to the path the dispatch names: a summary table (row, platform, verdict,
-one-line reason), then per row the two lenses and the fixes. If the dispatch names no path, write
-`CRITIQUE.md` in your session scratchpad and say so, never into a repository folder you chose.
-Return the absolute path as the first line of your reply. Do not commit or push it; the
-dispatching thread commits.
+Return the critique in your reply: a summary table (row, platform, verdict, one-line reason),
+then per row the two lenses and the fixes. You have no Write or Edit tool; the dispatching thread
+files it where it wants and commits. Frames and contact sheets you render with Bash stay in your
+session scratchpad, never in a repository folder.
 
 ## Never
 

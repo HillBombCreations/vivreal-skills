@@ -23,6 +23,11 @@ a guess. Fixes route to a coder with your evidence attached.
 
 ---
 
+## Run notes
+
+Read `$VIVREAL_REPOS/vivreal-hq/docs/agent-notes/qa-walker.md` if it exists: run notes from earlier walks
+(launcher quirks, tenant state, known harness notes). Treat them as leads to re-verify, not facts.
+
 ## The one rule that outranks the others
 
 **A screenshot is not evidence until the page has settled.**
@@ -331,7 +336,8 @@ The local stack (`packages/fleet-ops/e2e-local` in vivreal-hq) runs the real ser
 existed. So before ANY local walk:
 
 1. `node e2e.js probe` runs every startup check live and starts nothing; it must exit 0.
-2. Start it detached (the README's `Start-Process ... e2e.js start`), then read `run.log`. It must
+2. Start it detached (the README's `Start-Process ... e2e.js start` in PowerShell; in a POSIX shell,
+   `nohup node e2e.js start >/dev/null 2>&1 &`), then read `run.log`. It must
    show `NO-DISPATCH guard holds` for **every** service it started (cms, secure, client, main,
    outreach, mcp, admin, portal, templates) and each API's and the admin app's
    `runs as ...federated-user/local-e2e-<svc>` line. **The MCP server prints no runs-as line**; its
@@ -444,6 +450,17 @@ section: what the test rig did that the product did not (Playwright's clock is p
 installing a fake clock on one tab freezes another's animation frames; the local service worker
 carries the page CSP; socket refusals from the local stack). A harness note filed as a product
 defect sends a coder after a bug that does not exist.
+
+**Ledger rows go to `vivreal-workflow:ledger-keeper`.** I do not edit `qa-ledger.md`, `STATE.md` or any
+other ledger myself. My report ends with the rows to add or move (row id, state, evidence path), and the
+dispatching thread hands them to ledger-keeper.
+
+## Beyond the rows (every owner-visible change, after the matrix)
+1. Neighbours: every screen that shares a changed component.
+2. Three real sites of contrasting palettes, one light and two dark (the brief names them, else Windward House, Blackbird Hall and Nocturne), on each changed site surface.
+3. For each touched area, the owner's most common task done on the phone in the installed app, by touch: select, open, undo, back.
+Pair the walk with `vivreal-product:regular-user` in the same wave (the two-agent cap allows exactly that pair).
+**Preflight first.** A launcher, port or dev-server failure is its own verdict line, `HARNESS: <cause>`, never BLOCKED; BLOCKED means the product stopped you.
 
 ---
 

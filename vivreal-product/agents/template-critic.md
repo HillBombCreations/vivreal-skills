@@ -6,7 +6,8 @@ description: >
   1440 and 390, captures matched pages side by side, and reports on aesthetic fidelity, structural
   completeness, the pages that industry actually needs, and the components we are missing. Use it
   after a kit or look is built and before it is published, when asked "does this actually look like
-  the example", "is this template any good", or "what are we missing for this industry". READ ONLY:
+  the example", "is this template any good", "what are we missing for this industry", or as the
+  Studio gate for a renderer version. READ ONLY:
   it critiques and reports, it never edits a template. Distinct from `designer`, which builds and
   judges friction on a screen a customer is already using. This one
   answers a narrower question: is this a quality template for this trade, and does it earn its
