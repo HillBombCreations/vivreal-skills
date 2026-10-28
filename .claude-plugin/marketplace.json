@@ -12,7 +12,7 @@
     {
       "name": "vivreal-principal",
       "source": "./vivreal-principal",
-      "description": "Repo-agnostic principal-level agents: coordinator, coder, portal-coder, architect, researcher, reviewer, designer, and growth-auditor. The coordinator, coder, architect, researcher, and reviewer each merge a standalone principal-level mode with the Vivreal bug/feature workflow's artifact-driven mode (an approved plan.md/design.md is an OPTIONAL input, followed with zero scope creep when given, otherwise the agent runs standalone). coder covers every repository except Vivreal_Portal_Mobile; portal-coder is the dedicated split for that one repo (SOLO/PARALLEL/INTEGRATE modes), because several coders sharing its heavy pre-commit/pre-push gates throttled each other into false results. Auto-dispatched for design+build, audits, refactors, code review, and GTM analysis in any repository."
+      "description": "Repo-agnostic principal-level agents: coordinator, coder, portal-coder, architect, researcher, reviewer, and designer. The coordinator, coder, architect, researcher, and reviewer each merge a standalone principal-level mode with the Vivreal bug/feature workflow's artifact-driven mode (an approved plan.md/design.md is an OPTIONAL input, followed with zero scope creep when given, otherwise the agent runs standalone). coder covers every repository except Vivreal_Portal_Mobile; portal-coder is the dedicated split for that one repo (SOLO/PARALLEL/INTEGRATE modes), because several coders sharing its heavy pre-commit/pre-push gates throttled each other into false results. Auto-dispatched for design+build, audits, refactors, code review, and GTM analysis in any repository."
     },
     {
       "name": "vivreal-workflow",
@@ -62,7 +62,7 @@
     {
       "name": "vivreal-growth-analytics",
       "source": "./vivreal-growth-analytics",
-      "description": "Growth analytics and funnel analysis, the growth-advisor agent + growth-context skill + /growth-report and /funnel-analysis commands, unifying consented GA4 and Clarity, the first-party site traffic rollup, and MongoDB signup and paying-group data."
+      "description": "Growth analytics and funnel analysis, the growth agent (numbers and GTM audit modes, ads and marketing measurement) + growth-context and vivreal-ads-knowledge skills + /growth-report and /funnel-analysis commands, unifying consented GA4 and Clarity, the first-party site traffic rollup, and MongoDB signup and paying-group data."
     },
     {
       "name": "vivreal-cms",
@@ -88,11 +88,6 @@
       "name": "vivreal-site-migrator",
       "source": "./vivreal-site-migrator",
       "description": "The Vivreal_Site_Migrator agent fleet, migrated out of that repo's local .claude directory (master-branch, no CI; a push here deploys nothing). Turns a live site or a design exemplar into a Vivreal site/template through a staged pipeline: ingest classifies a raw crawl into a ContentInventory; collections and integrations model its collection groups and integration signals; site assembles the page/format/binding structure last; kit-designer scouts a design exemplar and writes the identity-kit brief; component-builder builds or matches the aesthetic; page-confirm and studio-confirm prove render-level and Studio-editability fidelity; studio-registrar closes any portal registration gap a kit or migration opens; migration-estimator costs a migration before anyone commits to it; cutover is the USER-GATED agent that loads an approved blueprint into production. Plus the /migrate and /template commands. Distinct from the vivreal-knowledge renderer and Templates skills (the deployed renderer/Templates stack) and vivreal-product:template-critic (judges the finished result against its exemplar)."
-    },
-    {
-      "name": "vivreal-ads",
-      "source": "./vivreal-ads",
-      "description": "Vivreal's paid-ads knowledge and workflow, starting with Google Ads. An auto-invoked knowledge skill capturing the account's real structure (conversion actions, GA4/GTM linkage), the campaign-wizard traps (account-default conversion goals, Publish goes live, AI Max defaults), the conversion-tracking gotchas that silently block a test from measuring anything real (a populated conversion-action list that measures nothing real, the GA4-key-event-then-import-delay path, why a GTM shortcut only works if the event actually flows through GTM), and the creative conventions learned running the account (AI image generation via Google Flow, geo-matched representation in ad imagery, never faking product UI in a generated image). Grows with each campaign run."
     }
   ]
 }

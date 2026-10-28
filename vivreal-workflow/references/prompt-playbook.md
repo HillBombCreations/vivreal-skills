@@ -18,7 +18,7 @@ saying "use the applicable skills":
    through artifacts in `docs/bugs/<slug>/` or `docs/projects/<slug>/`.
 3. **Auto-invoked specialists**, keyed on **trigger words** (nouns and symptoms), e.g.
    a Sentry ID → `sentry`, `VR_Secure_API` billing → `vivreal-secure-api-knowledge`
-   "churn"/"funnel" → `growth-advisor`.
+   "churn"/"funnel" → `growth`.
 
 > **"Please use the applicable skills" is a weak trigger.** Auto-invocation keys on
 > concrete nouns and symptoms (system names, Sentry IDs, "proxy route", "gross margin")
@@ -113,8 +113,8 @@ rule is the #1 footgun. Wrapped by **`/db-query`** and **`/db-schema`**.
 
 > Give me a growth read on **[signups / a specific funnel stage / acquisition channel / churn]** for **[time window]**. Pull real numbers from GA4 and Clarity (consented visitors), the site traffic rollup and MongoDB, cross-reference them, and give week-over-week deltas plus the 2 to 3 actions that would move the metric most.
 
-Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth-advisor`
-(quantitative) rather than the strategy-lens `growth-auditor`. Commands:
+Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth` in its numbers mode
+rather than its GTM audit mode. Commands:
 **`/growth-report`**, **`/funnel-analysis`**.
 
 ---
@@ -198,10 +198,10 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | Production telemetry | A **Sentry ID/URL**, "trace end-to-end", "what happened when I…" | `sentry` |
 | Live infra state | "throttling", "Atlas saturation", "Step Functions execution", "reserved concurrency" | `vivreal-ops` |
 | Cost/margin | "gross margin", "can we afford", "cost at N customers" | `finance-auditor` |
-| Funnel/conversion numbers | "signups", "churn", "funnel", "WoW", "acquisition" | `growth-advisor` |
+| Funnel/conversion numbers | "signups", "churn", "funnel", "WoW", "acquisition" | `growth` |
 | Copy/voice critique | "is this on-brand", "audit this copy/email/headline" | `marketing-auditor` |
 | Usability of a screen | "is this confusing", "fewer clicks", "walk this as a new user" | `designer` (critique) + `regular-user` |
-| Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth-advisor` for interpretation) |
+| Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth` for interpretation) |
 | Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `vivreal-cms-api-knowledge` / `vivreal-secure-api-knowledge` / `vivreal-client-stack-knowledge` (Square spans all three) |
 | Site migration | "migrate this site", "cutover", "parity audit", a source-site URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/migrate` |
 | Reusable template / identity kit | "build a template from", "identity kit", "template picker variant", an exemplar URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/template` |

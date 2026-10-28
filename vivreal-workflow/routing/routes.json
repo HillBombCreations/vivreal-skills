@@ -15,6 +15,7 @@
     { "task": "infrastructure changes", "agent": "vivreal-infra:infra-engineer", "keywords": ["provision", "iam", "cloudformation", "infra"], "repo": "*", "note": "" },
     { "task": "live AWS and Atlas state", "agent": "vivreal-ops:vivreal-ops", "keywords": ["aws", "atlas", "lambda", "cloudwatch"], "repo": "*", "note": "" },
     { "task": "Sentry", "agent": "vivreal-sentry:sentry", "keywords": ["sentry"], "repo": "*", "note": "" },
+    { "task": "ads, GA4, marketing measurement, GTM", "agent": "vivreal-growth-analytics:growth", "keywords": ["ads", "ga4", "growth", "funnel", "gtm"], "repo": "*", "note": "numbers mode or GTM audit mode" },
     { "task": "product walks", "agent": "vivreal-product:qa-walker", "keywords": ["walk", "qa"], "repo": "*", "note": "before footage, never after" },
     { "task": "naive-owner passes", "agent": "vivreal-product:regular-user", "keywords": ["try"], "repo": "*", "note": "" },
     { "task": "built template versus exemplar, Studio gates", "agent": "vivreal-product:template-critic", "keywords": ["judge"], "repo": "*", "note": "" },

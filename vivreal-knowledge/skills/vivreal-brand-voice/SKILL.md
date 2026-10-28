@@ -170,7 +170,7 @@ Then self-check against the 6-point on-voice rubric before returning.
 
 - **`marketing-auditor`** agent, CRITIQUES copy/assets against this skill (read-only).
 - **`vivreal-content`** plugin agents (`content-planner` and the editors), PRODUCE social content to this voice.
-- **`growth-auditor`**, owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
+- **`growth`** (GTM audit mode), owns funnel/conversion ECONOMICS, positioning strategy, churn; this skill owns the *voice/copy craft*. They overlap on messaging but the auditor judges the *business* lever, this judges the *words*.
 - **`vivreal-unit-economics`**, for the cost/margin numbers behind pricing copy.
 
-Sources: `vivreal-hq/brand/voice.md` (canonical: promise, five traits, spelling rule, ban list, competitive frame, honesty floor, the claims-to-verify list), `vivreal-hq/brand/positioning.md`, the `vivreal-content` plugin's `content-planner` agent (hard bans, per-platform limits, self-check), `growth-auditor` (ICP/wedge). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.
+Sources: `vivreal-hq/brand/voice.md` (canonical: promise, five traits, spelling rule, ban list, competitive frame, honesty floor, the claims-to-verify list), `vivreal-hq/brand/positioning.md`, the `vivreal-content` plugin's `content-planner` agent (hard bans, per-platform limits, self-check), `growth` (ICP/wedge, GTM audit mode). For the wider content system (strategy/ICP, content library, posting playbook, earned media, niche verticals) see the `vivreal-content-knowledge` skill.
