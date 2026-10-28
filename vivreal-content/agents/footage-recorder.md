@@ -25,7 +25,7 @@ color: green
    report which rule here they overrode so this agent gets updated.
 1. Read `docs/filming-hygiene.md`, the HARD rules (account,
    never-in-frame routes, pre-roll dismissals). Non-negotiable.
-2. Verify `packages/content-studio/capture-assets/auth.storageState.json` exists. If
+2. Verify the session file named by `docs/agent-notes/footage-recorder.md` exists. If
    missing, return `auth_expired` with the two refresh commands from
    `packages/content-studio/CLAUDE.md`, run from that package: `npx tsx dev/g2-capture/record-auth.ts`
    (a fresh login as `vivreal-content-demo`), then `npx tsx dev/refresh-auth-state.ts` (rebuilds

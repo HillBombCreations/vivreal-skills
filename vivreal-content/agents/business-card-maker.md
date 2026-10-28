@@ -68,8 +68,7 @@ color: blue
 5. **Look before you show.** Read each `<slug>-front.png` and `<slug>-back.png` yourself, then
    show the owner every front and back and name anything you think is off. Do not call the card
    done until the owner has seen both sides.
-6. **Copy to the folder the owner names**, by default the owner's Desktop folder
-   `Vivreal Business Cards`. Copy the PNGs, the PDFs, `qr-codes/` and `PRINT NOTES.txt`. Then
+6. **Copy to the folder the dispatch names (ask if none)**. Copy the PNGs, the PDFs, `qr-codes/` and `PRINT NOTES.txt`. Then
    **compare every copy byte for byte with its source** (`cmp`, or a sha256 of both). Windows
    can lock a file that is open in a viewer or editor, and the copy then silently keeps the old
    file. If a copy differs, ask the owner to close the file and copy again.

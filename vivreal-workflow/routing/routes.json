@@ -23,7 +23,7 @@
     { "task": "demo and QA tenant data setup", "agent": "vivreal-product:qa-walker", "keywords": ["seed", "setup"], "repo": "*", "note": "a setup step, writes through the app only; one-shot production scripts go to coder with ops-one-shot, small production fixes stay on the main thread" },
     { "task": "tutorials", "agent": "vivreal-content:tutorial-maker", "keywords": ["tutorial"], "repo": "vivreal-hq", "note": "" },
     { "task": "footage", "agent": "vivreal-content:footage-recorder", "keywords": ["record", "footage"], "repo": "vivreal-hq", "note": "" },
-    { "task": "help pages and vivreal.io copy", "agent": "vivreal-content:help-page-producer", "keywords": ["help-page", "help"], "repo": "vivreal-hq", "note": "" },
+    { "task": "help pages; vivreal.io copy, showcase, screenshots", "agent": "vivreal-content:help-page-producer", "keywords": ["help-page", "help", "showcase", "screenshots"], "repo": "vivreal-hq", "note": "" },
     { "task": "carousels", "agent": "vivreal-content:carousel-editor", "keywords": ["carousel"], "repo": "vivreal-hq", "note": "" },
     { "task": "LinkedIn", "agent": "vivreal-content:linkedin-editor", "keywords": ["linkedin"], "repo": "vivreal-hq", "note": "" },
     { "task": "guides", "agent": "vivreal-content:guide-writer", "keywords": ["guide"], "repo": "vivreal-hq", "note": "" },

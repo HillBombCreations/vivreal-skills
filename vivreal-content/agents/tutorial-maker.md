@@ -235,7 +235,7 @@ had already connected Instagram, to the wrong account, so the retake opened on "
 than on a Connect button. The Channels card shows only the display name ("Working · Justin
 Ceccarelli · 0 followers"), which does not tell Vivreal's own account apart from a personal one.
 The handle only appears in the header of the provider's own page, `/app/channels/<key>`
-(here `@vivreal_jcecc`, business account, 0 posts, where Vivreal's is `@vivreal.io`). Probe both
+(here the Vivreal Content demo account's connected handle, read it in the app; Vivreal's is `@vivreal.io`). Probe both
 in a throwaway CDP tab (`newPage()`, read, `close()` that tab only) before rolling. If the
 channel is connected to anything, stop and report the handle: disconnecting is the owner's call,
 and a disconnect strands any queued posts. Also delete a killed take's `REMOTE_DIR` along with
@@ -487,6 +487,8 @@ and the recording window is signed in as the demo account, so it shows that acco
 or none. Ask the owner for those frames.
 
 ## Guarded presses on a real account (2026-10-15)
+
+**Before a live take on a real account,** write a dry-run step list with the expected screen per step and get it approved in the dispatch or by an owner before recording.
 
 A take that a guard stopped (the leak guard, the update-bar watch) keeps running only so its own
 cleanup has a live page; it must not write anything new. The pieces, all in
