@@ -9,7 +9,7 @@
     { "task": "diagnosis, audits, end-to-end traces, external web research", "agent": "vivreal-principal:researcher", "keywords": ["investigate", "research", "diagnose", "audit", "trace"], "repo": "*", "note": "" },
     { "task": "reviews", "agent": "vivreal-principal:reviewer", "keywords": ["review"], "repo": "*", "note": "" },
     { "task": "agent and skill definition review", "agent": "vivreal-agent-review:definition-reviewer", "keywords": ["definition", "definitions"], "repo": "*", "note": "" },
-    { "task": "package publish and pin moves", "agent": "vivreal-workflow:package-publisher", "keywords": ["publish", "bump"], "requiresAny": ["package", "npm", "version", "bump", "@hillbombcreations"], "repo": "*", "note": "publishing site or help content is not this route, so publish alone does not select it" },
+    { "task": "package publish and pin moves", "agent": "vivreal-workflow:package-publisher", "keywords": ["publish", "bump"], "requiresAny": ["package", "npm", "@hillbombcreations", "pin", "package version"], "repo": "*", "note": "publishing site or help content is not this route, so publish alone does not select it" },
     { "task": "ledgers", "agent": "vivreal-workflow:ledger-keeper", "keywords": ["ledger"], "repo": "*", "note": "" },
     { "task": "dev docs", "agent": "vivreal-workflow:system-doc-writer", "keywords": ["document", "docs"], "repo": "*", "note": "" },
     { "task": "infrastructure changes", "agent": "vivreal-infra:infra-engineer", "keywords": ["provision", "iam", "cloudformation", "infra"], "repo": "*", "note": "" },

@@ -594,92 +594,141 @@ const GUIDANCE = [
   'the second expansion of a compound probe prints the value.',
 ].join('\n');
 
-// Programs that execute a heredoc body as code, so the body is judged rather than dropped.
-const BODY_RUNNER = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh|iex|invoke-expression|python[0-9.]*|py|node|perl|ruby|eval|source|\.|xargs|parallel|env|sudo|exec|time|nohup)(\.exe)?$/i;
+
+// Anything that can run code: a shell, an interpreter, eval or source, or a wrapper that runs
+// its argument. Named anywhere outside a heredoc body, it voids every heredoc exemption.
+const CODE_RUNNER = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh|iex|invoke-expression|python[0-9.]*|py|node|perl|ruby|eval|source|exec|xargs|parallel|env|sudo|nohup|time|timeout|nice|watch|command|builtin)(\.exe)?$/i;
+// Words that can open a command without being the command.
+const COMMAND_PREFIX = /^(if|then|else|elif|while|until|do|!|\{|\(|\(\(|time)$/;
 const HEREDOC_DELIM = /^-?[ \t]*((?:'[^'\n]*'|"[^"\n]*"|\\.|[^\s;&|<>()'"\\])+)/;
 
 /**
- * Bash heredoc bodies are data handed to the command on stdin, not commands, so a doc
- * append (`cat >> notes.md <<'EOF'`) whose text mentions a lambda read must not be judged
- * as one. Returns { text, bodies }: `text` is the command with each body removed (the
- * operator lines and everything after the terminator stay), `bodies` the removed bodies
- * that still need judging. A body is still judged when its command could run it (a shell,
- * an interpreter, eval) or when its delimiter is unquoted and the body holds `$(` or a
- * backtick, since bash runs those substitutions. Anything this cannot read with certainty
- * (an unclosed quote, a `<<` inside `((`, a body with no terminator) returns the text
- * untouched, which is the pre-existing whole-text judgement.
+ * The line with every quoted or escaped character masked to '_', the same length as the
+ * line, so an index into the mask is an index into the line.
+ */
+function maskQuoted(line) {
+  let mask = '';
+  let quote = null;
+  for (let j = 0; j < line.length; j += 1) {
+    const c = line[j];
+    if (quote === '"' && c === '\\') {
+      mask += '__';
+      j += 1;
+    } else if (quote) {
+      if (c === quote) quote = null;
+      mask += '_';
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      mask += '_';
+    } else if (c === '\\') {
+      mask += j + 1 < line.length ? '__' : '_';
+      j += 1;
+    } else {
+      mask += c;
+    }
+  }
+  return mask.slice(0, line.length);
+}
+
+/**
+ * Whether bash text (heredoc bodies already removed) could run code that a heredoc body
+ * feeds: a command substitution or backtick anywhere, a runner named anywhere, or a command
+ * word that is an expansion (`$c`, `${c}`), `.`, or a file path being executed.
+ */
+function runsCode(text) {
+  if (/\$\(|`/.test(text)) return true;
+  for (const seg of String(text).split(/\n|&&|\|\||[;|&]/)) {
+    const ws = words(seg, 'bash').ws;
+    const names = ws.flatMap((w) => w.value.split(/[;&|(){}]/)).map((v) => v.split(/[\\/]/).pop());
+    if (names.some((v) => CODE_RUNNER.test(v))) return true;
+    const cmd = ws.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value) && !COMMAND_PREFIX.test(w.value));
+    if (!cmd) continue;
+    if (/[$`]/.test(cmd.raw) || cmd.value === '.' || /[\\/]/.test(cmd.value)) return true;
+  }
+  return false;
+}
+
+/**
+ * Whether the command that owns the heredoc at `at` on `line` only writes its stdin to a
+ * file: `cat` with a `>` or `>>` file redirect, or `tee` with a file argument.
+ */
+function isFileWriter(line, mask, at) {
+  const bounds = /[;&|(){}]/g;
+  let from = 0;
+  let to = line.length;
+  let m;
+  while ((m = bounds.exec(mask))) {
+    if (m.index < at) from = m.index + 1;
+    else {
+      to = m.index;
+      break;
+    }
+  }
+  const ws = words(line.slice(from, to), 'bash').ws;
+  const k = ws.findIndex((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
+  if (k === -1) return false;
+  if (ws[k].raw === 'cat') return ws.some((w) => /^\d*>>?(?!&)/.test(w.raw));
+  if (ws[k].raw !== 'tee') return false;
+  // tee's file is an argument before the heredoc operator, so the delimiter is never counted.
+  const args = words(line.slice(from, at), 'bash').ws.slice(k + 1);
+  return args.some((w) => !/^-/.test(w.value) && !/^\d*[<>]/.test(w.raw));
+}
+
+/**
+ * A bash heredoc body is data handed to its command on stdin, so a doc append
+ * (`cat >> notes.md <<'EOF'`) whose text mentions a lambda read must not be judged as one.
+ * A body is exempt, removed from the text this hook judges, ONLY when its command is a plain
+ * file writer (`cat` or `tee` into a file), its delimiter is quoted or the body holds no `$(`
+ * or backtick, and nothing anywhere else in the command runs code (see runsCode). Every other
+ * body stays in place and is judged exactly as before. Anything this cannot read with
+ * certainty (an unclosed quote, a `<<` inside `((`, a body with no terminator) returns the
+ * text untouched.
  */
 function stripHeredocs(command) {
   const lines = String(command).split('\n');
-  const kept = [];
-  const bodies = [];
+  const ops = [];
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    kept.push(line);
     i += 1;
-    if (walk(line, 'bash', () => {}).unterminated) return { text: command, bodies: [] };
-    // The line with every quoted or escaped character masked to '_', the same length as
-    // the line, so an index into it is an index into the line.
-    let mask = '';
-    let quote = null;
-    for (let j = 0; j < line.length; j += 1) {
-      const c = line[j];
-      if (quote === '"' && c === '\\') {
-        mask += '__';
-        j += 1;
-      } else if (quote) {
-        if (c === quote) quote = null;
-        mask += '_';
-      } else if (c === "'" || c === '"') {
-        quote = c;
-        mask += '_';
-      } else if (c === '\\') {
-        mask += j + 1 < line.length ? '__' : '_';
-        j += 1;
-      } else {
-        mask += c;
-      }
-    }
+    if (walk(line, 'bash', () => {}).unterminated) return command;
+    const mask = maskQuoted(line);
     const hash = mask.search(/(^|\s)#/);
     const code = hash === -1 ? mask : mask.slice(0, hash);
-    const ops = [];
+    const found = [];
     const opRx = /(^|[^<])<<(?!<)/g;
     let m;
     while ((m = opRx.exec(code))) {
       const at = m.index + m[1].length;
       const before = code.slice(0, at);
-      if ((before.match(/\(\(/g) || []).length > (before.match(/\)\)/g) || []).length) {
-        return { text: command, bodies: [] }; // arithmetic shift, or something this cannot tell from one
-      }
+      if ((before.match(/\(\(/g) || []).length > (before.match(/\)\)/g) || []).length) return command;
       const d = HEREDOC_DELIM.exec(line.slice(at + 2));
-      if (!d) return { text: command, bodies: [] };
-      const dash = line[at + 2] === '-';
-      const rawDelim = d[1];
-      ops.push({
-        dash,
-        quoted: /['"\\]/.test(rawDelim),
-        delim: rawDelim.replace(/['"]/g, '').replace(/\\(.)/g, '$1'),
+      if (!d) return command;
+      found.push({
+        dash: line[at + 2] === '-',
+        quoted: /['"\\]/.test(d[1]),
+        delim: d[1].replace(/['"]/g, '').replace(/\\(.)/g, '$1'),
+        writer: isFileWriter(line, code, at),
       });
     }
-    if (ops.length === 0) continue;
-    // Whether anything on the operator line could execute the body: a runner by name (quoted
-    // or not, after a pipe, inside a function body), or a command word hidden in an expansion.
-    const lineWords = words(hash === -1 ? line : line.slice(0, hash), 'bash').ws;
-    const names = lineWords.flatMap((w) => w.value.split(/[;&|(){}]/)).map((v) => v.split(/[\\/]/).pop());
-    const firstCommand = lineWords.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
-    const runs = names.some((v) => BODY_RUNNER.test(v)) || Boolean(firstCommand && /[$`]/.test(firstCommand.raw));
-    for (const op of ops) {
+    for (const op of found) {
       const start = i;
       while (i < lines.length && (op.dash ? lines[i].replace(/^\t+/, '') : lines[i]).replace(/\r$/, '') !== op.delim) i += 1;
-      if (i >= lines.length) return { text: command, bodies: [] };
-      const body = lines.slice(start, i).join('\n');
-      if (runs || (!op.quoted && /\$\(|`/.test(body))) bodies.push(body);
-      kept.push(lines[i]); // the terminator line, kept so a command after it is still a segment
-      i += 1;
+      if (i >= lines.length) return command;
+      ops.push({ ...op, start, end: i });
+      i += 1; // past the terminator line
     }
   }
-  return { text: kept.join('\n'), bodies };
+  if (ops.length === 0) return command;
+  const inBody = new Set();
+  for (const op of ops) for (let j = op.start; j < op.end; j += 1) inBody.add(j);
+  if (runsCode(lines.filter((_, j) => !inBody.has(j)).join('\n'))) return command;
+  const drop = new Set();
+  for (const op of ops) {
+    const body = lines.slice(op.start, op.end).join('\n');
+    if (op.writer && (op.quoted || !/\$\(|`/.test(body))) for (let j = op.start; j < op.end; j += 1) drop.add(j);
+  }
+  return lines.filter((_, j) => !drop.has(j)).join('\n');
 }
 
 /**
@@ -691,16 +740,8 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
     return mentionsLambdaRead(command) ? 'command strings nest too deep to read, and one mentions a lambda read.' : null;
   }
   for (const dialect of dialects) {
-    // PowerShell has no heredoc; only bash text loses its bodies, and a body that runs is judged on its own.
-    let text = command;
-    if (dialect === 'bash') {
-      const stripped = stripHeredocs(command);
-      for (const body of stripped.bodies) {
-        const why = decideText(body, depth + 1);
-        if (why) return 'in a heredoc body that runs: ' + why;
-      }
-      text = stripped.text;
-    }
+    // PowerShell has no heredoc; only bash text loses the bodies that are plain file data.
+    const text = dialect === 'bash' ? stripHeredocs(command) : command;
     const joined = String(text).replace(/[\\`]\r?\n/g, ' ');
     if (rewritesWords(joined, dialect)) {
       return (
@@ -826,6 +867,17 @@ const CASES = [
   ['block', 'echo "<<EOF"\naws lambda get-function --function-name f\nEOF'],
   ['block', '# <<EOF\naws lambda get-function --function-name f\nEOF'],
   ['block', 'echo $((1<<X))\naws lambda get-function --function-name f\nX'],
+  // Review of #61: a body is exempt only for a plain file writer in a command that runs nothing.
+  ['block', "read -r c <<'EOF'\naws lambda get-function --function-name f\nEOF\neval \"$c\""],
+  ['block', "c=$(cat <<'EOF'\naws lambda get-function --function-name f\nEOF\n)\n$c"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nbash x.sh"],
+  ['block', 'bash <<< "aws lambda get-function --function-name f"'],
+  ['block', "cat <<'EOF' | bash\naws lambda get-function --function-name f\nEOF"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nsource x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\n. x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\n./x.sh"],
+  ['block', "tee x.sh <<'EOF' | sh\naws lambda get-function --function-name f\nEOF"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nc=x.sh; ${c}"],
 
   // Every read the fleet's own prose prints, verbatim apart from placeholders.
   ['allow', "aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'"],
@@ -863,6 +915,7 @@ const CASES = [
   ['allow', "cat >> docs/notes.md <<'EOF'\nThe lambda guard refused C:" + BS + 'repos' + BS + 'x and {a,b}\nEOF'],
   ['allow', 'cat >> "$f" <<-EOF\n\taws lambda list-functions --output json\n\tEOF'],
   ['allow', "cat > a.md <<'A' && cat > b.md <<'B'\naws lambda get-function --function-name f\nA\naws lambda list-functions\nB"],
+  ['allow', "tee -a docs/notes.md <<'EOF'\n- aws lambda get-function printed the env\nEOF"],
   ['allow', "& \"C:" + BS + "Program Files" + BS + "Amazon" + BS + "AWSCLIV2" + BS + "aws.exe\" lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'", 'PowerShell'],
 ];
 

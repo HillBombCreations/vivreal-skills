@@ -127,7 +127,14 @@ test('REFUSE: a dispatch on the legacy Task tool name is still judged', () => {
 });
 
 test('ALLOW: publishing site content is not a package publish', () => {
-  for (const description of ['Publish the site content corrections', 'Publish the help page edits to help.vivreal.io']) {
+  for (const description of [
+    'Publish the site content corrections',
+    'Publish the help page edits to help.vivreal.io',
+    'Publish the conversion page',
+    'Publish the conversion tracking page',
+    'Publish the new version of the help page',
+    'Publish the spinner fix on the help page',
+  ]) {
     const r = run(
       GUARD,
       { cwd: cms, tool_input: { subagent_type: 'general-purpose', description } },
@@ -139,7 +146,13 @@ test('ALLOW: publishing site content is not a package publish', () => {
 });
 
 test('REFUSE: publishing a package still routes to package-publisher', () => {
-  for (const description of ['Publish @hillbombcreations/schemas', 'Publish the new package version', 'Bump the renderer pin']) {
+  for (const description of [
+    'publish @hillbombcreations/schemas',
+    'bump the package version',
+    'Publish the new package version',
+    'Bump the renderer pin',
+    'Publish the npm packages',
+  ]) {
     const r = run(
       GUARD,
       { cwd: cms, tool_input: { subagent_type: 'general-purpose', description } },
