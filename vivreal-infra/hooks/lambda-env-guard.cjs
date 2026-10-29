@@ -7,7 +7,9 @@
  *
  * This hook stops ACCIDENTAL reads by agents. It is not a security boundary: a
  * determined caller can reach the same data some other way, and the boundary for
- * that is AWS permissions (an IAM deny on these reads), a planned follow-up.
+ * that is AWS permissions (an IAM deny on these reads), a planned follow-up. The
+ * heredoc exemption below is the same: an interpreter this hook does not know can
+ * still run a file a heredoc wrote.
  *
  * Moved from vivreal-hq 2026-10 so it fires in every repo where releases run.
  *
@@ -594,6 +596,144 @@ const GUIDANCE = [
   'the second expansion of a compound probe prints the value.',
 ].join('\n');
 
+
+// Anything that can run code: a shell, an interpreter, eval or source, or a wrapper that runs
+// its argument. Named anywhere outside a heredoc body, it voids every heredoc exemption.
+const CODE_RUNNER = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh|iex|invoke-expression|python[0-9.]*|py|node|perl|ruby|awk|gawk|mawk|make|gmake|eval|source|exec|xargs|parallel|env|sudo|nohup|time|timeout|nice|watch|command|builtin)(\.exe)?$/i;
+// Words that can open a command without being the command.
+const COMMAND_PREFIX = /^(if|then|else|elif|while|until|do|!|\{|\(|\(\(|time)$/;
+const HEREDOC_DELIM = /^-?[ \t]*((?:'[^'\n]*'|"[^"\n]*"|\\.|[^\s;&|<>()'"\\])+)/;
+
+/**
+ * The line with every quoted or escaped character masked to '_', the same length as the
+ * line, so an index into the mask is an index into the line.
+ */
+function maskQuoted(line) {
+  let mask = '';
+  let quote = null;
+  for (let j = 0; j < line.length; j += 1) {
+    const c = line[j];
+    if (quote === '"' && c === '\\') {
+      mask += '__';
+      j += 1;
+    } else if (quote) {
+      if (c === quote) quote = null;
+      mask += '_';
+    } else if (c === "'" || c === '"') {
+      quote = c;
+      mask += '_';
+    } else if (c === '\\') {
+      mask += j + 1 < line.length ? '__' : '_';
+      j += 1;
+    } else {
+      mask += c;
+    }
+  }
+  return mask.slice(0, line.length);
+}
+
+/**
+ * Whether bash text (heredoc bodies already removed) could run code that a heredoc body
+ * feeds: a command substitution or backtick anywhere, a runner named anywhere, or a command
+ * word that is an expansion (`$c`, `${c}`), `.`, or a file path being executed.
+ */
+function runsCode(text) {
+  if (/\$\(|`/.test(text)) return true;
+  for (const seg of String(text).split(/\n|&&|\|\||[;|&]/)) {
+    const ws = words(seg, 'bash').ws;
+    // `<` and `>` split too: `sh<x.sh` is one shell word but runs sh on the file.
+    const names = ws.flatMap((w) => w.value.split(/[;&|(){}<>]/)).map((v) => v.split(/[\\/]/).pop());
+    if (names.some((v) => CODE_RUNNER.test(v))) return true;
+    const cmd = ws.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value) && !COMMAND_PREFIX.test(w.value));
+    if (!cmd) continue;
+    if (/[$`]/.test(cmd.raw) || cmd.value === '.' || /[\\/]/.test(cmd.value)) return true;
+  }
+  return false;
+}
+
+/**
+ * Whether the command that owns the heredoc at `at` on `line` only writes its stdin to a
+ * file: `cat` with a `>` or `>>` file redirect, or `tee` with a file argument.
+ */
+function isFileWriter(line, mask, at) {
+  const bounds = /[;&|(){}]/g;
+  let from = 0;
+  let to = line.length;
+  let m;
+  while ((m = bounds.exec(mask))) {
+    if (m.index < at) from = m.index + 1;
+    else {
+      to = m.index;
+      break;
+    }
+  }
+  const ws = words(line.slice(from, to), 'bash').ws;
+  const k = ws.findIndex((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
+  if (k === -1) return false;
+  if (ws[k].raw === 'cat') return ws.some((w) => /^\d*>>?(?!&)/.test(w.raw));
+  if (ws[k].raw !== 'tee') return false;
+  // tee's file is an argument before the heredoc operator, so the delimiter is never counted.
+  const args = words(line.slice(from, at), 'bash').ws.slice(k + 1);
+  return args.some((w) => !/^-/.test(w.value) && !/^\d*[<>]/.test(w.raw));
+}
+
+/**
+ * A bash heredoc body is data handed to its command on stdin, so a doc append
+ * (`cat >> notes.md <<'EOF'`) whose text mentions a lambda read must not be judged as one.
+ * A body is exempt, removed from the text this hook judges, ONLY when its command is a plain
+ * file writer (`cat` or `tee` into a file), its delimiter is quoted or the body holds no `$(`
+ * or backtick, and nothing anywhere else in the command runs code (see runsCode). Every other
+ * body stays in place and is judged exactly as before. Anything this cannot read with
+ * certainty (an unclosed quote, a `<<` inside `((`, a body with no terminator) returns the
+ * text untouched.
+ */
+function stripHeredocs(command) {
+  const lines = String(command).split('\n');
+  const ops = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    i += 1;
+    if (walk(line, 'bash', () => {}).unterminated) return command;
+    const mask = maskQuoted(line);
+    const hash = mask.search(/(^|\s)#/);
+    const code = hash === -1 ? mask : mask.slice(0, hash);
+    const found = [];
+    const opRx = /(^|[^<])<<(?!<)/g;
+    let m;
+    while ((m = opRx.exec(code))) {
+      const at = m.index + m[1].length;
+      const before = code.slice(0, at);
+      if ((before.match(/\(\(/g) || []).length > (before.match(/\)\)/g) || []).length) return command;
+      const d = HEREDOC_DELIM.exec(line.slice(at + 2));
+      if (!d) return command;
+      found.push({
+        dash: line[at + 2] === '-',
+        quoted: /['"\\]/.test(d[1]),
+        delim: d[1].replace(/['"]/g, '').replace(/\\(.)/g, '$1'),
+        writer: isFileWriter(line, code, at),
+      });
+    }
+    for (const op of found) {
+      const start = i;
+      while (i < lines.length && (op.dash ? lines[i].replace(/^\t+/, '') : lines[i]).replace(/\r$/, '') !== op.delim) i += 1;
+      if (i >= lines.length) return command;
+      ops.push({ ...op, start, end: i });
+      i += 1; // past the terminator line
+    }
+  }
+  if (ops.length === 0) return command;
+  const inBody = new Set();
+  for (const op of ops) for (let j = op.start; j < op.end; j += 1) inBody.add(j);
+  if (runsCode(lines.filter((_, j) => !inBody.has(j)).join('\n'))) return command;
+  const drop = new Set();
+  for (const op of ops) {
+    const body = lines.slice(op.start, op.end).join('\n');
+    if (op.writer && (op.quoted || !/\$\(|`/.test(body))) for (let j = op.start; j < op.end; j += 1) drop.add(j);
+  }
+  return lines.filter((_, j) => !drop.has(j)).join('\n');
+}
+
 /**
  * Judge one command in the given shell dialects (a nested command string is judged
  * in both, since this hook cannot always tell which shell will run it).
@@ -602,8 +742,10 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
   if (depth > MAX_DEPTH) {
     return mentionsLambdaRead(command) ? 'command strings nest too deep to read, and one mentions a lambda read.' : null;
   }
-  const joined = String(command).replace(/[\\`]\r?\n/g, ' ');
   for (const dialect of dialects) {
+    // PowerShell has no heredoc; only bash text loses the bodies that are plain file data.
+    const text = dialect === 'bash' ? stripHeredocs(command) : command;
+    const joined = String(text).replace(/[\\`]\r?\n/g, ' ');
     if (rewritesWords(joined, dialect)) {
       return (
         'the command names lambda and carries a backslash or a {a,b} brace expansion outside quotes, ' +
@@ -611,7 +753,7 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
         'Write paths with forward slashes or inside quotes.'
       );
     }
-    const segs = segments(command);
+    const segs = segments(text);
     // `'...' | iex` hands a string to Invoke-Expression through the pipe: judge every string.
     const evaluates = segs.some((s) => words(s, dialect).ws.some((w) => STRING_EVAL.test(w.value)));
     for (const seg of segs) {
@@ -717,6 +859,36 @@ const CASES = [
   ['block', 'aws lambda get-function-configuration --function-name f --output text'],
   ['block', 'python -m awscli lambda get-function --function-name f'],
   ['block', 'aws lambda get-function --function-name f | jq .Configuration.Environment'],
+  // Heredocs (2026-10-29): a body that runs, or a read outside the body, is still judged.
+  ['block', "bash <<'EOF'\naws lambda get-function --function-name f\nEOF"],
+  ['block', "cat <<'EOF' | sh\naws lambda list-functions\nEOF"],
+  ['block', "'bash' <<'EOF'\naws lambda get-function --function-name f\nEOF"],
+  ['block', "$SH <<'EOF'\naws lambda get-function --function-name f\nEOF"],
+  ['block', 'cat > out.txt <<EOF\n$(aws lambda get-function --function-name f)\nEOF'],
+  ['block', "cat >> notes.md <<'EOF'\nnotes\nEOF\naws lambda get-function --function-name f"],
+  ['block', "cat >> notes.md <<'EOF'\naws lambda get-function --function-name f"],
+  ['block', 'echo "<<EOF"\naws lambda get-function --function-name f\nEOF'],
+  ['block', '# <<EOF\naws lambda get-function --function-name f\nEOF'],
+  ['block', 'echo $((1<<X))\naws lambda get-function --function-name f\nX'],
+  // Review of #61: a body is exempt only for a plain file writer in a command that runs nothing.
+  ['block', "read -r c <<'EOF'\naws lambda get-function --function-name f\nEOF\neval \"$c\""],
+  ['block', "c=$(cat <<'EOF'\naws lambda get-function --function-name f\nEOF\n)\n$c"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nbash x.sh"],
+  ['block', 'bash <<< "aws lambda get-function --function-name f"'],
+  ['block', "cat <<'EOF' | bash\naws lambda get-function --function-name f\nEOF"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nsource x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\n. x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\n./x.sh"],
+  ['block', "tee x.sh <<'EOF' | sh\naws lambda get-function --function-name f\nEOF"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nc=x.sh; ${c}"],
+  // Pass 2: a redirect glued to the runner, and interpreters that run a file.
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nsh<x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nbash<x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nbash <x.sh"],
+  ['block', "cat > x.py <<'EOF'\naws lambda get-function --function-name f\nEOF\npython3 x.py"],
+  ['block', "cat > Makefile <<'EOF'\naws lambda get-function --function-name f\nEOF\nmake"],
+  ['block', "cat > x.awk <<'EOF'\naws lambda get-function --function-name f\nEOF\nawk -f x.awk"],
+  ['block', "cat > x.js <<'EOF'\naws lambda get-function --function-name f\nEOF\nnode x.js"],
 
   // Every read the fleet's own prose prints, verbatim apart from placeholders.
   ['allow', "aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'"],
@@ -749,6 +921,12 @@ const CASES = [
   ['allow', "bash -c \"aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'\""],
   ['allow', 'aws cloudcontrol get-resource --type-name AWS::S3::Bucket --identifier b'],
   ['allow', 'cp src/*.{js,ts} out/ && git diff ' + BS + '-- x'],
+  // A doc append is data written to a file, whatever its text says (refused before 2026-10-29).
+  ['allow', "cat >> docs/notes.md <<'EOF'\n- The lambda get-function read printed the env, see vh-site.js\nEOF"],
+  ['allow', "cat >> docs/notes.md <<'EOF'\nThe lambda guard refused C:" + BS + 'repos' + BS + 'x and {a,b}\nEOF'],
+  ['allow', 'cat >> "$f" <<-EOF\n\taws lambda list-functions --output json\n\tEOF'],
+  ['allow', "cat > a.md <<'A' && cat > b.md <<'B'\naws lambda get-function --function-name f\nA\naws lambda list-functions\nB"],
+  ['allow', "tee -a docs/notes.md <<'EOF'\n- aws lambda get-function printed the env\nEOF"],
   ['allow', "& \"C:" + BS + "Program Files" + BS + "Amazon" + BS + "AWSCLIV2" + BS + "aws.exe\" lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'", 'PowerShell'],
 ];
 

@@ -305,7 +305,7 @@ has no imagery worth the band, the classic prose run remains the default.
     section. If no explicit CTA section is captured (e.g. compare sub-pages end with a "Why owners
     choose…" narrative, not a button), use a faithful generic CTA consistent with the site's voice,
     do NOT fabricate specific product claims. Typical generic CTAs already used on the site:
-    "Ready to publish everywhere with one button?" / "Ready to make the switch?" / "Start Free".
+    "Ready to write it once and publish everywhere?" / "Ready to make the switch?" / "Start Free".
     Only leave `cta: null` on pages where a trailing CTA is semantically wrong: form pages
     (`/contact`), list/feed index pages (`/blog`), and raw documentation reference pages
     (`/resources/*`) where the page IS the call-to-learn resource, not a pitch.

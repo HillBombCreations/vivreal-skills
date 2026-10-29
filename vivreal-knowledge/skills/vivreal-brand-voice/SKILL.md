@@ -9,11 +9,11 @@ The defined Vivreal voice and the rules for keeping every customer-facing word o
 
 > **Canonical voice source: `${VIVREAL_REPOS}/vivreal-hq/brand/voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`; the old `${VIVREAL_REPOS}/vivreal-content` checkout is a pre-merge leftover, never the source.)
 
-Last synced: 2026-10-15 (against vivreal-hq `brand/voice.md`, last changed 2026-10-14; re-read it, it is the canonical copy)
+Last synced: 2026-10-29 (against vivreal-hq `brand/voice.md`, last changed 2026-10-29; re-read it, it is the canonical copy)
 
 ## The promise behind every word
 
-**Create once. Publish everywhere.** We sell bigger reach with less effort, in plain language a baker or a plumber would use, never "a better CMS." The second half carries equal weight: **it's genuinely easy, and you run the whole thing from your phone or tablet like an app.** Lead with ease and mobile as often as the one-click pitch.
+**Create once. Publish everywhere.** We sell bigger reach with less effort, in plain language a baker or a plumber would use, never "a better CMS." The second half carries equal weight: **it's genuinely easy, and you run the whole thing from your phone or tablet like an app.** Lead with ease and mobile as often as the write-it-once pitch.
 
 ## Who we write for
 
@@ -35,7 +35,7 @@ Defined on four dimensions ([Technotize](https://technotize.io/insights/brand-vo
 ### Positive voice rules
 
 - **Direct.** Short sentences. Active voice.
-- **Confident.** No hedges ("helps you," "enables you to"). Just: "Publish to Instagram. One button."
+- **Confident.** We know what we built. No hedges ("helps you," "enables you to"), no maybe. Just: "Write it once, publish everywhere."
 - **Practical.** Describe what features DO, not what they ARE.
 - **Plain-spoken.** No word a non-technical owner wouldn't use. "Update your site in a minute, not a call to a web guy."
 - **Honest.** If a feature isn't shipped, don't pitch it. Owners spot a fake instantly and trust tools that don't bluff.
@@ -75,7 +75,7 @@ Lead against the tools owners actually know (plus the niche industry CMS a trade
 | What they use | Their pain | Our opening |
 |---|---|---|
 | **WordPress** | Monolithic, slow, needs a developer to touch | A modern site they edit themselves, no dev |
-| **Squarespace / Wix** | Editing is a guessing game; nothing for social or email | True live-preview plus one-button publish everywhere |
+| **Squarespace / Wix** | Editing is a guessing game; nothing for social or email | True live-preview, then write it once and publish everywhere from one screen |
 | **Shopify** | Store is fine; blog, social, email are separate tools | One portal for store, content, social, and email (native email campaigns since 2026-09-21; see the honesty floor for what Publish does NOT do) |
 | **Buffer / Mailchimp / Hootsuite** | Five tools that don't talk to each other | Replace the stack; create once, publish everywhere |
 | **Webflow** | Powerful, but built for designers | A professional site the owner can run, no designer |
