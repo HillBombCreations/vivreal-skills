@@ -7,7 +7,9 @@
  *
  * This hook stops ACCIDENTAL reads by agents. It is not a security boundary: a
  * determined caller can reach the same data some other way, and the boundary for
- * that is AWS permissions (an IAM deny on these reads), a planned follow-up.
+ * that is AWS permissions (an IAM deny on these reads), a planned follow-up. The
+ * heredoc exemption below is the same: an interpreter this hook does not know can
+ * still run a file a heredoc wrote.
  *
  * Moved from vivreal-hq 2026-10 so it fires in every repo where releases run.
  *
@@ -597,7 +599,7 @@ const GUIDANCE = [
 
 // Anything that can run code: a shell, an interpreter, eval or source, or a wrapper that runs
 // its argument. Named anywhere outside a heredoc body, it voids every heredoc exemption.
-const CODE_RUNNER = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh|iex|invoke-expression|python[0-9.]*|py|node|perl|ruby|eval|source|exec|xargs|parallel|env|sudo|nohup|time|timeout|nice|watch|command|builtin)(\.exe)?$/i;
+const CODE_RUNNER = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh|iex|invoke-expression|python[0-9.]*|py|node|perl|ruby|awk|gawk|mawk|make|gmake|eval|source|exec|xargs|parallel|env|sudo|nohup|time|timeout|nice|watch|command|builtin)(\.exe)?$/i;
 // Words that can open a command without being the command.
 const COMMAND_PREFIX = /^(if|then|else|elif|while|until|do|!|\{|\(|\(\(|time)$/;
 const HEREDOC_DELIM = /^-?[ \t]*((?:'[^'\n]*'|"[^"\n]*"|\\.|[^\s;&|<>()'"\\])+)/;
@@ -639,7 +641,8 @@ function runsCode(text) {
   if (/\$\(|`/.test(text)) return true;
   for (const seg of String(text).split(/\n|&&|\|\||[;|&]/)) {
     const ws = words(seg, 'bash').ws;
-    const names = ws.flatMap((w) => w.value.split(/[;&|(){}]/)).map((v) => v.split(/[\\/]/).pop());
+    // `<` and `>` split too: `sh<x.sh` is one shell word but runs sh on the file.
+    const names = ws.flatMap((w) => w.value.split(/[;&|(){}<>]/)).map((v) => v.split(/[\\/]/).pop());
     if (names.some((v) => CODE_RUNNER.test(v))) return true;
     const cmd = ws.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value) && !COMMAND_PREFIX.test(w.value));
     if (!cmd) continue;
@@ -878,6 +881,14 @@ const CASES = [
   ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\n./x.sh"],
   ['block', "tee x.sh <<'EOF' | sh\naws lambda get-function --function-name f\nEOF"],
   ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nc=x.sh; ${c}"],
+  // Pass 2: a redirect glued to the runner, and interpreters that run a file.
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nsh<x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nbash<x.sh"],
+  ['block', "cat > x.sh <<'EOF'\naws lambda get-function --function-name f\nEOF\nbash <x.sh"],
+  ['block', "cat > x.py <<'EOF'\naws lambda get-function --function-name f\nEOF\npython3 x.py"],
+  ['block', "cat > Makefile <<'EOF'\naws lambda get-function --function-name f\nEOF\nmake"],
+  ['block', "cat > x.awk <<'EOF'\naws lambda get-function --function-name f\nEOF\nawk -f x.awk"],
+  ['block', "cat > x.js <<'EOF'\naws lambda get-function --function-name f\nEOF\nnode x.js"],
 
   // Every read the fleet's own prose prints, verbatim apart from placeholders.
   ['allow', "aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'"],
