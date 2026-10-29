@@ -1,5 +1,5 @@
 {
-  "description": "After a Vivreal_Templates or Vivreal_Portal_Mobile change, nudge to track the resulting customer-site deploy (once per session). Before any Bash or PowerShell call, refuse an AWS CLI Lambda read that would print a function's environment unprojected.",
+  "description": "After a Vivreal_Templates or Vivreal_Portal_Mobile change, nudge to track the resulting customer-site deploy (once per session). Before any Bash or PowerShell call, refuse an AWS CLI Lambda read that would print a function's environment unprojected. The guard stops accidental reads by agents; it is not a security boundary, and the boundary is AWS permissions (a planned follow-up).",
   "hooks": {
     "PostToolUse": [
       {

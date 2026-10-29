@@ -78,7 +78,9 @@ sp() {   # usage: sp <stack> <expected function count>
   variable, `SENTRY_RELEASE`, but the local hook that blocks environment reads blocks any
   `Environment.Variables` projection, so the v7 release proved every function with `LastModified`,
   `CodeSha256` and `TracingConfig` instead and recorded that as a deviation (v7 release runbook,
-  "Deviation, stack proofs", 2026-10-20). The helper above is that form.
+  "Deviation, stack proofs", 2026-10-20). The helper above is that form. That hook
+  (`vivreal-infra` `hooks/lambda-env-guard.cjs`) stops accidental reads by agents; it is not a
+  security boundary, and the boundary is AWS permissions (a planned follow-up).
 
 PASS needs the count to match AND every function to show a `LastModified` later than the deploy
 time with a `CodeSha256` that differs from the baseline. For functions behind a `live`
