@@ -594,6 +594,94 @@ const GUIDANCE = [
   'the second expansion of a compound probe prints the value.',
 ].join('\n');
 
+// Programs that execute a heredoc body as code, so the body is judged rather than dropped.
+const BODY_RUNNER = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh|iex|invoke-expression|python[0-9.]*|py|node|perl|ruby|eval|source|\.|xargs|parallel|env|sudo|exec|time|nohup)(\.exe)?$/i;
+const HEREDOC_DELIM = /^-?[ \t]*((?:'[^'\n]*'|"[^"\n]*"|\\.|[^\s;&|<>()'"\\])+)/;
+
+/**
+ * Bash heredoc bodies are data handed to the command on stdin, not commands, so a doc
+ * append (`cat >> notes.md <<'EOF'`) whose text mentions a lambda read must not be judged
+ * as one. Returns { text, bodies }: `text` is the command with each body removed (the
+ * operator lines and everything after the terminator stay), `bodies` the removed bodies
+ * that still need judging. A body is still judged when its command could run it (a shell,
+ * an interpreter, eval) or when its delimiter is unquoted and the body holds `$(` or a
+ * backtick, since bash runs those substitutions. Anything this cannot read with certainty
+ * (an unclosed quote, a `<<` inside `((`, a body with no terminator) returns the text
+ * untouched, which is the pre-existing whole-text judgement.
+ */
+function stripHeredocs(command) {
+  const lines = String(command).split('\n');
+  const kept = [];
+  const bodies = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    kept.push(line);
+    i += 1;
+    if (walk(line, 'bash', () => {}).unterminated) return { text: command, bodies: [] };
+    // The line with every quoted or escaped character masked to '_', the same length as
+    // the line, so an index into it is an index into the line.
+    let mask = '';
+    let quote = null;
+    for (let j = 0; j < line.length; j += 1) {
+      const c = line[j];
+      if (quote === '"' && c === '\\') {
+        mask += '__';
+        j += 1;
+      } else if (quote) {
+        if (c === quote) quote = null;
+        mask += '_';
+      } else if (c === "'" || c === '"') {
+        quote = c;
+        mask += '_';
+      } else if (c === '\\') {
+        mask += j + 1 < line.length ? '__' : '_';
+        j += 1;
+      } else {
+        mask += c;
+      }
+    }
+    const hash = mask.search(/(^|\s)#/);
+    const code = hash === -1 ? mask : mask.slice(0, hash);
+    const ops = [];
+    const opRx = /(^|[^<])<<(?!<)/g;
+    let m;
+    while ((m = opRx.exec(code))) {
+      const at = m.index + m[1].length;
+      const before = code.slice(0, at);
+      if ((before.match(/\(\(/g) || []).length > (before.match(/\)\)/g) || []).length) {
+        return { text: command, bodies: [] }; // arithmetic shift, or something this cannot tell from one
+      }
+      const d = HEREDOC_DELIM.exec(line.slice(at + 2));
+      if (!d) return { text: command, bodies: [] };
+      const dash = line[at + 2] === '-';
+      const rawDelim = d[1];
+      ops.push({
+        dash,
+        quoted: /['"\\]/.test(rawDelim),
+        delim: rawDelim.replace(/['"]/g, '').replace(/\\(.)/g, '$1'),
+      });
+    }
+    if (ops.length === 0) continue;
+    // Whether anything on the operator line could execute the body: a runner by name (quoted
+    // or not, after a pipe, inside a function body), or a command word hidden in an expansion.
+    const lineWords = words(hash === -1 ? line : line.slice(0, hash), 'bash').ws;
+    const names = lineWords.flatMap((w) => w.value.split(/[;&|(){}]/)).map((v) => v.split(/[\\/]/).pop());
+    const firstCommand = lineWords.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
+    const runs = names.some((v) => BODY_RUNNER.test(v)) || Boolean(firstCommand && /[$`]/.test(firstCommand.raw));
+    for (const op of ops) {
+      const start = i;
+      while (i < lines.length && (op.dash ? lines[i].replace(/^\t+/, '') : lines[i]).replace(/\r$/, '') !== op.delim) i += 1;
+      if (i >= lines.length) return { text: command, bodies: [] };
+      const body = lines.slice(start, i).join('\n');
+      if (runs || (!op.quoted && /\$\(|`/.test(body))) bodies.push(body);
+      kept.push(lines[i]); // the terminator line, kept so a command after it is still a segment
+      i += 1;
+    }
+  }
+  return { text: kept.join('\n'), bodies };
+}
+
 /**
  * Judge one command in the given shell dialects (a nested command string is judged
  * in both, since this hook cannot always tell which shell will run it).
@@ -602,8 +690,18 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
   if (depth > MAX_DEPTH) {
     return mentionsLambdaRead(command) ? 'command strings nest too deep to read, and one mentions a lambda read.' : null;
   }
-  const joined = String(command).replace(/[\\`]\r?\n/g, ' ');
   for (const dialect of dialects) {
+    // PowerShell has no heredoc; only bash text loses its bodies, and a body that runs is judged on its own.
+    let text = command;
+    if (dialect === 'bash') {
+      const stripped = stripHeredocs(command);
+      for (const body of stripped.bodies) {
+        const why = decideText(body, depth + 1);
+        if (why) return 'in a heredoc body that runs: ' + why;
+      }
+      text = stripped.text;
+    }
+    const joined = String(text).replace(/[\\`]\r?\n/g, ' ');
     if (rewritesWords(joined, dialect)) {
       return (
         'the command names lambda and carries a backslash or a {a,b} brace expansion outside quotes, ' +
@@ -611,7 +709,7 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
         'Write paths with forward slashes or inside quotes.'
       );
     }
-    const segs = segments(command);
+    const segs = segments(text);
     // `'...' | iex` hands a string to Invoke-Expression through the pipe: judge every string.
     const evaluates = segs.some((s) => words(s, dialect).ws.some((w) => STRING_EVAL.test(w.value)));
     for (const seg of segs) {
@@ -717,6 +815,17 @@ const CASES = [
   ['block', 'aws lambda get-function-configuration --function-name f --output text'],
   ['block', 'python -m awscli lambda get-function --function-name f'],
   ['block', 'aws lambda get-function --function-name f | jq .Configuration.Environment'],
+  // Heredocs (2026-10-29): a body that runs, or a read outside the body, is still judged.
+  ['block', "bash <<'EOF'\naws lambda get-function --function-name f\nEOF"],
+  ['block', "cat <<'EOF' | sh\naws lambda list-functions\nEOF"],
+  ['block', "'bash' <<'EOF'\naws lambda get-function --function-name f\nEOF"],
+  ['block', "$SH <<'EOF'\naws lambda get-function --function-name f\nEOF"],
+  ['block', 'cat > out.txt <<EOF\n$(aws lambda get-function --function-name f)\nEOF'],
+  ['block', "cat >> notes.md <<'EOF'\nnotes\nEOF\naws lambda get-function --function-name f"],
+  ['block', "cat >> notes.md <<'EOF'\naws lambda get-function --function-name f"],
+  ['block', 'echo "<<EOF"\naws lambda get-function --function-name f\nEOF'],
+  ['block', '# <<EOF\naws lambda get-function --function-name f\nEOF'],
+  ['block', 'echo $((1<<X))\naws lambda get-function --function-name f\nX'],
 
   // Every read the fleet's own prose prints, verbatim apart from placeholders.
   ['allow', "aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'"],
@@ -749,6 +858,11 @@ const CASES = [
   ['allow', "bash -c \"aws lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'\""],
   ['allow', 'aws cloudcontrol get-resource --type-name AWS::S3::Bucket --identifier b'],
   ['allow', 'cp src/*.{js,ts} out/ && git diff ' + BS + '-- x'],
+  // A doc append is data written to a file, whatever its text says (refused before 2026-10-29).
+  ['allow', "cat >> docs/notes.md <<'EOF'\n- The lambda get-function read printed the env, see vh-site.js\nEOF"],
+  ['allow', "cat >> docs/notes.md <<'EOF'\nThe lambda guard refused C:" + BS + 'repos' + BS + 'x and {a,b}\nEOF'],
+  ['allow', 'cat >> "$f" <<-EOF\n\taws lambda list-functions --output json\n\tEOF'],
+  ['allow', "cat > a.md <<'A' && cat > b.md <<'B'\naws lambda get-function --function-name f\nA\naws lambda list-functions\nB"],
   ['allow', "& \"C:" + BS + "Program Files" + BS + "Amazon" + BS + "AWSCLIV2" + BS + "aws.exe\" lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'", 'PowerShell'],
 ];
 

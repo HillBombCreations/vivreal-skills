@@ -47,11 +47,18 @@ function routesFor(routes, repo) {
   return routes.filter((r) => r.repo === '*' || (repo && r.repo.toLowerCase() === repo.toLowerCase()));
 }
 
-/** The route a first word selects in `repo`; a repo-specific row beats a '*' row. */
-function routeForWord(routes, word, repo) {
+/**
+ * The route a first word selects in `repo`; a repo-specific row beats a '*' row. A row with
+ * `requiresAny` only matches when `description` also contains one of those words, so a word
+ * shared with unrelated work ("publish" the site content) does not select it on its own.
+ */
+function routeForWord(routes, word, repo, description = '') {
   const w = String(word || '').toLowerCase();
   if (!w) return null;
-  const hits = routes.filter((r) => r.keywords.includes(w));
+  const desc = String(description).toLowerCase();
+  const hits = routes.filter(
+    (r) => r.keywords.includes(w) && (!Array.isArray(r.requiresAny) || r.requiresAny.some((t) => desc.includes(t))),
+  );
   return (
     hits.find((r) => repo && r.repo.toLowerCase() === repo.toLowerCase()) ||
     hits.find((r) => r.repo === '*') ||

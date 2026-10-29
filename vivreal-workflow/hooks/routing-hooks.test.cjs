@@ -126,6 +126,29 @@ test('REFUSE: a dispatch on the legacy Task tool name is still judged', () => {
   assert.equal(decisionOf(r.stdout).permissionDecision, 'deny');
 });
 
+test('ALLOW: publishing site content is not a package publish', () => {
+  for (const description of ['Publish the site content corrections', 'Publish the help page edits to help.vivreal.io']) {
+    const r = run(
+      GUARD,
+      { cwd: cms, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '', `routed "${description}" to a package route`);
+  }
+});
+
+test('REFUSE: publishing a package still routes to package-publisher', () => {
+  for (const description of ['Publish @hillbombcreations/schemas', 'Publish the new package version', 'Bump the renderer pin']) {
+    const r = run(
+      GUARD,
+      { cwd: cms, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-workflow:package-publisher/, description);
+  }
+});
+
 test('session hook prints nothing outside a Vivreal checkout (control)', () => {
   const r = run(SESSION, { cwd: elsewhere }, { VIVREAL_REPOS: root });
   assert.equal(r.status, 0);

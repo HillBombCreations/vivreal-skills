@@ -1,5 +1,5 @@
 {
-  "description": "Which Vivreal agent owns which task. Read by the session-routing and dispatch-guard hooks; check-definitions R13 proves every agent here exists. A route with a repo applies only in that repository and wins over a '*' route with the same keyword. Keywords are lowercase first words of a dispatch description, unique within one repo value; a word that also opens unrelated work (setup, try, explain, help) is left out, and a route with no keywords is listed by the session hook but never enforced.",
+  "description": "Which Vivreal agent owns which task. Read by the session-routing and dispatch-guard hooks; check-definitions R13 proves every agent here exists. A route with a repo applies only in that repository and wins over a '*' route with the same keyword. Keywords are lowercase first words of a dispatch description, unique within one repo value; a word that also opens unrelated work (setup, try, explain, help) is left out, a route with no keywords is listed by the session hook but never enforced, and a route with requiresAny is enforced only when the description also contains one of those words.",
   "routes": [
     { "task": "code in any repo except the portal", "agent": "vivreal-principal:coder", "keywords": ["fix", "implement", "build", "add", "refactor", "patch", "wire", "port"], "repo": "*", "note": "one repo per dispatch, ends in a pushed PR" },
     { "task": "portal code", "agent": "vivreal-principal:portal-coder", "keywords": ["fix", "implement", "build", "add", "refactor", "patch", "wire", "port"], "repo": "Vivreal_Portal_Mobile", "note": "say the mode: SOLO, PARALLEL, INTEGRATE, FOLLOWUP" },
@@ -9,7 +9,7 @@
     { "task": "diagnosis, audits, end-to-end traces, external web research", "agent": "vivreal-principal:researcher", "keywords": ["investigate", "research", "diagnose", "audit", "trace"], "repo": "*", "note": "" },
     { "task": "reviews", "agent": "vivreal-principal:reviewer", "keywords": ["review"], "repo": "*", "note": "" },
     { "task": "agent and skill definition review", "agent": "vivreal-agent-review:definition-reviewer", "keywords": ["definition", "definitions"], "repo": "*", "note": "" },
-    { "task": "package publish and pin moves", "agent": "vivreal-workflow:package-publisher", "keywords": ["publish", "bump"], "repo": "*", "note": "" },
+    { "task": "package publish and pin moves", "agent": "vivreal-workflow:package-publisher", "keywords": ["publish", "bump"], "requiresAny": ["package", "npm", "version", "bump", "@hillbombcreations"], "repo": "*", "note": "publishing site or help content is not this route, so publish alone does not select it" },
     { "task": "ledgers", "agent": "vivreal-workflow:ledger-keeper", "keywords": ["ledger"], "repo": "*", "note": "" },
     { "task": "dev docs", "agent": "vivreal-workflow:system-doc-writer", "keywords": ["document", "docs"], "repo": "*", "note": "" },
     { "task": "infrastructure changes", "agent": "vivreal-infra:infra-engineer", "keywords": ["provision", "iam", "cloudformation", "infra"], "repo": "*", "note": "" },

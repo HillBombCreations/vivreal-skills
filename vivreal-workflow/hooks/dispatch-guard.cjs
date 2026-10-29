@@ -18,7 +18,7 @@ try {
   if (!repo) process.exit(0);
   // Letters, digits and hyphens, the keyword shape check-definitions R13 enforces ("ga4").
   const first = (desc.match(/^[A-Za-z][A-Za-z0-9-]*/) || [''])[0];
-  const route = routeForWord(loadRoutes(), first, repo);
+  const route = routeForWord(loadRoutes(), first, repo, desc);
   if (!route) process.exit(0);
   const reason =
     `Route this to ${route.agent} (${route.task}). ` +
