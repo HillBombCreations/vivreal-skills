@@ -23,6 +23,15 @@ jobs:
         run: node scripts/check-definitions.mjs
       - name: check-definitions self-test
         run: node scripts/check-definitions.mjs --self-test
+      - name: hook and script tests
+        # Files named one by one: `node --test <directory>` failed on Windows in the PR #60 review.
+        run: >-
+          node --test
+          vivreal-workflow/hooks/routing-hooks.test.cjs
+          vivreal-workflow/hooks/package-nudge.test.cjs
+          scripts/skill-drift.test.mjs
+      - name: lambda env guard self-test
+        run: node vivreal-infra/hooks/lambda-env-guard.cjs --self-test
       - name: claude plugin validate
         # Runs without a login: proved locally in a fresh CLAUDE_CONFIG_DIR before this file was written.
         env:

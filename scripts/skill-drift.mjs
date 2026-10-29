@@ -63,26 +63,58 @@ export function listSources(doc) {
   return out;
 }
 
+// How far before the synced commit's date the commits fallback looks. A commit merged after
+// the sync can carry an older committer date (a long-lived branch), and `since` filters on it.
+const SINCE_SLACK_DAYS = 90;
+
+/** One `gh api` call; stdout lines, or { error } with gh's own message. */
+function ghApi(args) {
+  const res = spawnSync('gh', ['api', ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  if (res.error || res.status !== 0) {
+    return { error: (res.error && res.error.message) || (res.stderr || '').trim() || `gh exited ${res.status}` };
+  }
+  return { lines: res.stdout.split('\n').map((l) => l.trim()).filter(Boolean) };
+}
+
 function compare(src) {
   // --paginate walks every page of commits; --jq runs per page, so each page is one line.
-  const res = spawnSync(
-    'gh',
-    [
-      'api',
-      '--paginate',
-      `repos/${ORG}/${src.repo}/compare/${src.synced}...${encodeURIComponent(src.ref)}`,
-      '--jq',
-      '{status: .status, ahead: .ahead_by, behind: .behind_by, files: [.files[]?.filename]}',
-    ],
-    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
-  );
-  if (res.error || res.status !== 0) {
-    return { error: (res.error && res.error.message) || res.stderr.trim() || `gh exited ${res.status}` };
-  }
-  const pages = res.stdout.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
+  // Files come on the first page only, capped at COMPARE_FILE_CAP; commits come on every page.
+  const res = ghApi([
+    '--paginate',
+    `repos/${ORG}/${src.repo}/compare/${src.synced}...${encodeURIComponent(src.ref)}`,
+    '--jq',
+    '{status: .status, ahead: .ahead_by, behind: .behind_by, files: [.files[]?.filename], commits: [.commits[]?.sha]}',
+  ]);
+  if (res.error) return res;
+  const pages = res.lines.map((l) => JSON.parse(l));
   if (pages.length === 0) return { error: 'gh api returned no page' };
   const files = [...new Set(pages.flatMap((p) => p.files))];
-  return { status: pages[0].status, ahead: pages[0].ahead, behind: pages[0].behind, files };
+  const commits = [...new Set(pages.flatMap((p) => p.commits || []))];
+  return { status: pages[0].status, ahead: pages[0].ahead, behind: pages[0].behind, files, commits };
+}
+
+/**
+ * When the file list is truncated, the commits ahead of `synced` that touch any of `paths`,
+ * from the path-scoped commits API intersected with the compare's own ahead set. Returns
+ * { shas } or { error }; an error means the row cannot be called fresh.
+ */
+function aheadCommitsTouching(src, aheadShas) {
+  const when = ghApi([`repos/${ORG}/${src.repo}/commits/${src.synced}`, '--jq', '.commit.committer.date']);
+  if (when.error) return { error: `synced commit date: ${when.error}` };
+  const date = Date.parse(when.lines[0]);
+  if (Number.isNaN(date)) return { error: `synced commit date unreadable: ${when.lines[0]}` };
+  const since = new Date(date - SINCE_SLACK_DAYS * 24 * 3600 * 1000).toISOString();
+  const ahead = new Set(aheadShas);
+  const hits = new Set();
+  for (const p of src.paths) {
+    const query =
+      `sha=${encodeURIComponent(src.ref)}&path=${encodeURIComponent(p.replace(/\/$/, ''))}` +
+      `&since=${encodeURIComponent(since)}&per_page=100`;
+    const res = ghApi(['--paginate', `repos/${ORG}/${src.repo}/commits?${query}`, '--jq', '.[].sha']);
+    if (res.error) return { error: `commits touching ${p}: ${res.error}` };
+    for (const sha of res.lines) if (ahead.has(sha)) hits.add(sha);
+  }
+  return { shas: [...hits] };
 }
 
 function main() {
@@ -108,8 +140,7 @@ function main() {
       errors.push(`${src.skill} ${src.repo}@${src.ref}: ${r.error}`);
       continue;
     }
-    const matching = r.files.filter((f) => matchesPaths(f, src.paths));
-    rows.push({
+    const row = {
       skill: src.skill,
       repo: src.repo,
       ref: src.ref,
@@ -117,29 +148,63 @@ function main() {
       status: r.status,
       ahead: r.ahead,
       behind: r.behind,
-      matching: matching.length,
       filesTruncated: r.files.length >= COMPARE_FILE_CAP,
-      first: matching.slice(0, 10),
-    });
+      unit: 'files',
+      unknown: null,
+    };
+    if (!row.filesTruncated) {
+      const matching = r.files.filter((f) => matchesPaths(f, src.paths));
+      row.matching = matching.length;
+      row.first = matching.slice(0, 10);
+    } else if (r.commits.length !== r.ahead) {
+      // The fallback intersects with the compare's ahead set, so that set must be whole.
+      row.unknown = `file list truncated at ${COMPARE_FILE_CAP} and the compare listed ${r.commits.length} of ${r.ahead} ahead commits`;
+    } else {
+      // The file list stops at COMPARE_FILE_CAP, so an empty match there proves nothing.
+      const hit = aheadCommitsTouching(src, r.commits);
+      if (hit.error) {
+        row.unknown = `file list truncated at ${COMPARE_FILE_CAP} and the commits fallback failed: ${hit.error}`;
+      } else {
+        row.unit = 'commits';
+        row.matching = hit.shas.length;
+        row.first = hit.shas.slice(0, 10).map((s) => s.slice(0, 7));
+      }
+    }
+    if (row.unknown) {
+      row.matching = null;
+      row.first = [];
+    }
+    rows.push(row);
   }
 
+  const unknown = rows.filter((r) => r.unknown);
   if (args.json) {
     console.log(JSON.stringify({ compared: rows.length, inFile: sources.length, rows, errors }, null, 2));
   } else {
-    const stale = rows.filter((r) => r.matching > 0);
+    const stale = rows.filter((r) => r.unknown || r.matching > 0);
     for (const r of rows) {
-      const cap = r.filesTruncated ? ' (GitHub lists 300 files at most; there are more)' : '';
       const div = r.status === 'diverged' ? ` DIVERGED, ${r.behind} behind` : '';
+      const head = `${r.skill} | ${r.repo}@${r.ref} | ${r.ahead} ahead${div} | `;
+      if (r.unknown) {
+        console.log(`UNKNOWN ${head}${r.unknown}`);
+        continue;
+      }
+      const how = r.unit === 'commits' ? ` (file list truncated at ${COMPARE_FILE_CAP}; resolved by the commits API)` : '';
+      const label = r.unit === 'commits' ? 'matching commits' : 'matching';
       console.log(
-        `${r.matching > 0 ? 'STALE' : 'ok   '} ${r.skill} | ${r.repo}@${r.ref} | ${r.ahead} ahead${div} | ` +
-          `${r.matching} matching${cap}${r.first.length ? ' | ' + r.first.join(', ') : ''}`,
+        `${r.matching > 0 ? 'STALE' : 'ok   '} ${head}${r.matching} ${label}${how}` +
+          `${r.first.length ? ' | ' + r.first.join(', ') : ''}`,
       );
     }
-    console.log(`\n${rows.length} of ${sources.length} sources compared, ${stale.length} with matching changes.`);
+    console.log(
+      `\n${rows.length} of ${sources.length} sources compared, ${stale.length} with matching changes or unknown ` +
+        `(${unknown.length} unknown).`,
+    );
     for (const e of errors) console.error(`ERROR ${e}`);
   }
 
-  if (errors.length > 0 || rows.length !== sources.length) process.exit(2);
+  // An UNKNOWN row is a source that could not be called fresh, so it fails the run like an error.
+  if (errors.length > 0 || unknown.length > 0 || rows.length !== sources.length) process.exit(2);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();

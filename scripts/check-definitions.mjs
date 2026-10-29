@@ -35,11 +35,15 @@
  *   8. A reference to behaviour that has been deleted from the product.
  *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
  *      buys a reader nothing that a profile name and a region do not.
- *  11. A literal machine path (a drive-letter clone root, a user home) outside docs/. Paths
- *      go through ${VIVREAL_REPOS}.
+ *  11. A literal machine path (a drive-letter clone root, a user home) outside docs/, with
+ *      single or escaped (doubled) separators. Paths go through ${VIVREAL_REPOS}.
  *  12. A plugin changed since the merge base whose plugin.json version did not go up. An
- *      unbumped plugin does not reinstall. Needs git and a base ref; without them it warns.
- *  13. A route in `<plugin>/routing/routes.json` whose agent has no agent file.
+ *      unbumped plugin does not reinstall. A cross-plugin move counts for BOTH plugins, and
+ *      a bump past the next minor (other than to the next major) fails, since a plugin bumps
+ *      once per PR. Needs git and a base ref; without them it warns, and it warns when it
+ *      compared zero plugins (a run on main).
+ *  13. A route in `<plugin>/routing/routes.json` whose agent has no agent file, or a keyword
+ *      that is not lowercase letters, digits and hyphens, or is repeated under one repo value.
  *  14. A vivreal-knowledge or vivreal-infra skill with no entry in scripts/skill-sources.json,
  *      an entry for a skill that no longer exists, or a `synced` that is not 40 hex. The
  *      stale-skill monitor (scripts/skill-drift.mjs) can only watch what is listed there.
@@ -50,7 +54,9 @@
  * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
  * that LOADS an agent as a skill, since an agent has no skill entry to load.
  *
- * It warns (without failing) on a description over the documented length and an
+ * A SKILL description over 1,024 characters (the documented limit) fails under rule 1.
+ *
+ * It warns (without failing) on an agent or command description over that length and an
  * `mcp__<server>__` prefix no known server declares.
  *
  * Run:  node scripts/check-definitions.mjs
@@ -69,7 +75,8 @@
  * that is red no matter what is as useless as one that is green no matter what.
  */
 
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -176,16 +183,30 @@ function ruleParse(files) {
     if (!keys.description || !keys.description.trim()) {
       fail('parse', rel, 'frontmatter has no description. Nothing will ever choose to load this file.');
     }
-    // Length is a WARNING, not a failure. The documented skill limit is 1,024
-    // characters and the combined description plus when_to_use text is truncated at
-    // 1,536 in the skill listing, so anything past that is silently dropped from the
-    // listing, and the dropped part is the tail. The tail is where every one of these
-    // files put its "distinct from X" disambiguation, which is the sentence that
-    // stops two agents stealing each other's dispatches. It does not stop the file
-    // loading, and shortening a description changes which tasks the agent is chosen
-    // for, so this is reported rather than fixed.
+    // For a SKILL, over 1,024 characters is a FAILURE: that is the documented skill
+    // limit, so the file is out of spec however it loads today. A block scalar is
+    // measured by its text, not skipped.
+    //
+    // For an agent or a command, length is a WARNING. The combined description plus
+    // when_to_use text is truncated at 1,536 in the listing, so anything past that is
+    // silently dropped, and the dropped part is the tail. The tail is where every one
+    // of these files put its "distinct from X" disambiguation, which is the sentence
+    // that stops two agents stealing each other's dispatches. It does not stop the
+    // file loading, and shortening a description changes which tasks the agent is
+    // chosen for, so this is reported rather than fixed.
     const dlen = keys.description ? keys.description.trim().length : 0;
-    if (dlen > 1024 && !keys.description.startsWith('|')) {
+    if (isSkill && keys.description) {
+      const text = keys.description.trim();
+      const slen = /^[|>]/.test(text) ? text.replace(/^[|>][-+]?[^\n]*\n?/, '').length : dlen;
+      if (slen > 1024) {
+        fail(
+          'description-length',
+          rel,
+          `skill description is ${slen} characters, over the documented 1,024 limit. ` +
+            'Cut what the trigger list already names; keep every trigger word.',
+        );
+      }
+    } else if (dlen > 1024 && !keys.description.startsWith('|')) {
       warn(
         'description-length',
         rel,
@@ -841,9 +862,11 @@ function ruleAwsAccountId(files) {
 const BSL = String.fromCharCode(92);
 const MACHINE_PATH = new RegExp(
   [
-    '[Cc]:[' + BSL + BSL + '/]repos\\b',
+    // A separator is one or more of either slash, so the escaped form a .js, .cjs or .json
+    // string holds (two backslashes) is caught as well as the single one.
+    '[Cc]:[' + BSL + BSL + '/]+repos\\b',
     '/c' + '/repos\\b',
-    '[Cc]:[' + BSL + BSL + '/]Users[' + BSL + BSL + '/]',
+    '[Cc]:[' + BSL + BSL + '/]+Users[' + BSL + BSL + '/]+',
     '(^|[^A-Za-z0-9_.$}-])/Users/[A-Za-z0-9._-]+/',
     '(^|[^A-Za-z0-9_.$}-])/home/[A-Za-z0-9._-]+/',
   ].join('|'),
@@ -888,6 +911,15 @@ function semverGreater(a, b) {
   return false;
 }
 
+/**
+ * The highest version one PR may carry (DC9: each plugin bumps once per PR): the next minor,
+ * or the next major for a deliberate break. A patch bump sits below the next minor and passes.
+ */
+function bumpCeilings(base) {
+  const [major, minor] = String(base).split('.').map(Number);
+  return [`${major}.${minor + 1}.0`, `${major + 1}.0.0`];
+}
+
 /** Pure decision, so the self-test can drive it without a git history. */
 function versionBumpFindings(changedDirs, baseVersionOf, headVersionOf) {
   const out = [];
@@ -896,10 +928,32 @@ function versionBumpFindings(changedDirs, baseVersionOf, headVersionOf) {
     const head = headVersionOf(dir);
     if (base === null || head === null) continue; // new or deleted plugin
     if (!semverGreater(head, base)) {
-      out.push({ dir, base, head });
+      out.push({ dir, base, head, why: 'not-bumped' });
+      continue;
+    }
+    const [nextMinor, nextMajor] = bumpCeilings(base);
+    if (semverGreater(head, nextMinor) && head !== nextMajor) {
+      out.push({ dir, base, head, why: 'skipped', nextMinor });
     }
   }
   return out;
+}
+
+/** How many plugins the last R12 run compared, printed so a zero cannot pass in silence. */
+let versionBumpCompared = null;
+
+/** The top-level directories with any change between `mb` and the working tree under `cwd`. */
+function changedDirsSince(cwd, mb) {
+  const run = (args) =>
+    execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  // --no-renames: with rename detection a cross-plugin move prints only its NEW path, so the
+  // plugin it left looked unchanged and could ship unbumped. Untracked files are in no diff,
+  // so a local run lists them separately.
+  const paths = [
+    ...run(['diff', '--no-renames', '--name-only', mb]).split('\n'),
+    ...run(['ls-files', '--others', '--exclude-standard']).split('\n'),
+  ];
+  return new Set(paths.filter(Boolean).map((p) => p.split('/')[0]));
 }
 
 let gitContextCache;
@@ -911,10 +965,7 @@ function gitContext() {
   const baseRef = process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main';
   try {
     const mb = run(['merge-base', 'HEAD', baseRef]);
-    const changed = run(['diff', '--name-only', mb])
-      .split('\n')
-      .filter(Boolean)
-      .map((p) => p.split('/')[0]);
+    const changed = changedDirsSince(ROOT, mb);
     const baseVersionOf = (dir) => {
       try {
         return JSON.parse(run(['show', `${mb}:${dir}/.claude-plugin/plugin.json`])).version ?? null;
@@ -947,12 +998,24 @@ function ruleVersionBump() {
     );
     return;
   }
+  const compared = [...ctx.changed].filter((d) => ctx.baseVersionOf(d) !== null && headVersionOf(d) !== null);
+  versionBumpCompared = { count: compared.length, baseRef: ctx.baseRef, mb: ctx.mb };
+  if (compared.length === 0 && PLUGIN_DIRS.length > 0) {
+    warn(
+      'version-bump',
+      '(git)',
+      `compared 0 plugins against ${ctx.baseRef} (merge base ${ctx.mb.slice(0, 7)}). On main, or with the merge ` +
+        'base at HEAD, there is nothing to compare, so this run proves nothing about versions.',
+    );
+  }
   for (const f of versionBumpFindings(ctx.changed, ctx.baseVersionOf, headVersionOf)) {
     fail(
       'version-bump',
       `${f.dir}/.claude-plugin/plugin.json`,
-      `${f.dir} changed since ${ctx.baseRef} (merge base ${ctx.mb.slice(0, 7)}) but its version ${f.head} ` +
-        `is not above the base's ${f.base}. An unbumped plugin does not reinstall.`,
+      f.why === 'skipped'
+        ? `${f.dir} went from ${f.base} to ${f.head}, past the next minor ${f.nextMinor}. A plugin bumps once per PR (DC9).`
+        : `${f.dir} changed since ${ctx.baseRef} (merge base ${ctx.mb.slice(0, 7)}) but its version ${f.head} ` +
+            `is not above the base's ${f.base}. An unbumped plugin does not reinstall.`,
     );
   }
 }
@@ -977,9 +1040,29 @@ function ruleRoutesResolve(files) {
       fail('routes-resolve', rel, 'holds no routes array, so nothing here was checked');
       continue;
     }
+    // Keywords: routeForWord lowercases the dispatch's first word and never the keyword, and
+    // the guard takes that word as letters, digits and hyphens, so a keyword outside that shape
+    // can never match. A keyword twice under one repo value means the second route never wins.
+    const seen = new Map();
     routes.forEach((r, i) => {
       if (!agents.has(r.agent)) {
         fail('routes-resolve', `${rel} route ${i + 1}`, `"${r.agent}" (${r.task}) is not an agent file in this repo`);
+      }
+      if (!Array.isArray(r.keywords)) {
+        fail('route-keywords', `${rel} route ${i + 1}`, `"${r.task}" has no keywords array`);
+        return;
+      }
+      for (const k of r.keywords) {
+        if (typeof k !== 'string' || !/^[a-z][a-z0-9-]*$/.test(k)) {
+          fail('route-keywords', `${rel} route ${i + 1}`, `keyword "${k}" is not lowercase letters, digits and hyphens, so no dispatch can match it`);
+          continue;
+        }
+        const key = `${String(r.repo).toLowerCase()}|${k}`;
+        if (seen.has(key)) {
+          fail('route-keywords', `${rel} route ${i + 1}`, `keyword "${k}" already routes to ${seen.get(key)} in repo "${r.repo}", so this route never wins`);
+        } else {
+          seen.set(key, r.agent);
+        }
       }
     });
   }
@@ -1324,6 +1407,85 @@ function selfTest() {
         'Read `${VIVREAL_REPOS}/x/CLAUDE.md` first.\n',
     },
     {
+      // PR #60 review M2: how a path is written inside any .js, .cjs or .json string.
+      rule: 'machine-path',
+      label: 'machine-path: an escaped Windows clone root',
+      path: join(tmp, 'skills', 'escaped-path', 'SKILL.md'),
+      body:
+        '---\nname: escaped-path\ndescription: fixture\n---\n\n`const p = \'C:' + BSL + BSL + 'repos' + BSL + BSL + 'x\';`\n',
+    },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: an escaped Windows user profile',
+      path: join(tmp, 'skills', 'escaped-user', 'SKILL.md'),
+      body:
+        '---\nname: escaped-user\ndescription: fixture\n---\n\n`"C:' + BSL + BSL + 'Users' + BSL + BSL + 'someone"`\n',
+    },
+    {
+      // Definition review blocker: the documented skill limit is 1,024 characters.
+      rule: 'description-length',
+      label: 'description-length: a skill over 1,024',
+      path: join(tmp, 'skills', 'long-skill', 'SKILL.md'),
+      body: '---\nname: long-skill\ndescription: ' + 'x'.repeat(1025) + '\n---\n\nbody\n',
+    },
+    {
+      rule: 'description-length',
+      label: 'description-length: a block-scalar skill over 1,024',
+      path: join(tmp, 'skills', 'long-block', 'SKILL.md'),
+      body: '---\nname: long-block\ndescription: |\n  ' + 'y'.repeat(600) + '\n  ' + 'y'.repeat(600) + '\n---\n\nbody\n',
+    },
+    {
+      rule: 'description-length',
+      kind: 'clean',
+      label: 'description-length: a skill at exactly 1,024',
+      path: join(tmp, 'skills', 'edge-skill', 'SKILL.md'),
+      body: '---\nname: edge-skill\ndescription: ' + 'x'.repeat(1024) + '\n---\n\nbody\n',
+    },
+    {
+      // An agent over the limit stays a WARNING: its length decides dispatch, not loading.
+      rule: 'description-length',
+      kind: 'clean',
+      label: 'description-length: an agent over 1,024 only warns',
+      path: join(tmp, 'agents', 'long-agent.md'),
+      body:
+        '---\nname: long-agent\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply. ' +
+        'z'.repeat(1100) + '\ntools: Read\n---\n\nbody\n',
+    },
+    {
+      // PR #60 review L3: routeForWord lowercases the word, never the keyword.
+      rule: 'route-keywords',
+      label: 'route-keywords: an uppercase keyword',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['Fix'], repo: '*' }] }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    {
+      rule: 'route-keywords',
+      label: 'route-keywords: one keyword twice in one repo',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({
+        routes: [
+          { task: 'a', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix'], repo: '*' },
+          { task: 'b', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix'], repo: '*' },
+        ],
+      }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    {
+      // The repo-specific override pattern (portal-coder over coder) is legal.
+      rule: 'route-keywords',
+      kind: 'clean',
+      label: 'route-keywords: one keyword in two repos',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({
+        routes: [
+          { task: 'a', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix', 'ga4'], repo: '*' },
+          { task: 'b', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix'], repo: 'Some_Repo' },
+        ],
+      }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    {
       rule: 'routes-resolve',
       label: 'routes-resolve: a route to no agent',
       path: join(tmp, 'routing', 'routes.json'),
@@ -1383,6 +1545,12 @@ function selfTest() {
       { label: 'version-bump: changed and bumped', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.3.0' } },
       { label: 'version-bump: plugin deleted at HEAD', want: 0, dirs: ['gone'], base: { gone: '1.0.0' }, head: {} },
       { label: 'version-bump: plugin new since base', want: 0, dirs: ['fresh'], base: {}, head: { fresh: '0.1.0' } },
+      // PR #60 review L1: DC9 bumps once per PR, to the next minor.
+      { label: 'version-bump: two minors at once', want: 1, dirs: ['p'], base: { p: '1.30.0' }, head: { p: '1.32.0' } },
+      { label: 'version-bump: a patch bump', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.2.1' } },
+      { label: 'version-bump: the next major', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '2.0.0' } },
+      // PR #60 review M1: the SOURCE of a cross-plugin move is a changed plugin.
+      { label: 'version-bump: moved-from plugin unbumped', want: 1, dirs: ['src', 'dst'], base: { src: '1.0.0', dst: '1.0.0' }, head: { src: '1.0.0', dst: '1.1.0' } },
     ];
     for (const b of bumpCases) {
       const got = versionBumpFindings(
@@ -1396,6 +1564,45 @@ function selfTest() {
           (correct ? '(correct)' : b.want ? '(THIS CHECK CANNOT FAIL)' : '(THIS CHECK REFUSES A VALID CHANGE)'),
       );
       if (!correct) allCanFail = false;
+    }
+
+    // R12's changed-directory set comes from git, so its control runs real git in a scratch
+    // repository outside this one: a cross-plugin `git mv` must name BOTH plugins (rename
+    // detection used to print only the new path), and an untracked new file must count.
+    {
+      const scratch = mkdtempSync(join(tmpdir(), 'vr-r12-'));
+      const g = (...args) =>
+        execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', '-c', 'core.autocrlf=false', ...args], {
+          cwd: scratch,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+      try {
+        g('init', '-q');
+        mkdirSync(join(scratch, 'plugin-src', 'commands'), { recursive: true });
+        mkdirSync(join(scratch, 'plugin-dst', 'commands'), { recursive: true });
+        mkdirSync(join(scratch, 'plugin-new'), { recursive: true });
+        writeFileSync(join(scratch, 'plugin-src', 'commands', 'moved.md'), 'a command body long enough to be a rename\n'.repeat(5));
+        writeFileSync(join(scratch, 'plugin-dst', 'commands', 'stay.md'), 'stays\n');
+        g('add', '-A');
+        g('commit', '-q', '-m', 'base');
+        const base = g('rev-parse', 'HEAD');
+        g('mv', 'plugin-src/commands/moved.md', 'plugin-dst/commands/moved.md');
+        g('commit', '-q', '-m', 'move');
+        writeFileSync(join(scratch, 'plugin-new', 'untracked.md'), 'new\n');
+        const dirs = changedDirsSince(scratch, base);
+        const gitCases = [
+          { label: 'version-bump: git sees a move source', ok: dirs.has('plugin-src') },
+          { label: 'version-bump: git sees a move target', ok: dirs.has('plugin-dst') },
+          { label: 'version-bump: git sees an untracked file', ok: dirs.has('plugin-new') },
+        ];
+        for (const c of gitCases) {
+          console.log(`  ${c.ok ? 'RED   ' : 'GREEN '} ${c.label.padEnd(34)} ` + (c.ok ? '(correct)' : '(THIS CHECK CANNOT FAIL)'));
+          if (!c.ok) allCanFail = false;
+        }
+      } finally {
+        rmSync(scratch, { recursive: true, force: true });
+      }
     }
 
     // R14 reads one fixed file, so its control drives the pure decision directly too.
@@ -1463,6 +1670,12 @@ for (const f of failures) {
 }
 
 console.log(`Scanned ${files.length} files across ${PLUGIN_DIRS.length} plugin trees.`);
+if (versionBumpCompared) {
+  console.log(
+    `Version bump (R12): compared ${versionBumpCompared.count} changed plugins against ${versionBumpCompared.baseRef} ` +
+      `(merge base ${versionBumpCompared.mb.slice(0, 7)}).`,
+  );
+}
 
 if (warnings.length) {
   const byWarn = new Map();
