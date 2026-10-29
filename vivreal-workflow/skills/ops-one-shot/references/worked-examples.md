@@ -1,6 +1,6 @@
 # Worked examples: the three v7.1 one-shots
 
-Three scripts built and reviewed on 2026-10-20 under `C:\repos\_ops\` (`v71-orphan-site-lists`,
+Three scripts built and reviewed on 2026-10-20 under `${VIVREAL_REPOS}/_ops/` (`v71-orphan-site-lists`,
 `v71-usage-reconcile`, `v71-business-timezone`). They are described here by shape only. No id, count,
 group, site or address from them belongs in this repository; read the folders themselves when you need
 the detail. Each passed review with every guard red by its named test.

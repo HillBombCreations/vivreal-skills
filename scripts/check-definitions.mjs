@@ -35,6 +35,18 @@
  *   8. A reference to behaviour that has been deleted from the product.
  *   9. An AWS account id, anywhere. This repository is PUBLIC, and an account id
  *      buys a reader nothing that a profile name and a region do not.
+ *  11. A literal machine path (a drive-letter clone root, a user home) outside docs/, with
+ *      single or escaped (doubled) separators. Paths go through ${VIVREAL_REPOS}.
+ *  12. A plugin changed since the merge base whose plugin.json version did not go up. An
+ *      unbumped plugin does not reinstall. A cross-plugin move counts for BOTH plugins, and
+ *      a bump past the next minor (other than to the next major) fails, since a plugin bumps
+ *      once per PR. Needs git and a base ref; without them it warns, and it warns when it
+ *      compared zero plugins (a run on main).
+ *  13. A route in `<plugin>/routing/routes.json` whose agent has no agent file, or a keyword
+ *      that is not lowercase letters, digits and hyphens, or is repeated under one repo value.
+ *  14. A vivreal-knowledge or vivreal-infra skill with no entry in scripts/skill-sources.json,
+ *      an entry for a skill that no longer exists, or a `synced` that is not 40 hex. The
+ *      stale-skill monitor (scripts/skill-drift.mjs) can only watch what is listed there.
  *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
  *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
  *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
@@ -42,7 +54,9 @@
  * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
  * that LOADS an agent as a skill, since an agent has no skill entry to load.
  *
- * It warns (without failing) on a description over the documented length and an
+ * A SKILL description over 1,024 characters (the documented limit) fails under rule 1.
+ *
+ * It warns (without failing) on an agent or command description over that length and an
  * `mcp__<server>__` prefix no known server declares.
  *
  * Run:  node scripts/check-definitions.mjs
@@ -61,9 +75,11 @@
  * that is red no matter what is as useless as one that is green no matter what.
  */
 
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, relative, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const norm = (p) => p.split(sep).join('/');
@@ -167,16 +183,30 @@ function ruleParse(files) {
     if (!keys.description || !keys.description.trim()) {
       fail('parse', rel, 'frontmatter has no description. Nothing will ever choose to load this file.');
     }
-    // Length is a WARNING, not a failure. The documented skill limit is 1,024
-    // characters and the combined description plus when_to_use text is truncated at
-    // 1,536 in the skill listing, so anything past that is silently dropped from the
-    // listing, and the dropped part is the tail. The tail is where every one of these
-    // files put its "distinct from X" disambiguation, which is the sentence that
-    // stops two agents stealing each other's dispatches. It does not stop the file
-    // loading, and shortening a description changes which tasks the agent is chosen
-    // for, so this is reported rather than fixed.
+    // For a SKILL, over 1,024 characters is a FAILURE: that is the documented skill
+    // limit, so the file is out of spec however it loads today. A block scalar is
+    // measured by its text, not skipped.
+    //
+    // For an agent or a command, length is a WARNING. The combined description plus
+    // when_to_use text is truncated at 1,536 in the listing, so anything past that is
+    // silently dropped, and the dropped part is the tail. The tail is where every one
+    // of these files put its "distinct from X" disambiguation, which is the sentence
+    // that stops two agents stealing each other's dispatches. It does not stop the
+    // file loading, and shortening a description changes which tasks the agent is
+    // chosen for, so this is reported rather than fixed.
     const dlen = keys.description ? keys.description.trim().length : 0;
-    if (dlen > 1024 && !keys.description.startsWith('|')) {
+    if (isSkill && keys.description) {
+      const text = keys.description.trim();
+      const slen = /^[|>]/.test(text) ? text.replace(/^[|>][-+]?[^\n]*\n?/, '').length : dlen;
+      if (slen > 1024) {
+        fail(
+          'description-length',
+          rel,
+          `skill description is ${slen} characters, over the documented 1,024 limit. ` +
+            'Cut what the trigger list already names; keep every trigger word.',
+        );
+      }
+    } else if (dlen > 1024 && !keys.description.startsWith('|')) {
       warn(
         'description-length',
         rel,
@@ -303,7 +333,7 @@ function ruleCrossReferences(files) {
     ].some((re) => re.test(text));
   };
   // Two phrasings that name no plugin:skill pair and so slip past REF below: a wildcard over a
-  // plugin that ships no skills ("the `vivreal-experts:*` skills"), and a bare agent name called
+  // plugin that ships no skills ("the `<plugin>:*` skills"), and a bare agent name called
   // a skill ("the `content-planner` skill"). Both were live after the agent mirrors left.
   const pluginsWithSkills = new Set([...known].map((r) => r.split(':')[0]));
   const skillNames = new Set([...known].map((r) => r.split(':')[1]));
@@ -787,7 +817,12 @@ function ruleDeletedBehaviour(files) {
 // No allowlist, deliberately. There is no legitimate 12-digit run anywhere in this
 // repository today, so an exemption list would only be a place for the next one to
 // hide. Write the profile and the region, or write <account-id>.
-const ACCOUNT_ID = /(?<![0-9])[0-9]{12}(?![0-9])/;
+//
+// Shape, not exemption: the run must not touch a hex letter on either side, because a
+// 40-hex git SHA (every `synced` in scripts/skill-sources.json, R14) routinely holds a
+// 12-digit run, and an account id never sits inside a hex token. An ARN, a bucket name
+// or a bare id is still bounded by `:`, `-`, `/` or a space, and still fails.
+const ACCOUNT_ID = /(?<![0-9a-fA-F])[0-9]{12}(?![0-9a-fA-F])/;
 
 /** first three and last three digits only, so a report can name a hit without republishing it */
 const maskAccount = (v) => `${v.slice(0, 3)}...${v.slice(-3)}`;
@@ -820,6 +855,276 @@ function ruleAwsAccountId(files) {
   }
 }
 
+// ------------------------------------------------- rule 11: machine paths (R11)
+// A literal clone path works on one machine and silently reads a stale or absent tree on every
+// other. Paths go through ${VIVREAL_REPOS}. The patterns are built from character codes so this
+// file never holds the strings it refuses. docs/ is history and is not scanned.
+const BSL = String.fromCharCode(92);
+const MACHINE_PATH = new RegExp(
+  [
+    // A separator is one or more of either slash, so the escaped form a .js, .cjs or .json
+    // string holds (two backslashes) is caught as well as the single one.
+    '[Cc]:[' + BSL + BSL + '/]+repos\\b',
+    '/c' + '/repos\\b',
+    '[Cc]:[' + BSL + BSL + '/]+Users[' + BSL + BSL + '/]+',
+    '(^|[^A-Za-z0-9_.$}-])/Users/[A-Za-z0-9._-]+/',
+    '(^|[^A-Za-z0-9_.$}-])/home/[A-Za-z0-9._-]+/',
+  ].join('|'),
+);
+// The one sanctioned example of the variable's VALUE, in the shared-standards preamble the plan
+// quotes verbatim. Exact line text, so any other use of the same path still fails.
+const MACHINE_PATH_EXAMPLE = 'with forward slashes (for example `' + 'C:' + '/repos`)';
+
+function ruleMachinePaths(files) {
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (rel.startsWith('docs/') || rel.startsWith('.agy/')) continue;
+    if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
+    const lines = readFileSync(abs, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      if (line.includes(MACHINE_PATH_EXAMPLE)) return;
+      const m = MACHINE_PATH.exec(line);
+      if (!m) return;
+      fail(
+        'machine-path',
+        `${rel}:${i + 1}`,
+        `a literal machine path ("${m[0].trim()}") only exists on one machine. ` +
+          'Write `${VIVREAL_REPOS}/<repo>/...` in prose, or `"$VIVREAL_REPOS/<repo>/..."` in shell.',
+      );
+    });
+  }
+}
+
+// --------------------------------------------------- rule 12: version bump (R12)
+// An unbumped plugin does not reinstall, so a merged change never reaches a machine. Every
+// plugin directory changed since the merge base must carry a plugin.json version above the
+// base's. A directory absent at HEAD (deleted) or at the base (new) is skipped.
+function semverGreater(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  if (pa.some(Number.isNaN) || pb.some(Number.isNaN)) return false;
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
+/**
+ * The highest version one PR may carry (DC9: each plugin bumps once per PR): the next minor,
+ * or the next major for a deliberate break. A patch bump sits below the next minor and passes.
+ */
+function bumpCeilings(base) {
+  const [major, minor] = String(base).split('.').map(Number);
+  return [`${major}.${minor + 1}.0`, `${major + 1}.0.0`];
+}
+
+/** Pure decision, so the self-test can drive it without a git history. */
+function versionBumpFindings(changedDirs, baseVersionOf, headVersionOf) {
+  const out = [];
+  for (const dir of [...changedDirs].sort()) {
+    const base = baseVersionOf(dir);
+    const head = headVersionOf(dir);
+    if (base === null || head === null) continue; // new or deleted plugin
+    if (!semverGreater(head, base)) {
+      out.push({ dir, base, head, why: 'not-bumped' });
+      continue;
+    }
+    const [nextMinor, nextMajor] = bumpCeilings(base);
+    if (semverGreater(head, nextMinor) && head !== nextMajor) {
+      out.push({ dir, base, head, why: 'skipped', nextMinor });
+    }
+  }
+  return out;
+}
+
+/** How many plugins the last R12 run compared, printed so a zero cannot pass in silence. */
+let versionBumpCompared = null;
+
+/** The top-level directories with any change between `mb` and the working tree under `cwd`. */
+function changedDirsSince(cwd, mb) {
+  const run = (args) =>
+    execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  // --no-renames: with rename detection a cross-plugin move prints only its NEW path, so the
+  // plugin it left looked unchanged and could ship unbumped. Untracked files are in no diff,
+  // so a local run lists them separately.
+  const paths = [
+    ...run(['diff', '--no-renames', '--name-only', mb]).split('\n'),
+    ...run(['ls-files', '--others', '--exclude-standard']).split('\n'),
+  ];
+  return new Set(paths.filter(Boolean).map((p) => p.split('/')[0]));
+}
+
+let gitContextCache;
+function gitContext() {
+  if (gitContextCache !== undefined) return gitContextCache;
+  gitContextCache = null;
+  const run = (args) =>
+    execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  const baseRef = process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main';
+  try {
+    const mb = run(['merge-base', 'HEAD', baseRef]);
+    const changed = changedDirsSince(ROOT, mb);
+    const baseVersionOf = (dir) => {
+      try {
+        return JSON.parse(run(['show', `${mb}:${dir}/.claude-plugin/plugin.json`])).version ?? null;
+      } catch {
+        return null;
+      }
+    };
+    gitContextCache = { baseRef, mb, changed: new Set(changed), baseVersionOf };
+  } catch {
+    gitContextCache = null;
+  }
+  return gitContextCache;
+}
+
+function headVersionOf(dir) {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, dir, '.claude-plugin', 'plugin.json'), 'utf8')).version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function ruleVersionBump() {
+  const ctx = gitContext();
+  if (!ctx) {
+    warn(
+      'version-bump',
+      '(git)',
+      'no git history or no base ref (origin/main, or origin/$GITHUB_BASE_REF), so the version-bump rule DID NOT RUN.',
+    );
+    return;
+  }
+  const compared = [...ctx.changed].filter((d) => ctx.baseVersionOf(d) !== null && headVersionOf(d) !== null);
+  versionBumpCompared = { count: compared.length, baseRef: ctx.baseRef, mb: ctx.mb };
+  if (compared.length === 0 && PLUGIN_DIRS.length > 0) {
+    warn(
+      'version-bump',
+      '(git)',
+      `compared 0 plugins against ${ctx.baseRef} (merge base ${ctx.mb.slice(0, 7)}). On main, or with the merge ` +
+        'base at HEAD, there is nothing to compare, so this run proves nothing about versions.',
+    );
+  }
+  for (const f of versionBumpFindings(ctx.changed, ctx.baseVersionOf, headVersionOf)) {
+    fail(
+      'version-bump',
+      `${f.dir}/.claude-plugin/plugin.json`,
+      f.why === 'skipped'
+        ? `${f.dir} went from ${f.base} to ${f.head}, past the next minor ${f.nextMinor}. A plugin bumps once per PR (DC9).`
+        : `${f.dir} changed since ${ctx.baseRef} (merge base ${ctx.mb.slice(0, 7)}) but its version ${f.head} ` +
+            `is not above the base's ${f.base}. An unbumped plugin does not reinstall.`,
+    );
+  }
+}
+
+// ------------------------------------------------- rule 13: routes resolve (R13)
+// A route to an agent that does not exist sends every matching dispatch nowhere. Every
+// `agent` in a `<plugin>/routing/routes.json` must be an existing `<plugin>/agents/<name>.md`.
+function ruleRoutesResolve(files) {
+  const rels = files.map((abs) => norm(relative(ROOT, abs)));
+  const agents = new Set(
+    rels.map((r) => r.match(/^([^/]+)\/agents\/([^/]+)\.md$/)).filter(Boolean).map((m) => `${m[1]}:${m[2]}`),
+  );
+  for (const rel of rels.filter((r) => /^[^/]+\/routing\/routes\.json$/.test(r))) {
+    let routes;
+    try {
+      routes = JSON.parse(readFileSync(join(ROOT, rel), 'utf8')).routes;
+    } catch (e) {
+      fail('routes-resolve', rel, `does not parse: ${e.message}`);
+      continue;
+    }
+    if (!Array.isArray(routes) || routes.length === 0) {
+      fail('routes-resolve', rel, 'holds no routes array, so nothing here was checked');
+      continue;
+    }
+    // Keywords: routeForWord lowercases the dispatch's first word and never the keyword, and
+    // the guard takes that word as letters, digits and hyphens, so a keyword outside that shape
+    // can never match. A keyword twice under one repo value means the second route never wins.
+    const seen = new Map();
+    routes.forEach((r, i) => {
+      if (!agents.has(r.agent)) {
+        fail('routes-resolve', `${rel} route ${i + 1}`, `"${r.agent}" (${r.task}) is not an agent file in this repo`);
+      }
+      if (!Array.isArray(r.keywords)) {
+        fail('route-keywords', `${rel} route ${i + 1}`, `"${r.task}" has no keywords array`);
+        return;
+      }
+      for (const k of r.keywords) {
+        if (typeof k !== 'string' || !/^[a-z][a-z0-9-]*$/.test(k)) {
+          fail('route-keywords', `${rel} route ${i + 1}`, `keyword "${k}" is not lowercase letters, digits and hyphens, so no dispatch can match it`);
+          continue;
+        }
+        const key = `${String(r.repo).toLowerCase()}|${k}`;
+        if (seen.has(key)) {
+          fail('route-keywords', `${rel} route ${i + 1}`, `keyword "${k}" already routes to ${seen.get(key)} in repo "${r.repo}", so this route never wins`);
+        } else {
+          seen.set(key, r.agent);
+        }
+      }
+    });
+  }
+}
+
+// ------------------------------------------------- rule 14: skill sources (R14)
+// scripts/skill-drift.mjs watches exactly the skills listed in scripts/skill-sources.json. A
+// skill missing from it is never reported stale, so its absence reads as freshness.
+const SOURCED_PLUGINS = ['vivreal-knowledge', 'vivreal-infra'];
+const SHA40 = /^[0-9a-f]{40}$/;
+
+/** The pure decision, driven directly by the self-test. `skills` is a Set of `<plugin>/<skill>`. */
+function skillSourcesFindings(skills, doc) {
+  const out = [];
+  for (const key of [...skills].sort()) {
+    if (!Object.prototype.hasOwnProperty.call(doc, key)) out.push({ where: key, msg: 'has no entry in scripts/skill-sources.json' });
+  }
+  for (const [key, entry] of Object.entries(doc)) {
+    if (!skills.has(key)) {
+      out.push({ where: key, msg: 'is listed in scripts/skill-sources.json but no such skill exists' });
+      continue;
+    }
+    if (entry.sources === 'none') {
+      if (typeof entry.why !== 'string' || !entry.why.trim()) out.push({ where: key, msg: '`sources: "none"` needs a `why`' });
+      continue;
+    }
+    if (!Array.isArray(entry.sources) || entry.sources.length === 0) {
+      out.push({ where: key, msg: '`sources` is neither "none" nor a non-empty list' });
+      continue;
+    }
+    entry.sources.forEach((src, i) => {
+      if (!src.repo || !src.ref || !Array.isArray(src.paths) || src.paths.length === 0) {
+        out.push({ where: `${key} source ${i + 1}`, msg: 'needs `repo`, `ref` and a non-empty `paths`' });
+      }
+      if (!SHA40.test(String(src.synced))) out.push({ where: `${key} source ${i + 1}`, msg: '`synced` is not a 40-hex SHA' });
+    });
+  }
+  return out;
+}
+
+function ruleSkillSources(files) {
+  const skills = new Set(
+    files
+      .map((abs) => norm(relative(ROOT, abs)).match(/^([^/]+)\/skills\/([^/]+)\/SKILL\.md$/))
+      .filter((m) => m && SOURCED_PLUGINS.includes(m[1]))
+      .map((m) => `${m[1]}/${m[2]}`),
+  );
+  const rel = 'scripts/skill-sources.json';
+  let doc;
+  try {
+    doc = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
+  } catch (e) {
+    fail('skill-sources', rel, `does not parse or is missing: ${e.message}`);
+    return;
+  }
+  if (skills.size === 0) {
+    fail('skill-sources', rel, 'found no vivreal-knowledge or vivreal-infra skill, so nothing was checked');
+    return;
+  }
+  for (const f of skillSourcesFindings(skills, doc)) fail('skill-sources', f.where, f.msg);
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -833,6 +1138,10 @@ function runAll(files) {
   ruleDashes(files);
   ruleDeletedBehaviour(files);
   ruleAwsAccountId(files);
+  ruleMachinePaths(files);
+  ruleVersionBump();
+  ruleRoutesResolve(files);
+  ruleSkillSources(files);
 }
 
 /**
@@ -1080,6 +1389,116 @@ function selfTest() {
       path: join(tmp, 'skills', 'dquote-break', 'SKILL.md'),
       body: '---\nname: dquote-break\ndescription: "say "hi" here"\n---\n\nbody\n',
     },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: a literal clone root',
+      path: join(tmp, 'agents', 'pathy.md'),
+      body:
+        '---\nname: pathy\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nRead ' +
+        'C:' + '/repos/x/CLAUDE.md first.\n',
+    },
+    {
+      rule: 'machine-path',
+      kind: 'clean',
+      label: 'machine-path: the variable form',
+      path: join(tmp, 'agents', 'pathless.md'),
+      body:
+        '---\nname: pathless\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'Read `${VIVREAL_REPOS}/x/CLAUDE.md` first.\n',
+    },
+    {
+      // PR #60 review M2: how a path is written inside any .js, .cjs or .json string.
+      rule: 'machine-path',
+      label: 'machine-path: an escaped Windows clone root',
+      path: join(tmp, 'skills', 'escaped-path', 'SKILL.md'),
+      body:
+        '---\nname: escaped-path\ndescription: fixture\n---\n\n`const p = \'C:' + BSL + BSL + 'repos' + BSL + BSL + 'x\';`\n',
+    },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: an escaped Windows user profile',
+      path: join(tmp, 'skills', 'escaped-user', 'SKILL.md'),
+      body:
+        '---\nname: escaped-user\ndescription: fixture\n---\n\n`"C:' + BSL + BSL + 'Users' + BSL + BSL + 'someone"`\n',
+    },
+    {
+      // Definition review blocker: the documented skill limit is 1,024 characters.
+      rule: 'description-length',
+      label: 'description-length: a skill over 1,024',
+      path: join(tmp, 'skills', 'long-skill', 'SKILL.md'),
+      body: '---\nname: long-skill\ndescription: ' + 'x'.repeat(1025) + '\n---\n\nbody\n',
+    },
+    {
+      rule: 'description-length',
+      label: 'description-length: a block-scalar skill over 1,024',
+      path: join(tmp, 'skills', 'long-block', 'SKILL.md'),
+      body: '---\nname: long-block\ndescription: |\n  ' + 'y'.repeat(600) + '\n  ' + 'y'.repeat(600) + '\n---\n\nbody\n',
+    },
+    {
+      rule: 'description-length',
+      kind: 'clean',
+      label: 'description-length: a skill at exactly 1,024',
+      path: join(tmp, 'skills', 'edge-skill', 'SKILL.md'),
+      body: '---\nname: edge-skill\ndescription: ' + 'x'.repeat(1024) + '\n---\n\nbody\n',
+    },
+    {
+      // An agent over the limit stays a WARNING: its length decides dispatch, not loading.
+      rule: 'description-length',
+      kind: 'clean',
+      label: 'description-length: an agent over 1,024 only warns',
+      path: join(tmp, 'agents', 'long-agent.md'),
+      body:
+        '---\nname: long-agent\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply. ' +
+        'z'.repeat(1100) + '\ntools: Read\n---\n\nbody\n',
+    },
+    {
+      // PR #60 review L3: routeForWord lowercases the word, never the keyword.
+      rule: 'route-keywords',
+      label: 'route-keywords: an uppercase keyword',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['Fix'], repo: '*' }] }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    {
+      rule: 'route-keywords',
+      label: 'route-keywords: one keyword twice in one repo',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({
+        routes: [
+          { task: 'a', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix'], repo: '*' },
+          { task: 'b', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix'], repo: '*' },
+        ],
+      }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    {
+      // The repo-specific override pattern (portal-coder over coder) is legal.
+      rule: 'route-keywords',
+      kind: 'clean',
+      label: 'route-keywords: one keyword in two repos',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({
+        routes: [
+          { task: 'a', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix', 'ga4'], repo: '*' },
+          { task: 'b', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['fix'], repo: 'Some_Repo' },
+        ],
+      }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    {
+      rule: 'routes-resolve',
+      label: 'routes-resolve: a route to no agent',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':ghost', keywords: ['x'], repo: '*' }] }),
+    },
+    {
+      rule: 'routes-resolve',
+      kind: 'clean',
+      label: 'routes-resolve: a route to a real agent',
+      path: join(tmp, 'routing', 'routes.json'),
+      body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['x'], repo: '*' }] }),
+      with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
   ];
 
   let allCanFail = true;
@@ -1117,6 +1536,93 @@ function selfTest() {
       );
       if (!correct) allCanFail = false;
       for (const f of written) rmSync(f.path, { force: true });
+    }
+
+    // R12 needs a git history to see a change, so its control drives the pure decision directly.
+    const bumpCases = [
+      { label: 'version-bump: changed, not bumped', want: 1, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.2.0' } },
+      { label: 'version-bump: changed, version lowered', want: 1, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.1.9' } },
+      { label: 'version-bump: changed and bumped', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.3.0' } },
+      { label: 'version-bump: plugin deleted at HEAD', want: 0, dirs: ['gone'], base: { gone: '1.0.0' }, head: {} },
+      { label: 'version-bump: plugin new since base', want: 0, dirs: ['fresh'], base: {}, head: { fresh: '0.1.0' } },
+      // PR #60 review L1: DC9 bumps once per PR, to the next minor.
+      { label: 'version-bump: two minors at once', want: 1, dirs: ['p'], base: { p: '1.30.0' }, head: { p: '1.32.0' } },
+      { label: 'version-bump: a patch bump', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '1.2.1' } },
+      { label: 'version-bump: the next major', want: 0, dirs: ['p'], base: { p: '1.2.0' }, head: { p: '2.0.0' } },
+      // PR #60 review M1: the SOURCE of a cross-plugin move is a changed plugin.
+      { label: 'version-bump: moved-from plugin unbumped', want: 1, dirs: ['src', 'dst'], base: { src: '1.0.0', dst: '1.0.0' }, head: { src: '1.0.0', dst: '1.1.0' } },
+    ];
+    for (const b of bumpCases) {
+      const got = versionBumpFindings(
+        new Set(b.dirs),
+        (d) => b.base[d] ?? null,
+        (d) => b.head[d] ?? null,
+      ).length;
+      const correct = got === b.want;
+      console.log(
+        `  ${got ? 'RED   ' : 'GREEN '} ${b.label.padEnd(34)} ` +
+          (correct ? '(correct)' : b.want ? '(THIS CHECK CANNOT FAIL)' : '(THIS CHECK REFUSES A VALID CHANGE)'),
+      );
+      if (!correct) allCanFail = false;
+    }
+
+    // R12's changed-directory set comes from git, so its control runs real git in a scratch
+    // repository outside this one: a cross-plugin `git mv` must name BOTH plugins (rename
+    // detection used to print only the new path), and an untracked new file must count.
+    {
+      const scratch = mkdtempSync(join(tmpdir(), 'vr-r12-'));
+      const g = (...args) =>
+        execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', '-c', 'core.autocrlf=false', ...args], {
+          cwd: scratch,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+      try {
+        g('init', '-q');
+        mkdirSync(join(scratch, 'plugin-src', 'commands'), { recursive: true });
+        mkdirSync(join(scratch, 'plugin-dst', 'commands'), { recursive: true });
+        mkdirSync(join(scratch, 'plugin-new'), { recursive: true });
+        writeFileSync(join(scratch, 'plugin-src', 'commands', 'moved.md'), 'a command body long enough to be a rename\n'.repeat(5));
+        writeFileSync(join(scratch, 'plugin-dst', 'commands', 'stay.md'), 'stays\n');
+        g('add', '-A');
+        g('commit', '-q', '-m', 'base');
+        const base = g('rev-parse', 'HEAD');
+        g('mv', 'plugin-src/commands/moved.md', 'plugin-dst/commands/moved.md');
+        g('commit', '-q', '-m', 'move');
+        writeFileSync(join(scratch, 'plugin-new', 'untracked.md'), 'new\n');
+        const dirs = changedDirsSince(scratch, base);
+        const gitCases = [
+          { label: 'version-bump: git sees a move source', ok: dirs.has('plugin-src') },
+          { label: 'version-bump: git sees a move target', ok: dirs.has('plugin-dst') },
+          { label: 'version-bump: git sees an untracked file', ok: dirs.has('plugin-new') },
+        ];
+        for (const c of gitCases) {
+          console.log(`  ${c.ok ? 'RED   ' : 'GREEN '} ${c.label.padEnd(34)} ` + (c.ok ? '(correct)' : '(THIS CHECK CANNOT FAIL)'));
+          if (!c.ok) allCanFail = false;
+        }
+      } finally {
+        rmSync(scratch, { recursive: true, force: true });
+      }
+    }
+
+    // R14 reads one fixed file, so its control drives the pure decision directly too.
+    const sha = 'a'.repeat(40);
+    const src = (over) => ({ repo: 'R', ref: 'main', paths: ['src/'], synced: sha, ...over });
+    const sourceCases = [
+      { label: 'skill-sources: a skill with no entry', want: 1, skills: ['p/a', 'p/b'], doc: { 'p/a': { sources: [src()] } } },
+      { label: 'skill-sources: an entry with no skill', want: 1, skills: ['p/a'], doc: { 'p/a': { sources: [src()] }, 'p/gone': { sources: [src()] } } },
+      { label: 'skill-sources: a short synced SHA', want: 1, skills: ['p/a'], doc: { 'p/a': { sources: [src({ synced: 'abc1234' })] } } },
+      { label: 'skill-sources: none with no why', want: 1, skills: ['p/a'], doc: { 'p/a': { sources: 'none' } } },
+      { label: 'skill-sources: every skill listed', want: 0, skills: ['p/a', 'p/b'], doc: { 'p/a': { sources: [src()] }, 'p/b': { sources: 'none', why: 'external API' } } },
+    ];
+    for (const c of sourceCases) {
+      const got = skillSourcesFindings(new Set(c.skills), c.doc).length;
+      const correct = got === c.want;
+      console.log(
+        `  ${got ? 'RED   ' : 'GREEN '} ${c.label.padEnd(34)} ` +
+          (correct ? '(correct)' : c.want ? '(THIS CHECK CANNOT FAIL)' : '(THIS CHECK REFUSES A VALID FILE)'),
+      );
+      if (!correct) allCanFail = false;
     }
 
     // The other half of the control: with the poison gone, the repo must come back
@@ -1164,6 +1670,12 @@ for (const f of failures) {
 }
 
 console.log(`Scanned ${files.length} files across ${PLUGIN_DIRS.length} plugin trees.`);
+if (versionBumpCompared) {
+  console.log(
+    `Version bump (R12): compared ${versionBumpCompared.count} changed plugins against ${versionBumpCompared.baseRef} ` +
+      `(merge base ${versionBumpCompared.mb.slice(0, 7)}).`,
+  );
+}
 
 if (warnings.length) {
   const byWarn = new Map();

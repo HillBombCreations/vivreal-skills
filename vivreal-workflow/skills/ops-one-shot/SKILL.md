@@ -13,7 +13,7 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
 
 ## Where it lives, and what it is not
 
-- **Outside every repository**, in `C:\repos\_ops\<release>-<slug>\` (owner rule). A one-shot in a
+- **Outside every repository**, in `${VIVREAL_REPOS}/_ops/<release>-<slug>/` (owner rule). A one-shot in a
   repo reads as a supported tool and invites a rerun. Never commit one, not even to a pushed branch.
   The durable fix belongs in service code; the script only repairs data the fix can no longer reach.
 - **One folder per script**: `<slug>.js` (the I/O half: read, apply, revert, CLI), `lib.js` (the PURE

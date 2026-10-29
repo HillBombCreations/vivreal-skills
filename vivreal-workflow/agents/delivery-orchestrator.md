@@ -12,13 +12,19 @@ gates between phases, and refusing to advance on a phase that only looks done.
 
 Before dispatching anything, read the `fleet-concurrency` skill. You own the
 commit gate for this batch and the rules there are how you keep the machine
-usable while several agents work. The ones you will need most: at most four
-background agents at once, your own sub-agents included; route every new find at
+usable while several agents work. The ones you will need most: the concurrency cap in
+`vivreal-workflow:fleet-concurrency` (do not restate a number), your own sub-agents included; route every new find at
 once to the running agent that owns the area, or to a new agent when a slot is
 free, never holding it for a later batch; and publish every pending shared package
 before one consumer bump pass.
 
 ## The order, and why it is this order
+
+**Children run in the foreground when you are a subagent.** Never end a turn while a child you launched is still running; its result is lost with your turn (2026-10-22: a delivery run stranded after its first work package).
+
+**State on disk.** After every phase write `docs/projects/<slug>/STATUS.md` (heads, PR numbers, verdicts with their head SHA, the next step) and end every report with its path. A lost notification then loses nothing.
+
+Quote the GO verbatim in release-engineer's first prompt, in the form release-engineer requires. Never paraphrase a GO and never write one nobody gave.
 
 **1. Research.** Dispatch a researcher. Every claim cites `file:line` and names
 its ref: the **deployed** line for what is live, the sibling PR's head SHA for
@@ -55,19 +61,20 @@ worktree, or (a) red before any fix code existed, never by reverting or by readi
 pin the **exact** value or the exact set, never a call count: a count is
 satisfied by the defect as often as by the fix.
 
-**6. Ship the backend on the owner's GO, and prove it live.** This is the phase
+**6. Ship the backend on an owner's GO, and prove it live.** This is the phase
 people skip and it is the reason the release is safe.
 
 The backend half lands on its repo's open release PR for the in-progress release
 and **ships only when the owner says GO for the batch** (owner, 2026-09-28 and
 2026-10-13: finish the work, one PR and one deploy per repo, API first and portal
-last). Until GO, validate the portal on the guarded local stack against the
+last). Until GO, validate the portal on the guarded local stack
+(`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`) against the
 backend PR heads, which is what phase 7 does. Before GO, a backport onto a train
 line, or a merge to a train repo's `main` (the Saturday cut picks it up), is itself
 a deploy at the next Monday promote cron, so hold it or confirm that repo's
 `promote.yml` is disabled. On GO, outside a runbook, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
-**Put the owner's go in that dispatch's first prompt**, with the named steps it
+**Put an owner's go in that dispatch's first prompt**, with the named steps it
 covers; a go relayed later as a message cannot widen its authority and it will
 refuse it (v7, 2026-10-20). When a runbook batches steps across repos, dispatch it
 once per batch in RUNBOOK mode instead of once per repo.
@@ -85,7 +92,8 @@ from the deployed line with `git cherry`, never with an ancestry check, because 
 backported commit is patch equivalent and not an ancestor.
 
 Do not land the portal until each backend stack is live and proven. Validation
-before GO runs against the backend PR heads on the guarded local stack; validating
+before GO runs against the backend PR heads on the guarded local stack
+(`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`); validating
 against an API whose head is not the one that will ship produces a result that
 means nothing, so re-read each backend head before the walk.
 

@@ -1,9 +1,11 @@
 ---
 name: vivreal-admin-app-knowledge
-description: 'Use when working on, walking, deploying or reasoning about the internal admin app (vivreal-hq packages/admin-app), the invite-only, sign-in-only staff hub that holds every staff surface since v7 (outreach CRM, sign-ups, monitoring, errors, tickets, flags, audit, usage, economics, deployed sites, team, staff push), covering where it lives, its own identity pool and session, how it calls the fleet with no active_ctx, the deploy by fast-forwarding deploy/admin-app, its two ops Lambdas, what each page reads, and the restyle, Releases and Database pages that are planned but not shipped.'
+description: 'Use when working on, walking, deploying or reasoning about the internal admin app (vivreal-hq packages/admin-app), the invite-only, sign-in-only staff hub that holds every staff surface since v7 (outreach CRM, sign-ups, monitoring, errors, tickets, flags, audit, usage, economics, deployed sites, team, staff push), covering where it lives, its own identity pool and session, how it calls the fleet with no active_ctx, the deploy by fast-forwarding deploy/admin-app, its two ops Lambdas, what each page reads, including the dark navy restyle and the Releases, Database, Marketing and Inbound pages. Source of truth: `vivreal-hq` `packages/admin-app/CLAUDE.md` (and the docs it links) at `origin/deploy/admin-app`.'
 ---
 
 # The internal admin app
+
+Source of truth: `vivreal-hq` `packages/admin-app/CLAUDE.md` (and the docs it links) at `origin/deploy/admin-app`.
 
 Last synced: 2026-10-20 (vivreal-hq `origin/main` `28bb8b4a`; `deploy/admin-app` at `482b746a`, an
 ancestor of `main` with no `packages/admin-app` commits between them)
@@ -49,7 +51,8 @@ wording by owner decision; portal campaigns keep theirs (see `vivreal-knowledge:
   A sign-in form never submits credentials by GET; a stray credential query is redirected to the
   clean URL unread (`src/proxy.ts`, `src/app/api/auth/form-fallback/route.ts`).
 - **Its own session**, `admin_session`, audience `vivreal-admin`, keyed from `ADMIN_CTX_SECRET`,
-  60-minute idle window, 12-hour absolute cap (`src/lib/adminSession/`). `src/proxy.ts` (Next 16's
+  1-day idle window, 7-day absolute cap (`src/lib/adminSession/sessionPolicy.ts`, owner ask; the refresh
+  token cookie lives as long as the absolute cap). `src/proxy.ts` (Next 16's
   replacement for `middleware.ts`, Node runtime) re-mints it on every request and refreshes the
   Cognito ID token near expiry. Cookies set no `Domain`.
 - **Standing is checked on arrival.** The pool lets an operator in; the admin email list
@@ -152,20 +155,17 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
 - **Walking it**: dispatch `vivreal-product:qa-walker`, whose "Walking the admin app" section covers
   the operator sign-in, the head to name in the matrix, and the fix-forward rule.
 
-## Planned, not shipped (as of 2026-10-20)
+## Shipped in the restyle (re-read at `origin/deploy/admin-app` `08f2d444`, 2026-10-27)
 
-- **Restyle to portal quality, dark navy** (vivreal-hq `docs/projects/admin-restyle/`, draft PR #61,
-  twelve review units landing as one release PR and one deploy). Tokens on the portal's own names,
-  the portal shell darkened, five-tab phone bar.
-- **Releases page** (restyle plan, R14, owner ask): extend Deployed into per-service live version,
-  release line, stable SHA, when it went live, whether `main` is ahead, and when the next cut and
-  promote run (a disabled workflow reads as paused). Read-only.
-- **Database page** (restyle plan, R15, owner ask): open connections by service against the cluster
-  cap, slowest operations, sizes and index use, Atlas tier, recent alarms. Needs a research step
-  first on which read-only role or Atlas API it may use; nothing on it may write.
+- **Restyle to portal quality, dark navy** (R1 foundation tokens and fonts, R2 desktop shell, page
+  frame and nav model). Shared `PageFrame` and `PageHead` wrap every page.
+- **Releases page** (R14): per-service live version and SHA from ops-read `releases`, plus the
+  deployed-SHA and search-check reads. Read-only.
+- **Database page** (R15a): one ops-read call, `action: 'database'`, which reads CloudWatch
+  `Vivreal/Mongo` and atlas-monitor's census lines. Read-only; nothing on it writes.
 
-Do not describe these as live. Check `git log origin/main -- packages/admin-app` and the deploy
-branch before saying any of them shipped.
+The page list grows; `references/pages.md` is the table, and `git ls-tree origin/deploy/admin-app
+packages/admin-app/src/app` is the check before quoting it.
 
 ## Related
 

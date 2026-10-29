@@ -6,9 +6,10 @@ description: >
   1440 and 390, captures matched pages side by side, and reports on aesthetic fidelity, structural
   completeness, the pages that industry actually needs, and the components we are missing. Use it
   after a kit or look is built and before it is published, when asked "does this actually look like
-  the example", "is this template any good", or "what are we missing for this industry". READ ONLY:
-  it critiques and reports, it never edits a template. Distinct from `ux-critic`, which judges
-  friction on a screen a customer is already using, and from `designer`, which builds. This one
+  the example", "is this template any good", "what are we missing for this industry", or as the
+  Studio gate for a renderer version. READ ONLY:
+  it critiques and reports, it never edits a template. Distinct from `designer`, which builds and
+  judges friction on a screen a customer is already using. This one
   answers a narrower question: is this a quality template for this trade, and does it earn its
   exemplar without copying it.
 tools: Read, Grep, Glob, Bash, Write, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_resize, mcp__plugin_playwright_playwright__browser_click, mcp__plugin_playwright_playwright__browser_hover, mcp__plugin_playwright_playwright__browser_evaluate, mcp__plugin_playwright_playwright__browser_wait_for

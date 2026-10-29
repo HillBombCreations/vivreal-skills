@@ -17,8 +17,8 @@ saying "use the applicable skills":
 2. **Workflow role-agents**, `researcher` → `architect` → `coder` → `reviewer`, chained
    through artifacts in `docs/bugs/<slug>/` or `docs/projects/<slug>/`.
 3. **Auto-invoked specialists**, keyed on **trigger words** (nouns and symptoms), e.g.
-   a Sentry ID → `sentry`, `VR_Secure_API` billing → the `secure-api` expert
-   "churn"/"funnel" → `growth-advisor`.
+   a Sentry ID → `sentry`, `VR_Secure_API` billing → `vivreal-secure-api-knowledge`
+   "churn"/"funnel" → `growth`.
 
 > **"Please use the applicable skills" is a weak trigger.** Auto-invocation keys on
 > concrete nouns and symptoms (system names, Sentry IDs, "proxy route", "gross margin")
@@ -26,7 +26,7 @@ saying "use the applicable skills":
 
 **Three habits that make every prompt land better:**
 
-1. **Name the repo/system** whenever you know it, strongest single trigger (pulls the right expert).
+1. **Name the repo/system** whenever you know it, strongest single trigger (pulls the right knowledge skill).
 2. **State the phase you want**, investigate-only, plan-then-stop, or plan-and-implement.
 3. **State the definition of done and the approval gate**, "show me the plan first",
    "until the scan is clean", "lint + type-check passes". Turns a vague request into a checkable contract.
@@ -40,7 +40,7 @@ saying "use the applicable skills":
 > Investigate it end-to-end across the stack, find the root cause (not just the symptom), then write a fix plan and implement it.
 > Cite file:line for the root cause, pull Sentry telemetry if a trace ID is given, and run lint + type-check before you call it done. Pause and show me the plan before making changes if the blast radius is non-trivial.
 
-Naming the **Sentry ID** auto-pulls the `sentry` agent; naming the **service** pulls its expert;
+Naming the **Sentry ID** auto-pulls the `sentry` agent; naming the **service** pulls its knowledge skill;
 "root cause not symptom" + "cite file:line" matches the researcher contract. Deterministic
 equivalent: **`/coordinator`** (full bug pipeline with a review gate).
 
@@ -65,7 +65,7 @@ review it, then **`/implement`**.
 > Trace the request end-to-end from the telemetry, browser → proxy → backend Lambda → MongoDB → WebSocket, and tell me where it failed and why. If the cause looks like infrastructure (throttling, Atlas saturation, timeouts), confirm it against the live AWS/Atlas metrics.
 
 "Trace end-to-end from telemetry" + a Sentry ID triggers `sentry`; the "if infra, confirm against
-live metrics" clause chains into `vivreal-ops`. Automated by **`/sentry-to-aws`**.
+live metrics" clause chains into `vivreal-ops`. Automated by **`/sentry-trace --aws`**.
 
 ---
 
@@ -73,8 +73,8 @@ live metrics" clause chains into `vivreal-ops`. Automated by **`/sentry-to-aws`*
 
 > Explain how **[feature, e.g. "media signing for live sites" or "publish gating"]** works end-to-end. Trace the full path: frontend component → proxy route → backend controller → service → MongoDB. Cite file:line and flag any gotchas or footguns I should know before changing it. Don't edit anything, this is read-only.
 
-"Trace the full path … frontend → proxy → backend → Mongo" + "read-only" is the `fullstack-tracer`
-contract. "Don't edit" keeps it in investigation mode.
+"Trace the full path … frontend → proxy → backend → Mongo" + "read-only" is the `researcher`'s
+end-to-end trace contract. "Don't edit" keeps it in investigation mode.
 
 ---
 
@@ -95,7 +95,7 @@ contract. Deterministic equivalent: **`/design`**.
 
 "Adversarial," "rate each finding," "explain why," "don't approve until fixed" maps to the
 `reviewer` agent's 13-point PASS/FAIL gate (workflow mode). Deterministic equivalents:
-**`/reviewer`** or **`/bug-review`**.
+**`/reviewer`** (with a slug for the 13-point bug-fix review).
 
 ---
 
@@ -113,8 +113,8 @@ rule is the #1 footgun. Wrapped by **`/db-query`** and **`/db-schema`**.
 
 > Give me a growth read on **[signups / a specific funnel stage / acquisition channel / churn]** for **[time window]**. Pull real numbers from GA4 and Clarity (consented visitors), the site traffic rollup and MongoDB, cross-reference them, and give week-over-week deltas plus the 2 to 3 actions that would move the metric most.
 
-Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth-advisor`
-(quantitative) rather than the strategy-lens `growth-auditor`. Commands:
+Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth` in its numbers mode
+rather than its GTM audit mode. Commands:
 **`/growth-report`**, **`/funnel-analysis`**.
 
 ---
@@ -124,8 +124,8 @@ Naming the metric + "pull real numbers from GA4/Clarity/Mongo" triggers `growth-
 > Critique this screen/flow: **[URL or page, e.g. the site-creation flow]**.
 > Walk it as (a) a non-technical user, where would they get stuck or confused?, and (b) a UX designer, clicks, friction, cognitive load, findability of the primary action. Check it at mobile and desktop widths. Read-only; just tell me what to fix and route the fix, don't redesign it.
 
-The dual-lens phrasing triggers `ux-critic`, which can walk the running screen via Playwright.
-"Read-only, don't redesign" keeps it out of `designer` build mode.
+The dual-lens phrasing triggers `designer` in critique mode, which can walk the running screen via
+Playwright; `regular-user` adds the naive-owner pass. "Read-only, don't redesign" keeps `designer` out of build mode.
 
 ---
 
@@ -157,7 +157,7 @@ keeps an audit from becoming a rewrite.
 > Migrate **[URL]** into Vivreal for **[customer/group]**.
 > Follow the full pipeline, crawl → ingest → collections/integrations → site → assemble → audit, with the parity standard, both audit passes (live-DOM sweep + local render vs live), and stop at each human gate (pre-flight, pre-creation, cutover) for my approval.
 
-Migration is operated FROM `C:\repos\Vivreal_Site_Migrator`, open a session there and run
+Migration is operated FROM `${VIVREAL_REPOS}/Vivreal_Site_Migrator`, open a session there and run
 **`/migrate <url>`** (its in-repo command with the 3 approval gates). From any other repo, the
 `vivreal-migrator-knowledge` skill supplies the pipeline map, heuristics, and the renderer
 capability manifest (`capabilities/CAPABILITIES.md`).
@@ -178,10 +178,10 @@ goal is a reusable template, not a customer's real content.
 >
 > **[Produce:]** Expand **[calendar row / this brief]** into platform-ready drafts with per-platform limits and the on-voice self-check.
 
-Content work is operated FROM `C:\repos\vivreal-hq` (the standalone `vivreal-content` repo was
+Content work is operated FROM `${VIVREAL_REPOS}/vivreal-hq` (the standalone `vivreal-content` repo was
 consolidated into it 2026-08-03 and is now dead source, frozen at that commit), its in-repo
 `content-planner` agent and the specialists it directs (`carousel-editor`, `footage-recorder`,
-`short-form-editor`, `linkedin-editor`, `social-video-director`, `guide-writer`,
+`short-form-editor`, `linkedin-editor`, `guide-writer`,
 `help-page-producer`, `tutorial-maker`) own calendars, drafts, and rendered assets (the tooling
 moved out of the portal 2026-06-25; `content-creator` and its sub-specialists were retired
 2026-08-06). From anywhere else: voice/copy *critique* routes to `marketing-auditor`, and
@@ -194,22 +194,22 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 
 | You want… | Put this in the prompt | Routes to |
 |---|---|---|
-| A specific backend's gotchas | The repo name (`VR_Secure_API`, `VR_CMS_API`, `VR_Client_API`, `VR_Main_API`, `VR_Outreach_API`, `Vivreal_EventHandler`, the portal) | the matching read-only **expert** |
+| A specific backend's gotchas | The repo name (`VR_Secure_API`, `VR_CMS_API`, `VR_Client_API`, `VR_Main_API`, `VR_Outreach_API`, `Vivreal_EventHandler`, the portal) | the matching per-repo **knowledge skill** (`vivreal-<repo>-knowledge`) |
 | Production telemetry | A **Sentry ID/URL**, "trace end-to-end", "what happened when I…" | `sentry` |
 | Live infra state | "throttling", "Atlas saturation", "Step Functions execution", "reserved concurrency" | `vivreal-ops` |
 | Cost/margin | "gross margin", "can we afford", "cost at N customers" | `finance-auditor` |
-| Funnel/conversion numbers | "signups", "churn", "funnel", "WoW", "acquisition" | `growth-advisor` |
+| Funnel/conversion numbers | "signups", "churn", "funnel", "WoW", "acquisition" | `growth` |
 | Copy/voice critique | "is this on-brand", "audit this copy/email/headline" | `marketing-auditor` |
-| Usability of a screen | "is this confusing", "fewer clicks", "walk this as a new user" | `ux-critic` |
-| Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth-advisor` for interpretation) |
-| Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `cms-api` / `secure-api` / `client-stack` experts (Square spans all three) |
+| Usability of a screen | "is this confusing", "fewer clicks", "walk this as a new user" | `designer` (critique) + `regular-user` |
+| Site-visitor stats | "site traffic", "page views", "analytics beacon", "per-site dashboard" | `vivreal-analytics-knowledge` (+ `growth` for interpretation) |
+| Payments provider (Stripe/Square) | "Square", "checkout", "payment link", "payments provider" | `vivreal-cms-api-knowledge` / `vivreal-secure-api-knowledge` / `vivreal-client-stack-knowledge` (Square spans all three) |
 | Site migration | "migrate this site", "cutover", "parity audit", a source-site URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/migrate` |
 | Reusable template / identity kit | "build a template from", "identity kit", "template picker variant", an exemplar URL | `vivreal-migrator-knowledge`; operate from `Vivreal_Site_Migrator` via `/template` |
 | Restyle an already-live site | "restyle", "new look for <live site>", "apply the kit to the live site" | `vivreal-migrator-knowledge` (restyle mode); operate from `Vivreal_Site_Migrator` (`scripts/restyle-live-site.js` runbook) |
-| Renderer/Templates/site-loader internals | the repo name (`vivreal-site-renderer`, `Vivreal_Templates`, `site-loader`), "page format 404", "COMPOSE_FORMATS", "renderer release" | the read-only **`sites-stack` expert** + `vivreal-renderer-knowledge`/`vivreal-templates-knowledge` |
-| Content scheduling / go-live | "scheduled content didn't publish", "publishDate", "go-live", "content golive schedule" | `cms-api` expert + `vivreal-cms-api-knowledge` (content go-live scheduler) |
-| The AI assistant surface | "AI FAB", "agent drawer", "EditPlan", "AI assistant not showing", "agent quota" | `vivreal-agent-knowledge` (+ `portal`/`secure-api` experts per side) |
-| Push notifications | "push notification", "web push", "notification queue", "user wasn't notified" | `vivreal-notifications` (+ `main-api` expert for the consumer) |
+| Renderer/Templates/site-loader internals | the repo name (`vivreal-site-renderer`, `Vivreal_Templates`, `site-loader`), "page format 404", "COMPOSE_FORMATS", "renderer release" | `vivreal-renderer-knowledge` / `vivreal-templates-knowledge` / `vivreal-migrator-knowledge` |
+| Content scheduling / go-live | "scheduled content didn't publish", "publishDate", "go-live", "content golive schedule" | `vivreal-cms-api-knowledge` (content go-live scheduler) |
+| The AI assistant surface | "AI FAB", "agent drawer", "EditPlan", "AI assistant not showing", "agent quota" | `vivreal-agent-knowledge` (+ `vivreal-portal-knowledge` / `vivreal-secure-api-knowledge` per side) |
+| Push notifications | "push notification", "web push", "notification queue", "user wasn't notified" | `vivreal-notifications` (+ `vivreal-main-api-knowledge` for the consumer) |
 | Content planning/production | "content calendar", "posting playbook", "draft posts for the week" | `vivreal-content-knowledge`; operate from `vivreal-hq` |
 
 ## Slash-command quick reference
@@ -217,18 +217,17 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | Command | Use it for |
 |---|---|
 | `/coordinator` | Full bug fix: research → plan → approve → implement → review → document → PR |
-| `/research` | Research a bug end-to-end (produces `research.md`) |
-| `/investigate` | Deep investigation of any technical question (no artifacts needed) |
+| `/research` | Research a bug end-to-end (produces `research.md`), or investigate any technical question (produces `findings.md`); `--slug` names the folder |
 | `/plan` | Research + write implementation plan + auto-review the plan |
 | `/design` | Architecture decision, 2 to 3 options with tradeoffs + recommendation |
 | `/orchestrate` | Non-bug work: features, refactors, audits, migrations |
 | `/implement` | Principal-level implementation of an approved plan |
-| `/reviewer` / `/bug-review` | Final adversarial review gate |
-| `/test` / `/write-tests` | Regression / e2e tests |
+| `/reviewer [slug]` | Final adversarial review gate; a slug runs the 13-point bug-fix review |
+| `/test` | Regression / e2e tests (the tester holds the test quality rules) |
 | `/vuln-fix` | Dependency vulnerability resolution (0-vuln gate) |
 | `/bump-package` | Bump a shared dep across all consumer repos |
 | `/db-query` / `/db-schema` | Safe tenant-scoped MongoDB query / schema lookup |
-| `/sentry-trace` / `/sentry-to-aws` | Telemetry tracing; chain into live AWS/Atlas metrics |
+| `/sentry-trace [--aws]` | Telemetry tracing; `--aws` chains into live AWS/Atlas metrics |
 | `/growth-report` / `/funnel-analysis` | Analytics dashboards and funnel drop-off analysis |
 | `/deploy-status` | Live deploy status of a customer site |
 | `/proxy-route` | Generate a factory-based portal proxy route |

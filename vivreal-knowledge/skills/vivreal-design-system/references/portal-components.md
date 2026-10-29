@@ -2,7 +2,7 @@
 
 Last synced: 2026-10-15 against portal `origin/stable` v0.36.0 (the Dashboard section rewritten; the admin and AI sections are history)
 
-This is the as-built Vivreal portal design system, mined from source. Match these patterns; don't invent parallel ones. All paths are under `C:\repos\Vivreal_Portal_Mobile\`.
+This is the as-built Vivreal portal design system, mined from source. Match these patterns; don't invent parallel ones. All paths are under `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/`.
 
 ## Stack conventions
 

@@ -68,9 +68,9 @@ Applies approved fixes from the research phase. Verifies the build compiles afte
 2. Confirm environment with `node -v && npm -v`.
 3. Apply fixes in the order the plan specifies:
    - **Safe update:** `npm update <pkg>` → `npm run build` → `npm audit`.
-   - **Major update:** edit `package.json` → patch the lockfile entry surgically per the `package-publisher` agent / `vivreal-package-update` skill, then `npm ci` as the gate (a real lockfile regenerate only on Linux or in CI, never `npm install` on Windows) → `grep` for usage sites → migrate API calls per the research notes → `npm run build` → `npm audit`.
+   - **Major update:** edit `package.json` → patch the lockfile entry surgically per the `package-publisher` agent, then `npm ci` as the gate (a real lockfile regenerate only on Linux or in CI, never `npm install` on Windows) → `grep` for usage sites → migrate API calls per the research notes → `npm run build` → `npm audit`.
    - **Replacement:** install replacement → migrate each call site (preserve exact behavior, no feature additions) → uninstall old package → `npm run build` → `npm audit`.
-   - **Override:** add `overrides` block to `package.json` → patch the affected lockfile entries surgically per the `package-publisher` agent / `vivreal-package-update` skill, then `npm ci` as the gate (never delete `package-lock.json`; a real regenerate only on Linux or in CI) → verify with `npm ls <pkg>` → `npm run build` → `npm audit`.
+   - **Override:** add `overrides` block to `package.json` → patch the affected lockfile entries surgically per the `package-publisher` agent, then `npm ci` as the gate (never delete `package-lock.json`; a real regenerate only on Linux or in CI) → verify with `npm ls <pkg>` → `npm run build` → `npm audit`.
 4. Build after EVERY fix, not just at the end. If a build fails: STOP and report the exact error. Don't attempt creative recoveries.
 5. After all fixes: run final `npm audit` and `git diff --stat`. Report applied fixes, remaining vuln count, build status, files modified, and any blockers back to the coordinator.
 

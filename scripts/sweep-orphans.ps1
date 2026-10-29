@@ -143,7 +143,7 @@ Write-Output ""
 Write-Output ("CONTROL processor seconds machine wide over the interval: {0:N1}" -f $totalCpu)
 Write-Output ("CONTROL processes sampled at both ends: {0} (must be > 0)" -f $before.Keys.Count)
 Write-Output ("CONTROL walk pattern fires on a planted example: {0} (must be True)" -f `
-    ('rg.exe --files C:\repos' -match $WALK))
+    ('rg.exe --files D:\src' -match $WALK))
 Write-Output ("CONTROL a system process is refused even if named: {0} (must be True)" -f `
     ('csrss.exe' -match $NEVER))
 Write-Output ("CONTROL a person's own browser is not a candidate: {0} (must be True)" -f `

@@ -1,11 +1,15 @@
 ---
 name: vivreal-secure-api-knowledge
-description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops backend (NEXT_PUBLIC_SECURE_URL) for groups, sites, billing, profiles, roles, Square and Shopify tokens, template instantiation, domains and site analytics. Covers the SAM stack and its websocket and media-CDN siblings, instantiateTemplateWorker, the scheduled jobs, `dbKey`-query-param routing (NOT `key`), the 7-step add-a-route checklist (502 if the SAM event is missed), Stripe downgrade preflight, overage and spending caps, the payments-provider mutex, tier-quotas sentinels (-1 unlimited / 0 no access), encrypted creds, owner/admin gates, and the cross-tenant IDOR fix pattern. Triggers on: VR_Secure_API, group management, site creation, billing, downgrade preflight, profileSwitch, overage billing, spending cap, createSites, instantiateTemplate, domain transfer, dbKey, Square refresh, Shopify refresh, featureFlags, page routes, pageFields, withSiteRole, socialGrantProbe, domain renewal, registrant. Source of truth: CLAUDE.md at origin/stable.'
+description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops backend (NEXT_PUBLIC_SECURE_URL) for groups, sites, billing, profiles, roles, Square and Shopify tokens, template instantiation, domains and site analytics. Covers the SAM stack and its websocket and media-CDN siblings, instantiateTemplateWorker, the scheduled jobs, `dbKey`-query-param routing (NOT `key`), the 7-step add-a-route checklist (502 if the SAM event is missed), Stripe downgrade preflight, overage and spending caps, the payments-provider mutex, tier-quotas sentinels (-1 unlimited / 0 no access), encrypted creds, owner/admin gates, and the cross-tenant IDOR fix pattern. Triggers on: VR_Secure_API, group management, site creation, billing, downgrade preflight, profileSwitch, overage billing, spending cap, createSites, instantiateTemplate, domain transfer, dbKey, Square refresh, Shopify refresh, featureFlags, pageFields, withSiteRole, domain renewal. Source of truth: `VR_Secure_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
 ---
 
 # VR_Secure_API: knowledge digest
 
-Last synced: 2026-10-21 against `origin/stable` at `32c3bcf1` (tag v2.22.6, the v7.2 hotfix line; read the tag)
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
+Source of truth: `VR_Secure_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.
+
+Last synced: 2026-10-28 against `origin/stable` at `0d955d82` (tag v2.23.1; read the tag; per-skill baseline in vivreal-skills `scripts/skill-sources.json`)
 
 The authenticated-ops backend: group/team mgmt, site creation+deploy+template instantiation, Stripe billing/subscriptions/overage, domain purchase+transfer, Square token lifecycle, profile switching, roles, AI agent, per-site analytics reads. Maps to `NEXT_PUBLIC_SECURE_URL`. Express + serverless-express on Lambda (Node 22 on every function since 2026-10-02; arm64), JavaScript, MongoDB, Cognito JWT, SAM. Read `CLAUDE.md` at `origin/stable` for full route lists (`test/unit/claudeMdClaims.test.js` binds its function counts and runtime claim to the generated template).
 
@@ -98,6 +102,22 @@ tier id is the case to think about: nothing rewrites it when a package folds a t
 - **Two Cognito pools, and an HTTP route binds to ONE.** The `/api/admin/*` routes (count the `Path: /api/admin` events in `cloudformation/`, never quote a number: they sit in `getGroupInformation.yaml` and, for the four admin push routes, `userAndAuth.yaml`) use `MyAdminCognitoAuthorizer`, the dedicated admin pool (`Vivreal-Admin-Identity`, MFA), so a customer-pool token is rejected at the gateway there. **One exception on purpose:** `PUT /api/admin/groups/{groupID}/prospect` takes the DEFAULT (customer pool) authorizer, because the site loader signs in there and sends no `x-user-ctx`; its controller gates on `ADMIN_EMAILS`. Read each event's `Auth` block before assuming the pool. `PUT /api/group/featureFlags` accepts either pool; every other route inherits the customer pool.
 - `iam simulate-principal-policy` on the role (the granted actions `allowed`, a control `implicitDeny`) is only a PRE-CHECK: a simulation evaluates the resource ARN and context keys you hand it, and twice in v7 it passed grants the real call then denied. The proof of a grant is the first real call (`vivreal-infra:vivreal-iam-secrets`).
 
+## v2.23.0 and v2.23.1 (read at `origin/stable` `0d955d82`)
+
+New functions in `cloudYamls/allRoutes.yaml`, with their triggers:
+- **`AdsConversionExportFunction`** (`dist/adsConversionExport`), Schedule `cron(5 14 * * ? *)`: stages the day's Google Ads offline conversion rows before Google's 09:00 Los Angeles fetch.
+- **`MarketingRollupFunction`**, Schedule `cron(35 9 * * ? *)`: nightly copy of Google Analytics, Ads cost and Search Console numbers into mainDb, which the admin Marketing page reads through `GET /api/admin/marketing/funnel` (#385).
+- **`ShopifyRefreshOneFunction`** (`dist/shopifyRefreshOne`), NO events: invoked synchronously only by VR_CMS_API's `CreateAndUpdateIntegrations` role (`ShopifyRefreshOneInvokerRoleArn`, a parameter so a CMS role suffix change is an override, not an edit).
+
+New behaviour:
+- **`POST` and `GET /api/migration-request`** (`src/getGroupInformation/api/controllers/migrationRequest.js`, #364): an owner asks to move an existing site into the app from the portal.
+- **Shopify expiring offline tokens** (#377): a refresh lease, a keep-alive, the single-shop refresh above, a flagged install, an owner notice and alarms.
+- **Staff paid notice** (#380): staff are notified when a business starts or upgrades a plan.
+
+## vivreal-domain-search (the public domain service, a separate repo)
+
+`vivreal-domain-search` (deploys from `main`) is the public, read-only domain service behind `domains-api.vivreal.io`: CloudFront with `X-Origin-Verify` in front of a Lambda Function URL, read-only mainDb, the shared parking WAF and limiter table, a 6-hour cache. It serves `GET /public/parked` and the public search endpoints. Its `src/shared/tldAllowlist.js` is the TWIN of Secure's `src/createSites/services/sellableTlds.js` and the guard in `createDomainTransfer.js`; change both together. Read its README at `origin/main` before quoting its routes.
+
 ## v7 to v7.2 (live 2026-10-20/21, tags v2.22.1 to v2.22.6)
 - **The business time zone (v7.1).** `PUT /api/group/timezone` (UpdateGroup, `setGroupTimeZone`) lets an admin or the owner set `groups.timezone`. Every write is a compare-and-set on `expectedTimezone`, the zone the caller last saw (`null` for none), so the portal's automatic first save never replaces a zone someone already set; a lost race answers the stored zone with `applied: false`. `createGroup` stores a zone at creation too. Both go through `canonicalTimeZone` (`src/shared/timeZone.js`: canonical IANA name, `UTC` accepted, fixed offsets refused, `InvalidTimeZone` otherwise), the same rule VR_Client_API serves with. The write is verified by reading the field back, because a stale strict schema strips it silently.
 - **Kit sample zones are scrubbed at instantiation (v7.1).** `scrubKitZones` in `src/shared/kitIdentity.js` removes the kit's `timezone` from every page's `labels`, `labels.openingHours` and each binding's `sectionConfig`, so a customer site inherits its business zone instead of the kit's city. It runs beside the contact scrub, before the name gate, and is skipped for the demo tenant (`keepKitContact`); the worker's log reports `zoneFields`.
@@ -143,8 +163,8 @@ Load `vivreal-workflow:verification-discipline`. This is the highest-blast-radiu
 
 ## Lambda and MongoDB checklist (ported from the `secure-api` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 
@@ -162,3 +182,16 @@ packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated he
 - Profile switch atomically updates `activeGroupID` on the user doc and re-issues the `active_ctx` JWT, verify the order doesn't leak across requests.
 - Group creation: insert + S3 bucket creation must roll back together on partial failure (idempotent retry).
 - Index audit: `groupID`, `userID`, `stripeSubscriptionID`, `cognitoSub` must be indexed; `groupID + userID` compound index for membership queries.
+
+## Facts moved from the retired expert agent (2026-10-28)
+
+- **Ctx tokens are audience-bound (H6006, 2026-09-27).** Each service verifies with a key DERIVED from `CTX_SECRET` (`HMAC(CTX_SECRET, 'vivreal/ctx/v2/<service>')`) and checks `aud`; the admin gate requires `exp` and accepts only tokens addressed to this service. A token minted for one service is not valid at another, so a hand-minted test token must name the right audience.
+- **Test suite is 100/100/100/100 coverage with a husky pre-push gate** (no GitHub Actions test workflow in this repo), the pre-merge review + the local husky gate are the ONLY checks before code lands on `main`; `git push --no-verify` bypasses the gate.
+- Account self-serve deletion (`userAndAuth/services/deleteAccount.js` + `preflightAccountDeletion.js`) and video-transcode bounding (`createSites/services/S3Functions/mediaHelperFns/createVideoObject.js`) shipped this window, mind them when tracing account lifecycle or media upload paths.
+- **W6 read-flip:** the 6 tier-driven fields (entries/seats/sites/apiCalls/cdnBytes/agentActions) read LIVE from `getTierQuotas(group.tier)` at every gate (`joinGroup`, `acceptRequest`, agent metering, `getAgentContext`, `instantiateTemplate`, `createSiteCollectionData`, `createSiteWithExistingCollections`, `getGroupInfo` v1+legacy, `updateEmail` serializers). `updateGroupTier` + `handleSubscriptionEnd` STOPPED writing those fields. The per-group `agentUsage.quota` override is GONE from `checkAgentQuota` (`src/agent/services/metering.js`), past-quota agent use requires `overageBilling.enabled` and hard-stops at the spending cap; `mediaUsage.quota` is the only admin-override quota left (W7). Downgrade to a 0-access target is now a preflight violation.
+- Step Functions site-deploy fires from the `createSites` Lambda, but only when `site.siteInfo.mode === "hosted_by_us"` (api/controllers/createSiteCollectionData.js); the state machine ARN is the `STATE_MACHINE_ID` env var, resolved from SSM (`/vivreal/prod/secure-api/state-machine-id`, in `cloudformation/createSites.yaml`), NOT a CloudFormation export. (The `Create-Site-State-Machine` IAM policy IS from CFN, likely the source of the "CFN export" wording.) Cross-stack invocation: the deploy-pipeline Lambdas live in the EventHandler stack and are named `vh-${stage}-<step>` in `Vivreal_EventHandler/serverless.yml`; CI deploys with `--stage site-deployment`, so the deployed names are `vh-site-deployment-seedCollections`, `vh-site-deployment-createAmplifyApp`, `vh-site-deployment-markSiteLive` and so on (hyphens; an underscore spelling is only how the Lambda-tool MCP names its tools).
+- Billing files use `config.stripeSecretKey` (commit `c653b85`), do not inline a hardcoded Stripe key.
+- **A 502 the code never emitted is a payload-size 413.** If the handler logged success, the REPORT line shows healthy memory and duration, and the body (`{"message":"Internal server error"}`) appears nowhere in the repo, the response passed Lambda's 6 MB ceiling and API Gateway substituted its own body. The site-version list did exactly this (each row carried a whole site snapshot; fixed v2.10.1 with an allowlist projection, `SITE_VERSION_LIST_PROJECTION`, and `src/shared/responseSizeGuard.js`, which makes a route refuse in owner words with an `errorCode`). Use an ALLOWLIST projection, not `{ field: 0 }`, so the next Mixed field cannot re-inflate the list. The version DETAIL route still carries a snapshot.
+- **`POST /api/site/cutover-state` is live** (`setSiteCutoverState`, merged #211): a global-admin gate on top of the owner/admin check, plus a compare-and-swap whose readback re-verifies the site on all four identity fields including `deployment.appId`. Its caller, `Vivreal_Site_Migrator#46`, merged 2026-09-09. `APPROVED_CANONICAL_ORIGIN` is hardcoded to `https://vivreal.io`.
+- **A release-line-only PR can regress production on the next promote.** A commit that exists only on `release/vX.Y` is removed by the next cut-and-promote. Diff the release line against `main` by file content, not by PR number, before every promote.
+- **Deployed versions belong to the deployed line, not to this file.** Read them: `git show <line>:package.json` for a service version, the consumer lockfile for a package pin, the release JSON endpoint (more than once) for the portal, and the registry for a published package. Every version this file used to name went stale inside two weeks, and a stale version reads exactly like a current one.

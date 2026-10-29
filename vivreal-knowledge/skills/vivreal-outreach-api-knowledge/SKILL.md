@@ -1,15 +1,19 @@
 ---
 name: vivreal-outreach-api-knowledge
-description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach backend (NEXT_PUBLIC_OUTREACH_URL → outreach.vivreal.io) for sequences, contacts/companies, enrollments, cold calls + social touches, public booking/scheduling, Gmail history, SES send + inbound replies, and the per-minute cron. Covers the 4-Lambda split, two-token auth (x-active-ctx + optional x-user-ctx for admin gates), sender-owned identity, the enrollment-snapshot variable freeze, the +outreach reply alias + threading-header attribution, bounce/opt-out routing, the daily per-sender send cap, the booking subsystem, web-push notifications, and the per-service vivreal/prod/* secrets. Triggers on: VR_Outreach_API, email sequence, sequence didn''t send, enrollment, cold call, social touch, booking page, Gmail history, x-user-ctx, ADMIN_EMAILS gate, cronTick, suppressions, outbound queue. Source of truth: C:\repos\VR_Outreach_API README.md (full route table) + docs/ (no CLAUDE.md).'
+description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach backend (NEXT_PUBLIC_OUTREACH_URL → outreach.vivreal.io) for sequences, contacts/companies, enrollments, cold calls + social touches, public booking/scheduling, Gmail history, SES send + inbound replies, and the per-minute cron. Covers the 4-Lambda split, two-token auth (x-active-ctx + optional x-user-ctx for admin gates), sender-owned identity, the enrollment-snapshot variable freeze, the +outreach reply alias + threading-header attribution, bounce/opt-out routing, the daily per-sender send cap, the booking subsystem, web-push notifications, and the per-service vivreal/prod/* secrets. Triggers on: VR_Outreach_API, email sequence, sequence didn''t send, enrollment, cold call, social touch, booking page, Gmail history, x-user-ctx, ADMIN_EMAILS gate, cronTick, suppressions, outbound queue. Source of truth: `VR_Outreach_API` `README.md` (it has no `CLAUDE.md`) (and the docs it links) at `origin/main`.'
 ---
 
 # VR_Outreach_API: knowledge digest
 
-Last synced: 2026-10-20 against `origin/main` at `ea6eb28` (#95, live since 2026-10-19; Node 22 since 2026-10-02)
+**Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
+
+Source of truth: `VR_Outreach_API` `README.md` (it has no `CLAUDE.md`) (and the docs it links) at `origin/main`.
+
+Last synced: 2026-10-28 against `origin/main` at `3878d27` (a merge here is the deploy; Node 22 since 2026-10-02; per-skill baseline in vivreal-skills `scripts/skill-sources.json`)
 
 The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (Node 22, `nodejs22.x` in `template.yaml`; AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Its CRM client is vivreal-hq `packages/admin-app` since v7; the portal reaches only the public booking, demo-link and studio-demo routes through `src/app/api/proxy/outreach/*`.
 
-Authoritative sources: `C:\repos\VR_Outreach_API\README.md` (full route table) + `docs/` + `template.yaml`, there is NO `CLAUDE.md` in this repo. For deeper read-only analysis with citations, dispatch the `outreach-api` expert agent. For driving outreach via MCP, see `vivreal-outreach-mcp-knowledge`.
+Authoritative sources: `${VIVREAL_REPOS}/VR_Outreach_API/README.md` (full route table) + `docs/` + `template.yaml`, there is NO `CLAUDE.md` in this repo. For deeper read-only analysis with citations, dispatch the `outreach-api` expert agent. For driving outreach via MCP, see `vivreal-outreach-mcp-knowledge`.
 
 ## Architecture, several Lambdas (one bundled deploy)
 
@@ -41,6 +45,10 @@ Deploys on push to `main` only → prod stack `VR-Outreach-API` (`.github/workfl
 - **Demo tracking**: `GET /demo-link/{code}` (short studio-demo redirect), `POST /studio-demo/visit`, admin `GET /studio-demo/visits` + `/visits/summary`.
 - **Test sends**: `POST /test-send` (per-step, prod-safe), admin `POST /test-thread-send` (staggered thread), `POST /_test/fire-step` (non-prod only).
 - **Suppressions**: list/add/remove. **Segments**: group-info, list (+ admin CRUD).
+
+## `GET /inbound`: the admin Inbound read, three gates
+
+`src/api/routes/inbound.js`, mounted in `src/index.js` as `app.use('/inbound', ...)`. The admin app calls it as `GET /admin/inbound` (`stripAdminPrefix` maps it). It lists contact messages and migration requests sent from Vivreal's own sites (`src/db/websiteInboundClient.js`), `?limit=1..100&cursor=`, newest first, `{ items, nextCursor, hasMore }`; a cursor it did not hand out is a 400. **Three gates, in order:** `authMiddleware`, then `requireInternalCohort` (a ctx from any group outside the internal cohort is refused), then `requireGlobalAdmin` (`ADMIN_EMAILS` plus `x-user-ctx`, else 403), because the cohort alone would admit every member, from the portal too, and these rows are real people's names and free text. Read only; nothing a visitor wrote is logged or sent to Sentry; every answer, refusals included, is `Cache-Control: no-store, private`.
 
 ## v7 (merged #95, live since 2026-10-19; a merge here is the deploy)
 - **The CRM's client is the admin app now.** The portal's outreach CRM was deleted in portal v0.37 (v7); its pages and API routes live in vivreal-hq `packages/admin-app` (`src/app/outreach/{pipeline,sequences,import,review}`, `src/app/api/outreach/*`, the hot-lead weights in `src/lib/outreach/hotScore.ts`). The portal keeps only the public booking, demo-link and studio-demo proxies. Fix outreach forward in the admin app, never by reviving the portal pages.
@@ -110,13 +118,12 @@ The **sender doc** (Outreach Senders) owns `fromAddress`/`fromName`/`replyToAddr
 
 ## Companions
 
-- **`outreach-api` expert agent** (vivreal-experts), read-only deep analysis with citations.
 - **`vivreal-outreach-mcp-knowledge`**, the 50-tool MCP server fronting this API. **`vivreal-db`**, Mongo query rules. **`vivreal-atlas-topology`**, connection/ops. **`vivreal-iam-secrets`**, CTX_SECRET rotation. **`vivreal-admin-app-knowledge`**, the admin app that is this API's CRM client; **`vivreal-portal-knowledge`**, the public outreach proxies the portal keeps.
 
 ## Lambda and MongoDB checklist (ported from the `outreach-api` expert agent, 2026-10-20)
 
-The expert agents are no longer loadable as skills, so the review checklist an agent without an
-`Agent` tool used to load from them lives here. Query rules (tenant scoping, the mainDb `_id`
+The expert agents are retired (2026-10-28), so the review checklist they used to carry lives
+here. Query rules (tenant scoping, the mainDb `_id`
 lookup, the `publishDate` and `archived` filters) live in `vivreal-knowledge:vivreal-db`, and
 packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated here.
 

@@ -1,6 +1,6 @@
 # UX psychology, friction reduction & the critique rubric
 
-Curated from June-2026 research (full source with URLs: `Vivreal_Portal_Mobile/docs/projects/vivreal-skills-global-agents/research-inspiration.md` §3). This is the grounding for the **`ux-critic`** agent and the UX-review lens of `designer`.
+Curated from June-2026 research (full source with URLs: `Vivreal_Portal_Mobile/docs/projects/vivreal-skills-global-agents/research-inspiration.md` §3). This is the grounding for the UX-review lens of `designer` (its usability critique).
 
 ## Canonical UX laws → concrete Vivreal portal moves
 

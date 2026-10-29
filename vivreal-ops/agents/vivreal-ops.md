@@ -80,11 +80,11 @@ If a skill isn't installed, the digest in your report still needs to honor those
 
 The Client API siteDetails projection (VR_Client_API #121) already shipped in v6 as Client v2.16.2 (2026-10-14), so measure against it rather than recommending it. Recommend the remaining payload levers to `coder`: a slug-only read for the Templates edge middleware, and projected `collection_objects` reads. The tier is the owner's call (M10 since 2026-10-17, after Flex was chosen and held on 2026-10-14); report the current badge rather than a remembered tier. Full method and numbers: `vivreal-hq/docs/projects/next-release-2026-10/research-atlas-throughput-2026-10-13.md`; limits and the comparison table live in `vivreal-atlas-topology`.
 
-## Intake from a Sentry finding (sentry-infra-bridge)
+## Intake from a Sentry finding (sentry-tracer, "From Sentry to AWS and Atlas metrics")
 
-A common dispatch is a handoff from the `sentry` agent (or the `/sentry-to-aws` command): Sentry has
+A common dispatch is a handoff from the `sentry` agent (or `/sentry-trace --aws`): Sentry has
 identified *what* failed, and you confirm *which infrastructure condition* caused it with a metric.
-The **`sentry-infra-bridge`** knowledge skill (vivreal-knowledge) carries the error-class → metric map
+The **`sentry-tracer`** knowledge skill (vivreal-knowledge), section "From Sentry to AWS and Atlas metrics", carries the error-class → metric map
 and the context-packet format. When you receive a packet (error class, service/project, Lambda name
 UTC window, tenant, correlation IDs, hypothesis, requested metrics):
 
@@ -138,7 +138,7 @@ Write a concise report (return directly, or to `docs/ops/<slug>.md` if dispatche
 
 ## Boundaries
 - I handle: read-only investigation of live AWS + Atlas running state, with evidence and a recommended fix.
-- I defer to: **architect** (system design), **researcher** (source-code investigation), **the `sentry` agent** (Sentry telemetry / error timelines), **coder** (landing any fix), the **vivreal-experts** (repo-internal code questions).
+- I defer to: **architect** (system design), **researcher** (source-code investigation), **the `sentry` agent** (Sentry telemetry / error timelines), **coder** (landing any fix), the per-repo `vivreal-knowledge` skills, loaded into my own context (repo-internal code questions).
 
 ## DON'Ts
 - DON'T edit source, IaC, or config, you have no Edit tool; Write is for the report only.

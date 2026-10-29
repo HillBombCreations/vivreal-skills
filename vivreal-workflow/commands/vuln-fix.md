@@ -22,15 +22,15 @@ The Vivreal ecosystem repos and their paths:
 
 | Repo | Path | Build Command | Has Tests |
 |---|---|---|---|
-| Vivreal Portal | `C:\repos\Vivreal_Portal_Mobile` | `npm run build` | Yes (Playwright) |
-| VR_Main_API | `C:\repos\VR_Main_API` | `npm run build` | No |
-| VR_Secure_API | `C:\repos\VR_Secure_API` | `npm run build` | No |
-| VR_CMS_API | `C:\repos\VR_CMS_API` | `npm run build` | No |
-| VR_Client_API | `C:\repos\VR_Client_API` | `npm run build` | No |
-| VR_Client_Auth | `C:\repos\VR_Client_Auth` | _(no build step)_ | No |
-| Vivreal_EventHandler | `C:\repos\Vivreal_EventHandler` | `npm run build` | No |
-| Vivreal_Templates | `C:\repos\Vivreal_Templates` | `npm run build` | No |
-| VR_Secure_API/websocket | `C:\repos\VR_Secure_API\websocket` | _(no build step)_ | No |
+| Vivreal Portal | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile` | `npm run build` | Yes (Playwright) |
+| VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API` | `npm run build` | No |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API` | `npm run build` | No |
+| VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API` | `npm run build` | No |
+| VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API` | `npm run build` | No |
+| VR_Client_Auth | `${VIVREAL_REPOS}/VR_Client_Auth` | _(no build step)_ | No |
+| Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler` | `npm run build` | No |
+| Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates` | `npm run build` | No |
+| VR_Secure_API/websocket | `${VIVREAL_REPOS}/VR_Secure_API/websocket` | _(no build step)_ | No |
 
 ---
 
@@ -66,7 +66,7 @@ For each target repo, dispatch `vuln --phase=scan`:
 ```
 description: Scan <repo-name> for vulnerabilities
 subagent_type: vuln
-prompt: --phase=scan. Scan <repo-path> for npm dependency vulnerabilities. Read CLAUDE.md once. Consult the shared-standards skill only if your work touches one of its trigger areas. Read <repo-path>/CLAUDE.md if it exists. Run npm audit --json and the human-readable npm audit. Categorize every finding. Write the audit report to docs/vulns/<slug>/audit-<repo-name>.md in the Vivreal Portal repo (C:\repos\Vivreal_Portal_Mobile).
+prompt: --phase=scan. Scan <repo-path> for npm dependency vulnerabilities. Read CLAUDE.md once. Consult the shared-standards skill only if your work touches one of its trigger areas. Read <repo-path>/CLAUDE.md if it exists. Run npm audit --json and the human-readable npm audit. Categorize every finding. Write the audit report to docs/vulns/<slug>/audit-<repo-name>.md in the Vivreal Portal repo (${VIVREAL_REPOS}/Vivreal_Portal_Mobile).
 ```
 
 **Parallelization:** If scanning multiple repos, dispatch scanners in parallel (multiple Agent tool calls in one message). They're independent.
@@ -94,7 +94,7 @@ For each repo WITH vulnerabilities, dispatch `vuln --phase=research`:
 ```
 description: Research vulns in <repo-name>
 subagent_type: vuln
-prompt: --phase=research. Research the vulnerabilities found in <repo-name>. Read CLAUDE.md once. Read the audit report at docs/vulns/<slug>/audit-<repo-name>.md. Read <repo-path>/CLAUDE.md and <repo-path>/package.json. For each vulnerability: determine exploitability, find upgrade paths, identify breaking changes, propose fix strategy. Write findings to docs/vulns/<slug>/research-<repo-name>.md in the Vivreal Portal repo (C:\repos\Vivreal_Portal_Mobile).
+prompt: --phase=research. Research the vulnerabilities found in <repo-name>. Read CLAUDE.md once. Read the audit report at docs/vulns/<slug>/audit-<repo-name>.md. Read <repo-path>/CLAUDE.md and <repo-path>/package.json. For each vulnerability: determine exploitability, find upgrade paths, identify breaking changes, propose fix strategy. Write findings to docs/vulns/<slug>/research-<repo-name>.md in the Vivreal Portal repo (${VIVREAL_REPOS}/Vivreal_Portal_Mobile).
 ```
 
 **Parallelization:** Dispatch researchers in parallel for independent repos.
@@ -180,7 +180,7 @@ For each repo that was fixed, dispatch `vuln --phase=review`:
 ```
 description: Review vuln fixes for <repo-name> (pass <N>)
 subagent_type: vuln
-prompt: --phase=review. Verify vulnerability fixes for <repo-name>. Read CLAUDE.md once. Read the plan at docs/vulns/<slug>/plan.md. Work in <repo-path>. Run the full 10-point checklist. npm audit MUST show 0 vulnerabilities. Write verdict to docs/vulns/<slug>/review-<repo-name>-<N>.md in the Vivreal Portal repo (C:\repos\Vivreal_Portal_Mobile).
+prompt: --phase=review. Verify vulnerability fixes for <repo-name>. Read CLAUDE.md once. Read the plan at docs/vulns/<slug>/plan.md. Work in <repo-path>. Run the full 10-point checklist. npm audit MUST show 0 vulnerabilities. Write verdict to docs/vulns/<slug>/review-<repo-name>-<N>.md in the Vivreal Portal repo (${VIVREAL_REPOS}/Vivreal_Portal_Mobile).
 ```
 
 Read the review file.

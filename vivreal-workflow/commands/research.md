@@ -1,6 +1,6 @@
 ---
-description: Research a bug end-to-end across the Vivreal stack. Creates bug directory, dispatches the researcher agent, and records metrics. Output is compatible with /coordinator (it will skip Phase 1 if research.md exists).
-argument-hint: '<inbox #N | "description of the bug" | gh:owner/repo#N | sentry URL>'
+description: Research a bug end-to-end across the Vivreal stack, or investigate any technical question (this replaced /investigate). Creates the bug or investigation directory, dispatches the researcher agent, and records metrics. Bug output is compatible with /coordinator (it skips Phase 1 if research.md exists).
+argument-hint: '<inbox #N | "description of the bug" | gh:owner/repo#N | sentry URL | "how does X work?"> [--slug <slug>]'
 ---
 
 You are dispatching the researcher agent directly. The user invoked `/research` with: **$ARGUMENTS**
@@ -12,9 +12,12 @@ Parse the input using the same detection as /coordinator:
 1. **Inbox reference** (`inbox #N` or `#N`): Read `docs/bugs/_inbox.md`, pull issue N, generate slug from title
 2. **GitHub issue** (`gh:owner/repo#N` or `gh:#N`): Fetch via `mcp__github__get_issue`, generate slug from title
 3. **Sentry URL** (contains `sentry.io/issues/`): Fetch via Sentry MCP, generate slug from title
-4. **Free text**: Generate slug from first ~6 meaningful words
+4. **Free text describing a bug**: Generate slug from first ~6 meaningful words
+5. **A technical question that is not a bug** ("how does X work?", "why is X slow?", "trace the auth flow"): the **question mode** below.
 
-Then:
+`--slug <slug>` overrides the generated slug in every mode.
+
+Then, for a bug:
 1. `mkdir -p docs/bugs/<slug>/`
 2. Write `docs/bugs/<slug>/issue.md` with the verbatim issue text and source
 3. Initialize `docs/bugs/<slug>/metrics.md`:
@@ -41,7 +44,30 @@ Include relevant ecosystem docs based on the bug area (same routing table as coo
 
 Also include relevant backend CLAUDE.md paths if backend repos are involved.
 
-## Post-Dispatch
+## Question mode (no bug artifacts)
+
+1. Slug from the question (kebab-case, max 50 chars) unless `--slug` names one.
+2. `mkdir -p docs/investigations/<slug>/` and initialize `docs/investigations/<slug>/metrics.md`.
+3. Tell the user: "Investigating: `<question>`. Slug: `<slug>`."
+4. Dispatch:
+
+```
+description: Investigate, <brief description>
+subagent_type: researcher
+prompt: |
+  Investigate: <the question>
+
+  Read the shared-standards skill first.
+  Read the CLAUDE.md of every repo involved, resolved through ${VIVREAL_REPOS}.
+  Write your findings to docs/investigations/<slug>/findings.md.
+
+  Use the Sentry MCP for production evidence, context7 to validate framework assumptions,
+  the AWS docs MCP for cloud service behavior, and the MongoDB MCP for schemas and data.
+```
+
+5. Verify `findings.md` exists, append the metrics block below to `docs/investigations/<slug>/metrics.md` under `### Investigation: researcher`, and show the user a summary.
+
+## Post-Dispatch (bug mode)
 
 1. Verify `docs/bugs/<slug>/research.md` exists
 2. Append metrics to `docs/bugs/<slug>/metrics.md`:

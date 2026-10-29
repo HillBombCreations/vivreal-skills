@@ -1,0 +1,586 @@
+{
+  "vivreal-infra/vivreal-atlas-topology": {
+    "sources": [
+      {
+        "repo": "Vivreal-Mongo-Connection",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md",
+          "README.md"
+        ],
+        "synced": "ac449a587ec533e64102b63ea82dada4cb8697b3"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-auth-architecture": {
+    "sources": [
+      {
+        "repo": "VR_Main_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "54b198e635471bba4e3c820113b39464e4a34edd"
+      },
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "b34ded3560b9b8946a5277e85e990e81c550b4d5"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-deploy-proof": {
+    "sources": "none",
+    "why": "a method for proving deploys against live AWS state, no code source"
+  },
+  "vivreal-infra/vivreal-deploy-tracker": {
+    "sources": [
+      {
+        "repo": "Vivreal_EventHandler",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "serverless.yml",
+          "docs/",
+          "CLAUDE.md"
+        ],
+        "synced": "527280ac1a303e7af0e65067bdd9757914acf9be"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-iam-secrets": {
+    "sources": "none",
+    "why": "live AWS account state (IAM, Secrets Manager), read with the CLI"
+  },
+  "vivreal-infra/vivreal-lambda": {
+    "sources": "none",
+    "why": "AWS Lambda practice, external documentation"
+  },
+  "vivreal-infra/vivreal-lambda-logs": {
+    "sources": "none",
+    "why": "live CloudWatch Logs, read with the CLI"
+  },
+  "vivreal-infra/vivreal-media-cdn": {
+    "sources": [
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "00c7c4bb3d8b768697627681f29a8fa50d96faf6"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-notifications": {
+    "sources": [
+      {
+        "repo": "VR_Main_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "f4618a201d159cb210426a1dd8852cb2dd606dab"
+      },
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "41906e749ad4bf81b12b64b6356e524358033975"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-observability": {
+    "sources": [
+      {
+        "repo": "VR_OnCall_Webhook",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md",
+          "template.yaml"
+        ],
+        "synced": "d8ed1197087f53e58189b6190ab2aaea89b056fe"
+      },
+      {
+        "repo": "vivreal-hq",
+        "ref": "main",
+        "paths": [
+          "packages/fleet-ops/"
+        ],
+        "synced": "28bb8b4a0cf01a7491aa863e50346d849203088d"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-site-deploy-pipeline": {
+    "sources": [
+      {
+        "repo": "Vivreal_EventHandler",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "serverless.yml",
+          "docs/",
+          "CLAUDE.md"
+        ],
+        "synced": "19e8102ae3f6d997e4b77a69260bfce6ada65231"
+      }
+    ]
+  },
+  "vivreal-infra/vivreal-websocket-realtime": {
+    "sources": [
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "b34ded3560b9b8946a5277e85e990e81c550b4d5"
+      }
+    ]
+  },
+  "vivreal-knowledge/sentry-tracer": {
+    "sources": "none",
+    "why": "external service (Sentry), read live through the Sentry MCP"
+  },
+  "vivreal-knowledge/vivreal-accounts-and-writes": {
+    "sources": [
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "1db1f015035584a72df273a0689e68b97368b141"
+      },
+      {
+        "repo": "VR_Main_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "71eef9b22e31f07d23158d93a617e76a72e34915"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-admin-app-knowledge": {
+    "sources": [
+      {
+        "repo": "vivreal-hq",
+        "ref": "deploy/admin-app",
+        "paths": [
+          "packages/admin-app/"
+        ],
+        "synced": "08f2d444edb043a21ca2f8eeb10a130144013630"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-agent-knowledge": {
+    "sources": [
+      {
+        "repo": "VR-MCP-Server",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "3285303393159a43cf0a9a39989bb607af594698"
+      },
+      {
+        "repo": "Vivreal_Portal_Mobile",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "ae005ad3c96eba1d3022a6b58d5e5f80a4e7ec90"
+      },
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "b6a82bd55a52aae5ca1611be9bef8f1da38cb142"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-analytics-knowledge": {
+    "sources": [
+      {
+        "repo": "VR_Analytics_API",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "template.yaml",
+          "CLAUDE.md"
+        ],
+        "synced": "13c07639fd2fa42ec91c872efe7a4d7c71f0b078"
+      },
+      {
+        "repo": "Vivreal_Templates",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "next.config.ts",
+          "scripts/",
+          "CLAUDE.md"
+        ],
+        "synced": "d9afb25192bd1f45cb2207142acb19e7c0bc3b60"
+      },
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "b6a82bd55a52aae5ca1611be9bef8f1da38cb142"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-blender-knowledge": {
+    "sources": "none",
+    "why": "external API (Blender bpy)"
+  },
+  "vivreal-knowledge/vivreal-brand-voice": {
+    "sources": "none",
+    "why": "reads vivreal-hq brand/voice.md at run time, the canonical copy"
+  },
+  "vivreal-knowledge/vivreal-client-stack-knowledge": {
+    "sources": [
+      {
+        "repo": "VR_Client_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "sam-template.yaml",
+          "CLAUDE.md"
+        ],
+        "synced": "221675be63310fed0b0768b67ae48e648489c560"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-cms-api-knowledge": {
+    "sources": [
+      {
+        "repo": "VR_CMS_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudformation/",
+          "sam-template.yaml",
+          "CLAUDE.md"
+        ],
+        "synced": "37a7e7161676d2dcaf38423e9e30b35364537732"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-content-knowledge": {
+    "sources": "none",
+    "why": "reads vivreal-hq knowledge/ and content/ at run time"
+  },
+  "vivreal-knowledge/vivreal-db": {
+    "sources": [
+      {
+        "repo": "Vivreal-Schemas",
+        "ref": "main",
+        "paths": [
+          "schemas/",
+          "README.md"
+        ],
+        "synced": "5cc7b2bce0700ecf8ac3d11c0c0bcc4c43c3c1b3"
+      },
+      {
+        "repo": "Vivreal-Mongo-Connection",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md",
+          "README.md"
+        ],
+        "synced": "0eb11209d38ac2e2cac4ba67c9e4b057bf8c5aaa"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-design-system": {
+    "sources": [
+      {
+        "repo": "Vivreal_Portal_Mobile",
+        "ref": "stable",
+        "paths": [
+          "src/app/globals.css",
+          "src/components/",
+          "CLAUDE.md"
+        ],
+        "synced": "b4cd229c655e93efb9dde5f5ecd7a186b4a69be7"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-eventhandler-knowledge": {
+    "sources": [
+      {
+        "repo": "Vivreal_EventHandler",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "serverless.yml",
+          "docs/",
+          "CLAUDE.md"
+        ],
+        "synced": "8b27efd61aeb7f3ba4b5ebc3bfe967aa6499e45c"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-main-api-knowledge": {
+    "sources": [
+      {
+        "repo": "VR_Main_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "3c75d2dd97ef349381bb48a26529521cb40e10b5"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-mcp-server-knowledge": {
+    "sources": [
+      {
+        "repo": "VR-MCP-Server",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "3285303393159a43cf0a9a39989bb607af594698"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-migrator-knowledge": {
+    "sources": [
+      {
+        "repo": "Vivreal_Site_Migrator",
+        "ref": "master",
+        "paths": [
+          "packages/site-loader/",
+          "scripts/",
+          "commands/",
+          "capabilities/",
+          "docs/migration-flow.md",
+          "docs/template-flow.md",
+          "CLAUDE.md"
+        ],
+        "synced": "dfbfdd34af47720bbea7e9675e2a8575201d1db3"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-outreach-api-knowledge": {
+    "sources": [
+      {
+        "repo": "VR_Outreach_API",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "README.md",
+          "docs/"
+        ],
+        "synced": "3878d27dea259e2e887839c0ad12d3907c9d25bc"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-outreach-mcp-knowledge": {
+    "sources": [
+      {
+        "repo": "VR-Outreach-MCP-Server",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "066d0b2c23b3809aa66ef49e1f4d090e00c3d1f7"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-portal-knowledge": {
+    "sources": [
+      {
+        "repo": "Vivreal_Portal_Mobile",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "CLAUDE.md"
+        ],
+        "synced": "1017bcc66be2003ab5dd83c0fcbaacfdc9939c95"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-product-rules": {
+    "sources": "none",
+    "why": "owner rules collected from decisions; each fact cites its own ref"
+  },
+  "vivreal-knowledge/vivreal-renderer-knowledge": {
+    "sources": [
+      {
+        "repo": "vivreal-site-renderer",
+        "ref": "master",
+        "paths": [
+          "src/",
+          "docs/",
+          "CLAUDE.md"
+        ],
+        "synced": "ed2e2db9ea13d7753a6c9526e8e30d0418cc898c"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-secure-api-knowledge": {
+    "sources": [
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "0d955d82297aa849458ca0f49e02214c11adb68f"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-sites": {
+    "sources": [
+      {
+        "repo": "Vivreal_Templates",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "next.config.ts",
+          "scripts/",
+          "CLAUDE.md"
+        ],
+        "synced": "c9cfdb0b315d294cf082ad52b74f0665f4dce999"
+      },
+      {
+        "repo": "vivreal-site-renderer",
+        "ref": "master",
+        "paths": [
+          "src/",
+          "docs/",
+          "CLAUDE.md"
+        ],
+        "synced": "a0843b9a711be20674caf825960e93d4cbd1858b"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-social-sync": {
+    "sources": [
+      {
+        "repo": "VR_CMS_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudformation/",
+          "sam-template.yaml",
+          "CLAUDE.md"
+        ],
+        "synced": "2a4054476f8f145c4cb1ea781ab06252d3b1c799"
+      },
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "613999c751e72d774bf8b9ca3b73df7d37530c34"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-templates-knowledge": {
+    "sources": [
+      {
+        "repo": "Vivreal_Templates",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "next.config.ts",
+          "scripts/",
+          "CLAUDE.md"
+        ],
+        "synced": "d484a897ffa07d6d45c345206704427fe5c7f004"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-tenancy": {
+    "sources": [
+      {
+        "repo": "Vivreal-Mongo-Connection",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md",
+          "README.md"
+        ],
+        "synced": "0eb11209d38ac2e2cac4ba67c9e4b057bf8c5aaa"
+      },
+      {
+        "repo": "VR_Secure_API",
+        "ref": "stable",
+        "paths": [
+          "src/",
+          "cloudYamls/",
+          "cloudformation/",
+          "CLAUDE.md"
+        ],
+        "synced": "1c6ec1d9b4bafdc6e7faaa68ea7c17edfe2bf1ff"
+      }
+    ]
+  },
+  "vivreal-knowledge/vivreal-unit-economics": {
+    "sources": [
+      {
+        "repo": "Vivreal-Tier-Quotas",
+        "ref": "main",
+        "paths": [
+          "src/",
+          "CLAUDE.md",
+          "README.md"
+        ],
+        "synced": "cca5ac71328974f83d5a592d693d90aeaa4ad644"
+      }
+    ]
+  }
+}

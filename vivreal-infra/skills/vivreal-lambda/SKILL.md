@@ -52,4 +52,4 @@ Arity catches this; coverage cannot.
 
 ## Companions
 
-`vivreal-iam-secrets` (deploy-role + secrets), `vivreal-atlas-topology` (the Mongo-connection ceiling that scaling defers to), `vivreal-auth-architecture` (the 403-on-new-route deploy-config miss). Sources of truth: each backend's `C:\repos\<repo>\CLAUDE.md`; memory `project_lambda_concurrency_reallocation.md`, `project_admin_analytics_integration.md`.
+`vivreal-iam-secrets` (deploy-role + secrets), `vivreal-atlas-topology` (the Mongo-connection ceiling that scaling defers to), `vivreal-auth-architecture` (the 403-on-new-route deploy-config miss). Sources of truth: each backend's `${VIVREAL_REPOS}/<repo>/CLAUDE.md`; memory `project_lambda_concurrency_reallocation.md`, `project_admin_analytics_integration.md`.

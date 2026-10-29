@@ -1,16 +1,18 @@
 ---
 name: vivreal-content-knowledge
-description: 'Use when planning, writing, or producing Vivreal organic/social content, help-centre pages, guides, tutorials or carousels, or working in vivreal-hq''s content half (merged from vivreal-content on 2026-08-03; C:\repos\vivreal-content is a leftover). Covers where everything lives (brand/voice.md, knowledge/, content/, packages/content-studio), the video pipeline (footage library, Remotion, portal capture, EditDNA, the tutorial harness), the content agents, the channel set, and posting safety rules. Triggers on: vivreal-content, vivreal-hq content, content studio, content-studio, content calendar, posting playbook, content plan, earned media, content briefs, EditDNA, footage library, record footage, tutorial-maker, carousel, guide-writer, help-page-producer, short-form-editor, linkedin-editor, social-video-director, voice-check, filming hygiene, W42 drafts. Source of truth: C:\repos\vivreal-hq\CLAUDE.md, packages/content-studio/CLAUDE.md, knowledge/README.md.'
+description: 'Use when planning, writing, or producing Vivreal organic/social content, help-centre pages, guides, tutorials or carousels, or working in vivreal-hq''s content half (merged from vivreal-content on 2026-08-03; ${VIVREAL_REPOS}/vivreal-content is a leftover). Covers where everything lives (brand/voice.md, knowledge/, content/, packages/content-studio), the video pipeline (footage library, Remotion, portal capture, EditDNA, the tutorial harness), the content agents, the channel set, and posting safety rules. Triggers on: vivreal-content, vivreal-hq content, content studio, content-studio, content calendar, posting playbook, content plan, earned media, content briefs, EditDNA, footage library, record footage, tutorial-maker, carousel, guide-writer, help-page-producer, short-form-editor, linkedin-editor, voice-check, filming hygiene, W42 drafts. Source of truth: `vivreal-hq` `CLAUDE.md` (and the docs it links) at `origin/main`.'
 ---
 
 # Vivreal content (vivreal-hq): knowledge digest
 
+Source of truth: `vivreal-hq` `CLAUDE.md` (and the docs it links) at `origin/main`.
+
 Last synced: 2026-10-15
 
-**The content studio is part of `C:\repos\vivreal-hq` now.** Content tooling left
+**The content studio is part of `${VIVREAL_REPOS}/vivreal-hq` now.** Content tooling left
 `Vivreal_Portal_Mobile` on 2026-06-25 for a `vivreal-content` repo, and that repo was merged
 with the lead generator into `vivreal-hq` on 2026-08-03 (vivreal-hq `CLAUDE.md`, "What This
-Is"). A `C:\repos\vivreal-content` checkout may still exist on a machine; it is a leftover and
+Is"). A `${VIVREAL_REPOS}/vivreal-content` checkout may still exist on a machine; it is a leftover and
 never the place to work or to read rules from. This skill is a **map, not a copy**: the
 operational work happens in `vivreal-hq`, following its own docs. The repo is private
 (copyright-firewalled reference clips, real lead data).
@@ -39,7 +41,7 @@ operational work happens in `vivreal-hq`, following its own docs. The repo is pr
 Owner decision 2026-10-06: every agent, command and skill lives in the vivreal-skills marketplace; `vivreal-hq/.claude/` holds only `settings.json` and `hooks/`. Install `vivreal-content@vivreal-skills` and `vivreal-leadgen@vivreal-skills` (and `vivreal-product` for the critics) to use them here.
 
 
-- **Content (`vivreal-content` plugin):** `content-planner` (weekly calendar and per-platform expansion), `footage-recorder` (`/record`), `short-form-editor` (`/tiktok`, `/instagram`), `linkedin-editor` (`/linkedin`), `carousel-editor` (`/carousel`), `social-video-director` (`/social`), `guide-writer` (`/guide`), `tutorial-maker` (`/tutorial`), `help-page-producer` (`/help-page`), `mascot-artist`; plus `qa-walker`, `template-critic` and `social-critic` from the `vivreal-product` plugin.
+- **Content (`vivreal-content` plugin):** `content-planner` (weekly calendar and per-platform expansion), `footage-recorder` (`/record`), `short-form-editor`, `linkedin-editor` (`/linkedin`), `carousel-editor` (`/carousel`), `guide-writer` (`/guide`), `tutorial-maker` (`/tutorial`), `help-page-producer` (`/help-page`), `mascot-artist`; plus `qa-walker`, `template-critic` and `social-critic` from the `vivreal-product` plugin.
 - **`content-creator` is RETIRED (2026-08-06)**: its four specialists were never registered as agents, so its dispatch could not fire. Slides moved to `carousel-editor`, capture to `footage-recorder`. Its asset directory moved to `packages/content-studio/capture-assets/` (above), the package that reads it.
 - **Leadgen (`vivreal-leadgen` plugin; the other half of the repo):** `lead-scout`, `profiler`, `contact-enricher`, `owner-researcher`, `runner`, `coordinator`, `prompt`.
 

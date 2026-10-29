@@ -30,7 +30,7 @@ prompt: |
 
   Read the shared-standards skill first.
   [If portal-coder: this is SOLO mode, you are the only portal coder on this task.]
-  [If coder and the task touches the portal incidentally: read C:\repos\Vivreal_Portal_Mobile\CLAUDE.md for portal conventions, but the portal's own implementation work still belongs to portal-coder.]
+  [If coder and the task touches the portal incidentally: read ${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md for portal conventions, but the portal's own implementation work still belongs to portal-coder.]
   [If design exists: Read docs/designs/<slug>/design.md for the approved architecture.]
   [If backend: Read the relevant backend CLAUDE.md.]
 

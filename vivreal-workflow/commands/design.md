@@ -21,7 +21,7 @@ prompt: |
   Design: $ARGUMENTS
 
   Read the shared-standards skill first.
-  Read C:\repos\Vivreal_Portal_Mobile\CLAUDE.md for portal conventions and current architecture.
+  Read ${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md for portal conventions and current architecture.
   Read relevant backend CLAUDE.md files for any services involved.
 
   Understand the existing system before proposing changes. Read actual source files.

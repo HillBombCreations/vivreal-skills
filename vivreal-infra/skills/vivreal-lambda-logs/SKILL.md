@@ -120,5 +120,5 @@ A zero is only evidence when the same query can return a hit for something you k
 - Whether anyone would be TOLD about a failure, alarms and thresholds: `vivreal-observability`.
 - Proving a deploy landed (stack state, artifact, health SHA): `vivreal-deploy-proof`.
 - Sentry-side investigation: the `vivreal-sentry` plugin.
-- Per-service failure signatures (for example the CMS hourly social sync): the matching expert in
-  `vivreal-experts`, such as `cms-api`.
+- Per-service failure signatures (for example the CMS hourly social sync): the matching
+  per-repo knowledge skill in `vivreal-knowledge`, such as `vivreal-cms-api-knowledge`.

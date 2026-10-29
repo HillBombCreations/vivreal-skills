@@ -74,6 +74,16 @@ This skill activates when the user mentions any of:
 **"Should we invest in ads?"**
 → First check organic conversion rate (GA4 + MongoDB). If organic converts well, ads will likely work. If organic doesn't convert, fix the funnel first.
 
+## Marketing measurement, end to end
+
+Each link cited at its deploy line, read 2026-10-28. Read them in this order when GA4, Ads and sign-ups disagree.
+1. **Consent, customer sites and vivreal.io** (Vivreal_Templates `origin/stable` `d484a89`): `src/components/SiteConsent/` sends `gtag('consent','default',...)` from the stored choice before `config`, and `consent update` on a choice; `ad_personalization` is always `denied`. `AttributionCapture` writes the `vr_attr` touch only within that choice. A visitor who never accepts is invisible to GA4 and Ads by design.
+2. **Consent, the portal** (Vivreal_Portal_Mobile v0.37.6): accepting grants `ad_storage` and `ad_user_data`, so a Google Ads click can attribute to a later sign-up.
+3. **The sign-up record** (VR_Main_API `origin/stable` `6572479`, `src/hbcreations/models/leadsSchema.js`): `leads.attribution` holds first and last touch (`utm_*`, `gclid`) from the consented cookie; `leads.signupContext` (`country` from the time zone, `countrySource`, `device`) is written for EVERY sign-up without consent. Count with `signupContext`, attribute with `attribution`, and never read a missing `attribution` as "direct".
+4. **Ads conversion upload** (VR_Secure_API `origin/stable` `0d955d82`): `AdsConversionExportFunction`, `cron(5 14 * * ? *)`, stages the day's offline click conversions (`ads_conversion_export_batches`, `ads_conversion_uploads`) before Google's 09:00 Los Angeles fetch. A sign-up lands in Ads a day later, not live.
+5. **The nightly rollup** (same SHA): `MarketingRollupFunction`, `cron(35 9 * * ? *)`, copies GA4, Ads cost and Search Console numbers into mainDb `marketing_dailies` (runs in `marketing_rollup_runs`, notes in `marketing_annotations`).
+6. **The admin Marketing page** (vivreal-hq `origin/deploy/admin-app` `08f2d444`, `/marketing`): one read, Secure `GET /api/admin/marketing/funnel`, global admins only.
+
 ## Rules
 
 - **Never guess metrics**, always query real data. If a source isn't reachable from this session (the admin routes need an admin-pool token), say which one and what it would answer.

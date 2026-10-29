@@ -24,6 +24,14 @@ on machine-wide ports 3100 and 4600 with `reuseExistingServer: true`) and produc
 failures and false passes; the modes below name who owns the gate. Every other repo routes to
 `coder` (the full reasoning is in the vivreal-skills README).
 
+## Prerequisites (any co-owner's machine, before the first command)
+This agent runs on Justin's or Hunter's machine. Nothing below may depend on whose.
+1. `VIVREAL_REPOS` is set (shared-standards, Path resolution). If not, stop and say so.
+2. Every Vivreal repo is cloned under it, and each portal sibling (VR_Secure_API, Vivreal_Templates, VR_CMS_API, vivreal-hq, VR_Client_API, Vivreal_Site_Migrator) has its default branch contained in HEAD. The hooks throw when one is missing or parked; that throw is the gate working. Fix the sibling (fetch, fast-forward or switch to the default branch). Never set `VIVREAL_ALLOW_MISSING_SIBLINGS`, `VIVREAL_ALLOW_PARKED_SIBLINGS` or `VIVREAL_MIGRATOR_PUBLISH_OUT` (owners, 2026-10-28).
+3. `NODE_AUTH_TOKEN` is exported; the tracked `.npmrc` reads it for GitHub Packages. A 401 from `npm ci` means it is missing or lacks `read:packages`. Check presence with `node -e "process.exit(process.env.NODE_AUTH_TOKEN?0:1)"`; never print it.
+4. Both hooks start with `node scripts/assert-no-renderer-overlay.mjs`. If it fails, a renderer dev overlay is active; see `vivreal-knowledge:vivreal-renderer-knowledge`, "dev overlay", and remove the overlay, never the check.
+5. When in doubt, run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo portal`; it names what is missing and prints no value.
+
 ## Modes (the dispatcher picks; SOLO if the dispatch prompt does not say)
 
 Hook and test scope is set by my dispatch. The dispatch prompt comes from the agent that
@@ -51,8 +59,7 @@ real accounts) need a fresh dispatch.
    trusting a result; `npm ci` reconciles. `npm install` on Windows can prune Linux-only
    optional dependencies out of the lockfile, patch a single entry surgically if a dependency
    genuinely needs bumping, never run a bare install to do it.
-3. **Copy `.env.local` from the main portal checkout.** It is gitignored, so a fresh worktree
-   has none, and `NEXT_PUBLIC_ADMIN_EMAILS` (and anything else it supplies) comes from it. Its
+3. **`.env.local`.** It is gitignored, so a fresh worktree has none. Copy `$VIVREAL_REPOS/Vivreal_Portal_Mobile/.env.local`; if that is missing too, run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/fetch-env-local.js" portal <worktree>`. `.env.example` lists every name it must hold. Its
    absence fails every admin-gated e2e spec for a reason that has nothing to do with your
    diff, and the trap compounds if you baseline against a second fresh worktree that is
    equally missing it, both sides fail identically and it reads as a clean pre-existing
@@ -82,11 +89,7 @@ real accounts) need a fresh dispatch.
 6. **Make intermediate commits with `--no-verify --only <paths>`, then make ONE final hooked
    push.** The portal's pre-commit runs the full vitest suite, so N commits through it means N
    full runs; only the push needs to carry the real gate, the pre-push is the single full run.
-   Stage by explicit pathspec, never `git add -A`, never a bare `git commit`. Export
-   `VIVREAL_REPOS=<the parity sibling path the dispatcher gives>` in the SAME shell invocation
-   as the push (for example `VIVREAL_REPOS=C:/repos/_wt/parity git push ...`), setting it only
-   in your own shell and not the hook's leaves the cross-repo parity check falling back to a
-   parked sibling and reporting a mismatch that is not real. Never `--no-verify` on the push
+   Stage by explicit pathspec, never `git add -A`, never a bare `git commit`. Export `VIVREAL_REPOS` in the SAME shell invocation as the push so the hook inherits it, `VIVREAL_REPOS="$VIVREAL_REPOS" git push -u origin <branch>`; when the dispatch names a parity root (for example `$VIVREAL_REPOS/_wt/parity`), use that value instead. Never `--no-verify` on the push
    itself unless the dispatch says so, a hook failure is a bug to fix, read what actually
    failed before deciding it is environmental.
 7. **Open the PR, and verify the head with `gh api`**, not `gh pr view`, which can serve a
@@ -151,7 +154,7 @@ and the branch is already proven.
   have answered 400.
 - Report the new head SHA and exactly which tests ran.
 
-## Portal-specific lessons (read as rules, the story lives in memory if you want it)
+## Portal-specific lessons
 
 - **Fixed ports collide across worktrees, not only within one.** `reuseExistingServer` means
   3100 and 4600 are shared machine-wide; any gate result, red or green, is void while another
@@ -244,23 +247,31 @@ comments, DRY only when genuine).
 6. Run the gates appropriate to your mode (see Modes above), never more and never less.
 7. Commit per logical change, stage by explicit pathspec.
 
-## Auto-review (before reporting done, SOLO, INTEGRATE and FOLLOWUP)
-
-PARALLEL mode skips this, its report is "ready for integration," not "done," and the
-INTEGRATE pass is where a real gate and a real review belong.
-
-In SOLO and INTEGRATE, after the gates pass, review your own diff against the `reviewer`
-agent's checklist and report the verdict inline. You hold no `Agent` tool, so you cannot
-spawn the reviewer as a subagent; read its definition, `${CLAUDE_PLUGIN_ROOT}/agents/reviewer.md`,
-and apply it yourself. This is a self-review, weaker than an independent pass, say so rather than
-implying one happened. Cap at 3 passes; if still failing, stop and escalate to the user with
-the unresolved list.
+## Pre-push checklist (SOLO, INTEGRATE, FOLLOWUP; PARALLEL skips it)
+Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8 are coder's checklist, restated so this file stands alone:
+1. Callers: grep every caller of each changed route, function, field or component; list them and whether each still works.
+2. Deployed contract: for any param that becomes new, required or rejected, quote the backend validator on the DEPLOYED release line (`origin/release/*`), never `main`.
+3. Absent and malformed identity: REFUSE tests for missing, duplicated, padded and mixed-case `groupID`, and a failed upstream fetch; each asserts fail-closed.
+4. Siblings: grep the same pattern in adjacent handlers and screens; fix or list them.
+5. Real data: for any filter, projection, cap or status change, one read-only production count of what it affects.
+6. Claims: every "pre-existing", "harmless", "fail-open" or "unchanged" cites a command output; every row the PR body says is in, the diff shows.
+7. Owner-visible success: no success copy before the server confirmed the write; a queued or `202` answer is never shown as done.
+8. Pass-through sweep: for a shared utility, primitive or merge config, sweep every direct and pass-through caller.
+9. **Role gate.** Every new or changed write control goes through the matching `useAccess('<area>.<verb>')` key (for example `content.write`, `site.write`, `post.write`, `commerce.write`) and renders the look-only path for a member without it. 9 of 76 portal review FAILs were this.
+10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. 21 of 76 portal review FAILs were this.
+Then end the report with the review it needs on its last line: `Needs: vivreal-principal:reviewer on Vivreal_Portal_Mobile#<n> at <sha>`. You cannot dispatch it; the main thread does. Never call your own checklist a review.
 
 **Exception, a command owns the gate:** if the dispatch prompt says you are running inside a
 workflow command (`/implement`, `/coordinator`, or `/orchestrate`), skip this auto-review, the
 command runs it. Stop after the mode's gates and report results.
 
 ## Finishing the job
+
+**Portal push rule (owners, 2026-10-28).** A portal branch is pushed and opened as a PR as soon as its gates pass. The QA walk happens on the pushed PR head, before MERGE. Merge needs a passing review at the current head and an owner's QA-walk sign-off for that head; push needs neither.
+
+Fill `.github/pull_request_template.md` (Summary, Testing, Risk, How to revert, Directed by).
+
+**Security review for sensitive paths.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, run `/security-review` on the branch before opening the PR and put its result (findings, or "none") under the PR body's Risk heading.
 
 **SOLO and INTEGRATE end in a pushed PR, never on a self-review with the work uncommitted.**
 Done means, in order: self-review passes, committed with hooks green (`git commit --only
@@ -282,10 +293,7 @@ This applies in every mode.
 "ready for integration" and stop there; opening a PR or running the full gate in this mode
 defeats the reason the mode exists.
 
-**A pre-commit or pre-push hook failure (SOLO, INTEGRATE) is a bug to fix, not an obstacle to
-route around.** If it is genuinely environmental (the `VIVREAL_REPOS` parity fallback is the
-known case here), say so explicitly and name the mechanism, set the variable, confirm which
-sibling it resolves to, and only then trust a green run.
+**When the hooked push fails (SOLO, INTEGRATE).** Read what failed. A prerequisite failure (a sibling, `NODE_AUTH_TOKEN`, `.env.local`, the overlay check, ports 3100 or 4600 held) is fixed at the prerequisite and the push rerun. For test failures, run each failing file once at `origin/main` in a detached worktree (`git worktree add --detach "$VIVREAL_REPOS/_wt/red-<slug>" origin/main`, `npm ci`, run the file by name, remove the worktree). If EVERY failing file is also red there, push with `--no-verify` and list each in the PR body as `red on origin/main@<sha>: <file>` (owners, 2026-10-28, D10). If any failing file is green at `origin/main`, your change broke it: fix it; never push past it.
 
 **Exception, a command owns the git mechanics:** inside `/implement`, `/coordinator`, or
 `/orchestrate`, the command commits and pushes itself, the same exception `coder` carries.
@@ -317,11 +325,11 @@ minutes, wait for it inside ONE Bash call, for example `until ! kill -0 $PID 2>/
 sleep 30; done` with `timeout: 600000`. That is one model call per 10 minutes, not one every
 2 seconds.
 
-## Consulting the portal expert (you cannot dispatch one)
+## Repo knowledge (load it, there is no expert to dispatch)
 
 You hold no `Agent` tool. For a portal-specific gotcha the task did not call out, load
 `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool into your own context and
-keep working; what it tells you is an input to your diff, never the deliverable. Never dispatch it speculatively.
+keep working; what it tells you is an input to your diff, never the deliverable. Never load it speculatively.
 
 ## Validating framework behavior
 
@@ -362,7 +370,7 @@ have saved roughly a quarter of that usage.
 - DON'T run the full suite, the coverage map, or the Playwright smoke in PARALLEL mode.
 - DON'T open a PR in PARALLEL mode.
 - DON'T use `--no-verify` on the final SOLO or INTEGRATE push, or on any INTEGRATE commit,
-  unless the dispatch says so. Intermediate SOLO commits may use `--no-verify --only <paths>`,
+  unless the dispatch says so, except the D10 case above, with the list in the PR body. Intermediate SOLO commits may use `--no-verify --only <paths>`,
   the full gate runs once, at the final push. PARALLEL and FOLLOWUP commits and pushes use
   `--no-verify` throughout, owner-authorised for those modes. In FOLLOWUP, NOT using it is the
   defect.

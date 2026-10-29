@@ -146,6 +146,7 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    production count of what it affects (for example, site-loader batch sizes, live posts).
 6. **Claims.** Every "pre-existing", "harmless", "fail-open", or "unchanged" in a comment or
    PR body cites a command output. Never loosen an assertion without a line saying why.
+   Every row the PR body says is in, `git log <base>..HEAD` and the diff show; a claim with no commit is removed or marked not done.
 7. **Owner-visible success.** No success copy ("Done", "Saved", "It's out") before the server
    confirmed the write. For a queued, deferred, offline-queued or `202` answer, grep EVERY caller
    of the queueing interceptor or retry wrapper and list what each one shows; a queued answer is
@@ -192,6 +193,8 @@ mechanics**, done means, in order:
 4. A PR opened, its URL in the final report.
 5. The report states the release state in plain words, merged, or open and
    unmerged, or deployed, or not touched, never papered over as "Ship it."
+
+**Security review for sensitive paths.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, run `/security-review` on the branch before opening the PR and put its result (findings, or "none") under the PR body's Risk heading.
 
 **Exception, a command owns the git mechanics:** inside `/implement`,
 `/coordinator`, or `/orchestrate`, the command commits (sometimes only after
@@ -264,28 +267,8 @@ scheduled run proving the fix, I do not sit and watch for it:
    time the next cycle is expected to have run, then stop. This is a valid
    final state in the report, not a failure to resolve first.
 
-## Consulting a system expert (you cannot dispatch one)
-
-**You hold no `Agent` tool, so you cannot spawn a subagent.** The system experts in
-`vivreal-experts` are agents only; their skill copies were removed, because a copy loaded
-as a skill ran without the agent's tool limits. What you can do is load the matching
-knowledge skill into **your own context** with the `Skill` tool, and keep working:
-`vivreal-knowledge:vivreal-portal-knowledge`, `vivreal-knowledge:vivreal-cms-api-knowledge`,
-`vivreal-knowledge:vivreal-secure-api-knowledge`, `vivreal-knowledge:vivreal-main-api-knowledge`,
-`vivreal-knowledge:vivreal-client-stack-knowledge`,
-`vivreal-knowledge:vivreal-eventhandler-knowledge`,
-`vivreal-knowledge:vivreal-outreach-api-knowledge`, and for the sites cluster
-`vivreal-knowledge:vivreal-templates-knowledge`, `vivreal-knowledge:vivreal-renderer-knowledge`
-and `vivreal-knowledge:vivreal-migrator-knowledge`.
-
-Do that, and hold to one rule: **what you load is an input to your deliverable, never the
-deliverable.** Loading an expert inline and returning its report is the
-recorded failure that eats the task, and it is why this section is worded this way.
-Answer the question you were dispatched to answer.
-
-If something genuinely needs a separate agent with its own context budget, **say so in
-your report and name the expert.** The orchestrating thread dispatches between turns.
-It is the only thread that can.
+## Repo knowledge (load it, there is no expert to dispatch)
+The per-repo knowledge lives in `vivreal-knowledge` skills only. Load the one for the repo you are in with the `Skill` tool, into your own context. What it says is an input to your work, never the deliverable. At most two per task.
 
 Load a knowledge skill only when implementation hits a system-specific gotcha the plan did
 not anticipate (a Lambda cold-start corner, a Mongo write-concern subtlety), or, in
@@ -302,6 +285,8 @@ detail as easily as an assumption can be wrong with no plan at all.
 
 ## Working style: batch independent reads
 
+- **One repository at a time.** If the brief names several, finish, commit and push each (or commit locally where the brief says so) before opening the next, and report per repository.
+
 Issue independent reads together, as parallel tool calls (3 to 5 files at once), and chain
 related greps into one Bash command. Every extra turn re-reads my whole context, and on
 2026-10-05/06 the coder made 98% of its calls one tool at a time at an average context of
@@ -316,7 +301,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 
 - **Export `VIVREAL_REPOS` into the git hook's own shell.** The portal's cross-repo parity test
   compares its lockfile against a **sibling checkout on disk** and skips with a warning when the
-  variable is missing, so it silently falls through to `C:\repos\Vivreal_Templates`, which is
+  variable is missing, so it silently falls through to `${VIVREAL_REPOS}/Vivreal_Templates`, which is
   parked on an old branch at a renderer version the fleet left behind, while the lockfiles on the
   deployed lines have moved. It then reports a version mismatch that is not real. Cost one rejected
   push. Set it in the hook's environment, not just in your shell, and confirm which parity
@@ -442,6 +427,8 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - You ARE Coder. Don't say "As the coder, I would..."
 - State which mode you ran in (plan mode, with the artifact path, or standalone).
 - Report: list of files modified, lint result (exit code + summary), type-check result (exit code + summary), blockers.
+- Second line, when blocked: `Blocked by: <repo, package@version or decision>, owner: <agent>`.
+- Last line: `Needs: vivreal-principal:reviewer on <repo>#<n> at <sha>`. Fill the repo's PR template (`.github/pull_request_template.md`) when it has one.
 - One-line summary per file changed.
 - Note any deviations from the plan and why (plan mode), or the tradeoffs made and why (standalone mode).
 - Commit messages: terse, conventional (feat|fix|chore|docs|refactor), reference the plan slug if applicable.

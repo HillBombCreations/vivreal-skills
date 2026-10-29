@@ -30,7 +30,7 @@ pointer here instead of their own copy (ten copies drifted apart before this sec
   no bump, no deploy). Ship it now by dispatching `promote.yml` with `target=release/vX.Y`, or the Monday cron mints the
   patch and ships it (it refuses only when the line's last tag is yanked). Never dispatch `release-cut.yml` for a
   backport: a cut forks a new minor off ALL of `main`.
-- **Before the owner's GO, a backport or a merge to `main` is a scheduled deploy**, because the Monday cron ships
+- **Before an owner's GO, a backport or a merge to `main` is a scheduled deploy**, because the Monday cron ships
   whatever is on the line (the batch-release rule lives in `vivreal-workflow:release-engineer`).
 - **Rollback** (`rollback.yml`, dispatch only) moves `stable` back and yanks the tag, but a force-push that REWINDS
   `stable` fires no push-triggered run, so also run `gh workflow run lambda_api.yml --ref stable` or the old build keeps
@@ -66,4 +66,4 @@ aws cloudformation deploy ...
 
 ## Sources of truth
 
-Each backend's `C:\repos\<repo>\CLAUDE.md` under "Deployment" / "IAM" / arm64 sections. Memory: deploy gotchas in `project_admin_analytics_integration.md`, size-limit fix in the outreach deploy entries.
+Each backend's `${VIVREAL_REPOS}/<repo>/CLAUDE.md` under "Deployment" / "IAM" / arm64 sections. Memory: deploy gotchas in `project_admin_analytics_integration.md`, size-limit fix in the outreach deploy entries.

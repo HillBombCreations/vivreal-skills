@@ -1,9 +1,11 @@
 ---
 name: vivreal-analytics-knowledge
-description: 'Use when working on Vivreal''s first-party analytics, VR_Analytics_API (the collect→store→rollup pipeline), the Templates SiteBeacon, or the per-site traffic dashboard (VR_Secure_API read route + portal AnalyticsPanel). Covers the CloudFront+WAF → Lambda Function URL ingest chain (X-Origin-Verify, bot filter, Joi, per-IP rate limit, daily-salt visitor hash), the analytics_rollup DynamoDB design, the daily rollup cron into mainDb.site_traffic_daily, the LIVE auto-deploy status (GitHub Actions → CloudFormation) plus the W4 CDN egress meter (runs unconditionally), and where increment 2 lives. Triggers on: analytics, site traffic, beacon, SiteBeacon, visitor stats, page views, unique visitors, analytics_rollup, site_traffic_daily, first-party analytics, per-site dashboard, collect.vivreal.io, visitor hash, rollup cron, CDN egress meter, VR_Analytics_API. Source of truth: CLAUDE.md, the CI workflow and template.yaml at origin/main.'
+description: 'Use when working on Vivreal''s first-party analytics, VR_Analytics_API (the collect→store→rollup pipeline), the Templates SiteBeacon, or the per-site traffic dashboard (VR_Secure_API read route + portal AnalyticsPanel). Covers the CloudFront+WAF → Lambda Function URL ingest chain (X-Origin-Verify, bot filter, Joi, per-IP rate limit, daily-salt visitor hash), the analytics_rollup DynamoDB design, the daily rollup cron into mainDb.site_traffic_daily, the LIVE auto-deploy status (GitHub Actions → CloudFormation) plus the W4 CDN egress meter (runs unconditionally), and where increment 2 lives. Triggers on: analytics, site traffic, beacon, SiteBeacon, visitor stats, page views, unique visitors, analytics_rollup, site_traffic_daily, first-party analytics, per-site dashboard, collect.vivreal.io, visitor hash, rollup cron, CDN egress meter, VR_Analytics_API. Source of truth: `VR_Analytics_API` `CLAUDE.md` (and the docs it links) at `origin/main`.'
 ---
 
 # VR_Analytics_API: knowledge digest
+
+Source of truth: `VR_Analytics_API` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
 Last synced: 2026-10-21 against `origin/main` at `13c0763` (#25, the v7 release; deploys on push to `main`, which has no `stable`)
 

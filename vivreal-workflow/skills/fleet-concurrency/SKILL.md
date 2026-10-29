@@ -1,6 +1,6 @@
 ---
 name: fleet-concurrency
-description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the cap of four agents and the shared session budget, routing new finds to the agent that owns the area, one publisher per shared target and one consumer bump pass, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
+description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the cap of two agents and the shared session budget, routing new finds to the agent that owns the area, one publisher per shared target and one consumer bump pass, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
 ---
 
 Parallelism here is limited by the machine and by a handful of shared resources,
@@ -105,7 +105,8 @@ A dev server left on a fixed port is worse than idle: the next agent reuses it
 and tests the wrong tree.
 
 `scripts/sweep-orphans.ps1` does this. It reports by default and kills only with
-`-Kill`. Run it before dispatching a batch and again between phases, and pass
+`-Kill`. On macOS or Linux the report half is
+`ps -eo pid,args | grep -E 'next (dev|start)|vitest|playwright' | grep -- "$VIVREAL_REPOS"`. Run it before dispatching a batch and again between phases, and pass
 `-Protect` the worktree path of any run legitimately in flight.
 
 **The rule that makes a sweep safe, and it is not optional.** "Its parent has
@@ -142,10 +143,11 @@ either way.
 
 ## Budget and collisions
 
-**Cap: at most four background agents at once (owner, 2026-10-17; it replaced the
-earlier "about five").** Count every coder, reviewer, researcher, walker and ledger
-agent. An orchestrator that runs its own sub-agents uses slots too, so leave it the
-slot it needs. When a slot
+**At most two agents at once (owners, 2026-10-26), per machine.** Count every coder, reviewer, researcher, walker and ledger agent, and any resumed agent. A temporary raise an owner gives lasts for that moment only. Only one of the two may drive the shared Playwright browser.
+
+**Fan-out inside an agent:** at most three children, run in the foreground, and never a nested fork. A child that would fork again reports instead.
+
+When a slot
 frees, start the next item rather than idling. Restarting an agent that crashed (a
 login error, a dropped connection) is not a new dispatch. Prefer handing new work of
 the same kind to an agent about to finish in the same repository over a fresh
