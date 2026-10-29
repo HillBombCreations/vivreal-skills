@@ -295,14 +295,14 @@ jargon, only what they can SEE.
 
 Vivreal now ships **Site Studio**: a visual site editor whose live preview renders EXACTLY
 like the published site (true preview parity), with full in-Studio page + content management,
-click-to-select editing, one-click Publish with deploy status, and built-in dark mode.
+click-to-select editing, saves that go straight to the live site, and built-in dark mode.
 Map signals to Studio angles honestly:
 
 - `signals.design.framework` is `wix` or `squarespace` → the blind-editor angle: they edit in
   one tool and hope the live site matches. "Vivreal's Studio preview IS the live site, what
   you see is literally what publishes."
 - `signals.freshness.isStale` or an old `copyrightYear` → the publish-friction angle: stale
-  sites usually mean updating is painful. "One-click Publish with deploy status; updating your
+  sites usually mean updating is painful. "Studio saves straight to your live site; updating your
   site takes a minute, not a call to a web guy."
 - `signals.mobile.mobileFriendly === false` (confirmed by `mobileOverflowPx` > 16) → the
   viewport-preview angle: "your site is broken on phones right now; Studio previews every

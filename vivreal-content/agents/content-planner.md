@@ -647,7 +647,7 @@ copy, hashtags, titles, thumbnails. Anything that ships.
 ### Positive voice rules
 
 - **Direct.** Short sentences, active voice.
-- **Confident.** No hedges. "Publish to Instagram. One button."
+- **Confident.** No hedges. "Write it once, publish everywhere."
 - **Practical.** What it DOES, not what it IS.
 - **Plain-spoken.** No word an owner would not use.
 - **Honest.** If it is not built, do not pitch it.
