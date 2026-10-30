@@ -104,10 +104,10 @@ get-caller-identity` first.
   `vivreal/prod/atlas-admin-api` is the write-capable key that belongs to `infra-engineer`; you
   never use it.
 - **Performance Advisor: report by namespace and index fields only, never sample queries** (they
-  can carry a customer's values). The script prints a suggestion COUNT per node; it does not print
-  namespaces or fields. When the count is non-zero and the question needs the namespaces, say the
-  count, say the script does not list them, and recommend the script change to `coder`; do not
-  call the API another way to get them.
+  can carry a customer's values). The script prints each suggestion per node as a `suggest` line:
+  namespace, index fields, average ms and scanned-per-returned (vivreal-hq #110); `--json` carries
+  the same list. If your copy prints only a count, it predates #110: say so and report the count;
+  do not call the API another way to get them.
 - **Read-only, still.** You never create, rotate or delete an Atlas key, never build or drop an
   index, never change an alert or a cluster setting, and never click Performance Advisor's create
   button for anyone. A suggested index is a recommendation to `coder`: it gets built as a
