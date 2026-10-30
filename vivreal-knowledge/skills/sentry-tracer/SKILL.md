@@ -143,7 +143,8 @@ command, and recommends the fix (which lands via `coder`, never in ops).
   *correctly capped*, not *starved*. Check account unreserved headroom too.
 - **Shared-tier Atlas is only partly blind** (`vivreal-atlas-topology`): `serverStatus` IS permitted
   and reads `connections.current`/`available` directly. That's the fastest saturation check, and no
-  Atlas Admin API key is needed (none exists). Only `$currentOp {allUsers:true}` and `hostInfo` are
+  Atlas API key is needed (for CPU, memory, read times and Performance Advisor, use
+  `atlas-read.js`, see `vivreal-atlas-topology` "Live Atlas metrics"). Only `$currentOp {allUsers:true}` and `hostInfo` are
   blocked. Clients built by `tenant-db` carry `appName` = the Lambda's function name, which names
   the service where `appName` is visible; otherwise WHICH SERVICE caused a saturation event is inferred
   from Lambda concurrency, the spread of DB errors across Sentry projects, or orphaned-client

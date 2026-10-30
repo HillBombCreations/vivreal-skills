@@ -1,6 +1,6 @@
 ---
 name: vivreal-atlas-topology
-description: 'Use when reasoning about Vivreal''s MongoDB Atlas at the OPS/INFRA level (cluster topology, the M10 tier''s connection cap and connection-rate limit, connection capacity, a connection-saturation outage, the data-out throttle that made reads slow with no errors on the old M0 tier, SSL alert number 80, the `@hillbombcreations/tenant-db` package, the deleted DEV stacks, or why content "isn''t connecting"). This is TOPOLOGY/OPS, distinct from the vivreal-db skill (QUERY RULES); cross-link them. Use when diagnosing MongooseServerSelectionError, pool exhaustion, orphaned clients, slow site reads, or capacity planning. Triggers on: Atlas, M10, connection rate limit, M0, Flex, data transfer limit, data-out throttle, slow reads, ClientApiSlowFetch, connection cap, SSL alert 80, MongooseServerSelectionError, MongoNetworkError, connection pool, maxPoolSize, tenant-db package, useDb view, readyState stale, stale primary, shared tier, conn saturation, dynamicDb, DEV stack, dogfood, per-service database user.'
+description: 'Use when reasoning about Vivreal''s MongoDB Atlas at the OPS/INFRA level (cluster topology, the M10 tier''s connection cap and connection-rate limit, connection capacity, a connection-saturation outage, the data-out throttle that made reads slow with no errors on the old M0 tier, SSL alert number 80, the `@hillbombcreations/tenant-db` package, the deleted DEV stacks, or why content "isn''t connecting"). This is TOPOLOGY/OPS, distinct from the vivreal-db skill (QUERY RULES); cross-link them. Use when diagnosing MongooseServerSelectionError, pool exhaustion, orphaned clients, slow site reads, or capacity planning. Triggers on: Atlas, M10, connection rate limit, M0, Flex, data transfer limit, data-out throttle, slow reads, ClientApiSlowFetch, connection cap, SSL alert 80, MongooseServerSelectionError, MongoNetworkError, connection pool, maxPoolSize, tenant-db package, stale primary, conn saturation, dynamicDb, DEV stack, per-service database user, Performance Advisor, suggested index, atlas-read.'
 ---
 
 # Vivreal MongoDB / Atlas Topology & Ops
@@ -59,6 +59,44 @@ Read MongoDB's `atlas-limits` page before quoting a number; these were read ther
 
 **A stale primary after a cluster move or election reset.** After the M0 to M10 move, warm processes logged `primary marked stale due to electionId/setVersion mismatch`: the new replica set restarted its election counter below the one the driver remembered, and the driver never recovers from that by itself. Only a new `MongoClient` does, a cold start or the package's self-heal (replace after 60 s of failing health pings, at most once per 5 minutes; callers get `DbUnavailableError` 503 meanwhile). A hand-rolled client with no replace path (domain-search) stays broken until its containers recycle.
 
+## Live Atlas metrics: the read-only API key and `atlas-read.js` (2026-10-30)
+
+**The credential.** An Atlas project API key, not a database user, in Secrets Manager `vivreal/prod/atlas-ops-read` (us-east-1; keys `publicKey`, `privateKey`, `groupId`, `clusterName`). Roles: **Project Read Only** and **Project Observability Viewer**, so it reads metrics, alerts, Performance Advisor and the profiler, and can read no document and change nothing. Both IAM users can read the secret. The private key is never printed, never put on a command line and never written to a file. A separate write-capable key, `vivreal/prod/atlas-admin-api`, belongs to `infra-engineer` alone.
+
+**The script.** vivreal-hq `packages/fleet-ops/atlas-read/atlas-read.js` (zero dependencies; node 18+, AWS CLI v2 and curl on PATH; macOS, Linux and Windows alike). It reads the secret in process and hands the key to curl on stdin. Its own docs: the `## atlas-read` section of vivreal-hq `packages/fleet-ops/CLAUDE.md`. Run the deployed-line copy so a parked checkout cannot matter:
+
+```bash
+: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
+git -C "$VIVREAL_REPOS/vivreal-hq" fetch origin --quiet
+git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:packages/fleet-ops/atlas-read/atlas-read.js | node -                                   # last 5 days, hourly
+git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:packages/fleet-ops/atlas-read/atlas-read.js | node - --period P1D --granularity PT5M  # spikes
+```
+
+Inside vivreal-hq the same thing is `npm run check:atlas --workspace packages/fleet-ops`. `--json` prints the report as JSON. If the script is not on `origin/main`, say so; never improvise a credential.
+
+**What each metric means, and when to worry on M10** (three nodes, 2 GB RAM and 10 GB storage by default, 1,500 connections per node). The thresholds marked "ours" are working thresholds for this cluster, not Atlas limits. Baseline is the read on 2026-10-30, a healthy M10.
+
+| Metric | Meaning | 2026-10-30 baseline | Concern |
+|---|---|---|---|
+| `CONNECTIONS` | open connections on that node | about 110 to 135 on the primary, 75 to 95 on each secondary; about 150 of 1,500 at most | 75 percent (1,125) and 90 percent (1,350) are the `vivreal-mongo-connections-*` alarm levels; Atlas's own alert fires at 80 percent |
+| `SYSTEM_NORMALIZED_CPU_USER`, `_KERNEL`, `PROCESS_NORMALIZED_CPU_USER` | CPU as a percent of the node's cores | low | sustained above 70 percent (ours). **Hourly averages hide the dashboard's short peaks**: re-read at `--granularity PT5M` before calling CPU quiet or hot |
+| `SYSTEM_MEMORY_USED`, `SYSTEM_MEMORY_AVAILABLE`, `MEMORY_RESIDENT` | node memory and mongod's resident set, against 2 GB | | available near zero, or resident approaching 2 GB with read times climbing: the working set no longer fits (ours) |
+| `DISK_PARTITION_SPACE_PERCENT_USED` | storage used | | above 70 percent plan, above 90 percent act (ours) |
+| `DISK_PARTITION_IOPS_READ`, `_WRITE`, `DISK_QUEUE_DEPTH` | disk operations per second and the I/O backlog | queue near zero | a queue that stays above zero while read times rise is I/O bound (ours) |
+| `OPCOUNTER_QUERY`, `_UPDATE`, `_INSERT`, `_DELETE`, `_CMD` | operations per second by kind | light; about 0.4 queries a second on the secondaries | context, not a fault on its own; a `CMD` climb tracking connections is churn (see SSL alert 80 above) |
+| `QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED` | documents scanned per document returned | | 1 is ideal; sustained in the hundreds means a missing index, so read Performance Advisor; Atlas's default alert is at 1,000 |
+| `OP_EXECUTION_TIME_READS`, `_WRITES` | average milliseconds per operation, server side | primary near 0; the two secondaries stepped from about 0 to about 3 ms on 2026-10-27 | 3 ms at 0.4 queries a second is noise-level volume, not a fault. Worry when it climbs WITH volume, or holds above 10 ms on the primary (ours) |
+| `OPLOG_SLAVE_LAG_MASTER_TIME` | replication lag, seconds | | secondaries only; sustained tens of seconds (ours). Refused on the primary, which the script lists under "not on this node" |
+| `GLOBAL_LOCK_CURRENT_QUEUE_TOTAL` | operations waiting on a lock | 0 | anything sustained above 0 (ours) |
+| slow queries, suggested indexes | Performance Advisor's slow-query log count and suggestion count, per node | about 1,000 slow-query lines per node over the advisor's window; 6 suggestions on the primary, 1 on a secondary | a suggestion count that grows, or a namespace that keeps recurring |
+| open alerts | Atlas alerts with status OPEN | 0 | any |
+
+**Performance Advisor on 2026-10-30** (reported by namespace and fields only, never sample queries, which can carry a customer's values): `Vivreal.usage_trackings {docKey: 1}` (suggested on a secondary too), three query shapes on `pod_01.audit_logs`, `Vivreal.media_files {groupID, objectType, createdAt}`, and `pod_01.collection_objects {groupID, objectValue.isCoupon, objectValue.active}`. The script prints the suggestion COUNT per node, not the namespaces; listing them needs a change to the script, not a hand-rolled API call.
+
+**Suggested indexes are built as schema-declared indexes in the owning service, never by hand in the Atlas UI.** The index goes into the Mongoose schema (or the package that owns the model) of the service that owns the collection, ships through that service's review and deploy, and is then visible in code. An index created in the Atlas UI, or with Performance Advisor's create button, is invisible to every repo and never reviewed, and a later schema change can declare a near-duplicate beside it without anyone knowing. The read-only key cannot create one anyway; that is by design.
+
+**Traps.** `SYSTEM_MEMORY_PERCENT_USED` and `DISK_PARTITION_QUEUE_DEPTH` look plausible and are not valid metric names (Atlas refuses the whole request naming one). Replication lag is refused on the primary. Hourly averages hide short CPU peaks; use `PT5M`. An empty process list is an error, never "no nodes".
+
 ## History: M0 Free limits, and the data-out throttle (2026-10, before M10)
 
 **Not the live tier since 2026-10-17.** Kept because the method below (telling a byte throttle from connection saturation) applies to any shared tier, and because the 2026-10 release's slow pages are explained here. MongoDB documented these limits for M0 Free (`docs/atlas/reference/free-shared-limitations`, read 2026-10-13):
@@ -82,7 +120,7 @@ Read MongoDB's `atlas-limits` page before quoting a number; these were read ther
 | Client API slow-fetch warnings (`ClientApiSlowFetch`, hourly) | a sustained plateau well above its own baseline, hour after hour | a burst during the outage |
 | Ops cap instead? | an ops cap adds a fixed delay per OPERATION, so small reads would slow too; a bandwidth ceiling slows big reads in proportion | |
 
-How to confirm it, with no Atlas Admin API key: Logs Insights on the Client API's `content.*.fetch.slow` lines (mean `durationMs` for one document divided into its size gives the rate), the two `Vivreal/Mongo` metrics above as the control, then ask the owner to read **Metrics, Network bytes out** in the Atlas UI and sum the last 7 days. The MongoDB MCP `find` returns no timings, so it cannot measure this.
+How it was confirmed then, before any Atlas API key existed (network bytes are still not in `atlas-read.js`'s metric list): Logs Insights on the Client API's `content.*.fetch.slow` lines (mean `durationMs` for one document divided into its size gives the rate), the two `Vivreal/Mongo` metrics above as the control, then ask the owner to read **Metrics, Network bytes out** in the Atlas UI and sum the last 7 days. The MongoDB MCP `find` returns no timings, so it cannot measure this.
 
 **Why it happens with light traffic.** The window is rolling, so there is **no reset day**; the throttle lifts only when trailing 7-day bytes fall back under 10 GB, and throttled bytes still count. Site reads are bounded by CloudFront (`s-maxage=60` on siteDetails), so origin egress is roughly (continuously visited sites) x (site payload) x one read a minute, **independent of visitor count**: tenant growth raises bytes with no growth in real traffic, and one large site document can be most of the budget on its own. Agent and QA walks spend the same budget (memory `prod-walks-can-saturate-atlas`).
 
@@ -149,7 +187,7 @@ Also deleted: the `dev-api`/`dev-client`/`dev-cms`/`dev-secure`.vivreal.io custo
 - The fleet alarm `vivreal-mongo-connect-failures` (>= 5 in a minute, 2 of 3 periods) lives in `VR_Client_API/cloudformation/shared-alarms.yaml`, alongside the account's other shared alarms. Its `OKActions` is deliberate: a long-red alarm never re-notifies (memory note), so the OK transition is what tells a human it ended.
 - **CMS and Secure cannot create `AWS::Logs::MetricFilter` themselves** (their deploy role lacks `logs:DescribeMetricFilters`), so those two repos emit `ConnectFailures`/`ConnectFailures-<service>` from application code instead of a CloudFormation metric filter. Don't hand back a `MetricFilter` fragment for CMS or Secure as "the fix"; check whether the app-code path landed there instead.
 - **Connection-level alarms.** `vivreal-mongo-connections-high` (75 percent) and `-critical` (90 percent) alarm on `atlas-monitor`'s utilisation PERCENTAGE, so they rescaled to the M10 cap by themselves (read 2026-10-17). Atlas's native alert "Connections % of configured limit above 80" is enabled and emails the Project Owner (owner read-back, 2026-10-17). A connection-CREATION rate alarm was still to come when this was written; check `atlas-monitor` before saying one exists.
-- **No Atlas Admin API key exists** (2026-09-15, still true 2026-10-17). A read-only one in Secrets Manager is an open owner decision. Without it, Atlas's own alert configuration and the Real-Time Performance Panel stay unreadable from AWS; the owner reads them in the Atlas UI.
+- **Open Atlas alerts are readable** through `atlas-read.js` (see "Live Atlas metrics" above) since 2026-10-30; before that no Atlas API key existed. Atlas's alert CONFIGURATION and the Real-Time Performance Panel are still read by an owner in the Atlas UI.
 
 ## Script, CI, CLI and MCP connections (spec section 11)
 
