@@ -320,7 +320,8 @@ const MAX_DEPTH = 4;
 function isOneQuotedArgument(raw, dialect) {
   if (dialect === 'bash') {
     if (!/^"(?:[^"\\`]|\\.)*"$/.test(raw)) return false;
-    return !/\$\(/.test(raw.replace(/\\./g, ''));
+    // "$@", "${arr[@]}" and "${!prefix@}" are quoted yet expand to one word PER element.
+    return !/\$\(|\$@|@\]|@\}/.test(raw.replace(/\\./g, ''));
   }
   if (!/^"(?:[^"`]|`.)*"$/.test(raw)) return false;
   return !/\$\(/.test(raw.replace(/`./g, ''));

@@ -55,6 +55,10 @@ const REFUSE = [
   ['Bash', 'aws lambda get-function-configuration --function-name "' + BT + 'cat name.txt' + BT + '" --query LastModified'],
   ['PowerShell', 'aws lambda get-function-configuration --function-name "$(Get-Name)" --query LastModified'],
   ['Bash', 'aws lambda get-function-configuration --function-name VR-$STAGE --query FunctionName'],
+  // "$@" and "${arr[@]}" are double-quoted but expand to SEVERAL words (a second --query among them).
+  ['Bash', 'set -- us-east-1 --query @; aws lambda get-function-configuration --function-name f --query FunctionName --region "$@"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${ARGS[@]}"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${!PREFIX@}"'],
   ['Bash', 'aws lambda get-function-configuration --function-name f --query "$Q"'],
   ['PowerShell', 'aws lambda get-function-configuration --function-name f --query FunctionName --deb' + BT + 'ug'],
   // The subcommand itself hidden, or a read after the spelled-out one.
