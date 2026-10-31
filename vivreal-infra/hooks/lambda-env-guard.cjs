@@ -7,7 +7,8 @@
  *
  * This hook stops ACCIDENTAL reads by agents. It is not a security boundary: a
  * determined caller can reach the same data some other way, and the boundary for
- * that is AWS permissions (an IAM deny on these reads), a planned follow-up. The
+ * that is AWS permissions (an IAM deny on these reads), designed in this repository's
+ * docs/agent-permissions-boundary.md and not yet built. The
  * heredoc exemption below is the same: an interpreter this hook does not know can
  * still run a file a heredoc wrote.
  *
