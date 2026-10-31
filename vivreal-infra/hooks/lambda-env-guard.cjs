@@ -60,18 +60,22 @@
  * keeps the last, so a second overrides a safe first), no `--debug` (it logs the raw
  * response body), an `--output` from the known filtered set, and no shell or
  * PowerShell expansion that could add arguments the hook cannot see (`$VAR`
- * unquoted, `$(...)`, backticks, `@splat`). A quoted `"$var"` as a flag value is
- * one argument and is allowed.
+ * unquoted, `$(...)`, bash backticks, `@splat`). A flag value that is one double-quoted
+ * string with no `$(` (`"$fn"`, `"VR-CMS-API-$STAGE"`, PowerShell `"fn-`$x"`) is one
+ * argument and is allowed, and so is an expansion after a spelled-out subcommand that
+ * is not a listed read (`aws lambda get-alias --function-name $FN`).
  *
  * HOW THE CLI IS REACHED does not matter (PR #60 review pass 3). The trigger is a
  * `lambda` word plus a listed subcommand word, whatever the program (`aws`, `$X`, a
  * shell function, `python -m awscli`). A command string handed to `bash -c`,
  * `sh -c`, `powershell -Command`, `pwsh -c`, `cmd /c` or `Invoke-Expression` / `iex`
  * is judged again as a command of its own, and one this hook cannot parse is refused
- * when it mentions `lambda` and a listed subcommand. Any command that names `lambda`
+ * when it names `lambda` and a listed subcommand. Any command that names a lambda read
  * and carries a backslash or a `{a,b}` brace expansion outside quotes is refused
  * whole, because the shell rewrites those into words this hook would otherwise
- * misread (`\--query @`, `{--query,@}`, `--deb\ug`, `--{debug,debug}`).
+ * misread (`\--query @`, `{--query,@}`, `--deb\ug`, `--{debug,debug}`). Both tests
+ * match `lambda` as a WHOLE word (2026-10-31), so a log group (`/aws/lambda/fn`, a
+ * `--log-group-name` value) or a script's `lambda x: {...}` does not trip them.
  *
  * WHAT IS DELIBERATELY NOT BLOCKED. `secretsmanager get-secret-value` is left
  * alone on purpose. This estate's established pattern for a production database
@@ -249,8 +253,32 @@ function braceExpand(text, cap = 64) {
   return [text];
 }
 
+/** Cloud Control reads whose `Properties` carry a Lambda function's Environment. */
+const CLOUDCONTROL_READS = ['get-resource', 'list-resources'];
+
+/** The words of plain text, cut wherever a shell would end a word or a command, lower case. */
+function tokensOf(text) {
+  return String(text)
+    .toLowerCase()
+    .split(/[\s;&|()<>`$'"{},\\]+/)
+    .filter(Boolean);
+}
+
 /**
- * Whether the command names `lambda` and carries a backslash or a brace expansion
+ * Whether text names a read this hook judges, by WHOLE words: `lambda` beside a listed
+ * subcommand, or `cloudcontrol` beside a listed read with Lambda named anywhere. The word
+ * must be whole (2026-10-31): a log group such as `/aws/lambda/fn`, in a `--log-group-name`
+ * value or anywhere else, is one word that is not `lambda`, and a script's `lambda x: {...}`
+ * names no subcommand, so neither is a lambda read.
+ */
+function namesLambdaRead(text) {
+  const t = tokensOf(text);
+  if (t.includes('lambda') && t.some((w) => Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w))) return true;
+  return t.includes('cloudcontrol') && t.some((w) => CLOUDCONTROL_READS.includes(w)) && /lambda/i.test(text);
+}
+
+/**
+ * Whether the command names a lambda read and carries a backslash or a brace expansion
  * outside quotes, either of which the shell turns into words this hook would misread.
  */
 function rewritesWords(command, dialect) {
@@ -265,18 +293,16 @@ function rewritesWords(command, dialect) {
   const hasBrace = brace === null || brace.length > 1 || brace[0] !== unquoted;
   if (!res.escaped && !hasBrace) return false;
   const expanded = braceExpand(flat);
-  return expanded === null || expanded.some((t) => /lambda/i.test(t));
+  return expanded === null || expanded.some((t) => namesLambdaRead(t));
 }
 
-/** Cloud Control reads whose `Properties` carry a Lambda function's Environment. */
-const CLOUDCONTROL_READS = ['get-resource', 'list-resources'];
-
-/** Whether text mentions `lambda` and a listed read subcommand, for text this hook cannot parse. */
+/**
+ * Whether text names a lambda read, for text this hook cannot parse. Quotes, braces,
+ * commas and backslashes are dropped first, so `l'a'mbda` and `get-fun{}ction` still read
+ * as the words they become.
+ */
 function mentionsLambdaRead(text) {
-  const plain = String(text).replace(/[\\'"`{},]/g, '').toLowerCase();
-  if (!/lambda/.test(plain)) return false;
-  const subs = [...Object.keys(CONFIG_PREFIX), ...CLOUDCONTROL_READS];
-  return subs.some((s) => new RegExp('(^|[^a-z-])' + s + '($|[^a-z-])').test(plain));
+  return namesLambdaRead(String(text).replace(/[\\'"`{},]/g, ''));
 }
 
 // Programs that run a command string of their own, and PowerShell's string evaluators.
@@ -284,13 +310,34 @@ const SHELL_BIN = /^(bash|sh|zsh|dash|ksh|wsl|cmd|powershell|pwsh)(\.exe)?$/i;
 const STRING_EVAL = /^(iex|invoke-expression)$/i;
 const MAX_DEPTH = 4;
 
-/** Whether word k expands into arguments the hook cannot see. A quoted "$var" flag value is one word. */
-function isExpansion(ws, k) {
+/**
+ * Whether a raw word is ONE double-quoted string whose expansions cannot run a command,
+ * which the shell always hands over as exactly one argument: no `$(` and, in bash, no
+ * backtick. In PowerShell a backtick inside double quotes is its escape character (`$
+ * is a literal dollar, `n a newline), so escapes are dropped before the `$(` check.
+ */
+function isOneQuotedArgument(raw, dialect) {
+  if (dialect === 'bash') {
+    if (!/^"(?:[^"\\`]|\\.)*"$/.test(raw)) return false;
+    return !/\$\(/.test(raw.replace(/\\./g, ''));
+  }
+  if (!/^"(?:[^"`]|`.)*"$/.test(raw)) return false;
+  return !/\$\(/.test(raw.replace(/`./g, ''));
+}
+
+/**
+ * Whether word k expands into arguments the hook cannot see. A single-quoted word is
+ * literal in both shells. A flag value (other than --query's) that is one double-quoted
+ * string, such as "$fn", "VR-CMS-API-$STAGE" or "/aws/lambda/${fn}", is one argument.
+ * An unquoted $VAR is not: bash splits it on spaces and PowerShell splats an array.
+ */
+function isExpansion(ws, k, dialect) {
   const w = ws[k];
   if (!/[$`]/.test(w.raw) && !/^@\w/.test(w.raw)) return false;
+  if (/^'[^']*'$/.test(w.raw)) return false;
   const prev = ws[k - 1];
   const isFlagValue = prev && /^--/.test(prev.value) && !QUERY_FLAG.test(prev.value);
-  return !(SAFE_VAR.test(w.raw) && isFlagValue);
+  return !(isFlagValue && isOneQuotedArgument(w.raw, dialect));
 }
 
 /**
@@ -298,11 +345,20 @@ function isExpansion(ws, k) {
  * { why } when the segment hides the service or subcommand behind an expansion.
  * Null when it is not a lambda read.
  */
-function configSubcommand(ws) {
-  const lambdaAt = ws.findIndex((w) => w.value.toLowerCase() === 'lambda');
+function configSubcommand(ws, dialect) {
+  const lambdaAts = ws.map((w, k) => (w.value.toLowerCase() === 'lambda' ? k : -1)).filter((k) => k !== -1);
+  const lambdaAt = lambdaAts.length ? lambdaAts[0] : -1;
   const subAt = ws.findIndex((w) => Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w.value.toLowerCase()));
-  const expansionAt = ws.findIndex((w, k) => isExpansion(ws, k));
+  const expansionAt = ws.findIndex((w, k) => isExpansion(ws, k, dialect));
   if (lambdaAt !== -1 && subAt !== -1) return { sub: ws[subAt].value.toLowerCase() };
+  // A plain literal word straight after `lambda` IS the subcommand the CLI runs, and it is not
+  // a listed read (that case returned above). An expansion after it can only add arguments to
+  // that subcommand, so `aws lambda get-alias --function-name $FN` is not a hidden read.
+  const spelled = (k) => {
+    const next = ws[k + 1];
+    return Boolean(next) && /^[a-z0-9][a-z0-9-]*$/i.test(next.value) && !isExpansion(ws, k + 1, dialect);
+  };
+  if (lambdaAt !== -1 && expansionAt > lambdaAt + 1 && lambdaAts.every(spelled)) return null;
   if (lambdaAt !== -1 && expansionAt !== -1) {
     return { why: 'the lambda subcommand may be hidden in an expansion (' + ws[expansionAt].raw + '); spell it out.' };
   }
@@ -330,7 +386,6 @@ function cloudControlRefusal(ws) {
 const QUERY_FLAG = /^--que(r(y)?)?(=|$)/;
 const DEBUG_FLAG = /^--deb(u(g)?)?(=|$)/;
 const OUTPUT_FLAG = /^--out(p(u(t)?)?)?(=|$)/;
-const SAFE_VAR = /^"\$(\{[A-Za-z_][A-Za-z0-9_]*\}|[A-Za-z_][A-Za-z0-9_]*)"$/;
 
 /* ---------------------------- query grammar ---------------------------- */
 
@@ -527,7 +582,7 @@ function refusalFor(segment, dialect, depth) {
   const cc = cloudControlRefusal(ws);
   if (cc) return cc;
 
-  const found = configSubcommand(ws);
+  const found = configSubcommand(ws, dialect);
   if (!found) return null;
   if (found.why) return found.why;
   const { sub } = found;
@@ -549,7 +604,7 @@ function refusalFor(segment, dialect, depth) {
       const eq = w.raw.indexOf('=');
       queries.push(eq === -1 ? ws[k + 1] && ws[k + 1].raw : w.raw.slice(eq + 1));
     }
-    if (isExpansion(ws, k)) {
+    if (isExpansion(ws, k, dialect)) {
       return (
         'the command carries an expansion (' + w.raw + ') that can add arguments this hook cannot ' +
         'see, a second --query among them. Quote it as a flag value ("$name") or spell the value out.'
@@ -748,7 +803,7 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
     const joined = String(text).replace(/[\\`]\r?\n/g, ' ');
     if (rewritesWords(joined, dialect)) {
       return (
-        'the command names lambda and carries a backslash or a {a,b} brace expansion outside quotes, ' +
+        'the command names a lambda read and carries a backslash or a {a,b} brace expansion outside quotes, ' +
         'which the shell turns into words this hook cannot see (a second --query, or --debug). ' +
         'Write paths with forward slashes or inside quotes.'
       );
@@ -923,7 +978,7 @@ const CASES = [
   ['allow', 'cp src/*.{js,ts} out/ && git diff ' + BS + '-- x'],
   // A doc append is data written to a file, whatever its text says (refused before 2026-10-29).
   ['allow', "cat >> docs/notes.md <<'EOF'\n- The lambda get-function read printed the env, see vh-site.js\nEOF"],
-  ['allow', "cat >> docs/notes.md <<'EOF'\nThe lambda guard refused C:" + BS + 'repos' + BS + 'x and {a,b}\nEOF'],
+  ['allow', "cat >> docs/notes.md <<'EOF'\nThe lambda guard refused docs" + BS + 'notes' + BS + 'x and {a,b}\nEOF'],
   ['allow', 'cat >> "$f" <<-EOF\n\taws lambda list-functions --output json\n\tEOF'],
   ['allow', "cat > a.md <<'A' && cat > b.md <<'B'\naws lambda get-function --function-name f\nA\naws lambda list-functions\nB"],
   ['allow', "tee -a docs/notes.md <<'EOF'\n- aws lambda get-function printed the env\nEOF"],
