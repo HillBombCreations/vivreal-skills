@@ -67,12 +67,22 @@ Read MongoDB's `atlas-limits` page before quoting a number; these were read ther
 
 ```bash
 : "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
-git -C "$VIVREAL_REPOS/vivreal-hq" fetch origin --quiet
-git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:packages/fleet-ops/atlas-read/atlas-read.js | node -                                   # last 5 days, hourly
-git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:packages/fleet-ops/atlas-read/atlas-read.js | node - --period P1D --granularity PT5M  # spikes
+hq="$VIVREAL_REPOS/vivreal-hq"
+git -C "$hq" fetch origin --quiet
+# atlas-read.js requires its sibling slow-by-app.js (vivreal-hq #113), so extract the whole
+# folder from origin/main; piping the one file to `node -` now fails with "Cannot find module".
+tmp="$(mktemp -d)"
+git -C "$hq" archive -o "$tmp/atlas-read.tar" origin/main packages/fleet-ops/atlas-read
+tar -xf "$tmp/atlas-read.tar" -C "$tmp"
+node "$tmp/packages/fleet-ops/atlas-read/atlas-read.js"                                  # last 5 days, hourly
+node "$tmp/packages/fleet-ops/atlas-read/atlas-read.js" --period P1D --granularity PT5M  # spikes
+node "$tmp/packages/fleet-ops/atlas-read/atlas-read.js" --period P7D --slow-by-app       # who runs the slow queries
+rm -rf "$tmp"
 ```
 
-Inside vivreal-hq the same thing is `npm run check:atlas --workspace packages/fleet-ops`. `--json` prints the report as JSON. If the script is not on `origin/main`, say so; never improvise a credential.
+In a vivreal-hq checkout that is ON `origin/main`, the same thing is `npm run check:atlas --workspace packages/fleet-ops`, from the repo root, in any shell; pass flags after `--` (`npm run check:atlas --workspace packages/fleet-ops -- --slow-by-app`). `--json` prints the report as JSON. If the script is not on `origin/main`, say so; never improvise a credential.
+
+**`--slow-by-app`** (vivreal-hq #113) adds, per node, Performance Advisor's slow query log over `--period`, grouped by appName (hash-like runs masked), command, namespace, the filter's top-level KEY names, the plan summary (stage words and index key names) and the read preference, with a count, largest first; `--json` carries the same under each node's `slowByApp`. It is how to pin a read-time step on a secondary on a caller (Atlas's own agents or a Vivreal service). It never prints a filter VALUE, a sample query or a raw log line, and a line it cannot parse is counted as `unparsed`, never echoed. A node whose header says `TRUNCATED at the 20000-entry cap` lost its older entries: shorten `--period`. `unavailable: ...` means that node's log read failed; report it as such, never as zero.
 
 **What each metric means, and when to worry on M10** (three nodes, 2 GB RAM and 10 GB storage by default, 1,500 connections per node). The thresholds marked "ours" are working thresholds for this cluster, not Atlas limits. Baseline is the read on 2026-10-30, a healthy M10.
 
