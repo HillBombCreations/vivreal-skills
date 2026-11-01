@@ -71,6 +71,28 @@ const REFUSE = [
   ['Bash', 'aws lambda get-alias --function-name f & $C'],
   ['PowerShell', 'aws lambda get-alias --function-name f & $C'],
   ['PowerShell', 'aws lambda get-alias --function-name f --name live @extra'],
+  // Review of #63 pass 2, pre-existing 1: a comment drops the --query that follows it.
+  ['Bash', 'aws lambda get-function-configuration --function-name f # --query FunctionName'],
+  ['PowerShell', 'aws lambda get-function-configuration --function-name f # --query FunctionName'],
+  ['PowerShell', 'aws lambda get-function-configuration --function-name f <# --query FunctionName #>'],
+  // Pre-existing 2: a quoted value after a boolean flag, or after --flag=value, is a whole option.
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --no-paginate "$Q"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --no-cli-pager "${Q}"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region=us-east-1 "$Q"'],
+  ['PowerShell', 'aws lambda get-function-configuration --function-name f --query FunctionName --no-paginate "$Q"'],
+  // Pre-existing 3: Windows PowerShell 5.1 can split a quoted variable into several arguments.
+  ['PowerShell', 'aws lambda get-function-configuration --function-name "$fn" --query FunctionName'],
+  // Pre-existing 4: xargs appends arguments from stdin.
+  ['Bash', 'echo --query @ | xargs aws lambda get-function-configuration --function-name f --query FunctionName'],
+  ['Bash', "xargs aws lambda get-function-configuration --function-name f --query FunctionName <<< '--query @'"],
+  ['PowerShell', "'--query @' | xargs aws lambda get-function-configuration --function-name f --query FunctionName"],
+  // Pre-existing 5: -EncodedCommand runs base64 UTF-16LE text the hook must decode and judge.
+  ['Bash', 'powershell -EncodedCommand ' + Buffer.from('aws lambda get-function --function-name f', 'utf16le').toString('base64')],
+  ['PowerShell', 'pwsh -enc ' + Buffer.from('aws lambda list-functions', 'utf16le').toString('base64')],
+  // Pass 2 note 3: a wrapper does not hide the expansion it runs, beside a lambda command.
+  ['Bash', 'aws lambda get-alias --function-name f; eval "$C"'],
+  ['Bash', 'aws lambda get-alias --function-name f; nohup $C'],
+  ['PowerShell', 'aws lambda get-alias --function-name f; . $C'],
   // Pre-existing: a lone & starts a new command, so the read after it is judged on its own.
   ['Bash', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
   ['PowerShell', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],

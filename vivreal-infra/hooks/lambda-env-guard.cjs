@@ -61,10 +61,15 @@
  * keeps the last, so a second overrides a safe first), no `--debug` (it logs the raw
  * response body), an `--output` from the known filtered set, and no shell or
  * PowerShell expansion that could add arguments the hook cannot see (`$VAR`
- * unquoted, `$(...)`, bash backticks, `@splat`). A flag value that is one double-quoted
- * string with no `$(` (`"$fn"`, `"VR-CMS-API-$STAGE"`, PowerShell `"fn-`$x"`) is one
- * argument and is allowed, and so is an expansion after a spelled-out subcommand that
- * is not a listed read (`aws lambda get-alias --function-name $FN`).
+ * unquoted, `$(...)`, bash backticks, `@splat`). A bash value that is one double-quoted
+ * string whose every `$` is a plain `$NAME` or `${NAME}` (`"$fn"`, `"VR-CMS-API-$STAGE"`) is
+ * one argument and is allowed, but only right after a value-taking flag spelled in full
+ * (VALUE_FLAGS); in PowerShell only a quoted value with no variable (`"fn-`$x"`) is, since
+ * Windows PowerShell 5.1 can split a variable into several arguments. An expansion after a
+ * spelled-out subcommand that is not a listed read (`aws lambda get-alias --function-name
+ * $FN`) is allowed when it is a plain variable, nothing runs and nothing is chained after
+ * it. A comment (`#`, `<#`) and an argument appender (`xargs`, `parallel`) on a lambda read
+ * are refused, and `powershell -EncodedCommand` is decoded and judged.
  *
  * HOW THE CLI IS REACHED does not matter (PR #60 review pass 3). The trigger is a
  * `lambda` word plus a listed subcommand word, whatever the program (`aws`, `$X`, a
@@ -347,10 +352,29 @@ function isExpansion(ws, k, dialect) {
   const w = ws[k];
   if (!/[$`]/.test(w.raw) && !/^@\w/.test(w.raw)) return false;
   if (/^'[^']*'$/.test(w.raw)) return false;
+  // A quoted value is one argument only where the CLI consumes it as a VALUE: after a flag on
+  // VALUE_FLAGS, spelled in full and with no `=` of its own. After a boolean flag
+  // (`--no-paginate "$Q"`) or a `--region=x` word it is a whole extra option, a second
+  // `--query` among them (review of #63, pass 2).
   const prev = ws[k - 1];
-  const isFlagValue = prev && /^--/.test(prev.value) && !QUERY_FLAG.test(prev.value);
-  return !(isFlagValue && isOneQuotedArgument(w.raw, dialect));
+  const isFlagValue = Boolean(prev) && VALUE_FLAGS.has(prev.value.toLowerCase());
+  if (!isFlagValue) return true;
+  // Windows PowerShell 5.1 passes a variable holding `\"` to a native program as several
+  // arguments, and this hook cannot tell 5.1 from pwsh 7, so in PowerShell only a quoted
+  // value with no variable in it (escapes such as `$ allowed) counts as one argument.
+  if (dialect !== 'bash' && /\$/.test(w.raw.replace(/`[\s\S]/g, ''))) return true;
+  return !isOneQuotedArgument(w.raw, dialect);
 }
+
+/**
+ * AWS CLI options that take one value on the lambda reads judged here (the subcommand's own
+ * and the global ones). Anything else before a quoted expansion makes it a possible option.
+ */
+const VALUE_FLAGS = new Set([
+  '--function-name', '--qualifier', '--marker', '--max-items', '--starting-token', '--page-size',
+  '--master-region', '--function-version', '--region', '--profile', '--endpoint-url', '--ca-bundle',
+  '--cli-read-timeout', '--cli-connect-timeout', '--color', '--cli-binary-format',
+]);
 
 /**
  * The lambda read this segment runs, whatever program runs it, as { sub } or
@@ -592,6 +616,16 @@ function refusalFor(segment, dialect, depth, isLast = true) {
   for (let k = 0; k < ws.length; k += 1) {
     const base = ws[k].value.split(/[\\/]/).pop();
     if (!SHELL_BIN.test(base) && !STRING_EVAL.test(base)) continue;
+    // `powershell -EncodedCommand <base64>` runs the decoded UTF-16LE text: judge that text.
+    // PowerShell accepts any prefix of the parameter name (`-e`, `-ec`, `-enc`, ...).
+    const encAt = ws.findIndex((w, j) => j > k && /^[-/]e[a-z]*$/i.test(w.value)
+      && ('encodedcommand'.startsWith(w.value.slice(1).toLowerCase()) || w.value.slice(1).toLowerCase() === 'ec'));
+    if (/^(powershell|pwsh)(\.exe)?$/i.test(base) && encAt !== -1) {
+      const payload = (ws[encAt + 1] || {}).value || '';
+      const decoded = Buffer.from(payload, 'base64').toString('utf16le');
+      const why = decideText(decoded, depth + 1);
+      if (why) return 'in the command encoded for ' + base + ' -EncodedCommand: ' + why;
+    }
     const nested = ws.slice(k + 1).map((w) => w.value).join(' ');
     const why = decideText(nested, depth + 1);
     if (why) return 'in the command string passed to ' + base + ': ' + why;
@@ -604,6 +638,20 @@ function refusalFor(segment, dialect, depth, isLast = true) {
   if (!found) return null;
   if (found.why) return found.why;
   const { sub } = found;
+
+  // An unquoted word starting `#` begins a comment in bash and PowerShell, and PowerShell's
+  // `<#` opens a block comment: everything after it, a --query among it, never reaches the CLI.
+  const comment = ws.find((w) => /^#/.test(w.raw) || (dialect !== 'bash' && /^<#/.test(w.raw)));
+  if (comment) {
+    return 'the command carries a comment (' + comment.raw + '), and the shell drops what follows it, ' +
+      'a --query among it. Remove the comment.';
+  }
+  // xargs and parallel append arguments read from stdin, a second --query among them.
+  const appender = ws.find((w) => /^(xargs|parallel)(\.exe)?$/i.test(w.value.split(/[\\/]/).pop()));
+  if (appender) {
+    return appender.value + ' appends arguments this hook cannot see (a second --query among them); ' +
+      'run the lambda read directly.';
+  }
 
   const queries = [];
   for (let k = 0; k < ws.length; k += 1) {
@@ -832,8 +880,10 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
     // A command that names lambda, chained with a command whose program is itself an expansion
     // (`aws lambda get-alias ... & $C`, `...; $C`), may be running a read this hook cannot see.
     if (segs.length > 1 && segs.some((s) => words(s, dialect).ws.some((w) => w.value.toLowerCase() === 'lambda'))) {
+      // Wrappers that run their argument (`nohup $C`, `eval "$C"`, `. $C`) are looked through.
+      const WRAPPER = /^(nohup|eval|exec|env|time|timeout|nice|sudo|command|builtin|source|\.|&|watch|iex|invoke-expression|start-process|-\S*|\d+[smhd]?)$/i;
       const hidden = segs.find((s) => {
-        const cmd = words(s, dialect).ws.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value) && !COMMAND_PREFIX.test(w.value));
+        const cmd = words(s, dialect).ws.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value) && !COMMAND_PREFIX.test(w.value) && !WRAPPER.test(w.value));
         return cmd && (/[$`]/.test(cmd.raw) || /^@\w/.test(cmd.raw)) && !/^'[^']*'$/.test(cmd.raw);
       });
       if (hidden) {
