@@ -7,16 +7,41 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
+const os = require('node:os');
 
 const HOOK = path.join(__dirname, 'lambda-env-guard.cjs');
 // Built from their codes, so no string escaping can quietly change what a case holds.
 const BS = String.fromCharCode(92);
 const BT = String.fromCharCode(96);
 
-function verdict(tool, command) {
+// Scratch home directories, so the runner's own ~/.aws/cli/alias never decides a case. Node
+// resolves the home from HOME on POSIX and USERPROFILE on Windows, so both are set.
+const emptyHome = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-envguard-home-'));
+const aliasHome = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-envguard-alias-'));
+fs.mkdirSync(path.join(aliasHome, '.aws', 'cli'), { recursive: true });
+fs.writeFileSync(path.join(aliasHome, '.aws', 'cli', 'alias'), [
+  '[toplevel]',
+  'probefc = lambda get-function-configuration',
+  'fcsafe = lambda get-function-configuration --query LastModified',
+  'shellfc = !f() {',
+  '    aws lambda get-function --function-name "$1"',
+  '  }; f',
+  '',
+  '[command lambda]',
+  'fc = get-function-configuration',
+  '',
+].join('\n'));
+test.after(() => {
+  fs.rmSync(emptyHome, { recursive: true, force: true });
+  fs.rmSync(aliasHome, { recursive: true, force: true });
+});
+
+function verdict(tool, command, home = emptyHome) {
   const res = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ tool_name: tool, tool_input: { command } }),
     encoding: 'utf8',
+    env: { ...process.env, HOME: home, USERPROFILE: home },
   });
   if (res.status === 0) return { refused: false, why: '' };
   assert.equal(res.status, 2, 'the hook exits 0 (allow) or 2 (refuse), got ' + res.status + ': ' + res.stderr);
@@ -93,6 +118,11 @@ const REFUSE = [
   ['Bash', 'aws lambda get-alias --function-name f; eval "$C"'],
   ['Bash', 'aws lambda get-alias --function-name f; nohup $C'],
   ['PowerShell', 'aws lambda get-alias --function-name f; . $C'],
+  // Review of #63 pass 3, B-K3-1: PowerShell --% hides a %VAR% (a second --query) after it.
+  ['PowerShell', "$env:Q='--query=@'; aws lambda get-function-configuration --function-name f --query FunctionName --% %Q%"],
+  ['PowerShell', 'aws lambda get-function-configuration --function-name f --query FunctionName --% %Q%'],
+  ['PowerShell', 'aws --% lambda get-function-configuration --function-name f --query FunctionName %Q%'],
+  ['PowerShell', 'aws --% %SVC% get-function-configuration --function-name f --query FunctionName'],
   // Pre-existing: a lone & starts a new command, so the read after it is judged on its own.
   ['Bash', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
   ['PowerShell', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
@@ -123,4 +153,41 @@ test('the case set holds both verdicts and really carries its backslashes and ba
   assert.ok(ALLOW.length >= 4 && REFUSE.length >= 4);
   assert.ok(ALLOW.some(([, c]) => c.includes(BS)) && ALLOW.some(([, c]) => c.includes(BT)));
   assert.ok(REFUSE.some(([, c]) => c.includes(BS)) && REFUSE.some(([, c]) => c.includes(BT)));
+});
+
+// Review of #63 pass 3, B-K3-2: an AWS CLI alias spells a lambda read under another name.
+const ALIAS_REFUSE = [
+  ['Bash', 'aws probefc --function-name f'],
+  ['PowerShell', 'aws probefc --function-name f'],
+  ['Bash', 'aws --region us-east-1 probefc --function-name f'],
+  ['Bash', 'aws lambda fc --function-name f'],
+  ['PowerShell', 'aws lambda fc --function-name f'],
+  ['Bash', 'aws shellfc f'],
+];
+const ALIAS_ALLOW = [
+  ['Bash', 'aws fcsafe --function-name f'],
+  ['PowerShell', 'aws fcsafe --function-name f'],
+  ['Bash', 'aws sts get-caller-identity --query Arn'],
+];
+for (const [tool, command] of ALIAS_REFUSE) {
+  test('REFUSE alias [' + tool + '] ' + JSON.stringify(command), () => {
+    assert.equal(verdict(tool, command, aliasHome).refused, true, 'permitted a lambda read reached through a CLI alias');
+  });
+}
+for (const [tool, command] of ALIAS_ALLOW) {
+  test('ALLOW alias [' + tool + '] ' + JSON.stringify(command), () => {
+    const { refused, why } = verdict(tool, command, aliasHome);
+    assert.equal(refused, false, 'refused a projected or unrelated command:\n' + why);
+  });
+}
+test('alias control: with no alias file the same alias word is not a lambda read', () => {
+  assert.equal(verdict('Bash', 'aws probefc --function-name f').refused, false);
+});
+
+// The hook's stated limit: a text guardrail for the CLI, never claimed as a boundary.
+test('the header states that the hook is not a security boundary and the SDK is out of reach', () => {
+  const header = fs.readFileSync(HOOK, 'utf8').split('*/')[0].replace(/\s*\*\s*/g, ' ');
+  assert.match(header, /a guardrail against accidental env dumps from the CLI, not a security boundary; code that calls the AWS SDK is out of its reach/);
+  assert.match(header, /IAM deny on lambda:GetFunctionConfiguration/);
+  assert.match(header, /docs\/agent-permissions-boundary\.md/);
 });

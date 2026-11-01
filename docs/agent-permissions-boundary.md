@@ -28,6 +28,17 @@ although its brief carried the rule verbatim. A text rule failed, then a blockli
 twice, and the allowlist hook is the current net. Each rung stops accidents; none stops a read the
 identity is allowed to make.
 
+### The hook's limit, and the real control
+
+The env guard reads command TEXT. It is a guardrail against accidental env dumps from the CLI, not
+a security boundary; code that calls the AWS SDK is out of its reach. `python -c` with boto3's
+`get_function_configuration`, a node script with `@aws-sdk/client-lambda`'s
+`GetFunctionConfigurationCommand`, or any compiled program reaches the same response under names no
+pattern list can follow, and chasing them with patterns never ends (review of vivreal-skills #63,
+pass 3). **The real control is an IAM deny on `lambda:GetFunctionConfiguration` (and the other
+reads in section 2), or a condition on it, for agent roles.** That is what T3 builds, next release,
+per the recommendation in section 4. Until then the hook stays as the accident net it is.
+
 ## 2. What a boundary must hold
 
 Reads that return secret VALUES, which no agent needs to see:

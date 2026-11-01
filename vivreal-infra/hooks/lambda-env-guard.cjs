@@ -5,10 +5,13 @@
  * Refuse the AWS CLI calls listed below (lambda reads, and cloudcontrol reads of a
  * Lambda function) when they could print a Lambda function's environment.
  *
- * This hook stops ACCIDENTAL reads by agents. It is not a security boundary: a
- * determined caller can reach the same data some other way, and the boundary for
- * that is AWS permissions (an IAM deny on these reads), designed in this repository's
- * docs/agent-permissions-boundary.md and not yet built. The
+ * THE LIMIT, stated plainly: this hook is a guardrail against accidental env dumps from
+ * the CLI, not a security boundary; code that calls the AWS SDK is out of its reach
+ * (`python -c` with boto3, a node script with @aws-sdk/client-lambda, any program). It
+ * reads command TEXT, and no pattern list can follow arbitrary code. The real control is
+ * an IAM deny on lambda:GetFunctionConfiguration (and the other reads listed below) for
+ * agent roles, designed in this repository's docs/agent-permissions-boundary.md and not
+ * yet built (backlog T3). The
  * heredoc exemption below is the same: an interpreter this hook does not know can
  * still run a file a heredoc wrote.
  *
@@ -605,6 +608,70 @@ function parseQuery(query, prefix) {
 
 /* ------------------------------ the decision ---------------------------- */
 
+/**
+ * The AWS CLI aliases of the user running the hook, from `~/.aws/cli/alias` under the home
+ * directory Node resolves on any OS (HOME, or USERPROFILE on Windows). `[toplevel]` aliases
+ * expand `aws <alias>`, `[command lambda]` aliases expand `aws lambda <alias>`. A missing or
+ * unreadable file means no aliases. Read once per hook run.
+ */
+let cliAliases = null;
+function loadCliAliases() {
+  if (cliAliases) return cliAliases;
+  cliAliases = { toplevel: new Map(), lambda: new Map() };
+  let text = '';
+  try {
+    text = require('node:fs').readFileSync(require('node:path').join(require('node:os').homedir(), '.aws', 'cli', 'alias'), 'utf8');
+  } catch {
+    return cliAliases; // No alias file is the normal case; nothing to expand.
+  }
+  let section = null;
+  let last = null;
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*([#;]|$)/.test(line)) continue;
+    const head = /^\s*\[\s*(.+?)\s*\]\s*$/.exec(line);
+    if (head) {
+      const name = head[1].toLowerCase().replace(/\s+/g, ' ');
+      section = name === 'toplevel' ? cliAliases.toplevel : name === 'command lambda' ? cliAliases.lambda : null;
+      last = null;
+    } else if (/^\s/.test(line) && section && last) {
+      section.set(last, (section.get(last) + ' ' + line.trim()).trim()); // an indented continuation line
+    } else {
+      const kv = /^\s*([^=\s]+)\s*=\s*(.*)$/.exec(line);
+      if (kv && section) {
+        last = kv[1].toLowerCase();
+        section.set(last, kv[2].trim());
+      }
+    }
+  }
+  return cliAliases;
+}
+
+/**
+ * The segment with a CLI alias expanded, as { text, shell }, or null when no word is an alias.
+ * `shell` is true for a `!` alias, whose text is a shell command of its own.
+ */
+function expandCliAlias(ws) {
+  const { toplevel, lambda } = loadCliAliases();
+  if (!toplevel.size && !lambda.size) return null;
+  for (let k = 0; k < ws.length; k += 1) {
+    let at = -1;
+    let map = null;
+    if (/^aws(\.exe)?$/i.test(ws[k].value.split(/[\\/]/).pop())) {
+      at = k + 1;
+      while (at < ws.length && /^-/.test(ws[at].value)) at += VALUE_FLAGS.has(ws[at].value.toLowerCase()) ? 2 : 1;
+      map = toplevel;
+    } else if (ws[k].value.toLowerCase() === 'lambda') {
+      at = k + 1;
+      map = lambda;
+    }
+    if (!map || at >= ws.length || !map.has(ws[at].value.toLowerCase())) continue;
+    const value = map.get(ws[at].value.toLowerCase());
+    if (value.startsWith('!')) return { text: value.slice(1), shell: true };
+    return { text: ws.map((w, j) => (j === at ? value : w.raw)).join(' '), shell: false };
+  }
+  return null;
+}
+
 /** Why this segment must be refused, or null when it is fine. */
 function refusalFor(segment, dialect, depth, isLast = true) {
   const { ws, unterminated } = words(segment, dialect);
@@ -629,6 +696,31 @@ function refusalFor(segment, dialect, depth, isLast = true) {
     const nested = ws.slice(k + 1).map((w) => w.value).join(' ');
     const why = decideText(nested, depth + 1);
     if (why) return 'in the command string passed to ' + base + ': ' + why;
+  }
+
+  // PowerShell's stop-parsing token `--%` hands the rest of the line to the program verbatim,
+  // with cmd-style `%VAR%` expanded, so a `--query=@` can hide there. Everything after it is
+  // opaque to this hook: a command naming the AWS CLI, `lambda` or a listed read that uses it
+  // is refused, even with a literal --query before it, since a second --query after it wins.
+  const namesCli = (w) => /^(aws(\.exe)?|lambda)$/i.test(w.value.split(/[\\/]/).pop())
+    || Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w.value.toLowerCase());
+  if (dialect !== 'bash' && ws.some((w) => w.raw === '--%') && ws.some(namesCli)) {
+    return 'PowerShell --% passes the rest of the line verbatim with %VAR% expanded, which this hook cannot see ' +
+      '(a second --query among it). Drop --% and spell the arguments out.';
+  }
+
+  // An AWS CLI alias (~/.aws/cli/alias) can spell a lambda read under another name: judge the
+  // command again with the alias expanded.
+  const aliased = expandCliAlias(ws);
+  if (aliased !== null) {
+    if (aliased.shell) {
+      const why = decideText(aliased.text, depth + 1);
+      return why ? 'in the AWS CLI alias it runs: ' + why : null;
+    }
+    if (depth < MAX_DEPTH) {
+      const why = refusalFor(aliased.text, dialect, depth + 1, isLast);
+      if (why) return 'with its AWS CLI alias expanded (' + aliased.text + '): ' + why;
+    }
   }
 
   const cc = cloudControlRefusal(ws);
