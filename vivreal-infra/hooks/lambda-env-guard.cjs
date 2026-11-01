@@ -385,6 +385,15 @@ const VALUE_FLAGS = new Set([
  * Null when it is not a lambda read.
  */
 function configSubcommand(ws, dialect, isLast) {
+  // The CLI's grammar first (the same parse the alias check uses): a listed read wherever the
+  // global options put the service. The word heuristics below still catch a program the parse
+  // cannot see (`$X lambda ...`, a shell function).
+  for (const start of awsProgramStarts(ws)) {
+    const { pathAts, unknownAt } = parseAwsCli(ws, start);
+    if (unknownAt !== -1 || pathAts.length < 2 || ws[pathAts[0]].value.toLowerCase() !== 'lambda') continue;
+    const sub = ws[pathAts[1]].value.toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, sub)) return { sub };
+  }
   const lambdaAts = ws.map((w, k) => (w.value.toLowerCase() === 'lambda' ? k : -1)).filter((k) => k !== -1);
   const lambdaAt = lambdaAts.length ? lambdaAts[0] : -1;
   const subAt = ws.findIndex((w) => Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w.value.toLowerCase()));
@@ -660,26 +669,98 @@ function loadCliAliases() {
 function expandCliAlias(ws) {
   const aliases = loadCliAliases();
   if (!aliases.size) return null;
-  for (let k = 0; k < ws.length; k += 1) {
-    if (!/^aws(\.exe)?$/i.test(ws[k].value.split(/[\\/]/).pop())) continue;
+  const expand = (at, key) => {
+    const value = aliases.get(key).get(ws[at].value.toLowerCase());
+    if (value.startsWith('!')) return { name: ws[at].value, text: value.slice(1), shell: true };
+    return { name: ws[at].value, text: ws.map((w, j) => (j === at ? value : w.raw)).join(' '), shell: false };
+  };
+  // 1. The CLI's own grammar: global options, then the command path, as parseAwsCli reads it.
+  for (const start of awsProgramStarts(ws)) {
+    const parsed = parseAwsCli(ws, start);
+    if (parsed.unknownAt !== -1) continue; // an option this hook cannot place; step 2 still looks
     const path = [];
-    for (let at = k + 1; at < ws.length; at += 1) {
-      const word = ws[at].value.toLowerCase();
-      if (/^-/.test(word)) {
-        if (VALUE_FLAGS.has(word)) at += 1;
-        continue;
+    for (const at of parsed.pathAts) {
+      const key = path.join(' ');
+      const section = aliases.get(key);
+      if (section && section.has(ws[at].value.toLowerCase())) {
+        return expand(at, key);
       }
-      const section = aliases.get(path.join(' '));
-      if (section && section.has(word)) {
-        const value = section.get(word);
-        if (value.startsWith('!')) return { name: ws[at].value, text: value.slice(1), shell: true };
-        return { name: ws[at].value, text: ws.map((w, j) => (j === at ? value : w.raw)).join(' '), shell: false };
+      path.push(ws[at].value.toLowerCase());
+    }
+  }
+  // 2. Fail-closed fallback for any shape the parse could not place (an unknown option, a
+  //    program behind an expansion): a section's command path spelled out as consecutive words,
+  //    followed by one of its aliases, is expanded wherever it appears.
+  for (const [key, section] of aliases) {
+    if (!key) continue;
+    const parts = key.split(' ');
+    for (let k = 0; k + parts.length < ws.length; k += 1) {
+      if (!parts.every((p, i) => ws[k + i].value.toLowerCase() === p)) continue;
+      const at = k + parts.length;
+      if (section.has(ws[at].value.toLowerCase())) {
+        return expand(at, key);
       }
-      path.push(word);
-      if (path.length > 3) break; // service, subcommand and one more level is all the CLI nests
     }
   }
   return null;
+}
+
+/**
+ * The AWS CLI's global options (aws-cli v2 `aws help`), split by whether they take a value.
+ * Command-level value options on the lambda reads are VALUE_FLAGS. argparse also accepts any
+ * unambiguous prefix, so `--out json` is `--output json`.
+ */
+const GLOBAL_VALUE_OPTIONS = [
+  '--output', '--query', '--profile', '--region', '--endpoint-url', '--color', '--ca-bundle',
+  '--cli-read-timeout', '--cli-connect-timeout', '--cli-binary-format', '--cli-input-json', '--cli-input-yaml',
+];
+const GLOBAL_BOOLEAN_OPTIONS = [
+  '--debug', '--no-paginate', '--no-verify-ssl', '--no-sign-request', '--no-cli-pager',
+  '--cli-auto-prompt', '--no-cli-auto-prompt', '--version',
+];
+
+/** Where the AWS CLI program's own arguments start: after `aws`, `aws.exe`, or `-m awscli`. */
+function awsProgramStarts(ws) {
+  const starts = [];
+  for (let k = 0; k < ws.length; k += 1) {
+    const base = ws[k].value.split(/[\\/]/).pop();
+    if (/^aws(\.exe)?$/i.test(base) || (base.toLowerCase() === 'awscli' && k > 0 && ws[k - 1].value === '-m')) {
+      starts.push(k + 1);
+    }
+  }
+  return starts;
+}
+
+/**
+ * Parse the AWS CLI's grammar once, from the first argument after the program: skip global
+ * options (`--opt value`, `--opt=value`, booleans, unambiguous prefixes of either), then read
+ * the service and the command path after it. Returns { serviceAt, pathAts, unknownAt }:
+ * `pathAts` lists the service, the subcommand and any deeper command words, the words an
+ * alias can stand for; `unknownAt` is the index of an option before the service this hook
+ * cannot place (-1 when none), so callers fail closed instead of guessing the service.
+ */
+function parseAwsCli(ws, start) {
+  const resolve = (name) => {
+    const exact = (list) => list.includes(name);
+    if (exact(GLOBAL_VALUE_OPTIONS) || VALUE_FLAGS.has(name)) return 'value';
+    if (exact(GLOBAL_BOOLEAN_OPTIONS)) return 'boolean';
+    const values = GLOBAL_VALUE_OPTIONS.filter((o) => o.startsWith(name));
+    const booleans = GLOBAL_BOOLEAN_OPTIONS.filter((o) => o.startsWith(name));
+    if (values.length === 1 && booleans.length === 0) return 'value';
+    if (booleans.length === 1 && values.length === 0) return 'boolean';
+    return null;
+  };
+  let k = start;
+  while (k < ws.length && /^-/.test(ws[k].value)) {
+    const word = ws[k].value.toLowerCase();
+    const eq = word.indexOf('=');
+    const kind = resolve(eq === -1 ? word : word.slice(0, eq));
+    if (kind === null) return { serviceAt: -1, pathAts: [], unknownAt: k };
+    k += kind === 'value' && eq === -1 ? 2 : 1;
+  }
+  const pathAts = [];
+  for (let at = k; at < ws.length && pathAts.length < 4 && !/^-/.test(ws[at].value); at += 1) pathAts.push(at);
+  return { serviceAt: k < ws.length ? k : -1, pathAts, unknownAt: -1 };
 }
 
 /** Why this segment must be refused, or null when it is fine. */
@@ -704,8 +785,9 @@ function refusalFor(segment, dialect, depth, isLast = true) {
       if (why) return 'in the command encoded for ' + base + ' -EncodedCommand: ' + why;
     }
     const nested = ws.slice(k + 1).map((w) => w.value).join(' ');
-    // cmd /c expands %NAME% in its command string, an argument this hook cannot see.
-    if (/^cmd(\.exe)?$/i.test(base) && /%[A-Za-z_][A-Za-z0-9_]*%/.test(nested)
+    // cmd /c expands %NAME% (and, under /v:on, !NAME!) in its command string, an argument this
+    // hook cannot see.
+    if (/^cmd(\.exe)?$/i.test(base) && /%[A-Za-z_][A-Za-z0-9_]*%|![A-Za-z_][A-Za-z0-9_]*!/.test(nested)
       && tokensOf(nested).some((t) => t === 'lambda' || /^aws(\.exe)?$/.test(t.split('/').pop()))) {
       return 'cmd expands %VAR% in its command string, which can add a second --query; spell the arguments out.';
     }
@@ -721,7 +803,8 @@ function refusalFor(segment, dialect, depth, isLast = true) {
     || Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w.value.toLowerCase());
   // A program named by an expansion (`& $a --% %X%`) may be the CLI too.
   const programHidden = (() => {
-    const cmd = ws.find((w) => w.raw !== '&' && !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
+    // `&` (call) and `.` (dot-source) both run the program named after them.
+    const cmd = ws.find((w) => w.raw !== '&' && w.raw !== '.' && !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
     return Boolean(cmd) && /[$`]|^@\w/.test(cmd.raw) && !/^'[^']*'$/.test(cmd.raw);
   })();
   if (dialect !== 'bash' && ws.some((w) => w.raw === '--%') && (ws.some(namesCli) || programHidden)) {

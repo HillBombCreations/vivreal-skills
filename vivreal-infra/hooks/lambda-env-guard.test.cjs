@@ -133,6 +133,10 @@ const REFUSE = [
   ['Bash', 'cmd /c "aws lambda get-function-configuration --function-name f --query FunctionName %Q%"'],
   ['PowerShell', 'cmd /c "aws lambda get-function-configuration --function-name f --query FunctionName %Q%"'],
   ['PowerShell', '& $a --% %X%'],
+  // Pass 5 pre-existing: cmd delayed expansion, and dot-sourcing a variable before --%.
+  ['Bash', 'cmd /v:on /c "aws lambda get-function-configuration --function-name f --query FunctionName !Q!"'],
+  ['PowerShell', 'cmd /v:on /c "aws lambda get-function-configuration --function-name f --query FunctionName !Q!"'],
+  ['PowerShell', '. $a --% %X%'],
   // Pre-existing: a lone & starts a new command, so the read after it is judged on its own.
   ['Bash', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
   ['PowerShell', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
@@ -176,11 +180,40 @@ const ALIAS_REFUSE = [
   // Review of #63 pass 4, B-K4-2: every alias section counts, not only toplevel and lambda.
   ['Bash', 'aws cloudcontrol cc --identifier f'],
   ['PowerShell', 'aws cloudcontrol cc --identifier f'],
+  // Pass 5 note 1: the CLI reached as a Python module.
+  ['Bash', 'python -m awscli lambda fc --function-name f'],
 ];
+
+// Review of #63 pass 5, B-K5-1: every global option before the service, in each form the CLI
+// takes (`--opt value`, `--opt=value`, a boolean, an unambiguous prefix), must not hide the
+// service from the alias check or the direct check.
+const GLOBAL_OPTION_FORMS = [
+  '--output json', '--output=text', '--out json', '--query @', '--query=@', '--profile p', '--profile=p',
+  '--region us-east-1', '--region=us-east-1', '--endpoint-url https://example.invalid', '--no-paginate',
+  '--cli-input-json file://in.json', '--cli-input-yaml=file://in.yaml', '--debug', '--no-verify-ssl',
+  '--color off', '--no-cli-pager', '--no-sign-request', '--ca-bundle ca.pem', '--cli-read-timeout 5',
+];
+const DIRECT_GLOBAL = [];
+for (const opt of GLOBAL_OPTION_FORMS) {
+  for (const tool of ['Bash', 'PowerShell']) {
+    ALIAS_REFUSE.push([tool, 'aws ' + opt + ' lambda fc --function-name f']);
+    ALIAS_REFUSE.push([tool, 'aws ' + opt + ' probefc --function-name f']);
+    DIRECT_GLOBAL.push([tool, 'aws ' + opt + ' lambda get-function-configuration --function-name f']);
+  }
+}
+for (const [tool, command] of DIRECT_GLOBAL) {
+  test('REFUSE global option [' + tool + '] ' + JSON.stringify(command), () => {
+    assert.equal(verdict(tool, command).refused, true, 'permitted an unprojected read behind a global option');
+  });
+}
 const ALIAS_ALLOW = [
   ['Bash', 'aws fcsafe --function-name f'],
   ['PowerShell', 'aws fcsafe --function-name f'],
   ['Bash', 'aws sts get-caller-identity --query Arn'],
+  // Global options before the service leave a projected read and a projected alias permitted.
+  ['Bash', 'aws --output json fcsafe --function-name f'],
+  ['PowerShell', 'aws --region us-east-1 --output text lambda get-function-configuration --function-name f --query LastModified'],
+  ['Bash', 'aws --no-cli-pager --profile=p lambda get-alias --function-name f --name live'],
 ];
 for (const [tool, command] of ALIAS_REFUSE) {
   test('REFUSE alias [' + tool + '] ' + JSON.stringify(command), () => {
