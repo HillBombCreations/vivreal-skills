@@ -109,12 +109,14 @@ const FILTERED_OUTPUTS = new Set(['json', 'text', 'table', 'yaml', 'yaml-stream'
  * Split a shell line into the separate commands it runs. A projection on one
  * command says nothing about the next, so each is judged on its own. Line
  * continuations (bash `\`, PowerShell backtick) are joined first, or a query on the
- * continued line would be judged apart from its command.
+ * continued line would be judged apart from its command. A lone `&` (bash background,
+ * PowerShell 7 background or call operator) also starts a new command; `&&`, `>&`, `&>`
+ * and `2>&1` do not.
  */
 function segments(command) {
   return String(command)
     .replace(/[\\`]\r?\n/g, ' ')
-    .split(/\n|&&|\|\||[;|]/)
+    .split(/\n|&&|\|\||[;|]|(?<![&>])&(?![&>])/)
     .map((s) => s.trim())
     .filter(Boolean);
 }
@@ -312,19 +314,27 @@ const STRING_EVAL = /^(iex|invoke-expression)$/i;
 const MAX_DEPTH = 4;
 
 /**
- * Whether a raw word is ONE double-quoted string whose expansions cannot run a command,
- * which the shell always hands over as exactly one argument: no `$(` and, in bash, no
- * backtick. In PowerShell a backtick inside double quotes is its escape character (`$
- * is a literal dollar, `n a newline), so escapes are dropped before the `$(` check.
+ * Whether a raw word is ONE double-quoted string that the shell always hands over as exactly
+ * one argument. An ALLOWLIST (review of #63): every `$` inside must be a plain variable,
+ * bash `$NAME` or `${NAME}`, PowerShell `$name`, `${name}` or `$env:NAME`. Anything else,
+ * `$(`, a backtick in bash, `"$@"`, `"${@:1}"`, `"${@/x/y}"`, `"${!N}"`, `"${a[@]}"`, can run
+ * a command or expand to several words, so it is not one argument. In PowerShell a backtick
+ * inside double quotes is its escape character (`$ is a literal dollar).
  */
+const BASH_ONE_QUOTED = /^"(?:[^"\\`$]|\\[$`"\\\n]|\\(?=[^$`"\\\n])|\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\})*"$/;
+const PWSH_ONE_QUOTED = /^"(?:[^"`$]|`[\s\S]|\$(?:env:)?[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\})*"$/i;
+
 function isOneQuotedArgument(raw, dialect) {
-  if (dialect === 'bash') {
-    if (!/^"(?:[^"\\`]|\\.)*"$/.test(raw)) return false;
-    // "$@", "${arr[@]}" and "${!prefix@}" are quoted yet expand to one word PER element.
-    return !/\$\(|\$@|@\]|@\}/.test(raw.replace(/\\./g, ''));
-  }
-  if (!/^"(?:[^"`]|`.)*"$/.test(raw)) return false;
-  return !/\$\(/.test(raw.replace(/`./g, ''));
+  return (dialect === 'bash' ? BASH_ONE_QUOTED : PWSH_ONE_QUOTED).test(raw);
+}
+
+/**
+ * A word that is nothing but one plain variable, quoted or not: bash `$NAME` / `${NAME}`,
+ * PowerShell also `$env:NAME`. Never `$(`, a backtick, `$@`, `${...}` with an operator, or `@splat`.
+ */
+function isPlainVariableWord(raw, dialect) {
+  const name = dialect === 'bash' ? '[A-Za-z_][A-Za-z0-9_]*' : '(?:env:)?[A-Za-z_][A-Za-z0-9_]*';
+  return new RegExp('^("?)\\$(?:' + name + '|\\{[A-Za-z_][A-Za-z0-9_]*\\})\\1$', 'i').test(raw);
 }
 
 /**
@@ -347,7 +357,7 @@ function isExpansion(ws, k, dialect) {
  * { why } when the segment hides the service or subcommand behind an expansion.
  * Null when it is not a lambda read.
  */
-function configSubcommand(ws, dialect) {
+function configSubcommand(ws, dialect, isLast) {
   const lambdaAts = ws.map((w, k) => (w.value.toLowerCase() === 'lambda' ? k : -1)).filter((k) => k !== -1);
   const lambdaAt = lambdaAts.length ? lambdaAts[0] : -1;
   const subAt = ws.findIndex((w) => Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w.value.toLowerCase()));
@@ -355,12 +365,18 @@ function configSubcommand(ws, dialect) {
   if (lambdaAt !== -1 && subAt !== -1) return { sub: ws[subAt].value.toLowerCase() };
   // A plain literal word straight after `lambda` IS the subcommand the CLI runs, and it is not
   // a listed read (that case returned above). An expansion after it can only add arguments to
-  // that subcommand, so `aws lambda get-alias --function-name $FN` is not a hidden read.
+  // that subcommand, so `aws lambda get-alias --function-name $FN` is not a hidden read. Only
+  // when every expansion is a plain variable word (never `$(`, a backtick or `@splat`, which
+  // run code or splat) and nothing is chained after this command (`& $C`, `; ...`, `| ...`).
   const spelled = (k) => {
     const next = ws[k + 1];
     return Boolean(next) && /^[a-z0-9][a-z0-9-]*$/i.test(next.value) && !isExpansion(ws, k + 1, dialect);
   };
-  if (lambdaAt !== -1 && expansionAt > lambdaAt + 1 && lambdaAts.every(spelled)) return null;
+  const plainOnly = ws.every((w, k) => !isExpansion(ws, k, dialect) || isPlainVariableWord(w.raw, dialect));
+  const runsNothing = !ws.some((w) => /\$\(|`/.test(w.raw) && !/^'[^']*'$/.test(w.raw));
+  if (lambdaAt !== -1 && expansionAt > lambdaAt + 1 && isLast && plainOnly && runsNothing && lambdaAts.every(spelled)) {
+    return null;
+  }
   if (lambdaAt !== -1 && expansionAt !== -1) {
     return { why: 'the lambda subcommand may be hidden in an expansion (' + ws[expansionAt].raw + '); spell it out.' };
   }
@@ -566,7 +582,7 @@ function parseQuery(query, prefix) {
 /* ------------------------------ the decision ---------------------------- */
 
 /** Why this segment must be refused, or null when it is fine. */
-function refusalFor(segment, dialect, depth) {
+function refusalFor(segment, dialect, depth, isLast = true) {
   const { ws, unterminated } = words(segment, dialect);
   if (unterminated && mentionsLambdaRead(segment)) {
     return 'a quote never closes, so this hook cannot read the words, and the text mentions a lambda read.';
@@ -584,7 +600,7 @@ function refusalFor(segment, dialect, depth) {
   const cc = cloudControlRefusal(ws);
   if (cc) return cc;
 
-  const found = configSubcommand(ws, dialect);
+  const found = configSubcommand(ws, dialect, isLast);
   if (!found) return null;
   if (found.why) return found.why;
   const { sub } = found;
@@ -813,8 +829,19 @@ function decideText(command, depth, dialects = ['bash', 'powershell']) {
     const segs = segments(text);
     // `'...' | iex` hands a string to Invoke-Expression through the pipe: judge every string.
     const evaluates = segs.some((s) => words(s, dialect).ws.some((w) => STRING_EVAL.test(w.value)));
-    for (const seg of segs) {
-      const why = refusalFor(seg, dialect, depth);
+    // A command that names lambda, chained with a command whose program is itself an expansion
+    // (`aws lambda get-alias ... & $C`, `...; $C`), may be running a read this hook cannot see.
+    if (segs.length > 1 && segs.some((s) => words(s, dialect).ws.some((w) => w.value.toLowerCase() === 'lambda'))) {
+      const hidden = segs.find((s) => {
+        const cmd = words(s, dialect).ws.find((w) => !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value) && !COMMAND_PREFIX.test(w.value));
+        return cmd && (/[$`]/.test(cmd.raw) || /^@\w/.test(cmd.raw)) && !/^'[^']*'$/.test(cmd.raw);
+      });
+      if (hidden) {
+        return 'a command beside this lambda command runs a program named by an expansion (' + hidden + '); spell the command out.';
+      }
+    }
+    for (const [s, seg] of segs.entries()) {
+      const why = refusalFor(seg, dialect, depth, s === segs.length - 1);
       if (why) return why;
       if (!evaluates) continue;
       for (const w of words(seg, dialect).ws) {

@@ -59,6 +59,21 @@ const REFUSE = [
   ['Bash', 'set -- us-east-1 --query @; aws lambda get-function-configuration --function-name f --query FunctionName --region "$@"'],
   ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${ARGS[@]}"'],
   ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${!PREFIX@}"'],
+  // Review of #63, B-K2-1: quoted shapes that still make several words (proved in real bash).
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${@:1}"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${@/x/y}"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${@-}"'],
+  ['Bash', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "${!N}"'],
+  ['PowerShell', 'aws lambda get-function-configuration --function-name f --query FunctionName --region "$($r)"'],
+  // B-K2-2: the spelled-subcommand exemption never covers code that runs or a chained command.
+  ['Bash', 'aws lambda get-alias --function-name f --name live $(eval "$C" >&2)'],
+  ['Bash', 'aws lambda get-alias --function-name f --name live ' + BT + 'eval "$C" >&2' + BT],
+  ['Bash', 'aws lambda get-alias --function-name f & $C'],
+  ['PowerShell', 'aws lambda get-alias --function-name f & $C'],
+  ['PowerShell', 'aws lambda get-alias --function-name f --name live @extra'],
+  // Pre-existing: a lone & starts a new command, so the read after it is judged on its own.
+  ['Bash', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
+  ['PowerShell', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
   ['Bash', 'aws lambda get-function-configuration --function-name f --query "$Q"'],
   ['PowerShell', 'aws lambda get-function-configuration --function-name f --query FunctionName --deb' + BT + 'ug'],
   // The subcommand itself hidden, or a read after the spelled-out one.
