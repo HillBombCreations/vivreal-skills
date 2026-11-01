@@ -201,6 +201,30 @@ for (const opt of GLOBAL_OPTION_FORMS) {
     DIRECT_GLOBAL.push([tool, 'aws ' + opt + ' lambda get-function-configuration --function-name f']);
   }
 }
+// Review of #63 pass 6, B-K6-1: a bare `--` is argparse's end-of-options marker, which the CLI
+// drops, so it may sit before the service, after it, or after the alias without changing the read.
+const END_OF_OPTIONS = [
+  'aws -- probefc --function-name f',
+  'aws --region us-east-1 -- probefc --function-name f',
+  'aws -- lambda fc --function-name f',
+  'aws lambda -- fc --function-name f',
+  'aws lambda fc -- --function-name f',
+  'aws -- lambda -- fc -- --function-name f',
+  'aws --output json -- lambda -- fc --function-name f',
+  'aws cloudcontrol -- cc --identifier f',
+  'aws probefc -- --function-name f',
+];
+for (const command of END_OF_OPTIONS) {
+  for (const tool of ['Bash', 'PowerShell']) ALIAS_REFUSE.push([tool, command]);
+}
+for (const command of [
+  'aws -- lambda get-function-configuration --function-name f',
+  'aws lambda -- get-function-configuration --function-name f',
+  'aws lambda get-function-configuration -- --function-name f',
+  'aws --region us-east-1 -- lambda -- get-function-configuration --function-name f',
+]) {
+  for (const tool of ['Bash', 'PowerShell']) DIRECT_GLOBAL.push([tool, command]);
+}
 for (const [tool, command] of DIRECT_GLOBAL) {
   test('REFUSE global option [' + tool + '] ' + JSON.stringify(command), () => {
     assert.equal(verdict(tool, command).refused, true, 'permitted an unprojected read behind a global option');

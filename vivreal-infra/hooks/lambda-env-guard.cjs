@@ -675,9 +675,13 @@ function expandCliAlias(ws) {
     return { name: ws[at].value, text: ws.map((w, j) => (j === at ? value : w.raw)).join(' '), shell: false };
   };
   // 1. The CLI's own grammar: global options, then the command path, as parseAwsCli reads it.
+  let unplaced = false;
   for (const start of awsProgramStarts(ws)) {
     const parsed = parseAwsCli(ws, start);
-    if (parsed.unknownAt !== -1) continue; // an option this hook cannot place; step 2 still looks
+    if (parsed.unknownAt !== -1) {
+      unplaced = true; // an option this hook cannot place; step 2 still looks
+      continue;
+    }
     const path = [];
     for (const at of parsed.pathAts) {
       const key = path.join(' ');
@@ -690,13 +694,22 @@ function expandCliAlias(ws) {
   }
   // 2. Fail-closed fallback for any shape the parse could not place (an unknown option, a
   //    program behind an expansion): a section's command path spelled out as consecutive words,
-  //    followed by one of its aliases, is expanded wherever it appears.
+  //    followed by one of its aliases, is expanded wherever it appears. A bare `--` between them
+  //    is skipped, as the CLI skips it. Toplevel aliases are looked for only after an `aws`
+  //    whose options the parse could not place, so an ordinary word is never taken for one.
+  const idx = ws.map((w, j) => j).filter((j) => ws[j].value !== '--');
   for (const [key, section] of aliases) {
-    if (!key) continue;
+    if (!key) {
+      if (!unplaced) continue;
+      const first = Math.min(...awsProgramStarts(ws));
+      const at = idx.find((j) => j >= first && section.has(ws[j].value.toLowerCase()));
+      if (at !== undefined) return expand(at, key);
+      continue;
+    }
     const parts = key.split(' ');
-    for (let k = 0; k + parts.length < ws.length; k += 1) {
-      if (!parts.every((p, i) => ws[k + i].value.toLowerCase() === p)) continue;
-      const at = k + parts.length;
+    for (let i = 0; i + parts.length < idx.length; i += 1) {
+      if (!parts.every((p, n) => ws[idx[i + n]].value.toLowerCase() === p)) continue;
+      const at = idx[i + parts.length];
       if (section.has(ws[at].value.toLowerCase())) {
         return expand(at, key);
       }
@@ -750,8 +763,17 @@ function parseAwsCli(ws, start) {
     if (booleans.length === 1 && values.length === 0) return 'boolean';
     return null;
   };
+  // A bare `--` is argparse's end-of-options marker: the CLI drops it and reads on, so
+  // `aws -- probefc`, `aws lambda -- fc` and `aws --region x -- probefc` run the same command
+  // as without it (measured on aws-cli 2.34.0, review of #63 pass 6). It is skipped wherever
+  // it sits, before the service or inside the command path.
+  const isEnd = (w) => w.value === '--';
   let k = start;
   while (k < ws.length && /^-/.test(ws[k].value)) {
+    if (isEnd(ws[k])) {
+      k += 1;
+      continue;
+    }
     const word = ws[k].value.toLowerCase();
     const eq = word.indexOf('=');
     const kind = resolve(eq === -1 ? word : word.slice(0, eq));
@@ -759,8 +781,12 @@ function parseAwsCli(ws, start) {
     k += kind === 'value' && eq === -1 ? 2 : 1;
   }
   const pathAts = [];
-  for (let at = k; at < ws.length && pathAts.length < 4 && !/^-/.test(ws[at].value); at += 1) pathAts.push(at);
-  return { serviceAt: k < ws.length ? k : -1, pathAts, unknownAt: -1 };
+  for (let at = k; at < ws.length && pathAts.length < 4; at += 1) {
+    if (isEnd(ws[at])) continue;
+    if (/^-/.test(ws[at].value)) break;
+    pathAts.push(at);
+  }
+  return { serviceAt: pathAts.length ? pathAts[0] : -1, pathAts, unknownAt: -1 };
 }
 
 /** Why this segment must be refused, or null when it is fine. */
