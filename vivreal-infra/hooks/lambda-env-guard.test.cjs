@@ -28,10 +28,16 @@ fs.writeFileSync(path.join(aliasHome, '.aws', 'cli', 'alias'), [
   '    aws lambda get-function --function-name "$1"',
   '  }; f',
   '',
+  'leakfc = lambda get-function-configuration --profile ALIASBODYMARKER',
+  '',
   '[command lambda]',
   'fc = get-function-configuration',
   '',
+  '[command cloudcontrol]',
+  'cc = get-resource --type-name AWS::Lambda::Function',
+  '',
 ].join('\n'));
+const ALIAS_BODY_MARKER = 'ALIASBODYMARKER';
 test.after(() => {
   fs.rmSync(emptyHome, { recursive: true, force: true });
   fs.rmSync(aliasHome, { recursive: true, force: true });
@@ -123,6 +129,10 @@ const REFUSE = [
   ['PowerShell', 'aws lambda get-function-configuration --function-name f --query FunctionName --% %Q%'],
   ['PowerShell', 'aws --% lambda get-function-configuration --function-name f --query FunctionName %Q%'],
   ['PowerShell', 'aws --% %SVC% get-function-configuration --function-name f --query FunctionName'],
+  // Pass 4 pre-existing: cmd /c expands %Q% the same way, and a hidden program with --%.
+  ['Bash', 'cmd /c "aws lambda get-function-configuration --function-name f --query FunctionName %Q%"'],
+  ['PowerShell', 'cmd /c "aws lambda get-function-configuration --function-name f --query FunctionName %Q%"'],
+  ['PowerShell', '& $a --% %X%'],
   // Pre-existing: a lone & starts a new command, so the read after it is judged on its own.
   ['Bash', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
   ['PowerShell', 'aws lambda get-function --function-name f --query Code.Location & aws lambda list-functions'],
@@ -163,6 +173,9 @@ const ALIAS_REFUSE = [
   ['Bash', 'aws lambda fc --function-name f'],
   ['PowerShell', 'aws lambda fc --function-name f'],
   ['Bash', 'aws shellfc f'],
+  // Review of #63 pass 4, B-K4-2: every alias section counts, not only toplevel and lambda.
+  ['Bash', 'aws cloudcontrol cc --identifier f'],
+  ['PowerShell', 'aws cloudcontrol cc --identifier f'],
 ];
 const ALIAS_ALLOW = [
   ['Bash', 'aws fcsafe --function-name f'],
@@ -180,6 +193,16 @@ for (const [tool, command] of ALIAS_ALLOW) {
     assert.equal(refused, false, 'refused a projected or unrelated command:\n' + why);
   });
 }
+// Review of #63 pass 4, B-K4-1: a refusal names the alias, never its body.
+for (const tool of ['Bash', 'PowerShell']) {
+  test('a refused alias never prints its body [' + tool + ']', () => {
+    const { refused, why } = verdict(tool, 'aws leakfc --function-name f', aliasHome);
+    assert.equal(refused, true, 'permitted a lambda read reached through a CLI alias');
+    assert.ok(why.includes('leakfc'), 'the refusal should name the alias');
+    assert.ok(!why.includes(ALIAS_BODY_MARKER), 'the refusal printed the alias body:\n' + why);
+  });
+}
+
 test('alias control: with no alias file the same alias word is not a lambda read', () => {
   assert.equal(verdict('Bash', 'aws probefc --function-name f').refused, false);
 });

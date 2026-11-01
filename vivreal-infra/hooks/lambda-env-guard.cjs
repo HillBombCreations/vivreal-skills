@@ -610,14 +610,16 @@ function parseQuery(query, prefix) {
 
 /**
  * The AWS CLI aliases of the user running the hook, from `~/.aws/cli/alias` under the home
- * directory Node resolves on any OS (HOME, or USERPROFILE on Windows). `[toplevel]` aliases
- * expand `aws <alias>`, `[command lambda]` aliases expand `aws lambda <alias>`. A missing or
- * unreadable file means no aliases. Read once per hook run.
+ * directory Node resolves on any OS (HOME, or USERPROFILE on Windows), as the CLI itself does.
+ * Every section is kept, generically, keyed by its command path: `[toplevel]` under '' expands
+ * `aws <alias>`, and `[command <service> ...]` under '<service> ...' expands `aws <service> ...
+ * <alias>` (lambda, cloudcontrol or any other). A missing or unreadable file means no aliases.
+ * Read once per hook run.
  */
 let cliAliases = null;
 function loadCliAliases() {
   if (cliAliases) return cliAliases;
-  cliAliases = { toplevel: new Map(), lambda: new Map() };
+  cliAliases = new Map();
   let text = '';
   try {
     text = require('node:fs').readFileSync(require('node:path').join(require('node:os').homedir(), '.aws', 'cli', 'alias'), 'utf8');
@@ -631,7 +633,9 @@ function loadCliAliases() {
     const head = /^\s*\[\s*(.+?)\s*\]\s*$/.exec(line);
     if (head) {
       const name = head[1].toLowerCase().replace(/\s+/g, ' ');
-      section = name === 'toplevel' ? cliAliases.toplevel : name === 'command lambda' ? cliAliases.lambda : null;
+      const path = name === 'toplevel' ? '' : /^command /.test(name) ? name.slice('command '.length) : null;
+      if (path !== null && !cliAliases.has(path)) cliAliases.set(path, new Map());
+      section = path === null ? null : cliAliases.get(path);
       last = null;
     } else if (/^\s/.test(line) && section && last) {
       section.set(last, (section.get(last) + ' ' + line.trim()).trim()); // an indented continuation line
@@ -647,27 +651,33 @@ function loadCliAliases() {
 }
 
 /**
- * The segment with a CLI alias expanded, as { text, shell }, or null when no word is an alias.
- * `shell` is true for a `!` alias, whose text is a shell command of its own.
+ * The segment with a CLI alias expanded, as { name, text, shell }, or null when no word is an
+ * alias. After an `aws` word, the command path is built from the positional words that follow
+ * (global options and their values skipped); the first word that is an alias in the section for
+ * the path so far is expanded. `shell` is true for a `!` alias, a shell command of its own. The
+ * alias TEXT is for judging only and never goes into a message: it can hold anything.
  */
 function expandCliAlias(ws) {
-  const { toplevel, lambda } = loadCliAliases();
-  if (!toplevel.size && !lambda.size) return null;
+  const aliases = loadCliAliases();
+  if (!aliases.size) return null;
   for (let k = 0; k < ws.length; k += 1) {
-    let at = -1;
-    let map = null;
-    if (/^aws(\.exe)?$/i.test(ws[k].value.split(/[\\/]/).pop())) {
-      at = k + 1;
-      while (at < ws.length && /^-/.test(ws[at].value)) at += VALUE_FLAGS.has(ws[at].value.toLowerCase()) ? 2 : 1;
-      map = toplevel;
-    } else if (ws[k].value.toLowerCase() === 'lambda') {
-      at = k + 1;
-      map = lambda;
+    if (!/^aws(\.exe)?$/i.test(ws[k].value.split(/[\\/]/).pop())) continue;
+    const path = [];
+    for (let at = k + 1; at < ws.length; at += 1) {
+      const word = ws[at].value.toLowerCase();
+      if (/^-/.test(word)) {
+        if (VALUE_FLAGS.has(word)) at += 1;
+        continue;
+      }
+      const section = aliases.get(path.join(' '));
+      if (section && section.has(word)) {
+        const value = section.get(word);
+        if (value.startsWith('!')) return { name: ws[at].value, text: value.slice(1), shell: true };
+        return { name: ws[at].value, text: ws.map((w, j) => (j === at ? value : w.raw)).join(' '), shell: false };
+      }
+      path.push(word);
+      if (path.length > 3) break; // service, subcommand and one more level is all the CLI nests
     }
-    if (!map || at >= ws.length || !map.has(ws[at].value.toLowerCase())) continue;
-    const value = map.get(ws[at].value.toLowerCase());
-    if (value.startsWith('!')) return { text: value.slice(1), shell: true };
-    return { text: ws.map((w, j) => (j === at ? value : w.raw)).join(' '), shell: false };
   }
   return null;
 }
@@ -694,6 +704,11 @@ function refusalFor(segment, dialect, depth, isLast = true) {
       if (why) return 'in the command encoded for ' + base + ' -EncodedCommand: ' + why;
     }
     const nested = ws.slice(k + 1).map((w) => w.value).join(' ');
+    // cmd /c expands %NAME% in its command string, an argument this hook cannot see.
+    if (/^cmd(\.exe)?$/i.test(base) && /%[A-Za-z_][A-Za-z0-9_]*%/.test(nested)
+      && tokensOf(nested).some((t) => t === 'lambda' || /^aws(\.exe)?$/.test(t.split('/').pop()))) {
+      return 'cmd expands %VAR% in its command string, which can add a second --query; spell the arguments out.';
+    }
     const why = decideText(nested, depth + 1);
     if (why) return 'in the command string passed to ' + base + ': ' + why;
   }
@@ -704,22 +719,27 @@ function refusalFor(segment, dialect, depth, isLast = true) {
   // is refused, even with a literal --query before it, since a second --query after it wins.
   const namesCli = (w) => /^(aws(\.exe)?|lambda)$/i.test(w.value.split(/[\\/]/).pop())
     || Object.prototype.hasOwnProperty.call(CONFIG_PREFIX, w.value.toLowerCase());
-  if (dialect !== 'bash' && ws.some((w) => w.raw === '--%') && ws.some(namesCli)) {
+  // A program named by an expansion (`& $a --% %X%`) may be the CLI too.
+  const programHidden = (() => {
+    const cmd = ws.find((w) => w.raw !== '&' && !/^[A-Za-z_][A-Za-z0-9_]*=/.test(w.value));
+    return Boolean(cmd) && /[$`]|^@\w/.test(cmd.raw) && !/^'[^']*'$/.test(cmd.raw);
+  })();
+  if (dialect !== 'bash' && ws.some((w) => w.raw === '--%') && (ws.some(namesCli) || programHidden)) {
     return 'PowerShell --% passes the rest of the line verbatim with %VAR% expanded, which this hook cannot see ' +
       '(a second --query among it). Drop --% and spell the arguments out.';
   }
 
   // An AWS CLI alias (~/.aws/cli/alias) can spell a lambda read under another name: judge the
-  // command again with the alias expanded.
+  // command again with the alias expanded. The message names the alias only: its body, and any
+  // reason derived from it, can carry a profile, a key or anything else, so neither is printed.
   const aliased = expandCliAlias(ws);
   if (aliased !== null) {
-    if (aliased.shell) {
-      const why = decideText(aliased.text, depth + 1);
-      return why ? 'in the AWS CLI alias it runs: ' + why : null;
-    }
-    if (depth < MAX_DEPTH) {
-      const why = refusalFor(aliased.text, dialect, depth + 1, isLast);
-      if (why) return 'with its AWS CLI alias expanded (' + aliased.text + '): ' + why;
+    const why = aliased.shell
+      ? decideText(aliased.text, depth + 1)
+      : depth < MAX_DEPTH ? refusalFor(aliased.text, dialect, depth + 1, isLast) : 'aliases nest too deep';
+    if (why) {
+      return 'the AWS CLI alias "' + aliased.name + '" expands to a command this hook refuses. ' +
+        'Run the read it stands for directly, spelled out, with a --query projection.';
     }
   }
 
