@@ -30,6 +30,7 @@ jobs:
           vivreal-workflow/hooks/routing-hooks.test.cjs
           vivreal-workflow/hooks/package-nudge.test.cjs
           scripts/skill-drift.test.mjs
+          vivreal-infra/hooks/lambda-env-guard.test.cjs
       - name: lambda env guard self-test
         run: node vivreal-infra/hooks/lambda-env-guard.cjs --self-test
       - name: claude plugin validate

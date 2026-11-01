@@ -76,21 +76,57 @@ Atlas dashboard shows: per node connections, CPU, memory, disk space, IOPS and q
 query targeting, average read and write times, replication lag, the slow-query count, the
 Performance Advisor suggested-index count, and open Atlas alerts.
 
+**The short way: `npm run check:atlas`.** In a vivreal-hq checkout that is ON `origin/main`
+(check `git -C "$VIVREAL_REPOS/vivreal-hq" status -sb` first), from the repo root, in any shell:
+
 ```bash
-: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
-git -C "$VIVREAL_REPOS/vivreal-hq" fetch origin --quiet
-git -C "$VIVREAL_REPOS/vivreal-hq" cat-file -e origin/main:packages/fleet-ops/atlas-read/atlas-read.js && echo present
-# Run the deployed-line copy, whatever branch the local checkout is parked on (zero dependencies):
-git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:packages/fleet-ops/atlas-read/atlas-read.js | node - --period P5D --granularity PT1H
-#   --period P1D --granularity PT5M   look for a short spike; hourly averages hide CPU peaks
-#   --json                            machine-readable
+npm run check:atlas --workspace packages/fleet-ops                                   # last 5 days, hourly
+npm run check:atlas --workspace packages/fleet-ops -- --period P1D --granularity PT5M # a short spike
+npm run check:atlas --workspace packages/fleet-ops -- --period P7D --slow-by-app      # who runs the slow queries
 ```
 
-It works the same on macOS, Linux and Windows (any POSIX shell the Bash tool gives you). It needs
-node 18 or later, the AWS CLI v2 and curl on PATH, and AWS credentials the CLI already resolves
-(env, `AWS_PROFILE`, SSO) that may read the secret below. If it stops with a message naming a
-missing tool or an unreadable secret, report that message and stop; check `aws sts
-get-caller-identity` first.
+**When the checkout is parked on another branch**, run the deployed-line copy instead. The script
+`require`s its sibling `slow-by-app.js` (vivreal-hq #113), so extract the folder; the old
+`git show ... | node -` pipe now fails with "Cannot find module './slow-by-app'".
+
+```bash
+: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
+hq="$VIVREAL_REPOS/vivreal-hq"
+git -C "$hq" fetch origin --quiet
+git -C "$hq" cat-file -e origin/main:packages/fleet-ops/atlas-read/slow-by-app.js && echo present
+tmp="$(mktemp -d)"
+git -C "$hq" archive -o "$tmp/atlas-read.tar" origin/main packages/fleet-ops/atlas-read
+tar -xf "$tmp/atlas-read.tar" -C "$tmp"
+node "$tmp/packages/fleet-ops/atlas-read/atlas-read.js" --period P5D --granularity PT1H
+#   --period P1D --granularity PT5M   look for a short spike; hourly averages hide CPU peaks
+#   --period P7D --slow-by-app        add the slow query log grouped by caller (below)
+#   --json                            machine-readable
+rm -rf "$tmp"
+```
+
+It works the same on macOS, Linux and Windows. It needs node 18 or later, the AWS CLI v2 and curl
+on PATH (`tar` ships with all three), and AWS credentials the CLI already resolves (env,
+`AWS_PROFILE`, SSO) that may read the secret below. If it stops with a message naming a missing
+tool or an unreadable secret, report that message and stop; check `aws sts get-caller-identity`
+first. If `cat-file` finds no `slow-by-app.js`, the deployed line predates #113: run without
+`--slow-by-app` and say so.
+
+**`--slow-by-app`: who is running the slow queries.** Per node, the slow query log over
+`--period`, grouped by appName (hash-like runs masked), command, namespace, the filter's top-level
+KEY names, the plan summary and the read preference, with a count, largest first (`--json`: each
+node's `slowByApp`). Use it when reads slow down on a node, especially a secondary, to name the
+caller: an Atlas agent, the admin app, a monitor, or a Vivreal service. Report the groups as
+printed. A `TRUNCATED at the 20000-entry cap` header means older entries were not read, so shorten
+`--period`; `unavailable: ...` is a failed read on that node, never zero slow queries.
+
+**Never print, whatever the tool.** No secret or key (the API key, `CLUSTER_URL`, any password),
+no connection string or full cluster hostname (`mongodb+srv://...`, `*.mongodb.net`; name a node
+by its role and the short label the script prints), no environment map (`Environment.Variables`,
+an Amplify `environmentVariables` block, a `.env` file), and no filter value, sample query or raw
+slow-log line. **The owner's Atlas login is never used**: not the browser session, not the UI,
+not their database user. The read-only API key through `atlas-read.js` is your only Atlas
+credential; what it cannot show (for example network bytes), you list as a runbook step for the
+owner.
 
 - **The credential is an Atlas project API key, not a database user**, in Secrets Manager
   `vivreal/prod/atlas-ops-read` (us-east-1). Roles: Project Read Only and Project Observability
