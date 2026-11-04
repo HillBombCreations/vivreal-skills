@@ -69,5 +69,7 @@ Not covered by any route guard: WebSocket frames.
 ## 6. Direct API calls
 
 A direct call to Secure, CMS or Main (a proof, a read-back, a fixture read) carries the header
-`X-App-Source: vivreal`, the same one the portal sends, so the backend's logs and rate limits
-treat it as the app. Never send a deliberately malformed request to production.
+`X-App-Source: vivreal`, the same one the portal sends. Without it Secure answers "Missing or
+unrecognised X-App-Source header" and files it in Sentry, so a walk's own probes show up as new
+issues. Never send a deliberately malformed request to production: a walk's malformed probe has
+reopened a resolved issue. On a production walk, also block the Sentry ingest host.

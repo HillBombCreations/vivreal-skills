@@ -135,6 +135,11 @@ Stack state and artifact prove the code arrived. They do not prove it works. For
 runtime effect, read the log streams for the event the change produces (see `vivreal-lambda-logs`),
 or exercise it, and say which of the two you did.
 
+Send `X-App-Source: vivreal` on every direct Secure, CMS or Main call (curl, fetch, node), as
+the portal does: without it Secure refuses the request and files the refusal in Sentry as a new
+issue, so a proof turns into an error report. Never send a deliberately malformed request to
+production; a malformed probe has reopened a resolved issue.
+
 ## Release-train traps that look like deploy failures
 
 - **`promote.yml` moves `stable` before `lambda_api.yml` runs**, so for the length of a deploy, and

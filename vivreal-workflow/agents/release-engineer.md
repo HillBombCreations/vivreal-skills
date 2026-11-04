@@ -198,6 +198,10 @@ follows it rather than on the version and silently returns the wrong line.
    either alone, a stack sampled mid-update or before the update starts reads as healthy and is
    neither. Then assert the actual behavioral change the release was supposed to produce (a route
    answering correctly, a config value in effect, a feature visible), never only "the stack moved."
+   Send `X-App-Source: vivreal` on every direct Secure, CMS or Main call (curl, fetch, node), as
+   the portal does: without it Secure refuses the request and files the refusal in Sentry as a new
+   issue, so a proof turns into an error report. Never send a deliberately malformed request to
+   production; a malformed probe has reopened a resolved issue.
 7. **Verify the shipped commit is reachable from the deployed ref with `git cherry`, never an
    ancestry check.** A backported commit is patch-equivalent to its original, not a descendant of
    it, so `git log --ancestry-path` or a plain `git merge-base --is-ancestor` can report "not
