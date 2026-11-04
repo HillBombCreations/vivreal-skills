@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Resolves the Atlas CLUSTER_URL for vivreal-db-explorer with no setup beyond what every Vivreal
- * machine already has (`VIVREAL_REPOS` and a vivreal-hq clone under it).
+ * Resolves the Atlas CLUSTER_URL for vivreal-db-explorer with no setup beyond a vivreal-hq clone
+ * beside the session's checkout. The clone root comes from `repos-root.cjs`: the optional
+ * `VIVREAL_REPOS` override, else derived from CLAUDE_PROJECT_DIR (which Claude Code gives an MCP
+ * server) and the current folder.
  *
  * Used two ways:
  *   - required by `launch-mongo-mcp.cjs`, which starts the MCP server connected;
@@ -12,7 +14,7 @@
  *
  * WHICH SECRET. This repository is PUBLIC and never names it. In order:
  *   1. `VIVREAL_DB_SECRET_ID`, an optional override. Never required.
- *   2. Key `dbSecretId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, the private
+ *   2. Key `dbSecretId` of `<clone root>/vivreal-hq/.vivreal/private-names.json`, the private
  *      names file vivreal-hq carries (names only, never values). Read with fs, no shell.
  *   3. Otherwise an error that names exactly what is missing.
  * (`MDB_MCP_CONNECTION_STRING`, when set, wins over all of this; the launcher checks it first.)
@@ -27,6 +29,7 @@
 const { spawnSync } = require('child_process');
 const { existsSync, readFileSync, statSync } = require('fs');
 const path = require('path');
+const { resolveReposRoot } = require('./repos-root.cjs');
 
 const PRIVATE_NAMES = ['.vivreal', 'private-names.json'];
 
@@ -42,28 +45,28 @@ const isDir = (p) => {
   }
 };
 
-/** The secret id and where it came from, or an error naming exactly what is missing. */
-function resolveSecretId(env) {
+/**
+ * The secret id and where it came from, or an error naming exactly what is missing. `starts` are
+ * the folders the clone root is derived from when VIVREAL_REPOS is unset or rejected.
+ */
+function resolveSecretId(env, starts = [env.CLAUDE_PROJECT_DIR, process.cwd()]) {
   let id;
   let source;
   if (env.VIVREAL_DB_SECRET_ID) {
     id = env.VIVREAL_DB_SECRET_ID;
     source = 'the VIVREAL_DB_SECRET_ID override';
   } else {
-    if (!env.VIVREAL_REPOS) {
-      return {
-        error:
-          'VIVREAL_REPOS is not set, so the private names file cannot be found. Set VIVREAL_REPOS to the ' +
-          'folder that holds your Vivreal clones (SETUP.md, "Environment").',
-      };
+    const resolved = resolveReposRoot({ env, starts });
+    if (!resolved.root) {
+      return { error: `no Vivreal clone root: ${resolved.reason} (SETUP.md).` };
     }
-    const hq = path.join(env.VIVREAL_REPOS, 'vivreal-hq');
+    const hq = path.join(resolved.root, 'vivreal-hq');
     if (!isDir(hq)) {
-      return { error: 'vivreal-hq not found under VIVREAL_REPOS. Clone it there (SETUP.md).' };
+      return { error: `vivreal-hq not found under the clone root (${resolved.source}). Clone it there (SETUP.md).` };
     }
     const file = path.join(hq, ...PRIVATE_NAMES);
     if (!existsSync(file)) {
-      return { error: 'vivreal-hq/.vivreal/private-names.json not found under VIVREAL_REPOS. Pull vivreal-hq main.' };
+      return { error: `vivreal-hq/.vivreal/private-names.json not found under the clone root (${resolved.source}). Pull vivreal-hq main.` };
     }
     let names;
     try {

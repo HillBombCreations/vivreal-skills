@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { resolveReposRoot } = require('./repos-root.cjs');
 
 const ROUTES_PATH = path.join(__dirname, '..', 'routing', 'routes.json');
 const TEMPLATE_PATH = path.join(__dirname, '..', 'references', 'dispatch-template.md');
@@ -27,13 +28,14 @@ function originOf(dir) {
 
 /**
  * The repository name when `cwd` is a Vivreal checkout: its git origin is HillBombCreations/*,
- * or it sits under $VIVREAL_REPOS. A worktree under _wt/ resolves by its origin. Else null.
+ * or it sits under the clone root ($VIVREAL_REPOS when set, else derived by repos-root.cjs from
+ * `cwd` and CLAUDE_PROJECT_DIR). A worktree under _wt/ resolves by its origin. Else null.
  */
 function vivrealRepoOf(cwd, env = process.env) {
   const origin = originOf(cwd);
   const m = origin.match(/HillBombCreations\/([^/]+?)(\.git)?$/i);
   if (m) return m[1];
-  const root = slash(env.VIVREAL_REPOS);
+  const root = slash(env.VIVREAL_REPOS || resolveReposRoot({ env, starts: [cwd, env.CLAUDE_PROJECT_DIR] }).root);
   const here = slash(cwd);
   if (root && here.toLowerCase().startsWith(root.toLowerCase() + '/')) {
     const first = here.slice(root.length + 1).split('/')[0];

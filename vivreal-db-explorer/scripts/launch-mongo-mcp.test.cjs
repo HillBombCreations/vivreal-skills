@@ -62,6 +62,8 @@ function repos({ hq = true, names = { dbSecretId: FILE_ID }, raw } = {}) {
   const root = join(dir, `repos-${runs}`);
   mkdirSync(root);
   if (hq) {
+    // vivreal-hq/.git marks the folder as a clone root (repos-root.cjs).
+    mkdirSync(join(root, 'vivreal-hq', '.git'), { recursive: true });
     const dotdir = join(root, 'vivreal-hq', '.vivreal');
     mkdirSync(dotdir, { recursive: true });
     if (raw !== undefined) writeFileSync(join(dotdir, 'private-names.json'), raw);
@@ -76,7 +78,7 @@ function run(script, extraEnv) {
   const npxLog = join(dir, `npx-${runs}.json`);
   const env = { ...process.env, FAKE_AWS_LOG: awsLog, FAKE_NPX_LOG: npxLog };
   // The machine running the tests may have any of these set; every case states its own.
-  for (const k of ['MDB_MCP_CONNECTION_STRING', 'VIVREAL_DB_SECRET_ID', 'VIVREAL_REPOS', 'FAKE_AWS_FAIL', 'FAKE_AWS_OUT']) {
+  for (const k of ['MDB_MCP_CONNECTION_STRING', 'VIVREAL_DB_SECRET_ID', 'VIVREAL_REPOS', 'CLAUDE_PROJECT_DIR', 'FAKE_AWS_FAIL', 'FAKE_AWS_OUT']) {
     delete env[k];
   }
   Object.assign(env, extraEnv);
@@ -168,20 +170,20 @@ test('(d) REFUSE: VIVREAL_REPOS unset never reaches aws, starts unconnected, and
   const r = launch({});
   assert.deepEqual(r.awsCalls, [], 'aws was called with nothing configured');
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, /NOT CONNECTED: VIVREAL_REPOS is not set/);
+  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is not set, and no folder holding a vivreal-hq clone was found/);
 });
 
-test('(d) REFUSE: no vivreal-hq under VIVREAL_REPOS never reaches aws, and names it', () => {
+test('(d) REFUSE: a VIVREAL_REPOS with no vivreal-hq is rejected, never reaches aws, and names it', () => {
   const r = launch({ VIVREAL_REPOS: repos({ hq: false }) });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, /NOT CONNECTED: vivreal-hq not found under VIVREAL_REPOS/);
+  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is set but is not an absolute folder holding a vivreal-hq clone/);
 });
 
 test('(d) REFUSE: vivreal-hq without the private names file never reaches aws, and names it', () => {
   const r = launch({ VIVREAL_REPOS: repos({ names: null }) });
   assert.deepEqual(r.awsCalls, []);
-  assert.match(r.stderr, /NOT CONNECTED: vivreal-hq\/\.vivreal\/private-names\.json not found under VIVREAL_REPOS/);
+  assert.match(r.stderr, /NOT CONNECTED: vivreal-hq\/\.vivreal\/private-names\.json not found under the clone root/);
 });
 
 test('ALLOW: an aws failure starts the server unconnected rather than not at all', () => {
@@ -233,7 +235,7 @@ test('fallback REFUSE: with nothing configured it prints no URL and names what i
   assert.notEqual(r.status, 0);
   assert.equal(r.stdout, '');
   assert.deepEqual(r.awsCalls, []);
-  assert.match(r.stderr, /cluster-url: NOT CONNECTED: VIVREAL_REPOS is not set/);
+  assert.match(r.stderr, /cluster-url: NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is not set/);
 });
 
 test('fallback REFUSE: a secret that is not JSON or has no CLUSTER_URL prints no URL and never echoes it', () => {
@@ -244,4 +246,21 @@ test('fallback REFUSE: a secret that is not JSON or has no CLUSTER_URL prints no
     assert.match(r.stderr, /the database secret (is not JSON|has no CLUSTER_URL key)/);
     assert.doesNotMatch(r.stderr, /SECRETVALUE/);
   }
+});
+
+test('(e) ALLOW: with VIVREAL_REPOS unset, the root is derived from CLAUDE_PROJECT_DIR and the file decides', () => {
+  const root = repos();
+  const project = join(root, 'VR_CMS_API', 'src');
+  mkdirSync(project, { recursive: true });
+  const r = launch({ CLAUDE_PROJECT_DIR: project });
+  assert.deepEqual(r.awsCalls, [awsArgs(FILE_ID)]);
+  assert.equal(r.server && r.server.conn, CONNECTED);
+});
+
+test('(e) REFUSE: a CLAUDE_PROJECT_DIR with no clone root above it never reaches aws, and names it', () => {
+  const project = join(dir, `no-root-${runs + 1}`);
+  mkdirSync(project, { recursive: true });
+  const r = launch({ CLAUDE_PROJECT_DIR: project });
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is not set, and no folder holding a vivreal-hq clone was found from /);
 });

@@ -34,7 +34,8 @@ Query Vivreal's multi-tenant MongoDB with built-in awareness of the database rou
 
 The MCP server is normally **already connected**: the `vivreal-db-explorer` plugin launches it
 through `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets
-Manager at startup, with no setup beyond `VIVREAL_REPOS`. The secret is named, in order, by the optional
+Manager at startup, with no setup beyond a vivreal-hq clone beside the session's checkout (the clone
+root is derived; `VIVREAL_REPOS` is an optional override). The secret is named, in order, by the optional
 `VIVREAL_DB_SECRET_ID` override, else by key `dbSecretId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
 So your first query usually just works, try it first.
 
@@ -50,7 +51,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/cluster-url.cjs"
 Run it exactly as written: this command's `allowed-tools` pre-approves that one command verbatim and
 no other shell command, so any variation asks first. It resolves the secret the same way the launcher
 does and prints only `CLUSTER_URL`. If it fails, its stderr starts with `NOT CONNECTED:` and names
-exactly what is missing (for example "VIVREAL_REPOS is not set"); report that line.
+exactly what is missing (for example "no Vivreal clone root"); report that line.
 
 Pass that value to `mcp__mongodb__connect`, then re-run the query. The `vivreal-db` knowledge skill
 (vivreal-knowledge plugin) carries the full sourcing detail and a no-MCP driver fallback.

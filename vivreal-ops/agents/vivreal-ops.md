@@ -91,7 +91,8 @@ npm run check:atlas --workspace packages/fleet-ops -- --period P7D --slow-by-app
 `git show ... | node -` pipe now fails with "Cannot find module './slow-by-app'".
 
 ```bash
-: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
+: "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
+test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
 hq="$VIVREAL_REPOS/vivreal-hq"
 git -C "$hq" fetch origin --quiet
 git -C "$hq" cat-file -e origin/main:packages/fleet-ops/atlas-read/slow-by-app.js && echo present

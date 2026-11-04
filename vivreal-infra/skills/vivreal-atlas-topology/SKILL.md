@@ -66,7 +66,8 @@ Read MongoDB's `atlas-limits` page before quoting a number; these were read ther
 **The script.** vivreal-hq `packages/fleet-ops/atlas-read/atlas-read.js` (zero dependencies; node 18+, AWS CLI v2 and curl on PATH; macOS, Linux and Windows alike). It reads the secret in process and hands the key to curl on stdin. Its own docs: the `## atlas-read` section of vivreal-hq `packages/fleet-ops/CLAUDE.md`. Run the deployed-line copy so a parked checkout cannot matter:
 
 ```bash
-: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
+: "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
+test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
 hq="$VIVREAL_REPOS/vivreal-hq"
 git -C "$hq" fetch origin --quiet
 # atlas-read.js requires its sibling slow-by-app.js (vivreal-hq #113), so extract the whole

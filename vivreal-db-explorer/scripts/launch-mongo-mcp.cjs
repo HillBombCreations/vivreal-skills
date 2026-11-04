@@ -9,11 +9,12 @@
  * Manager (the Main API service secret, key `CLUSTER_URL`), so the server is already
  * connected before any agent runs a query. The agent never has to ask.
  *
- * Resolution order, with no setup beyond `VIVREAL_REPOS` and a vivreal-hq clone:
+ * Resolution order, with no setup beyond a vivreal-hq clone (the clone root is derived by
+ * `repos-root.cjs`; `VIVREAL_REPOS` is an optional override):
  *   1. MDB_MCP_CONNECTION_STRING already in the environment  → use verbatim.
  *   2. Otherwise `cluster-url.cjs` reads CLUSTER_URL from the secret named by the optional
  *      VIVREAL_DB_SECRET_ID override, or by key `dbSecretId` of
- *      `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`. This repository is PUBLIC and
+ *      `<clone root>/vivreal-hq/.vivreal/private-names.json`. This repository is PUBLIC and
  *      never names the secret itself.
  *   3. Neither available → start UNCONNECTED and say on stderr exactly what is missing.
  *      The /db-query and /db-schema commands carry the self-service fallback: run

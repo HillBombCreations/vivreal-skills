@@ -9,15 +9,21 @@ description: Vivreal Portal shared engineering standards, the non-negotiable con
 
 ## Path resolution (read FIRST)
 ### `${VIVREAL_REPOS}`: the folder that holds every Vivreal clone
-Every co-owner machine sets `VIVREAL_REPOS`, with forward slashes (for example `C:/repos`), as a user environment variable AND in the `env` block of `~/.claude/settings.json`. Every Vivreal repository is cloned directly under it.
-1. If `VIVREAL_REPOS` is set, use it.
-2. If it is unset, use the parent of the current repository ONLY when that parent holds both `Vivreal_Portal_Mobile/CLAUDE.md` and `vivreal-hq/CLAUDE.md`. A worktree under `_wt/` fails this check by design.
-3. Otherwise STOP and report "VIVREAL_REPOS is unset and the parent folder is not the clone root". Never guess a path and never write a literal drive path into a command.
-Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
+Every Vivreal repository is cloned side by side directly under one folder, which can be anywhere on any machine. Nobody configures it: it is derived.
+1. `VIVREAL_REPOS`, when set, is an OPTIONAL override, used only when it is absolute and holds `vivreal-hq/.git`.
+2. Otherwise derive it from the checkout you are in: `git rev-parse --git-common-dir` names the MAIN checkout's `.git`, even from a worktree under `_wt/`, and the folder above that checkout is the root when it holds `vivreal-hq/.git`. From a folder that is not a checkout (`_ops/`), the root is the first ancestor holding `vivreal-hq/.git`.
+3. Otherwise STOP and report "no Vivreal clone root found". Never guess a path and never write a literal drive or home path into a command.
+
+Once the vivreal-workflow plugin is loaded (on a fresh machine, from the second session on), its SessionStart hook exports the derived value to every Bash command of the session, subagents included (measured 2026-11-04), so `$VIVREAL_REPOS` just works in Bash. The PowerShell tool never receives it, so do repo work in Bash. Hooks and the db-explorer MCP server derive it themselves (`repos-root.cjs`). In a first session, or any shell without it, the two lines below derive it the same way:
 ```bash
-: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
-test -f "$VIVREAL_REPOS/Vivreal_Portal_Mobile/CLAUDE.md" || { echo "VIVREAL_REPOS does not hold the clones"; exit 1; }
+: "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
+test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
 ```
+Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
+
+- **A sibling repo you need is missing:** clone it, `gh repo clone HillBombCreations/<repo> "$VIVREAL_REPOS/<repo>"`, rather than reporting a hole.
+- **A repo has `.env.example` and no `.env.local`:** run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/fetch-env-local.js" <key> "$VIVREAL_REPOS/<repo>"` (the key is the repo's `envLocal` in `onboarding/repos.json`). It prints names, never values, and lists the personal keys still to fill.
+- **`npm` in Bash needs no token setup:** the same hook gives `npm` and `npx` a `NODE_AUTH_TOKEN` read from `gh auth token` at the moment they run, unless you set one yourself. It is never written to disk or printed.
 
 ### Cross-repo docs: the hq dev docs
 Cross-repo flows, decisions, dependency maps, the AWS estate and operations are described in the vivreal-hq dev docs, `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/README.md` (a symptom table, then use cases and references). Each repo's `CLAUDE.md` owns that repo's internals; the dev docs own what crosses repos (owners, 2026-11-04). Two hq tools, run from `${VIVREAL_REPOS}/vivreal-hq`, find the right page before you change code: `npm run docs:route -- "<symptom or component>"` names the document to open, and `npm run docs:impact -- <repo>:<path>` lists the documents, maps and pinning tests that cover a file you are about to change. If either script is missing on that checkout, open the README's symptom table by hand. **The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04, a banner on each page points here): never cite it as current and never edit it.

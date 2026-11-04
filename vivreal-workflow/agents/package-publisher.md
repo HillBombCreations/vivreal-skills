@@ -204,7 +204,7 @@ a visual judgement of a built template against its exemplar.)
 
 ## Registry auth and consumers
 
-**Registry auth.** Every consumer's tracked `.npmrc` reads `${NODE_AUTH_TOKEN}`. That variable holds a classic token with `read:packages` only (owner, 2026-10-28), never `gh auth token`, which also carries `repo` and `workflow`. Publishing needs `write:packages`: a separate token, set only for the publish command, only on the machine that publishes. A 401 means the token is missing or under-scoped. Never copy a token out of a file and never print one.
+**Registry auth.** Every consumer's tracked `.npmrc` reads `${NODE_AUTH_TOKEN}`. In an agent's Bash, `npm` and `npx` are shell functions (the vivreal-workflow SessionStart hook) that fill it from `gh auth token` at the moment npm runs, unless a token is already set; it is never written to disk and never printed (zero-config setup, 2026-11-04, which replaces the 2026-10-28 read-only classic token as the default). Publishing needs `write:packages`: set it only for the publish command, only on the machine that publishes. A 401 means the token is missing or under-scoped. Never copy a token out of a file and never print one.
 
 **Consumers come from GitHub, not from local clones.** List them with `gh search code '"@hillbombcreations/<pkg>"' --owner HillBombCreations --filename package.json --json repository -q '.[].repository.nameWithOwner' | sort -u`, then assert the count equals the number of repositories you hand to `pin-sweep`'s `sweep()` (`packages/fleet-ops/pin-sweep/src/sources.js` takes the list as its argument; it holds no list of its own). A mismatch is a STOP, never "no skew". Confirm the search can hit at all first: the same query for `@hillbombcreations/schemas` must list `VR_Main_API`.
 

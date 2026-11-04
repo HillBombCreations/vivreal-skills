@@ -27,7 +27,8 @@ fs.mkdirSync(portal, { recursive: true });
 const cms = path.join(root, 'VR_CMS_API');
 fs.mkdirSync(cms, { recursive: true });
 const hq = path.join(root, 'vivreal-hq');
-fs.mkdirSync(hq, { recursive: true });
+// A .git folder marks the scratch root as a clone root, so the VIVREAL_REPOS override is accepted.
+fs.mkdirSync(path.join(hq, '.git'), { recursive: true });
 const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'not-vivreal-'));
 test.after(() => {
   fs.rmSync(root, { recursive: true, force: true });
@@ -238,7 +239,7 @@ test('session hook prints nothing outside a Vivreal checkout (control)', () => {
 });
 
 test('session hook prints the portal routes inside the portal', () => {
-  const r = run(SESSION, { cwd: portal }, { VIVREAL_REPOS: root, NODE_AUTH_TOKEN: '' });
+  const r = run(SESSION, { cwd: portal }, { VIVREAL_REPOS: root, NODE_AUTH_TOKEN: '', CLAUDE_ENV_FILE: '' });
   assert.equal(r.status, 0);
   const lines = r.stdout.trim().split('\n');
   assert.ok(lines.length > 5 && lines.length <= 40, `printed ${lines.length} lines`);
@@ -246,6 +247,140 @@ test('session hook prints the portal routes inside the portal', () => {
   assert.match(r.stdout, /portal code: vivreal-principal:portal-coder \(say the mode/);
   assert.match(r.stdout, /Dispatch template: .*dispatch-template\.md/);
   assert.match(r.stdout, /Owner rules: \$VIVREAL_REPOS\/vivreal-hq\/docs\/standards\/process\.md/);
-  assert.match(r.stdout, /Doctor: VIVREAL_REPOS set, NODE_AUTH_TOKEN MISSING/);
+  assert.match(r.stdout, /Doctor: VIVREAL_REPOS set \(override\), NODE_AUTH_TOKEN MISSING/);
   assert.doesNotMatch(r.stdout, /tutorial-maker/, 'an hq-only route leaked into the portal block');
+});
+
+// ---------------------------------------------------------------------------------------------
+// Zero configuration: repos-root.cjs derives the clone root, and the session hook exports it to
+// Bash through CLAUDE_ENV_FILE only when no override is set (universal-setup research 2.1, 2.2).
+
+// Required lazily, inside each test, so this file still loads at a base commit without it.
+const resolveReposRoot = (...args) => require('./repos-root.cjs').resolveReposRoot(...args);
+// The exact shell text the session hook must append, written out here rather than imported, so the
+// test checks what lands in the file, not what the module declares.
+const NPM_FUNCTIONS = [
+  'npm() { NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-$(gh auth token 2>/dev/null)}" command npm "$@"; }',
+  'npx() { NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-$(gh auth token 2>/dev/null)}" command npx "$@"; }',
+];
+
+function git(cwd, ...args) {
+  const res = spawnSync('git', ['-c', 'user.name=probe', '-c', 'user.email=probe@example.invalid', '-c', 'init.defaultBranch=main', ...args], {
+    cwd,
+    encoding: 'utf8',
+  });
+  assert.equal(res.status, 0, `git ${args.join(' ')} failed: ${res.stderr}`);
+  return res.stdout.trim();
+}
+
+const real = (p) => fs.realpathSync.native(p);
+
+// A clone root with hq marked as a clone, one real git repo with a commit, a worktree of it under
+// _wt/, an _ops/ folder that is not a repo, and a subfolder inside the repo.
+const tree = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-clone-root-'));
+fs.mkdirSync(path.join(tree, 'vivreal-hq', '.git'), { recursive: true });
+const repoDir = path.join(tree, 'VR_CMS_API');
+fs.mkdirSync(path.join(repoDir, 'src', 'deep'), { recursive: true });
+git(repoDir, 'init', '-q');
+git(repoDir, 'commit', '-q', '--allow-empty', '-m', 'probe');
+const wtDir = path.join(tree, '_wt', 'cms-probe');
+git(repoDir, 'worktree', 'add', '-q', '--detach', wtDir);
+const opsDir = path.join(tree, '_ops', 'one-shot');
+fs.mkdirSync(opsDir, { recursive: true });
+// A folder with no clone root anywhere above it.
+const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-no-root-'));
+test.after(() => {
+  fs.rmSync(tree, { recursive: true, force: true });
+  fs.rmSync(outside, { recursive: true, force: true });
+});
+
+const noOverride = () => {
+  const env = { ...process.env };
+  delete env.VIVREAL_REPOS;
+  return env;
+};
+
+test('ALLOW: the clone root is derived from a main checkout, a subfolder, a _wt worktree and a non-git _ops folder', () => {
+  for (const start of [repoDir, path.join(repoDir, 'src', 'deep'), wtDir, opsDir]) {
+    const r = resolveReposRoot({ env: noOverride(), starts: [start] });
+    assert.ok(r.root, `no root from ${start}: ${r.reason}`);
+    assert.equal(real(r.root), real(tree), `wrong root from ${start}`);
+    assert.match(r.source, /^derived from /);
+    assert.doesNotMatch(r.root, /\\/, 'the root must use forward slashes');
+  }
+});
+
+test('REFUSE: no clone root above the start gives null and a reason, never a guess', () => {
+  const r = resolveReposRoot({ env: noOverride(), starts: [outside] });
+  assert.equal(r.root, null);
+  assert.match(r.reason, /VIVREAL_REPOS is not set, and no folder holding a vivreal-hq clone was found/);
+});
+
+test('ALLOW: a valid VIVREAL_REPOS override wins over derivation', () => {
+  const r = resolveReposRoot({ env: { ...noOverride(), VIVREAL_REPOS: tree }, starts: [outside] });
+  assert.equal(real(r.root), real(tree));
+  assert.equal(r.source, 'VIVREAL_REPOS');
+});
+
+test('REFUSE: an override that holds no vivreal-hq clone, or is relative, is rejected and derivation runs', () => {
+  for (const bad of [outside, 'repos']) {
+    const r = resolveReposRoot({ env: { ...noOverride(), VIVREAL_REPOS: bad }, starts: [repoDir] });
+    assert.match(r.rejected, /VIVREAL_REPOS is set but is not an absolute folder holding a vivreal-hq clone/);
+    assert.equal(real(r.root), real(tree), `derivation did not run for override ${bad}`);
+  }
+});
+
+function runSession(cwd, overrides) {
+  const envFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vr-envfile-')), 'env.sh');
+  fs.writeFileSync(envFile, '');
+  const env = noOverride();
+  delete env.NODE_AUTH_TOKEN;
+  delete env.CLAUDE_PROJECT_DIR;
+  Object.assign(env, { CLAUDE_ENV_FILE: envFile }, overrides);
+  const res = spawnSync(process.execPath, [SESSION], { input: JSON.stringify({ cwd }), encoding: 'utf8', env });
+  const lines = fs.readFileSync(envFile, 'utf8').split('\n').filter(Boolean);
+  fs.rmSync(path.dirname(envFile), { recursive: true, force: true });
+  return { status: res.status, stdout: res.stdout, lines };
+}
+
+test('session hook with no overrides appends exactly the derived export and the two npm functions', () => {
+  const r = runSession(repoDir, {});
+  assert.equal(r.status, 0);
+  assert.equal(r.lines.length, 3, `appended ${JSON.stringify(r.lines)}`);
+  const m = r.lines[0].match(/^export VIVREAL_REPOS='([^']+)'$/);
+  assert.ok(m, `first line is not the export: ${r.lines[0]}`);
+  assert.equal(real(m[1]), real(tree));
+  assert.deepEqual(r.lines.slice(1), NPM_FUNCTIONS);
+  assert.match(r.stdout, /Vivreal routing for VR_CMS_API/);
+  assert.match(r.stdout, /Doctor: VIVREAL_REPOS derived \(derived from .*\), exported to Bash, NODE_AUTH_TOKEN from gh auth token, per npm call in Bash/);
+});
+
+test('session hook: a set VIVREAL_REPOS suppresses the export, a set NODE_AUTH_TOKEN suppresses the functions', () => {
+  const both = runSession(repoDir, { VIVREAL_REPOS: tree, NODE_AUTH_TOKEN: 'set-by-test' });
+  assert.deepEqual(both.lines, [], `appended ${JSON.stringify(both.lines)}`);
+  assert.match(both.stdout, /Doctor: VIVREAL_REPOS set \(override\), NODE_AUTH_TOKEN set \(override\)/);
+  const reposOnly = runSession(repoDir, { VIVREAL_REPOS: tree });
+  assert.deepEqual(reposOnly.lines, NPM_FUNCTIONS);
+  assert.ok(!reposOnly.lines.some((l) => l.startsWith('export VIVREAL_REPOS')), 'an override was replaced');
+});
+
+test('session hook outside any Vivreal checkout writes nothing to CLAUDE_ENV_FILE (control)', () => {
+  const r = runSession(outside, {});
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout, '');
+  assert.deepEqual(r.lines, []);
+});
+
+test('the npm functions read the token at call time and never print it', () => {
+  for (const fn of NPM_FUNCTIONS) {
+    assert.match(fn, /^np[mx]\(\) \{ NODE_AUTH_TOKEN="\$\{NODE_AUTH_TOKEN:-\$\(gh auth token 2>\/dev\/null\)\}" command np[mx] "\$@"; \}$/);
+    assert.doesNotMatch(fn, /echo|printf/);
+  }
+});
+
+test('repos-root.cjs copies in vivreal-workflow and vivreal-db-explorer are byte-identical', () => {
+  const here = fs.readFileSync(path.join(__dirname, 'repos-root.cjs'));
+  const there = fs.readFileSync(path.join(__dirname, '..', '..', 'vivreal-db-explorer', 'scripts', 'repos-root.cjs'));
+  assert.ok(here.length > 0);
+  assert.ok(here.equals(there), 'the two repos-root.cjs copies differ; copy the workflow one over the other');
 });
