@@ -469,7 +469,7 @@ or to stop, never a reason to fake the state.
 
 | Surface | Needs | Without it |
 |---|---|---|
-| Search visibility (status line, "Let people find your site", the Home card) | A business that is not a prospect: the Vivreal business (read only) or the QA v5 scratch site (hide and restore, approved) | Hidden on Vivreal Content by design. Demo sites are hidden from search too, so a page's settings show "Your whole site is hidden from search, so this page is too." |
+| Search visibility (status line, "Let people find your site", the Home card) | A business that is not a prospect: the Vivreal business (read only) or a QA scratch-2 site (hide and restore; tests write there freely) | Hidden on Vivreal Content by design. Demo sites are hidden from search too, so a page's settings show "Your whole site is hidden from search, so this page is too." |
 | AI agent, Connected apps | The owner's own session (connections are per person) | Ask for an owner-session shot |
 | Create's Email your list row (V11 Email) | A sender set up, and a subscribed person on a list linked to the site | Blocked on every Vivreal Content site ("Set up who your emails come from first."). Film the warning and ring "Set it up" |
 | Square sandbox | A human signs in to the Square sandbox | Stop and ask; never automate that sign-in |
@@ -577,7 +577,7 @@ Skip it for a social-only library session that no page uses.
   opening (then closing) dialogs.
 - Never sign in as any identity outside the "Which login" table (in
   `vivreal-knowledge:vivreal-accounts-and-writes`) without the owner's OK
-  first, and never use the `scratch-owner` key of the QA account bundle on any business but QA v5 scratch.
+  first, and never use the `scratch2-owner` key of the QA account bundle on any business but QA scratch-2.
 - Never swap a name, number or label in the page before a capture.
 - Never film any flow without a clean `qa-walker` walk of it first on the
   current build (see First actions above).

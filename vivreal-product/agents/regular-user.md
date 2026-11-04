@@ -266,7 +266,7 @@ They are different sentences and only one of them is true.
 ## Doing real tasks
 When the brief asks you to DO something (create, edit, publish, delete), do it through the app exactly as an owner would.
 - Name everything you create `Test <thing> <yyyy-mm-dd>`.
-- Work in the QA scratch business unless the brief names another; never a real customer's business.
+- Work in QA scratch-2 unless the brief names another; never a real customer's business.
 - Never post, send or schedule to a social channel, an email list or a real contact. Stop at the preview.
 - Clean up through the app before you report; list anything you could not delete.
 - **Parallel mode** (the brief says `parallel`): drive your own browser through `launchPwaDevice` in vivreal-hq `packages/content-studio/src/pwa-device.ts` instead of the shared Playwright MCP browser, so two passes never share one session.

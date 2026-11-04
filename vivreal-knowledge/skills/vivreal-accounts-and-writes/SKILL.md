@@ -1,6 +1,6 @@
 ---
 name: vivreal-accounts-and-writes
-description: 'Use before filming, walking or capturing anything in the Vivreal portal or on vivreal.io, and before any write a capture or walk makes. Carries which login to use for which business (the demo account, the QA scratch owner, the owner session), the eight-step owner-approved write protocol (named approval, snapshot, write through the UI, fresh-process read-back, restore, manifest entry), the never-list (Post, Publish, Schedule, Connect and the rest), and the rules for stills that fill vivreal.io marketing slots (pair by what the slot says, no demo site has its own web address, mask comped plan figures). Shared by footage-recorder, tutorial-maker, help-page-producer, qa-walker and marketing-auditor. Triggers on: which login, demo account, scratch owner, switch business, owner-approved write, write protocol, snapshot and restore, mutations, marketing still, screenshot swap, vivreal.io slot, walk harness, write guard, POST allow list, PRO badge.'
+description: 'Use before filming, walking or capturing anything in the Vivreal portal or on vivreal.io, and before any write a capture or walk makes. Carries which login to use for which business (the demo account, the QA scratch owner, the owner session), the eight-step owner-approved write protocol (named approval, snapshot, write through the UI, fresh-process read-back, restore, manifest entry), the never-list (Post, Publish, Schedule, Connect and the rest), and the rules for stills that fill vivreal.io marketing slots (pair by what the slot says, no demo site has its own web address, mask comped plan figures). Shared by footage-recorder, tutorial-maker, help-page-producer, qa-walker and marketing-auditor. Triggers on: which login, demo account, QA scratch-2, test account, switch business, owner-approved write, write protocol, snapshot and restore, mutations, marketing still, screenshot swap, vivreal.io slot, walk harness, write guard, POST allow list, PRO badge.'
 ---
 
 # Accounts and owner-approved writes
@@ -14,16 +14,18 @@ owner authority (2026-10-04); nothing else schedules.
 
 | Identity | How | Use it for |
 |---|---|---|
-| The demo account | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every shoot.** It reaches the Vivreal Content business and the Vivreal business. Its display name is a business name, so a "Signed in as" line showing it is expected: it is the account's name, not a person, so never caption it as one |
-| Key `scratch-owner` of the QA account bundle in Secrets Manager (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`) | Secrets Manager, read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)["scratch-owner"]`, or the e2e harness resolver for that key); never `--output text` on the bundle, which would print all four QA logins; never printed, logged, passed on a command line or written to a file | **The QA v5 scratch business only** (owner, 2026-10-14), for example a site that has to be hidden from search. `agent-walk-user` cannot reach that business. Delete any saved session state file it produced at the end of the run |
+| The demo account (the Vivreal Content demo business's agent sign-in) | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every read-only walk and every shoot.** A write there needs the owner's go, and its social channels are REAL: never Post, Schedule or Reply. It reaches the Vivreal Content business and the Vivreal business. Its display name is a business name, so a "Signed in as" line showing it is expected: it is the account's name, not a person, so never caption it as one |
+| Key `scratch2-owner` of the QA account bundle in Secrets Manager (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`) | Secrets Manager, read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)["scratch2-owner"]`, or the e2e harness resolver for that key); never `--output text` on the bundle, which would print every login in it; never printed, logged, passed on a command line or written to a file | **QA scratch-2 only** (owners, 2026-11-04): the one business where tests write freely (orders, refunds, Stripe TEST, destructive checks). `agent-walk-user` cannot reach it. Delete any saved session state file it produced at the end of the run |
+| Key `canlook` of the same bundle, read the same way | The non-admin member of QA scratch-2 | **Permission and role tests only**: what a member without admin rights can see and do |
+| A fresh sign-up, created for the test | Sign up through the product, then delete the account and its business at the end of the run | **Empty-state and first-run tests.** No standing account is kept empty for them |
 | The owner's own session | The owner signs in and drives, or records | Frames that need the owner's own connections. **Connections are per person**: the AI agent and Connected apps screens show the signed-in person's connections, so the demo account films an empty or different list |
-| Anything else | | Ask the owner first. Never the owner's own login, which reaches real customers |
+| Anything else | | There is no other test identity (owners, 2026-11-04: every other test account and the platform review accounts were deleted with their businesses). Ask the owner first. Never the owner's own login, which reaches real customers |
 
 | Business | What it is for | Watch out |
 |---|---|---|
 | **Vivreal Content** | The default filming business | A **prospect** business, so the search-visibility UI (status line, "Let people find your site", the Home card) is hidden there by design. Its channels are Vivreal's own real accounts. Read its tier and `dbKey` live; never quote them from a file |
 | **Vivreal** (vivreal.io) | Read-only shots of surfaces Vivreal Content hides, search visibility above all | A real, live business. Read only |
-| **QA v5 scratch** | The scratch business for approved writes (hide and restore, add and delete) | Only through the `scratch-owner` key of the QA account bundle |
+| **QA scratch-2** | The one business where tests write freely: create, change and delete, orders, refunds, Stripe TEST, destructive checks (owners, 2026-11-04) | Only through the `scratch2-owner` key of the QA account bundle, or `canlook` for a member's view |
 
 **Switching business is one `PUT user/switch-profile`**, the same on phone and desktop, and it is a
 write: list it in `mutations[]` and switch back at the end. **Each browser context carries its own
@@ -44,9 +46,10 @@ or changing any walk, capture or proof script.
 
 ## The write protocol
 
-Read-only by default. A write happens only when the owner approved **that** write, named in the
+**QA scratch-2 is the exception: tests write there freely** (owners, 2026-11-04), with no snapshot or
+restore, so long as every object is labelled as a test. Everywhere else: read-only by default. A write happens only when the owner approved **that** write, named in the
 dispatch or in the run notes with its date. Approved so far (owner, 2026-10-13 and 2026-10-14):
-switching to the Vivreal business and back; hiding a QA v5 scratch site from search, then restoring
+switching to the Vivreal business and back; hiding a site from search, then restoring
 it; an invite, then cancelling it; a booking added, then deleted; an item changed, then restored.
 Every one runs the same eight steps, or not at all:
 

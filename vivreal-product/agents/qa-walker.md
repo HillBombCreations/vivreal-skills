@@ -321,20 +321,23 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 
 | Tenant | Use for | Watch out |
 |---|---|---|
-| **QA v5 scratch** (and scratch-2 to scratch-4) | **The CRUD and commerce tenant.** Create, update, delete, checkout on Stripe test | Its Stripe test account cannot charge. Sign in as its owner (below) |
+| **QA scratch-2** | **The one business where tests write freely** (owners, 2026-11-04): create, update, delete, orders, refunds, checkout on Stripe TEST, destructive checks | Its Stripe test account cannot charge. Sign in as its owner (below); permission and role tests sign in as its non-admin member `canlook` |
 | **Vivreal Content** | Read-mostly walks, the filming business | A **prospect** business, so search-visibility UI is hidden there by design. Its channels are Vivreal's own real accounts. Never leave QA objects on it |
 | **Vivreal** | Surfaces Vivreal Content hides | A real live business: read only. Staff surfaces are in the admin app, not in its portal nav |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
-or written to a file): Vivreal Content `<secret-prefix>/agent-walk-user` (its own secret, never bundled). The QA
-logins `canlook`, `empty-owner`, `scratch-owner` (QA v5 scratch) and `scratch2-owner` (scratch-2) are KEYS of one
-secret, the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`) (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
-`JSON.parse(...)[key]`, or the e2e harness resolver for that key), never `--output text` on
-the bundle, which would print all four. `<qa-secret-prefix>/square-sandbox` and `admin-operator` (TOTP) stay separate
-secrets. `scratch3-owner`, `scratch4-owner`, `canedit` and `free-walker` were retired with their businesses
-(2026-10-16). List secrets by name only (`aws secretsmanager list-secrets --filters Key=name,Values=<qa-secret-prefix>/
---query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`. `agent-walk-user` cannot reach the scratch businesses. Delete any saved
-session state file a walk produced at the end of the run.
+or written to a file). Three test identities exist and no others (owners, 2026-11-04): Vivreal Content's
+agent sign-in, `<secret-prefix>/agent-walk-user`, the default for read-only walks; and two KEYS of one secret,
+the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): `scratch2-owner` (QA scratch-2's owner) and `canlook` (its non-admin member, for permission and
+role tests). Read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)[key]`, or the e2e harness
+resolver for that key), never `--output text` on the bundle, which would print every login in it.
+`<qa-secret-prefix>/square-sandbox` and `admin-operator` (TOTP) stay separate secrets. Every other QA login, its
+business and the platform review accounts are deleted; never look for them. **Empty-state and first-run tests
+use a fresh sign-up** created for the test and deleted, with its business, at the end of the run. List secrets
+by name only (`aws secretsmanager list-secrets --filters Key=name,Values=<qa-secret-prefix>/
+--query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`.
+`agent-walk-user` cannot reach QA scratch-2. Delete any saved session state file a walk produced at the end of
+the run.
 
 **"No credential for that tenant" is a claim to check against the bundle, not a blocker.** The
 per-tenant QA secrets were merged into the QA account bundle on 2026-10-17, so a missing
@@ -395,7 +398,7 @@ existed. So before ANY local walk:
 7. **Put gate lines G-1 to G-5 at the top of the matrix, each PASS before any product row:**
    G-1 the launcher start (every guard-holds line, worktrees on the named heads); G-2 the
    launcher's own suite and `probe` exit 0; G-3 the shared package versions each consumer
-   resolves, with no dev overlay marker; G-4 one labelled QA scratch write, created and deleted,
+   resolves, with no dev overlay marker; G-4 one labelled QA scratch-2 write, created and deleted,
    with the recorder counts before and after; G-5 a sign-in smoke for each login the walk uses
    (the v7 local walks, 2026-10-19, under `docs/projects/next-release-v7/walks/` in vivreal-hq).
 
@@ -427,7 +430,7 @@ current walk's matrix; it moves.
 
 Read-only by default. When the matrix calls for create/update/delete:
 
-1. Only on a tenant the owner has named for it: by default the QA v5 scratch businesses,
+1. Only on a tenant the owner has named for it: by default QA scratch-2,
    never Vivreal Content or Vivreal.
 2. Name every object you create `QA TEST <date>` (or your walk id) so it is identifiable on sight.
 3. Follow every create through to a delete, in the same run.

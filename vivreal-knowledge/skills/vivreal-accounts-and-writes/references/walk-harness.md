@@ -6,6 +6,21 @@ write rules (which login, the eight-step protocol, the never-list) stay in this 
 `SKILL.md`; this file is how a browser script stays read-only and still sees the product as an
 owner does.
 
+## 0. Which identity
+
+Three test identities exist, and no others (owners, 2026-11-04; every other test account, its business
+and the platform review accounts were deleted). Each is resolved by placeholder, never written out:
+
+- **The Vivreal Content demo business's agent sign-in**: the default for every read-only walk and every
+  shoot. A write needs the owner's go, and its social channels are REAL: never Post, Schedule or Reply.
+- **QA scratch-2**, through the `scratch2-owner` key of the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): the one business
+  where tests write freely (orders, refunds, Stripe TEST, destructive checks).
+- **`canlook`**, a key of the same bundle: the non-admin member of QA scratch-2, for permission and role tests.
+
+**Empty-state and first-run tests use a fresh sign-up** created for the test and deleted, with its
+business, at the end of the run. No standing account is kept empty. Read one bundle key in process
+(section 3), never the whole bundle.
+
 ## 1. Guard the browser context, not the page
 
 - **Arm the guard on the context** (`context.on('request')` and `context.route`), never on one
