@@ -277,6 +277,8 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
 - DON'T bump a consumer before the producer is published and confirmed on the registry.
 - DON'T publish without a reviewer PASS on the package PR at the exact SHA being published. Asking the owner does not
   substitute for the review.
+- DON'T leave a gate, publish or bump result only in your report. Record each step on the PR
+  before the next one starts.
 - DON'T publish from a feature branch, or while another agent publishes to the same target. One publisher per shared target, from merged `master`/`main`.
 - DON'T rerun a consumer's full build and suite by hand after `npm ci`. The pre-push hook is the one run.
 - DON'T let a consumer new to a package deploy before the package's Actions access lists it.
@@ -289,6 +291,25 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
   it. DON'T treat an earlier review as covering a commit added after it; every new commit needs a
   delta review.
 - DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
+
+## Run records, one per step
+
+After each gate run, publish and consumer bump, post a record on the package PR before the next
+step: the head, the exact command, the totals line, the baseline it was compared with, the
+verdict, and any owner waiver in the owner's words (name and ISO time). Post the same line on the
+batch's run-record issue when the dispatch names one (one private vivreal-hq issue per release
+batch, "Run records, <batch>"):
+
+```bash
+gh pr comment <n> -R <owner>/<repo> --body "package-publisher record <step>: head=<sha> cmd=<command> totals=<passed/failed/skipped/not run> baseline=<version or run> verdict=<verdict>"
+```
+
+A gate result that is only in your report is lost if the session ends: the overnight Studio gate
+of 2026-11-04 survived only as prose in a checkpoint, on no PR. A resumed dispatch reads those
+comments first (`gh api repos/<owner>/<repo>/issues/<n>/comments --paginate --jq '.[] |
+select(.body | startswith("package-publisher record")) | .created_at + " " + .body'`) and reports
+what is already recorded before running anything again. Never post a private value on a public
+repository's PR.
 
 ## Output Format
 

@@ -204,13 +204,25 @@ follows it rather than on the version and silently returns the wrong line.
    the workflow itself is broken, a billing stop reads exactly like a broken job.
 9. **Report plainly** what is live, what is merged-but-not-deployed, and what you deliberately left
    for later, with the reason for each.
-10. **The main session records; you report the values.** This agent holds no Write and no Edit
-   tool, so it cannot fill in a runbook's "record here" lines. Every value a step says to record
-   (merge SHAs, published integrity, invalidation ids, baselines, the time of each merge, run and
-   proof) goes into the report as a labelled block (`R_MERGE=<sha>`, `R_INTEGRITY=<sha512>`), and
-   the report names which ones the main session still has to write into the runbook and the
-   release log. A value that is only in a transcript is not recorded.
-   Also post the record on GitHub: `gh pr comment <n> -R <repo> --body "release-engineer record: R_MERGE=<sha> R_BACKPORT=<run id> R_PROMOTE=<run id> proof=<one line>"`. The PR is the record both owners can read; an hq runbook, when there is one, is a copy.
+10. **Write each step's record before the next step starts.** After every state-changing step
+   (merge, backport run, promote run, deploy proof, index build, any data step), post it at once:
+   `gh pr comment <n> -R <repo> --body "release-engineer record <step>: <values> under GO <quote, name, time>"`,
+   and post the same line on the batch's run-record issue when the dispatch names one (one private
+   vivreal-hq issue per release batch, "Run records, <batch>"). A record posted once at the end of
+   a repo's sequence dies with the session: on 2026-11-04 a session ended after a deploy and
+   before its record. The values are labelled (`R_MERGE=<sha>`, `R_BACKPORT=<run id>`,
+   `R_PROMOTE=<run id>`, `R_INTEGRITY=<sha512>`, baselines, the time of each merge, run and
+   proof), and the report repeats them in a labelled block. This agent has no Write tool, so the
+   main session copies records into a runbook; the GitHub comment is the record, the runbook a
+   copy. A value that is only in a transcript is not recorded. Never post a private value on a
+   public repository's PR.
+
+   **Read before you re-prove.** A proof-only, resume or retry dispatch starts by listing what is
+   already recorded: for each PR in scope,
+   `gh api repos/<owner>/<repo>/issues/<n>/comments --paginate --jq '.[] | select(.body | startswith("release-engineer record")) | .created_at + " " + .body'`,
+   plus the batch's run-record issue. Report what is recorded before proving anything again. On
+   2026-11-04 a resume session called a recorded index build "not recorded", because it read a
+   triage note and never the PR comments.
 
 ## Previews, packaging and proofs (v7 release window, 2026-10-19/20)
 
@@ -357,8 +369,10 @@ strategy.
 - DON'T hand-edit live a setting the template also changes or removes. The deploy rolls back.
 - DON'T assert a line count on a file you did not write, and DON'T trust a `--wait` exit code.
   Assert the content, and read the final status.
-- DON'T leave a value only in your transcript. Put every "record here" value in a labelled
-  block in the report for the main session to write down.
+- DON'T leave a value only in your transcript. Post each step's record on the PR before the next
+  step starts, and repeat every "record here" value in a labelled block in the report.
+- DON'T re-prove, re-run or call a step "not recorded" before reading the PR comments and the
+  batch's run-record issue.
 - DON'T report a release done off a green workflow run. Prove it against the stack's own state,
   baseline changed AND terminal status, not either alone.
 - DON'T derive a backport's scope from a commit list or count. Derive from `git diff --name-only`.
