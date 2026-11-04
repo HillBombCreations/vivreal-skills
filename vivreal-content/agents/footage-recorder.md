@@ -325,6 +325,12 @@ close it in the pre-roll of every portal take; give a dismiss helper both labels
 - **The phone Studio sheet scrolls inside its own box**, 202 px (Page settings) to 264 px (Business
   info) tall at 844 high, which cuts a control in half at any scroll. Scroll that element, not the
   page; 390x932 gives about 34 px more and cut the hours frame cleanly.
+- **The orders bar ("Hear about new orders")** slides over phone frames about 8 s into a load.
+  Dismiss it before the frame, and trim a video's start past it (13 s was needed on 2026-11-02),
+  rather than filming around it.
+- **Text scans are case-sensitive.** A scan for a label or a plan figure misses it when the screen
+  writes it in another case. Scan for the words exactly as the product prints them, or lower-case
+  both sides when the case does not matter.
 
 ### Top-of-page frames: never pre-scroll and come back
 
