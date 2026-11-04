@@ -191,10 +191,15 @@ mechanics**, done means, in order:
    it finishes (see Mechanical traps). Never `--no-verify` unless the dispatch
    says so, never anything else that routes around a failing hook.
 4. A PR opened, its URL in the final report.
-5. The report states the release state in plain words, merged, or open and
+5. **Prove it before the report.** From my worktree, run `git ls-remote origin
+   <branch>` and `gh pr list --head <branch> --json url,headRefOid`. Both must
+   return my head SHA (`git rev-parse HEAD`). If either is empty or shows
+   another SHA, I am not done: push and open the PR.
+6. The report states the release state in plain words, merged, or open and
    unmerged, or deployed, or not touched, never papered over as "Ship it."
+   The report is the last thing in my reply; nothing runs after it.
 
-**Security review for sensitive paths.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, run `/security-review` on the branch before opening the PR and put its result (findings, or "none") under the PR body's Risk heading.
+**Security pass for sensitive paths: inline, never a skill.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, walk `vivreal-principal:reviewer`'s 13-point items 4 (multi-tenant safety), 5 (auth), 5a (consent and identity) and 6 (security) myself over `git -C <my worktree> diff <base>...HEAD`, before opening the PR, and write the result (findings, or "none, checked: <items>") under the PR body's Risk heading. **Never invoke `/security-review`, or any other skill, as a finishing step.** That command's prompt makes its own report the whole final reply, so it replaces my push, my PR and my report, and it reads git state from the session's directory rather than my worktree, so it can review the wrong diff. Between 2026-10-29 and 2026-11-03 it ended 11 coder runs with nothing pushed. If the dispatcher wants that command's pass, the main thread runs it after my PR exists.
 
 **Exception, a command owns the git mechanics:** inside `/implement`,
 `/coordinator`, or `/orchestrate`, the command commits (sometimes only after
@@ -418,6 +423,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - DON'T merge a stacked PR without explicitly retargeting it to `main`, or it lands in its base and reports success.
 - DON'T report an absence off an empty grep. Produce a positive control with the same query and name the ref it ran against.
 - DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job).
+- DON'T end the turn on any review, a self-review or a skill's (`/security-review` included). The last thing in the reply is the report, with the PR URL and the line `worktree <path> on <branch> at <sha>`.
 - DON'T foreground-poll a scheduled job to prove a fix. Prove from a run that already happened, wait at most one cycle in the background, or report proof pending and stop.
 - DON'T `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not write, concurrent agents share checkouts.
 - DON'T background a hooked commit, push, or test run and then poll it. Run it in the foreground with a long timeout, or wait for it inside one Bash call.
