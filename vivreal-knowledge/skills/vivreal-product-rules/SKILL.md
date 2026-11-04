@@ -110,10 +110,15 @@ Never put a customer name, id or address in this file.
     uses is kept with its items (owner, 2026-10-20). VR_Secure_API `deleteSite.js`.
 21. **The business time zone is the site's clock** (owner, 2026-10-20). A page or section may set its
     own zone and wins on that page; a kit's sample zone never reaches a customer site. VR_Client_API
-    `src/shared/siteTimeZone.js`, renderer `scheduleTimezone`, VR_Secure_API `scrubKitZones`.
+    `src/shared/siteTimeZone.js`, renderer `scheduleTimezone`, VR_Secure_API `scrubKitZones`. Every
+    time the owner or a customer reads (portal send times, delivery days, pickup times) is in that
+    zone and says which zone (owners, 2026-11-04, skills backlog F66).
 22. **A repeating stop's end date means "repeat until"**, never one long event, and the calendar feed
     lists each occurrence (owner, 2026-10-20). Renderer `src/lib/scheduleOccurrences.ts`, shared with
     VR_Client_API's feed.
+23. **What the owner typed is shown as typed** (owners, 2026-11-04, skills backlog F66): names of
+    pages, lists, items and businesses get no camel-case splitting and no title-casing. V7.13 exempted
+    hyphen splitting; this extends it to every reformatting.
 
 ## Adding a rule
 

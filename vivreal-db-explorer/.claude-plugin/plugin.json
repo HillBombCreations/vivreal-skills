@@ -1,10 +1,10 @@
 {
   "name": "vivreal-db-explorer",
-  "version": "1.3.0",
-  "description": "Safe multi-tenant MongoDB querying and schema exploration for the Vivreal platform. The read-only MongoDB MCP server auto-connects at launch by sourcing CLUSTER_URL from AWS Secrets Manager (vivreal/prod/main-api), so agents never have to ask the user for a connection string; /db-query and /db-schema carry a self-service connect fallback.",
+  "version": "1.4.0",
+  "description": "Safe multi-tenant MongoDB querying and schema exploration for the Vivreal platform. The read-only MongoDB MCP server auto-connects at launch by sourcing CLUSTER_URL from AWS Secrets Manager (the secret named in vivreal-hq's private names file, so it needs no setup beyond VIVREAL_REPOS), so agents never have to ask the user for a connection string; /db-query and /db-schema carry a self-service connect fallback.",
   "author": {
     "name": "Vivreal",
-    "email": "justin@vivreal.io"
+    "email": "hello@vivreal.io"
   },
   "homepage": "https://github.com/HillBombCreations/vivreal-skills",
   "keywords": [

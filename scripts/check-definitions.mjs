@@ -50,6 +50,13 @@
  *  10. A generated mirror inside a plugin tree: a command mirror (`skills/cmd-*`) or an agent
  *      mirror (`skills/<name>/` beside `agents/<name>.md`). Both are generated into the
  *      gitignored `.agy/`; in a plugin they list every command or agent a second time.
+ *  15. Private material, anywhere, because this repository is PUBLIC (`public-leak`): a file
+ *      under `docs/projects/` (working papers belong in the private vivreal-hq repo), a personal
+ *      handle, a OneDrive path, a machine path under docs/ (rule 11 covers the rest), a Secrets
+ *      Manager or SSM name prefix (write `<secret-prefix>/` or `<ssm-prefix>/`), a named private
+ *      account, a personal mailbox on the company domain or a free-mail one, a Stripe key or account id, a real
+ *      Mongo ObjectId, an AWS or Atlas generated hostname or resource id, and a dollar figure in
+ *      the unit-economics skill or the finance-auditor.
  *
  * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
  * that LOADS an agent as a skill, since an agent has no skill entry to load.
@@ -75,11 +82,12 @@
  * that is red no matter what is as useless as one that is green no matter what.
  */
 
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, rmdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const norm = (p) => p.split(sep).join('/');
@@ -763,7 +771,7 @@ const DELETED_BEHAVIOUR = [
     why: 'a tier does not map to a database and has not for some time. Say that the placement is STORED on the group and read back.',
     allowLine: REMOVAL_VOCABULARY,
   },
-  // H306. A DELETED ROUTE, ADVERTISED BY A SKILL AN AGENT LOADS.
+  // A DELETED ROUTE, ADVERTISED BY A SKILL AN AGENT LOADS.
   //
   // A route named in a skill is, to the agent reading it, a fact. The only
   // feedback an agent gets from calling one of these is a 403 from API
@@ -856,24 +864,50 @@ function ruleAwsAccountId(files) {
 }
 
 // ------------------------------------------------- rule 11: machine paths (R11)
-// A literal clone path works on one machine and silently reads a stale or absent tree on every
-// other. Paths go through ${VIVREAL_REPOS}. The patterns are built from character codes so this
-// file never holds the strings it refuses. docs/ is history and is not scanned.
+// A literal machine path works on one machine and silently reads a stale or absent tree on every
+// other. Paths go through ${VIVREAL_REPOS}, which is derived (shared-standards, "Path resolution").
+// One pattern, the fleet's shared machine-path pattern (vivreal-hq universal-setup research 4.1):
+// a drive root of ANY letter (either slash, escaped or not), an MSYS drive root onto repos or Users,
+// a POSIX home, and a Windows user profile tree. Built from character codes so this file never holds
+// the strings it refuses. docs/ is history and is left to rule 15.
+//
+// Shapes every machine has name no machine and pass: Program Files, the Windows folder, and an
+// elided path (a drive or a home, then three dots). Any other line that is legitimately generic (a
+// test fixture's sample drive, a guard's own example) carries `machine-path-ok: <reason>` on the
+// same line. There is no path-wide exemption.
 const BSL = String.fromCharCode(92);
 const MACHINE_PATH = new RegExp(
   [
-    // A separator is one or more of either slash, so the escaped form a .js, .cjs or .json
-    // string holds (two backslashes) is caught as well as the single one.
-    '[Cc]:[' + BSL + BSL + '/]+repos\\b',
-    '/c' + '/repos\\b',
-    '[Cc]:[' + BSL + BSL + '/]+Users[' + BSL + BSL + '/]+',
-    '(^|[^A-Za-z0-9_.$}-])/Users/[A-Za-z0-9._-]+/',
-    '(^|[^A-Za-z0-9_.$}-])/home/[A-Za-z0-9._-]+/',
+    // A drive root: a letter that does not end a word, a colon, then one slash that does not start
+    // `//` (a URL scheme), or a run of backslashes that is not a lone string escape such as the
+    // newline escape, and then a path character.
+    '(?<![A-Za-z0-9' + BSL + BSL + '])[A-Za-z]:(?:/(?!/)|' + BSL + BSL + '+(?![nrtsdbwfv0](?![A-Za-z])))(?=[A-Za-z0-9_.~$<{%-])',
+    // An MSYS drive root onto the clone folder or the user folders.
+    '(?<![A-Za-z0-9_.@$}/-])/[a-z]/(?:repos|Users)' + BSL + 'b',
+    // A POSIX home folder.
+    '(?<![A-Za-z0-9_.@$}/-])/(?:Users|home)/[A-Za-z0-9._-]+',
+    // A Windows user profile tree.
+    'AppData(?:/|' + BSL + BSL + '{1,2})(?:Local|Roaming|LocalLow)',
   ].join('|'),
 );
-// The one sanctioned example of the variable's VALUE, in the shared-standards preamble the plan
-// quotes verbatim. Exact line text, so any other use of the same path still fails.
-const MACHINE_PATH_EXAMPLE = 'with forward slashes (for example `' + 'C:' + '/repos`)';
+const MACHINE_PATH_ALL = new RegExp(MACHINE_PATH.source, 'g');
+const MACHINE_PATH_OK = 'machine-path-ok:';
+// What a generic match looks like from where it starts: a drive into Program Files, the Windows
+// folder or three dots, or a home folder written as three dots.
+const GENERIC_PATH = new RegExp(
+  '^(?:[A-Za-z]:[' + BSL + BSL + '/]+(?:' + BSL + '.' + BSL + '.' + BSL + '.|Program Files|Windows[' + BSL + BSL + '/])' +
+    '|/(?:Users|home)/' + BSL + '.' + BSL + '.' + BSL + '.)',
+);
+
+/** The machine-specific paths on one line: every match that is not a generic shape, unless marked. */
+function machinePathsIn(line) {
+  if (line.includes(MACHINE_PATH_OK)) return [];
+  const out = [];
+  for (const m of line.matchAll(MACHINE_PATH_ALL)) {
+    if (!GENERIC_PATH.test(line.slice(m.index))) out.push(m[0]);
+  }
+  return out;
+}
 
 function ruleMachinePaths(files) {
   for (const abs of files) {
@@ -882,14 +916,14 @@ function ruleMachinePaths(files) {
     if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
     const lines = readFileSync(abs, 'utf8').split('\n');
     lines.forEach((line, i) => {
-      if (line.includes(MACHINE_PATH_EXAMPLE)) return;
-      const m = MACHINE_PATH.exec(line);
-      if (!m) return;
+      const hits = machinePathsIn(line);
+      if (hits.length === 0) return;
       fail(
         'machine-path',
         `${rel}:${i + 1}`,
-        `a literal machine path ("${m[0].trim()}") only exists on one machine. ` +
-          'Write `${VIVREAL_REPOS}/<repo>/...` in prose, or `"$VIVREAL_REPOS/<repo>/..."` in shell.',
+        `a literal machine path ("${hits[0].trim()}") only exists on one machine. ` +
+          'Write `${VIVREAL_REPOS}/<repo>/...` in prose, or `"$VIVREAL_REPOS/<repo>/..."` in shell; ' +
+          'a shape every machine has carries `machine-path-ok: <reason>` on the line.',
       );
     });
   }
@@ -1125,6 +1159,183 @@ function ruleSkillSources(files) {
   for (const f of skillSourcesFindings(skills, doc)) fail('skill-sources', f.where, f.msg);
 }
 
+// ------------------------------------------- rule 15: no private material (R15)
+// THIS REPOSITORY IS PUBLIC. A 2026-10-26 review found a private security audit, Windows home
+// paths, a personal handle, real cost and revenue figures and secret names published here. Each
+// pattern below is one of those shapes, or one the 2026-11-04 sweep added (a login address, a
+// distribution id, a free-mail address). A finding names the rule, never the value, so the
+// report does not republish what it found.
+//
+// PRIVATE TOKENS ARE MATCHED BY HASH, NEVER BY LITERAL. A guard that embeds the value it hunts
+// republishes it, and splitting the literal across a `+` only hides it from grep, not from a
+// reader. So the handle, the secret-name prefix, the demo login id and the QA bundle name are
+// held below as the sha256 of the lowercased token. Every word on a line, every hyphen or
+// underscore joined name, and the word in front of every `/prod` or `/qa` is hashed and looked
+// up. The self-test adds the hash of a fake token built at run time, and plants that token, so
+// no real one appears in this file or its tests. To add a token, hash it on your own machine
+// (`node -e "console.log(require('crypto').createHash('sha256').update('<token>').digest('hex'))"`)
+// and add only the hash.
+//
+// `docs/projects/` is matched as a FILE PATH, not as text. The text form is the workflow's own
+// artifact convention (`docs/projects/<slug>/design.md`) and several agents read and write real
+// project files in the private repos they run in, so banning the string would break them.
+const TOKEN_MESSAGES = {
+  handle: 'a personal handle or user name. Name the role ("the owner"), not the person.',
+  account: 'a named private account (the demo login or the QA account bundle). Write "the demo account" or "the QA account bundle".',
+  prefix:
+    'a Secrets Manager or SSM name prefix. Write <secret-prefix>/, <ssm-prefix>/ or <qa-secret-prefix>/; ' +
+    'each value is a key of ${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json.',
+};
+/** sha256 of a lowercased private token, to the kind of finding it raises. */
+const PRIVATE_TOKENS = new Map([
+  ['7921e87ef7e7bfdcae199db9dac0c33320d80e62eaa8d1866d1db6ffcc96c7a0', 'handle'],
+  ['09dce69f59700f917184cd6520cbdd30e68655ddce1cdda7911100dd18afb9a3', 'handle'],
+  ['a38047809c89760d9412d7d24ce8f240a77fd6ebf8b66a53d8a59018294032ea', 'account'],
+  ['89e780fc23c079a68409125984abaf4e9fd46eac9d3452c3f3dc51e42361685a', 'account'],
+]);
+/** sha256 of each private word that, in front of `/prod` or `/qa`, makes a secret or SSM name. */
+const PRIVATE_PREFIXES = new Set(['5f37cd034a6fae8a8cc26e89ba78c0c0cd9d66c799b795b3ad9c8525827a8d73']);
+const tokenHashes = new Map();
+function hashToken(token) {
+  let h = tokenHashes.get(token);
+  if (h === undefined) {
+    h = createHash('sha256').update(token).digest('hex');
+    tokenHashes.set(token, h);
+  }
+  return h;
+}
+
+/** The kinds of private token a line carries, found by hash. */
+function privateTokenKinds(line) {
+  const kinds = new Set();
+  const lower = line.toLowerCase();
+  // Plain words catch a handle inside `@someone_handle` or a path; joined names catch a login id.
+  for (const re of [/[a-z0-9]+/g, /[a-z0-9][a-z0-9_-]*/g]) {
+    for (const m of lower.matchAll(re)) {
+      const kind = PRIVATE_TOKENS.get(hashToken(m[0]));
+      if (kind) kinds.add(kind);
+    }
+  }
+  for (const m of lower.matchAll(/([a-z0-9][a-z0-9_-]*)\/(?:prod|qa)(?![a-z0-9_-])/g)) {
+    if (PRIVATE_PREFIXES.has(hashToken(m[1]))) kinds.add('prefix');
+  }
+  return kinds;
+}
+
+const LEAK_PATTERNS = [
+  {
+    // A path segment, so a process name in a never-kill list is not a hit.
+    re: new RegExp('One' + 'Drive(?: - [^' + BSL + BSL + '/' + BSL + 'n]*)?[' + BSL + BSL + '/]', 'i'),
+    msg: 'a OneDrive path, which names a personal sync folder.',
+  },
+  {
+    // A mailbox on the company's domain, root or any subdomain (a sending subdomain names a real
+    // sender; the batch review found two), names a person's login or a private sender. The public
+    // sender at the root is the one sanctioned address, and it is what every manifest's author and
+    // owner field carries.
+    re: /(?<![A-Za-z0-9._%+-])([A-Za-z0-9][A-Za-z0-9._%+-]*)@((?:[a-z0-9-]+\.)*)vivreal\.io\b/i,
+    allow: (line, m) => m[1] === 'hello' && m[2] === '',
+    msg: 'a personal mailbox on the company domain, which is a real login. Write "the owner\'s own login", or hello@ in a manifest.',
+  },
+  {
+    // A personal free-mail address names a person outside the company. A placeholder such as
+    // `<name>@gmail.com` is not an address and does not match.
+    re: /(?<![A-Za-z0-9._%+-])[A-Za-z0-9][A-Za-z0-9._%+-]*@(?:gmail|yahoo|outlook|hotmail|icloud)\.com\b/i,
+    msg: 'a personal free-mail address (gmail, yahoo, outlook, hotmail, icloud). Name the role, never the address.',
+  },
+  {
+    re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\bwhsec_[A-Za-z0-9]{8,}|\b(?:acct|cus)_[A-Za-z0-9]{12,}/,
+    msg: 'a Stripe key, webhook secret, account id or customer id. Name what it is, never the value.',
+  },
+  {
+    // The obvious placeholder and a single repeated character are the only ids a reader can
+    // tell are fake, so they are the only ones allowed.
+    re: /(?<![0-9a-fA-F])[0-9a-f]{24}(?![0-9a-fA-F])/,
+    allow: (line, m) => m[0] === '0123456789abcdef01234567' || /^(.)\1+$/.test(m[0]),
+    msg: 'a Mongo ObjectId, which names a real tenant or record. Write `0123456789abcdef01234567` or <groupID>.',
+  },
+  {
+    re: new RegExp(
+      [
+        '[a-z0-9]{10}' + BSL + '.execute-api' + BSL + '.',
+        '(?:^|[^a-z0-9])d[a-z0-9]{12,13}' + BSL + '.(?:cloudfront' + BSL + '.net|amplifyapp' + BSL + '.com)',
+        BSL + '.d[a-z0-9]{12,13}' + BSL + '.amplifyapp' + BSL + '.com',
+        BSL + '.[a-z0-9]{5}' + BSL + '.mongodb' + BSL + '.net',
+        BSL + 'bE(?=[A-Z]*[0-9])[A-Z0-9]{12,13}' + BSL + 'b',
+        BSL + 'b[a-z]{2}-[a-z]+-[0-9]_[A-Za-z0-9]{9}' + BSL + 'b',
+        // A Lambda function URL host, and a Cognito identity pool id (region, a colon, a UUID).
+        '[a-z0-9]{32}' + BSL + '.lambda-url' + BSL + '.[a-z0-9-]+' + BSL + '.on' + BSL + '.aws',
+        BSL + 'b[a-z]{2}-[a-z]+-[0-9]:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' + BSL + 'b',
+      ].join('|'),
+    ),
+    msg:
+      'an AWS or Atlas generated hostname or resource id (API, distribution, Amplify app, cluster, user pool, ' +
+      'function URL, identity pool). ' +
+      'Write a placeholder such as <portal-amplify-app-id>, or the command that looks it up.',
+  },
+];
+// Any drive-letter path (any drive, either slash, escaped or not) and any home folder, anywhere,
+// docs/ included: this repository is installed on other people's machines, so a path has to be
+// `${VIVREAL_REPOS}/...` or relative. A path into a folder every Windows machine has (Program
+// Files, Windows) or an elided one (the drive, a slash, then three dots) names no one and is allowed.
+// The letter must not follow another letter or digit, so a URL scheme (`https://`) is not a hit.
+const DRIVE_PATH = new RegExp(
+  '(?<![A-Za-z0-9])[A-Za-z]:[' + BSL + BSL + '/]+(?![' + BSL + BSL + '/])(?!' + BSL + '.' + BSL + '.' + BSL + '.|Program Files|Windows[' + BSL + BSL + '/])',
+);
+const HOME_PATH = /(^|[^A-Za-z0-9_.$}-])\/(?:Users|home)\/[A-Za-z0-9._-]+\//;
+// Files that carried real cost and revenue figures. The method stays public; the numbers live
+// in the private vivreal-hq repo at docs/finance/unit-economics.md.
+const FIGURE_SCOPE = /(?:^|\/)skills\/vivreal-unit-economics\/|(?:^|\/)agents\/finance-auditor\.md$/;
+const DOLLAR_FIGURE = new RegExp(BSL + '$' + BSL + 's?[0-9]');
+
+function rulePublicLeaks(files) {
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (rel.startsWith('.agy/')) continue;
+    if (rel.startsWith('docs/projects/')) {
+      fail(
+        'public-leak',
+        rel,
+        'a file under docs/projects/. Project working papers are private: keep them in vivreal-hq, not in this PUBLIC repo.',
+      );
+    }
+    if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
+    const lines = readFileSync(abs, 'utf8').split('\n');
+    const figures = FIGURE_SCOPE.test(rel);
+    // Rule 11 reports any machine path outside docs/; a line it owns is left to it.
+    const docs = rel.startsWith('docs/');
+    lines.forEach((line, i) => {
+      // Every match on the line, not the first: an allowed address first on a line once hid a
+      // private one after it (the batch review's lifecycle sender).
+      for (const p of LEAK_PATTERNS) {
+        const all = p.re.flags.includes('g') ? p.re : new RegExp(p.re.source, p.re.flags + 'g');
+        if ([...line.matchAll(all)].some((m) => !(p.allow && p.allow(line, m)))) {
+          fail('public-leak', `${rel}:${i + 1}`, p.msg);
+        }
+      }
+      for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
+      // Rule 11 owns a machine path outside docs/, and a line marked generic is generic here too.
+      const ruleElevenOwns = !docs && MACHINE_PATH.test(line);
+      if (!ruleElevenOwns && !line.includes(MACHINE_PATH_OK) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
+        fail(
+          'public-leak',
+          `${rel}:${i + 1}`,
+          'a drive-letter or home-folder path, which only exists on one machine and can name its user. ' +
+            'Write ${VIVREAL_REPOS}/<repo>/... or a relative path.',
+        );
+      }
+      if (figures && DOLLAR_FIGURE.test(line)) {
+        fail(
+          'public-leak',
+          `${rel}:${i + 1}`,
+          'a dollar figure in the unit economics. Keep the method here; the figures live in the private ' +
+            'vivreal-hq repo at docs/finance/unit-economics.md.',
+        );
+      }
+    });
+  }
+}
+
 // ------------------------------------------------------------------ the runner
 function runAll(files) {
   ruleParse(files);
@@ -1142,6 +1353,7 @@ function runAll(files) {
   ruleVersionBump();
   ruleRoutesResolve(files);
   ruleSkillSources(files);
+  rulePublicLeaks(files);
 }
 
 /**
@@ -1150,6 +1362,42 @@ function runAll(files) {
  * exists because a gate that cannot fail reports a clean run forever.
  */
 const FIXTURE_PLUGIN = 'vivreal-selftest-fixture';
+// R15's docs poisons have to sit at the real paths the rule guards, outside the fixture plugin,
+// so they get their own directory name and their own cleanup.
+const SELFTEST_DOCS_DIR = 'vivreal-selftest-fixture';
+
+/** Remove the docs poisons and any directory they created, never anything else. */
+function removeDocsPoison() {
+  rmSync(join(ROOT, 'docs', 'projects', SELFTEST_DOCS_DIR), { recursive: true, force: true });
+  rmSync(join(ROOT, 'docs', SELFTEST_DOCS_DIR), { recursive: true, force: true });
+  try {
+    // Only succeeds when empty, so a real docs/projects tree is never touched.
+    rmdirSync(join(ROOT, 'docs', 'projects'));
+  } catch (e) {
+    // ENOENT: never created. ENOTEMPTY: real files there, which the clean run then reports.
+    if (!['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(e.code)) throw e;
+  }
+}
+
+// R15's private-token poisons are FAKE tokens, built at run time and registered by hash for the
+// self-test only, so no real token is planted and no literal one sits in this file for the
+// no-poison run to find.
+const FAKE_TOKENS = [
+  ['selftest' + 'handle', 'handle'],
+  ['selftest-' + 'token', 'account'],
+];
+const FAKE_PREFIX = 'selftest' + 'prefix';
+// The drive the generic-path ALLOW case uses, built so this file carries no drive-letter path.
+const SYSTEM_DRIVE = 'C' + ':';
+
+function registerFakeTokens(on) {
+  for (const [token, kind] of FAKE_TOKENS) {
+    if (on) PRIVATE_TOKENS.set(hashToken(token), kind);
+    else PRIVATE_TOKENS.delete(hashToken(token));
+  }
+  if (on) PRIVATE_PREFIXES.add(hashToken(FAKE_PREFIX));
+  else PRIVATE_PREFIXES.delete(hashToken(FAKE_PREFIX));
+}
 
 function selfTest() {
   // The fixture is a real plugin directory at the repo root, because the rules key
@@ -1158,6 +1406,8 @@ function selfTest() {
   // which is the failure this control exists to catch. It caught it.
   const tmp = join(ROOT, FIXTURE_PLUGIN);
   PLUGIN_DIRS.push(FIXTURE_PLUGIN);
+  registerFakeTokens(true);
+  const [[fakeHandle], [fakeAccount]] = FAKE_TOKENS;
 
   const cases = [
     {
@@ -1204,7 +1454,7 @@ function selfTest() {
       body: 'no frontmatter at all\n',
     },
     {
-      // H306. A route that no longer exists, advertised as if it does. The
+      // A route that no longer exists, advertised as if it does. The
       // fixture says it plainly and carries none of the removal vocabulary,
       // because a rule that only fires on a sentence nobody writes is a rule
       // that never fires.
@@ -1422,6 +1672,37 @@ function selfTest() {
         '---\nname: escaped-user\ndescription: fixture\n---\n\n`"C:' + BSL + BSL + 'Users' + BSL + BSL + 'someone"`\n',
     },
     {
+      // The shared pattern (universal-setup research 4.1): an MSYS drive root onto the user folders.
+      rule: 'machine-path',
+      label: 'machine-path: an MSYS user folder',
+      path: join(tmp, 'skills', 'msys-user', 'SKILL.md'),
+      body: '---\nname: msys-user\ndescription: fixture\n---\n\nIt lives at /d' + '/Us' + 'ers/someone/kit.\n',
+    },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: a POSIX home folder',
+      path: join(tmp, 'skills', 'posix-home', 'SKILL.md'),
+      body: '---\nname: posix-home\ndescription: fixture\n---\n\nIt lives at /home/' + 'someone/kit.\n',
+    },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: a Windows user profile tree',
+      path: join(tmp, 'skills', 'profile-tree', 'SKILL.md'),
+      body: '---\nname: profile-tree\ndescription: fixture\n---\n\n`~/' + 'AppData' + BSL + BSL + 'Roaming' + BSL + BSL + 'kit`\n',
+    },
+    {
+      // The ALLOW side: shapes every machine has, and a line marked generic, stay green.
+      rule: 'machine-path',
+      kind: 'clean',
+      label: 'machine-path: Program Files, an elided path, a URL, a newline escape and a marked fixture',
+      path: join(tmp, 'skills', 'generic-paths', 'SKILL.md'),
+      body:
+        '---\nname: generic-paths\ndescription: fixture\n---\n\n' +
+        'Git Bash rewrites it to C' + ':/Program Files/Git/x. Write C' + ':/... or /home/.../kit in prose.\n' +
+        'See https://x.example/a and `const s = \'a:' + BSL + 'n\';`.\n' +
+        'const sample = \'D' + ':/sample\'; // machine-path-ok: a test fixture root\n',
+    },
+    {
       // Definition review blocker: the documented skill limit is 1,024 characters.
       rule: 'description-length',
       label: 'description-length: a skill over 1,024',
@@ -1498,6 +1779,205 @@ function selfTest() {
       path: join(tmp, 'routing', 'routes.json'),
       body: JSON.stringify({ routes: [{ task: 't', agent: FIXTURE_PLUGIN + ':router-target', keywords: ['x'], repo: '*' }] }),
       with: [{ path: join(tmp, 'agents', 'router-target.md'), body: '---\nname: router-target\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\nbody\n' }],
+    },
+    // R15, one poison per leak shape. Each value is ASSEMBLED, for the same reason the account
+    // id above is, and each case pins its own message with `match` so a sibling pattern cannot
+    // stand in for it.
+    {
+      rule: 'public-leak',
+      match: 'a file under docs/projects/',
+      label: 'public-leak: a private working paper',
+      path: join(ROOT, 'docs', 'projects', SELFTEST_DOCS_DIR, 'findings.md'),
+      body: '# findings\n\nnothing here\n',
+    },
+    {
+      // Under docs/, where rule 11 does not look.
+      rule: 'public-leak',
+      match: 'a drive-letter or home-folder path',
+      label: 'public-leak: a machine path in docs',
+      path: join(ROOT, 'docs', SELFTEST_DOCS_DIR, 'paths.md'),
+      body: '# paths\n\nRead C:' + '/repos/x/CLAUDE.md first.\n',
+    },
+    {
+      // Any drive, not only C: (rule 11 owns every drive letter outside docs/ since the shared pattern).
+      rule: 'machine-path',
+      label: 'machine-path: a drive-letter path on another drive',
+      path: join(tmp, 'skills', 'drive-path', 'SKILL.md'),
+      body: '---\nname: drive-path\ndescription: fixture\n---\n\nOpen D' + ':/work/kit.txt first.\n',
+    },
+    {
+      // How a path is written inside a .js, .cjs or .json string, on another drive.
+      rule: 'machine-path',
+      label: 'machine-path: an escaped path on another drive',
+      path: join(tmp, 'skills', 'escaped-drive', 'SKILL.md'),
+      body: '---\nname: escaped-drive\ndescription: fixture\n---\n\n`const p = \'E' + ':' + BSL + BSL + 'data' + BSL + BSL + 'kit\';`\n',
+    },
+    {
+      // Under docs/: in a plugin tree rule 11 already reports a home folder.
+      rule: 'public-leak',
+      match: 'a drive-letter or home-folder path',
+      label: 'public-leak: a home folder in docs',
+      path: join(ROOT, 'docs', SELFTEST_DOCS_DIR, 'home.md'),
+      body: '# home\n\nThe kit is at /home/' + 'someone/kit.txt.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a personal handle',
+      label: 'public-leak: a personal handle',
+      path: join(tmp, 'skills', 'handle', 'SKILL.md'),
+      body: '---\nname: handle\ndescription: fixture\n---\n\nPost from @someone_' + fakeHandle + ' today.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a OneDrive path',
+      label: 'public-leak: a OneDrive path',
+      path: join(tmp, 'skills', 'sync', 'SKILL.md'),
+      body: '---\nname: sync\ndescription: fixture\n---\n\nThe kit is at sync/One' + 'Drive/Desktop/kit.txt.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a Secrets Manager or SSM name prefix',
+      label: 'public-leak: a secret name',
+      path: join(tmp, 'skills', 'secret-name', 'SKILL.md'),
+      body: '---\nname: secret-name\ndescription: fixture\n---\n\nRead `CLUSTER_URL` from `' + FAKE_PREFIX + '/prod/main-api`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a Secrets Manager or SSM name prefix',
+      label: 'public-leak: an SSM parameter name',
+      path: join(tmp, 'skills', 'ssm-name', 'SKILL.md'),
+      body: '---\nname: ssm-name\ndescription: fixture\n---\n\nRead SSM `/' + FAKE_PREFIX + '/qa/shared/name`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a named private account',
+      label: 'public-leak: the demo login id',
+      path: join(tmp, 'skills', 'demo-login', 'SKILL.md'),
+      body: '---\nname: demo-login\ndescription: fixture\n---\n\nSign in as `' + fakeAccount + '`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a personal mailbox',
+      label: 'public-leak: a login address',
+      path: join(tmp, 'skills', 'login-address', 'SKILL.md'),
+      body: '---\nname: login-address\ndescription: fixture\n---\n\nNever sign in as `someone' + '@' + 'vivreal.io`.\n',
+    },
+    {
+      // The batch review: a sender on a sending subdomain is as private as a root login.
+      rule: 'public-leak',
+      match: 'a personal mailbox',
+      label: 'public-leak: a mailbox on a company subdomain',
+      path: join(tmp, 'skills', 'subdomain-sender', 'SKILL.md'),
+      // The sanctioned address comes FIRST on the line, so a first-match-only check would pass it.
+      body:
+        '---\nname: subdomain-sender\ndescription: fixture\n---\n\nReplies go to `hello' + '@' + 'vivreal.io`; it sends as `someone' + '@' + 'mail.vivreal.io`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a Stripe key',
+      label: 'public-leak: a Stripe secret key',
+      path: join(tmp, 'skills', 'stripe-key', 'SKILL.md'),
+      body: '---\nname: stripe-key\ndescription: fixture\n---\n\nThe key is `' + 'sk' + '_live_' + 'a1B2c3D4e5F6g7H8`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a Mongo ObjectId',
+      label: 'public-leak: a real ObjectId',
+      path: join(tmp, 'skills', 'object-id', 'SKILL.md'),
+      body: '---\nname: object-id\ndescription: fixture\n---\n\nFilter on groupID `' + '65f0' + 'a1b2c3d4e5f6a7b8c9d0`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'an AWS or Atlas generated hostname',
+      label: 'public-leak: a distribution id',
+      path: join(tmp, 'skills', 'distribution', 'SKILL.md'),
+      body: '---\nname: distribution\ndescription: fixture\n---\n\nInvalidate `' + 'E' + '1A2B3C4D5E6F7` after the write.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'an AWS or Atlas generated hostname',
+      label: 'public-leak: an Amplify app hostname',
+      path: join(tmp, 'skills', 'amplify-host', 'SKILL.md'),
+      body: '---\nname: amplify-host\ndescription: fixture\n---\n\nThe origin is `main.' + 'd1a2b3c4d5e6f7' + '.amplifyapp.com`.\n',
+    },
+    {
+      // #65 review pass 1 Note 2: a Lambda function URL host names one function in one account.
+      rule: 'public-leak',
+      match: 'an AWS or Atlas generated hostname',
+      label: 'public-leak: a Lambda function URL host',
+      path: join(tmp, 'skills', 'function-url', 'SKILL.md'),
+      body:
+        '---\nname: function-url\ndescription: fixture\n---\n\nPOST to `https://' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6' +
+        '.lambda-' + 'url.us-east-1.on.aws/`.\n',
+    },
+    {
+      // #65 review pass 1 Note 2: a Cognito identity pool id.
+      rule: 'public-leak',
+      match: 'an AWS or Atlas generated hostname',
+      label: 'public-leak: a Cognito identity pool id',
+      path: join(tmp, 'skills', 'identity-pool', 'SKILL.md'),
+      body: '---\nname: identity-pool\ndescription: fixture\n---\n\nThe pool is `us-east-1' + ':' + '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d`.\n',
+    },
+    {
+      // The ALLOW side: the placeholders a skill writes instead stay green.
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: function URL and identity pool placeholders',
+      path: join(tmp, 'skills', 'aws-placeholders', 'SKILL.md'),
+      body:
+        '---\nname: aws-placeholders\ndescription: fixture\n---\n\n' +
+        'POST to `https://<function-url-id>.lambda-' + 'url.<region>.on.aws/`; the pool is `<region>:<identity-pool-uuid>`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a dollar figure in the unit economics',
+      label: 'public-leak: a dollar-figure table',
+      path: join(tmp, 'skills', 'vivreal-unit-economics', 'references', 'cost-model.md'),
+      body: '# cost model\n\n| Customers | MRR |\n|---|---|\n| 50 | ~' + '$' + '2.25k/mo |\n',
+    },
+    {
+      // The ALLOW half: the placeholders the leak messages tell an author to write, the public
+      // sender, a git SHA and a bare process name must never trip the rule, and neither may a
+      // dollar sign that is not a figure.
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: the placeholders it asks for',
+      path: join(tmp, 'skills', 'vivreal-unit-economics', 'SKILL.md'),
+      body:
+        '---\nname: vivreal-unit-economics\ndescription: fixture\n---\n\n' +
+        'Write `docs/projects/<slug>/design.md`. Read `${VIVREAL_REPOS}/VR_CMS_API/CLAUDE.md`, then ' +
+        '`<secret-prefix>/main-api`, `<ssm-prefix>/shared/name` and `<qa-secret-prefix>/square-sandbox`. ' +
+        'Prices come from `$TIER_DISPLAY`. Mail `hello@vivreal.io` or `<sender>+outreach@vivreal.io`. ' +
+        'Filter on groupID `0123456789abcdef01234567`. The cluster is `vivreal.<cluster-id>.mongodb.net` and the ' +
+        'portal origin `stable.<portal-amplify-app-id>.amplifyapp.com`. Status `in_progress`, commit ' +
+        'a'.repeat(40) + '. Never kill OneDrive.exe. Use the demo account or the QA account bundle. ' +
+        // A private token inside a longer word, and a non-private word before /prod, are not hits.
+        'The word pre' + fakeHandle + 'post and `example/prod/main-api` are fine, and so is `<name>@gmail.com`. ' +
+        // Paths that exist on every machine, an elided path, a URL and the repo variable name no one.
+        'Git Bash turns `/aws/x` into `' + SYSTEM_DRIVE + '/Program Files/Git/aws/x`; import `' + SYSTEM_DRIVE + '/...` fails; see ' +
+        '`https://example.com/a` and `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md`.\n',
+    },
+    {
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: the manifest author address',
+      path: join(tmp, 'skills', 'author', 'manifest.json'),
+      body: '{ "author": { "name": "Vivreal", "email": "hello' + '@' + 'vivreal.io" } }\n',
+    },
+    {
+      // A manifest is no exemption: its author field publishes a login as surely as prose does.
+      rule: 'public-leak',
+      match: 'a personal mailbox',
+      label: 'public-leak: a login in a manifest',
+      path: join(tmp, 'skills', 'author-login', 'manifest.json'),
+      body: '{ "author": { "name": "Vivreal", "email": "owner' + '@' + 'vivreal.io" } }\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a personal free-mail address',
+      label: 'public-leak: a free-mail address',
+      path: join(tmp, 'skills', 'free-mail', 'SKILL.md'),
+      body: '---\nname: free-mail\ndescription: fixture\n---\n\nThe owner reads `someone' + '@' + 'gmail.com`.\n',
     },
   ];
 
@@ -1630,6 +2110,8 @@ function selfTest() {
     // green no matter what.
     failures.length = 0;
     rmSync(tmp, { recursive: true, force: true });
+    removeDocsPoison();
+    registerFakeTokens(false);
     const i = PLUGIN_DIRS.indexOf(FIXTURE_PLUGIN);
     if (i >= 0) PLUGIN_DIRS.splice(i, 1);
     runAll(walk(ROOT));
@@ -1644,6 +2126,8 @@ function selfTest() {
     }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
+    removeDocsPoison();
+    registerFakeTokens(false);
     failures.length = 0;
     warnings.length = 0;
   }

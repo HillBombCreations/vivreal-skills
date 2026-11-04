@@ -28,7 +28,7 @@ color: green
 2. Verify the session file named by `docs/agent-notes/footage-recorder.md` exists. If
    missing, return `auth_expired` with the two refresh commands from
    `packages/content-studio/CLAUDE.md`, run from that package: `npx tsx dev/g2-capture/record-auth.ts`
-   (a fresh login as `vivreal-content-demo`), then `npx tsx dev/refresh-auth-state.ts` (rebuilds
+   (a fresh login as the demo account), then `npx tsx dev/refresh-auth-state.ts` (rebuilds
    localStorage and dismisses the install prompt).
 3. **Gate: a `qa-walker` walk of the exact flow you are about to shoot must
    exist and be clean before you film.** Same owner rule `tutorial-maker` runs
@@ -325,6 +325,12 @@ close it in the pre-roll of every portal take; give a dismiss helper both labels
 - **The phone Studio sheet scrolls inside its own box**, 202 px (Page settings) to 264 px (Business
   info) tall at 844 high, which cuts a control in half at any scroll. Scroll that element, not the
   page; 390x932 gives about 34 px more and cut the hours frame cleanly.
+- **The orders bar ("Hear about new orders")** slides over phone frames about 8 s into a load.
+  Dismiss it before the frame, and trim a video's start past it (13 s was needed on 2026-11-02),
+  rather than filming around it.
+- **Text scans are case-sensitive.** A scan for a label or a plan figure misses it when the screen
+  writes it in another case. Scan for the words exactly as the product prints them, or lower-case
+  both sides when the case does not matter.
 
 ### Top-of-page frames: never pre-scroll and come back
 
@@ -439,9 +445,13 @@ Operate it by these rules:
 - **An approved write needs its own allow-list entry, anchored on host and method** (the model is
   `WRITE_A_POST_WRITES`, the presigned S3 PUT only). A broad pattern such as
   `/upload|presign|media/i` once passed media-library deletes and contact uploads.
-- **Two writes the app makes on view** (refresh-profile, recommendations/events) are blocked
-  without failing the take and counted as "blocked on view" in the summary line. Not a defect in
-  your take.
+- **SUPERSEDED (2026-11-03): "refresh-profile is blocked without failing the take."** Blocking
+  `user/refresh` signs the session out and hides every plan-gated block. The POST reads a take
+  must let through (`user/refresh`, `get-media`, the `/app/monitoring` tunnel and the rest), and
+  the one write on view it blocks and counts (`recommendations/events`), are in
+  `vivreal-knowledge:vivreal-accounts-and-writes`, `references/walk-harness.md`, with the
+  generic guard rules and the script mechanics (absolute screenshot paths, one take per call,
+  `:visible` selectors, case-sensitive scans).
 - **Not covered:** WebSocket frames, and the browser's HTTP cache is off for the take (first loads
   are slower).
 - **The guard is armed by the help scripts, not by `vivreal-hq/packages/content-studio/src/portal-capture.ts`**, which arms no request
@@ -459,7 +469,7 @@ or to stop, never a reason to fake the state.
 
 | Surface | Needs | Without it |
 |---|---|---|
-| Search visibility (status line, "Let people find your site", the Home card) | A business that is not a prospect: the Vivreal business (read only) or the QA v5 scratch site (hide and restore, approved) | Hidden on Vivreal Content by design. Demo sites are hidden from search too, so a page's settings show "Your whole site is hidden from search, so this page is too." |
+| Search visibility (status line, "Let people find your site", the Home card) | A business that is not a prospect: the Vivreal business (read only) or a QA scratch-2 site (hide and restore; tests write there freely) | Hidden on Vivreal Content by design. Demo sites are hidden from search too, so a page's settings show "Your whole site is hidden from search, so this page is too." |
 | AI agent, Connected apps | The owner's own session (connections are per person) | Ask for an owner-session shot |
 | Create's Email your list row (V11 Email) | A sender set up, and a subscribed person on a list linked to the site | Blocked on every Vivreal Content site ("Set up who your emails come from first."). Film the warning and ring "Set it up" |
 | Square sandbox | A human signs in to the Square sandbox | Stop and ask; never automate that sign-in |
@@ -567,7 +577,7 @@ Skip it for a social-only library session that no page uses.
   opening (then closing) dialogs.
 - Never sign in as any identity outside the "Which login" table (in
   `vivreal-knowledge:vivreal-accounts-and-writes`) without the owner's OK
-  first, and never use `vivreal/qa/walk-accounts#scratch-owner` on any business but QA v5 scratch.
+  first, and never use the `scratch2-owner` key of the QA account bundle on any business but QA scratch-2.
 - Never swap a name, number or label in the page before a capture.
 - Never film any flow without a clean `qa-walker` walk of it first on the
   current build (see First actions above).

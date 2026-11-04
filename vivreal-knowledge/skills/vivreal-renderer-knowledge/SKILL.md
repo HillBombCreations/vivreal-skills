@@ -5,6 +5,8 @@ description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site
 
 # vivreal-site-renderer: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U22-what-the-renderer-renders.md`, `05-reference/site-chrome-contract.md`; `npm run docs:route -- "site-renderer"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
 Source of truth: `vivreal-site-renderer` `CLAUDE.md` (and the docs it links) at `origin/master`.
@@ -133,6 +135,14 @@ Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older v
 ## Gotchas + forward/backward skew
 
 - **Config-less blocks are legit**, `blockToComposedSection` in `src/composition/blocks.ts` guards `block.config?.`: a Mongo/Mixed round-trip drops empty `config` objects, and before the guard `block.config.bindings` threw and killed the entire Server-Components render. Never assume `block.config` exists.
+- **A stored alias is normalised for every reader that draws or links it.** A stored `twitter` for X is
+  mapped once, and every reader (glyphs, labels, accessible names and hrefs) uses the mapped value; a
+  reader that maps only the label draws two X buttons with one href.
+- **A new or changed section is proven on a Blank page that holds only that section, served by
+  Templates** (200, and the section drawn), at 390 and 1440, both empty and populated. A Studio
+  preview or a renderer unit test does not prove what Templates serves: Templates' own "what draws"
+  decides a 404 (an hours-only page answered 404 while Studio drew it). This also serves the owner
+  goal that every page is buildable from Blank.
 - `DetailSection` is a closed union: adding an enum value is a MINOR bump; changing existing semantics is MAJOR. Unknown section values from a future portal version render `null` (no crash).
 - Versioning in older CLAUDE.md sections is historical. The published line moves fast, so check `package.json` and the registry. Refresh the CLAUDE.md header only on a release commit, never on a docs-only master push: ANY master push triggers the publish workflow.
 

@@ -5,6 +5,8 @@ description: 'Use when reasoning about the Vivreal SITE PRODUCT, NOT the AWS dep
 
 # Vivreal Sites: Product: Data & Authoring Model
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U3-how-studio-works.md`, `03-use-cases/U16-serving-a-live-customer-site.md`; `npm run docs:route -- "site save"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Last synced: 2026-10-15 (Templates `origin/stable` at `c9cfdb0`, the v6 release)
 Last extended: 2026-09-16 (Save to live on an ISR site depends on the stored Amplify buildSpec)
 

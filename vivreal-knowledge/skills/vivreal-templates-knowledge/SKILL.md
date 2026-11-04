@@ -5,6 +5,8 @@ description: 'Use when working in Vivreal_Templates, the Next.js 16 universal cu
 
 # Vivreal_Templates: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U16-serving-a-live-customer-site.md`, `03-use-cases/U28-template-seeding.md`; `npm run docs:route -- "templates serving"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
 Source of truth: `Vivreal_Templates` `CLAUDE.md` (and the docs it links) at `origin/stable`.
@@ -139,6 +141,11 @@ A site can show the owner's synced social posts. `src/lib/api/collections/social
 
 - The rendered site does NOT read `templateType` for layout, layout comes from `pageConfigs[].format` (one exception: `templateType === 'restaurant'` enables the FAB). Render-behavior changes belong in the renderer, not branch logic.
 - `data/mockData.ts` is fallback only (used if the API is unavailable).
+- **A new or changed section is proven on a Blank page that holds only that section, served by
+  Templates** (200, and the section drawn), at 390 and 1440, both empty and populated. A Studio
+  preview or a renderer unit test does not prove what Templates serves: its own "what draws" check
+  decides a 404 (an hours-only page answered 404 while Studio drew it; panel follow links Studio
+  promised were not drawn). This also serves the owner goal that every page is buildable from Blank.
 
 ## Lambda and MongoDB checklist (ported from the retired sites expert agent, 2026-10-20)
 

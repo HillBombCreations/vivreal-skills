@@ -5,6 +5,8 @@ description: 'Use when working in VR-Outreach-MCP-Server, the internal-only remo
 
 # VR-Outreach-MCP-Server: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U26-outreach-and-campaigns.md`, `03-use-cases/U7-mcp-servers.md`; `npm run docs:route -- "outreach"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Source of truth: `VR-Outreach-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
 Last synced: 2026-10-20 against `origin/main` at `066d0b2` (#11, live since 2026-10-19; Node 22 since 2026-10-02)
@@ -25,7 +27,7 @@ The prospects module is GONE (2026-07-27): `src/tools/prospects.ts` and its 8 to
 
 Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SHA256 `x-active-ctx` (VR-MCP-Server needs only the Bearer). Minting in `src/api/ctx.ts`, client in `src/api/outreach-client.ts`:
 
-- `x-active-ctx` payload `{ groupID, dbKey, email, exp }`, `exp = now + 600s`, signed with `CTX_SECRET` from `vivreal/prod/core`, minted **per request**. `set-active-group` must run first (session tools), the ctx carries the tenant routing; no `key`/`groupID` query params are sent.
+- `x-active-ctx` payload `{ groupID, dbKey, email, exp }`, `exp = now + 600s`, signed with `CTX_SECRET` from `<secret-prefix>/core`, minted **per request**. `set-active-group` must run first (session tools), the ctx carries the tenant routing; no `key`/`groupID` query params are sent.
 - `x-user-ctx` (`{ email, exp }`) minted **only for admin-gated tools** (gmail-history, segment writes, bulk-enroll).
 
 **Per-target token selection (do not get this wrong):** VR_Outreach_API → **access token** + ctx headers (JWT authorizer checks `aud`); VR_CMS_API fanout → **ID token** (`createCollectionObject.js` stamps `author` from ID-token claims absent on access tokens); VR_Secure_API bootstrap → id-or-access + **`x-app-source: vivreal`** (without the header the tenant query is `{type: undefined}` → empty).
@@ -51,8 +53,8 @@ Every **VR_Outreach_API** call needs the Cognito Bearer **AND** a minted HMAC-SH
 - **Connect allow-list = `ADMIN_EMAILS`** (deny-by-default, `getOrCreateSession()` in `src/server.ts`): secret reachable → enforce (empty list → NO ONE connects, fail-closed); secret unreachable (local dev) → allow. Consequence: every connected user is an admin, split later via `OUTREACH_ALLOWED_EMAILS`.
 - **No JWT authorizer at the MCP gateway**, auth is application-level; the `401 + WWW-Authenticate` challenge must reach clients.
 - **Audience prerequisite (C1, RESOLVED):** this server's Cognito client `7efagcmhehkdlnkth5g7vhsd48` must be in **VR_Outreach_API's JWT authorizer audience list** (the HttpApi default authorizer in `VR_Outreach_API/template.yaml`) or every Outreach call 401s. If the client ID ever changes, re-add + redeploy VR_Outreach_API. VR_CMS_API/VR_Secure_API need no change.
-- **Ctx tokens use the Outreach-derived key and `aud: 'outreach'`** since 2026-09-27 (`e019eb0`, matching VR_Outreach_API H6006); a token minted with the raw `CTX_SECRET` is refused. `CTX_SECRET` and `ADMIN_EMAILS` default to `vivreal/prod/core`, not `hb-api-secrets` (`9df37e7`).
-- Stacks: `VR-Outreach-MCP-Server` (prod, `main`); the `dogfood` DEV path is retired fleet-wide, check the workflow before assuming one; Sentry project `vivreal-outreach-mcp`. Secrets (secrets-audit Phase 2, config-only): `CTX_SECRET` + `ADMIN_EMAILS` read from `vivreal/prod/core` (`cloudformation/template.yaml`); Sentry DSN from SSM `/vivreal/prod/outreach-mcp/sentry-dsn`, environment from SSM `/vivreal/prod/shared/sentry-environment`. `hb-api-secrets` is retired here.
+- **Ctx tokens use the Outreach-derived key and `aud: 'outreach'`** since 2026-09-27 (`e019eb0`, matching VR_Outreach_API H6006); a token minted with the raw `CTX_SECRET` is refused. `CTX_SECRET` and `ADMIN_EMAILS` default to `<secret-prefix>/core`, not `hb-api-secrets` (`9df37e7`).
+- Stacks: `VR-Outreach-MCP-Server` (prod, `main`); the `dogfood` DEV path is retired fleet-wide, check the workflow before assuming one; Sentry project `vivreal-outreach-mcp`. Secrets (secrets-audit Phase 2, config-only): `CTX_SECRET` + `ADMIN_EMAILS` read from `<secret-prefix>/core` (`cloudformation/template.yaml`); Sentry DSN from SSM `<ssm-prefix>/outreach-mcp/sentry-dsn`, environment from SSM `<ssm-prefix>/shared/sentry-environment`. `hb-api-secrets` is retired here.
 - Repointed (single-commit window) to the shared cross-repo SNS alarm topic. Tool count is unchanged: still 50.
 
 ## Companions

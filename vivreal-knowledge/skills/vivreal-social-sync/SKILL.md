@@ -5,6 +5,8 @@ description: 'Use when a task touches how an owner''s Instagram, Facebook or Tik
 
 # Social sync: how platform posts reach Vivreal, and what removes them
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U35-the-hourly-social-sync.md`, `03-use-cases/U36-disconnecting-a-social-channel.md`; `npm run docs:route -- "social sync"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Last synced: 2026-10-04. Sources: VR_CMS_API `origin/main` (v2.14.3 on `stable` that day),
 VR_Secure_API v2.20.1, VR_Main_API, VR_Client_API v2.15.0, and the evidence rows in
 `vivreal-hq/docs/projects/shipped-ledger.md` (2026-10-04 sections). **No source CLAUDE.md covers
@@ -15,7 +17,7 @@ this yet**; every claim below cites the code.
 1. **Schedule.** `ScheduledSocialSyncSchedule`, an `AWS::Scheduler::Schedule` declared ONCE in
    `VR_CMS_API/cloudformation/create-update-integrations.yaml` (about :464-500): `rate(1 hour)`,
    named `${StackName}-scheduled-social-sync` (live: `VR-CMS-API-scheduled-social-sync`), target the
-   shared FIFO queue (`/vivreal/prod/shared/fifo-sqs-arn`), input `{"messageType":"integration-sync-sweep"}`,
+   shared FIFO queue (`<ssm-prefix>/shared/fifo-sqs-arn`), input `{"messageType":"integration-sync-sweep"}`,
    constant `MessageGroupId` so a running sweep never overlaps the next. Deploying it needed
    `scheduler:*Schedule` on `schedule/default/VR-CMS-API-*` for `GitHubActions-Deploy`; without it
    the v2.14.1 deploy rolled back (ledger 03:12Z and 03:59Z).

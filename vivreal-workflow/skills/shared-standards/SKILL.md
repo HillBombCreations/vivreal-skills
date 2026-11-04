@@ -9,21 +9,27 @@ description: Vivreal Portal shared engineering standards, the non-negotiable con
 
 ## Path resolution (read FIRST)
 ### `${VIVREAL_REPOS}`: the folder that holds every Vivreal clone
-Every co-owner machine sets `VIVREAL_REPOS`, with forward slashes (for example `C:/repos`), as a user environment variable AND in the `env` block of `~/.claude/settings.json`. Every Vivreal repository is cloned directly under it.
-1. If `VIVREAL_REPOS` is set, use it.
-2. If it is unset, use the parent of the current repository ONLY when that parent holds both `Vivreal_Portal_Mobile/CLAUDE.md` and `vivreal-hq/CLAUDE.md`. A worktree under `_wt/` fails this check by design.
-3. Otherwise STOP and report "VIVREAL_REPOS is unset and the parent folder is not the clone root". Never guess a path and never write a literal drive path into a command.
-Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
-```bash
-: "${VIVREAL_REPOS:?set VIVREAL_REPOS to the folder holding every Vivreal clone}"
-test -f "$VIVREAL_REPOS/Vivreal_Portal_Mobile/CLAUDE.md" || { echo "VIVREAL_REPOS does not hold the clones"; exit 1; }
-```
+Every Vivreal repository is cloned side by side directly under one folder, which can be anywhere on any machine. Nobody configures it: it is derived.
+1. `VIVREAL_REPOS`, when set, is an OPTIONAL override. It must be absolute and hold `vivreal-hq/.git`; a set but wrong value is REFUSED with the reason, never silently replaced by a derived folder (unset it to derive). The resolver is vivreal-hq's `packages/fleet-ops/lib/repos-root.js`, vendored byte-identical as `repos-root.cjs`.
+2. Otherwise derive it from the checkout you are in: `git rev-parse --git-common-dir` names the MAIN checkout's `.git`, even from a worktree under `_wt/`, and the folder above that checkout is the root when it holds `vivreal-hq/.git`. From a folder that is not a checkout (`_ops/`), the root is the first ancestor holding `vivreal-hq/.git`.
+3. Otherwise STOP and report "no Vivreal clone root found". Never guess a path and never write a literal drive or home path into a command.
 
-### Ecosystem docs: `docs/ecosystem/`
-Cross-repo ecosystem docs (architecture, debugging guides, Lambda inventory, etc.) live in the portal repo at `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/docs/ecosystem/`. They're version-controlled and always available.
+Once the vivreal-workflow plugin is loaded (on a fresh machine, from the second session on), its SessionStart hook exports the derived value to every Bash command of the session, subagents included (measured 2026-11-04), so `$VIVREAL_REPOS` just works in Bash. The PowerShell tool never receives it, so do repo work in Bash. Hooks and the db-explorer MCP server derive it themselves (`repos-root.cjs`). In a first session, or any shell without it, the two lines below derive it the same way:
+```bash
+: "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
+test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
+```
+Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
+
+- **A sibling repo you need is missing:** clone it, `gh repo clone HillBombCreations/<repo> "$VIVREAL_REPOS/<repo>"`, rather than reporting a hole.
+- **A repo has `.env.example` and no `.env.local`:** run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/fetch-env-local.js" <key> "$VIVREAL_REPOS/<repo>"` (the key is the repo's `envLocal` in `onboarding/repos.json`). It prints names, never values, and lists the personal keys still to fill.
+- **`npm` in Bash needs no token setup, and only installs get a token:** the same hook runs `npm` and `npx` through a wrapper. Install and read commands (`ci`, `install`, `i`, `add`, `update`, `view`, `info`, `outdated`, and `npx` or `npm exec` naming `@hillbombcreations/`) get the shared READ-ONLY packages token; `npm publish` alone gets the WRITE token, and only for its upload: its lifecycle scripts and its `npm pack` run first with no token, then the packed tarball is published with `--ignore-scripts`; every other command (`npm run build`, `npm test`, `npx next build` and the rest) gets NONE, and a `NODE_AUTH_TOKEN` you set is stripped from it too, because a Next.js build cache writes environment values to disk (owners, 2026-11-04). Each token is read from AWS Secrets Manager with your own AWS sign-in at the moment npm runs (the secret names are keys `packagesTokenSecret` and `packagesWriteTokenSecret` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`), never from `gh auth token`, and the wrapper never prints it or writes it to a file; the npm child that receives it, and that child's install scripts, can read their own environment. When a part is missing (the key, the secret, or your AWS sign-in) it says which, and npm runs without a token.
+
+### Cross-repo docs: the hq dev docs
+Cross-repo flows, decisions, dependency maps, the AWS estate and operations are described in the vivreal-hq dev docs, `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/README.md` (a symptom table, then use cases and references). Each repo's `CLAUDE.md` owns that repo's internals; the dev docs own what crosses repos (owners, 2026-11-04). Two hq tools, run from `${VIVREAL_REPOS}/vivreal-hq`, find the right page before you change code: `npm run docs:route -- "<symptom or component>"` names the document to open, and `npm run docs:impact -- <repo>:<path>` lists the documents, maps and pinning tests that cover a file you are about to change. If either script is missing on that checkout, open the README's symptom table by hand. **The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04, a banner on each page points here): never cite it as current and never edit it.
 
 ### When you see `${VIVREAL_REPOS}/...` in this doc or any agent prompt
-Resolve it before reading. Never paste the literal placeholder into a Read or Bash command, substitute the actual path. Ecosystem docs are at `docs/ecosystem/` (no resolution needed).
+Resolve it before reading. Never paste the literal placeholder into a Read or Bash command, substitute the actual path.
 
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
@@ -86,10 +92,10 @@ three searches returned three different incomplete answers.
 |---|---|
 | `src/app/api/proxy/*` (any portal proxy route) | [references/portal.md](references/portal.md): "The three-tier API rule" + "Proxy route factory" |
 | `active_ctx`, `dbKey`, `groupID`, multi-tenant routing | "Auth & multi-tenancy" |
-| MongoDB queries, indexes, write concerns | "Optimization principles" + read `docs/ecosystem/mongo_queries.md` |
+| MongoDB queries, indexes, write concerns | "Optimization principles" + the `vivreal-db` skill + dev docs `02-architecture/data-and-tenancy.md` |
 | About to use the Mongo MCP tools (`mcp__plugin_vivreal-db-explorer_mongodb__*` from the vivreal-db-explorer plugin, or `mcp__mongodb__*` where a project `.mcp.json` declares `mongodb`) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
 | `useAuth()` in app layout, hydration, SSR | [references/portal.md](references/portal.md): "Hydration & SSR rules" |
-| Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + read `docs/ecosystem/aws-lambda-inventory.md` |
+| Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + dev docs `05-reference/aws-estate.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
 | AWS or Amplify reads (`get-app`, `get-function-configuration`, `get-secret-value`, `ssm get-parameter`), env vars, secrets | "Security non-negotiables" |
 | Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
@@ -387,7 +393,7 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 
 ## AWS Lambda & Infrastructure Reference
 
-**Full inventory:** `docs/ecosystem/aws-lambda-inventory.md`, READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. It maps every Lambda function name → repo → CloudFormation fragment → env vars → stack.
+**The estate:** `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/05-reference/aws-estate.md` (with `05-reference/resource-to-template-map.md` and `04-operations/standalone-stacks.md`), READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. A count or a name there is a pointer to re-derive from the stack, never a value to quote.
 
 ### Function rosters: count them, do not quote them
 Do not quote a function count from this file or from any CLAUDE.md. Both go stale between
@@ -479,8 +485,10 @@ the line still BUILDS. For anything that matters, confirm by behaviour on the li
 | `vivreal-websocket` | `VR_Secure_API/websocket/` | `.github/workflows/websocket.yml` |
 | `Vivreal-Media-CDN` | `VR_Secure_API/cloudformation/media-cdn.yaml` | `.github/workflows/media-cdn.yml` |
 
-### Secrets Manager (per-service `vivreal/prod/*`: secrets-audit Phase 2, 2026-07)
-The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`vivreal/prod/secure-api`, `vivreal/prod/cms-api`, `vivreal/prod/client-api`, `vivreal/prod/client-auth`, `vivreal/prod/main-api`, `vivreal/prod/analytics`, `vivreal/prod/oncall`, `vivreal/prod/site-deployment`) plus shared secrets (`vivreal/prod/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `/vivreal/prod/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
+### Secrets Manager (per-service `<secret-prefix>/*`: secrets-audit Phase 2, 2026-07)
+**Names are written with a placeholder prefix, because this repository is PUBLIC.** Each value is a key of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json` (names only, never values): `<secret-prefix>/` is the Secrets Manager prefix, key `secretPrefix`; `<ssm-prefix>/` the SSM parameter prefix (it has a leading slash), key `ssmPrefix`; `<qa-secret-prefix>/` the QA secret prefix, key `qaSecretPrefix`; "the QA account bundle" is key `qaAccountBundle`; the db-explorer secret is key `dbSecretId`. Read the file; nothing needs setting. To confirm a name exists, list names only: `aws secretsmanager list-secrets --query 'SecretList[].Name'`. Never write a real prefix back into this repo: its check-definitions gate fails on one.
+
+The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`<secret-prefix>/secure-api`, `<secret-prefix>/cms-api`, `<secret-prefix>/client-api`, `<secret-prefix>/client-auth`, `<secret-prefix>/main-api`, `<secret-prefix>/analytics`, `<secret-prefix>/oncall`, `<secret-prefix>/site-deployment`) plus shared secrets (`<secret-prefix>/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `<ssm-prefix>/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
 
 ### Reading and verifying a CloudFormation deploy
 
@@ -511,27 +519,28 @@ The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets a
 - **WebSocket issues**, 10 functions across 3 APIs have `WS_ENDPOINT` + `WS_TABLE`
 - **Deployment failures**, check which stack owns the function and how it deploys
 
-## Ecosystem documentation (`docs/ecosystem/`)
-Cross-repo ecosystem docs checked into this repo. Richer than per-repo CLAUDE.md files for ecosystem-wide questions. ALWAYS check the relevant ones during research before grepping blindly.
+## Cross-repo documentation (the hq dev docs)
+The standing description of how the system works across repos lives in vivreal-hq, `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/README.md`, and is
+maintained by `vivreal-workflow:system-doc-writer`. Check it during research before grepping blindly.
 
-| File | When to read |
+| You need | Open (under `docs/dev-docs/`) |
 |---|---|
-| `docs/ecosystem/ARCHITECTURE.md` | Overall system architecture, service boundaries |
-| `docs/ecosystem/FRONTEND_APPLICATION.md` | Portal frontend structure, patterns, conventions |
-| `docs/ecosystem/BACKEND_APIS.md` | All backend API surface, endpoint inventory |
-| `docs/ecosystem/CLIENT_API_AND_AUTH.md` | Public content delivery API + authorizer |
-| `docs/ecosystem/DATABASE.md` | MongoDB schemas, multi-tenant routing, indexes |
-| `docs/ecosystem/mongo_queries.md` | Common query patterns, dbKey routing examples |
-| `docs/ecosystem/CROSS_API_DEBUGGING_GUIDE.md` | How to trace bugs across the 3 backend services |
-| `docs/ecosystem/AI_AGENT_SYSTEM.md` | Agent system vision and design |
-| `docs/ecosystem/SITE_CREATION_PIPELINE.md` | EventHandler Step Functions flow |
-| `docs/ecosystem/PRICING_AND_COSTS.md` | Tier quotas, pricing, overage rates |
-| `docs/ecosystem/aws-ses-email-guide.md` | SES email integration |
-| `docs/ecosystem/aws-lambda-inventory.md` | **Full Lambda inventory**, function names, env vars, stacks, CloudFormation fragments, Secrets Manager keys, WebSocket config |
-| `docs/ecosystem/insights_architecture.md` | Cross-cutting architecture insights |
-| `docs/ecosystem/multi-agent-workflow.md` | CloudWatch log group inventory by Lambda |
+| Where to start, by symptom | `README.md`, or `npm run docs:route -- "<symptom>"` from vivreal-hq |
+| What a file you are changing feeds | `npm run docs:impact -- <repo>:<path>` from vivreal-hq |
+| Services, boundaries, the portal | `02-architecture/platform-and-services.md`, `02-architecture/the-portal.md` |
+| Data, tenancy, `dbKey` routing | `02-architecture/data-and-tenancy.md` |
+| Decisions and why | `02-architecture/decisions.md` |
+| A request's path through the system | `03-use-cases/U<n>-*.md` (the README lists each with its symptom) |
+| Site creation and the EventHandler flow | `03-use-cases/U5-site-creation-to-live.md` |
+| Tiers, quotas and pricing | `03-use-cases/U2-quota-enforcement.md`, `03-use-cases/U11-pricing-structure.md` |
+| Email and SES | `05-reference/email.md` |
+| Functions, stacks, alarms, IAM | `05-reference/aws-estate.md`, `05-reference/alarms-and-monitoring.md`, `05-reference/iam-roles.md` |
+| Releases and deploys | `04-operations/release-and-deploy.md` |
 
-**Updating ecosystem docs:** If during a bug fix you discover ecosystem knowledge that is wrong or missing, the documenter is authorized to propose an update via Edit. Cite the bug slug so the change is traceable. Never wholesale rewrite, make targeted edits.
+**The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04): a banner on each page points to
+the dev docs. Never cite it as current, never edit it, and never send a reader there. A fact you find
+wrong or missing in the dev docs goes in your report for `vivreal-workflow:system-doc-writer`, with
+the document and the deployed ref that disproves it.
 
 ## Industry standards we follow
 When justifying technical decisions, reference these public standards. The reviewer will demand evidence-based justification, and "industry best practice" without a citation does not count.
@@ -608,7 +617,7 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 ## Anti-pattern catalog (check every diff)
 
 Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
-the 19 rules in checklist form, then each entry with how to spot it and its guard (source of
+the 22 rules in checklist form, then each entry with how to spot it and its guard (source of
 truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
 evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
 when its tests pass.
@@ -617,7 +626,7 @@ When you find a new recurring class, add it to the catalog in the same PR as the
 source first, then this plugin copy), with its evidence and its guard.
 
 ## Workflow rules: additions to the original 7
-8. Read `docs/ecosystem/` docs and the relevant repo CLAUDE.md before forming hypotheses. They contain knowledge that grep cannot surface.
+8. Read the hq dev docs (the README's symptom table, `npm run docs:route`, and `npm run docs:impact` on the files in play) and the relevant repo CLAUDE.md before forming hypotheses. They contain knowledge that grep cannot surface.
 9. Cite an industry standard (OWASP, AWS Well-Architected, Web.dev, MDN, RFC, Google Eng Practices) for any non-obvious technical decision. "Best practice" without a citation is not a justification.
 
 ## Backend testing conventions (different from frontend!)

@@ -5,6 +5,8 @@ description: 'Use when working on, writing about, or debugging Vivreal AI. The A
 
 # Vivreal AI agent: cross-repo knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U7-mcp-servers.md`, `03-use-cases/U29-customer-site-agent-surface.md`; `npm run docs:route -- "agent surface"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Last synced: 2026-10-21 (VR-MCP-Server `origin/main` 3285303, portal `origin/stable` v0.37.1, Secure `origin/stable` v2.22.6)
 
 ## Read this first: AI is the MCP server, and only the MCP server

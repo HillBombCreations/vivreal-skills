@@ -120,7 +120,7 @@ Now step out and explain, as an expert on that platform's audience and current n
   docs under `docs/dev-docs/`; X is not a Vivreal channel; Instagram, Facebook, LinkedIn and TikTok are),
   and whether it sounds like the platform brief says that platform should.
   - **Narration persona, added 2026-10-05.** Any first-person "I" voiceover is only honest over
-    disclosed demo-tenant footage (`vivreal-content-demo`, e.g. Cobalt and Crumb), and the post's
+    disclosed demo-tenant footage (the demo account, e.g. Cobalt and Crumb), and the post's
     own caption must carry a disclosure ("Demo bakery, real product." or equivalent). Over a REAL
     customer's own footage (signed out, no portal session, e.g. a comedyclub.example-style
     shoot), narration must be third person in Vivreal's own voice ("We moved the past shows to

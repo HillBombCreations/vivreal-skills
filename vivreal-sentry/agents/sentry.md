@@ -65,7 +65,7 @@ The passive **`sentry-tracer`** knowledge skill (in the `vivreal-knowledge` plug
 | `vivreal-mcp-server` | VR-MCP-Server (MCP Lambda) | node | **100%** | OAuth flow, tool entry/exit, downstream CMS+Secure API breadcrumbs |
 | `vivreal-templates` | Vivreal_Templates (customer sites on Amplify compute) | javascript-nextjs | **0% (errors only)**, `tracesSampleRate: 0` in `src/instrumentation.ts` and `src/instrumentation-client.ts` | Customer-site render and route errors, no tracing by design. Slug inferred from its issue prefix (`VIVREAL-TEMPLATES-*`), confirm with `find_projects` |
 
-This table is not a roster. VR_Outreach_API reports too (its DSN is `/vivreal/prod/outreach/sentry-dsn`); list the org's projects with `find_projects` before concluding a service sends nothing.
+This table is not a roster. VR_Outreach_API reports too (its DSN is `<ssm-prefix>/outreach/sentry-dsn`); list the org's projects with `find_projects` before concluding a service sends nothing.
 
 ### Distributed Tracing Architecture (current as of 2026-05-18)
 
@@ -179,6 +179,8 @@ When reading an issue with `level: error`: scroll to **Breadcrumbs**. The most r
 | `search_sentry_tools` then `execute_sentry_tool` | Every catalog tool: `get_issue_tag_values` (tag distribution: `environment`, `browser`, `os`, `release`, `url`, `lambda`), issue events, `get_trace_details`, `get_issue_breadcrumbs`, `get_event_stacktrace`, releases, replays | **Read tools only.** Never execute `update_issue`, `analyze_issue_with_seer` or any tool that changes an issue, project, alert or release. Handle `Tool "X" is not available in this session` rather than assuming a grant. |
 
 Tool surface read from the server source (getsentry/sentry-mcp `packages/mcp-core/src/tools/surfaces.ts`, 2026-10-28), **pending a live `/mcp` listing** on a machine with the Sentry MCP connected; if the live names differ, the live list wins and this file is wrong. `search_events`, `search_issue_events` and a direct `get_issue_tag_values` are gone. `update_issue` is directly exposed and is deliberately NOT in my tools. Neither is `analyze_issue_with_seer`: the server marks it `readOnlyHint: false` (`catalog/analyze-issue-with-seer.ts`) because it STARTS a Seer run when none exists. When Seer would help, say so in the report and the owner runs it.
+
+**Issue state changes stay on the main thread** (owners, 2026-11-04): resolving, ignoring, archiving or bulk-clearing issues is not this agent's job and no other agent owns it. Report the issue ids and the state you recommend for each, with the evidence, and the main thread makes the change.
 
 ### Query Patterns That Work
 

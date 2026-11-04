@@ -228,6 +228,18 @@ prevents nothing; the agent dispatched first is the one that did the damage.
   the reader reads committed refs rather than a working tree, because the writer
   is changing the tree underneath it.
 
+## Run records outlive the session
+
+Any agent that changes shared state (merge, publish, deploy, data write, gate
+verdict) writes one record per step where a later session finds it without this
+transcript: the change's PR (private repositories only), the batch's run-record
+issue in vivreal-hq (one private issue per release batch, "Run records,
+<batch>"), or the ops folder's `runs/`. A record that is only in a report or a
+transcript is not a record. A session that resumes a batch reads those records
+first, before any re-run, re-proof or triage note, because triage notes lag what
+actually ran: on 2026-11-04 a resume session called a recorded index build "not
+recorded" while the PR comment holding it had been there for hours.
+
 ## The habit that makes all of this checkable
 
 A check that cannot fail is not a check. When you assert the machine is healthy,

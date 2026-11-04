@@ -164,7 +164,9 @@ follows it rather than on the version and silently returns the wrong line.
    review code; if nothing has been reviewed, say so and stop. **A renderer
    (`vivreal-site-renderer`) merge also needs the recorded local Studio gate** (the portal's
    `kit:validate` registration and live-view gates run against the packed tarball, at the same
-   head). CI no longer runs it (owner, 2026-10-10), so a missing record is a STOP, not a pass.
+   head), run and recorded on the renderer PR by `vivreal-workflow:package-publisher` (its Studio
+   gate section). CI no longer runs it (owner, 2026-10-10), so a missing record is a STOP, not a
+   pass.
 2. **Derive the release model** for this repository (table above). State which shape you found and
    how, before doing anything that mutates state.
 3. **Merge, if not merged already.** If the change is a PR in a stack (several PRs chained on each
@@ -196,6 +198,10 @@ follows it rather than on the version and silently returns the wrong line.
    either alone, a stack sampled mid-update or before the update starts reads as healthy and is
    neither. Then assert the actual behavioral change the release was supposed to produce (a route
    answering correctly, a config value in effect, a feature visible), never only "the stack moved."
+   Send `X-App-Source: vivreal` on every direct Secure, CMS or Main call (curl, fetch, node), as
+   the portal does: without it Secure refuses the request and files the refusal in Sentry as a new
+   issue, so a proof turns into an error report. Never send a deliberately malformed request to
+   production; a malformed probe has reopened a resolved issue.
 7. **Verify the shipped commit is reachable from the deployed ref with `git cherry`, never an
    ancestry check.** A backported commit is patch-equivalent to its original, not a descendant of
    it, so `git log --ancestry-path` or a plain `git merge-base --is-ancestor` can report "not
@@ -204,13 +210,25 @@ follows it rather than on the version and silently returns the wrong line.
    the workflow itself is broken, a billing stop reads exactly like a broken job.
 9. **Report plainly** what is live, what is merged-but-not-deployed, and what you deliberately left
    for later, with the reason for each.
-10. **The main session records; you report the values.** This agent holds no Write and no Edit
-   tool, so it cannot fill in a runbook's "record here" lines. Every value a step says to record
-   (merge SHAs, published integrity, invalidation ids, baselines, the time of each merge, run and
-   proof) goes into the report as a labelled block (`R_MERGE=<sha>`, `R_INTEGRITY=<sha512>`), and
-   the report names which ones the main session still has to write into the runbook and the
-   release log. A value that is only in a transcript is not recorded.
-   Also post the record on GitHub: `gh pr comment <n> -R <repo> --body "release-engineer record: R_MERGE=<sha> R_BACKPORT=<run id> R_PROMOTE=<run id> proof=<one line>"`. The PR is the record both owners can read; an hq runbook, when there is one, is a copy.
+10. **Write each step's record before the next step starts.** After every state-changing step
+   (merge, backport run, promote run, deploy proof, index build, any data step), post it at once:
+   `gh pr comment <n> -R <repo> --body "release-engineer record <step>: <values> under GO <quote, name, time>"`,
+   and post the same line on the batch's run-record issue when the dispatch names one (one private
+   vivreal-hq issue per release batch, "Run records, <batch>"). A record posted once at the end of
+   a repo's sequence dies with the session: on 2026-11-04 a session ended after a deploy and
+   before its record. The values are labelled (`R_MERGE=<sha>`, `R_BACKPORT=<run id>`,
+   `R_PROMOTE=<run id>`, `R_INTEGRITY=<sha512>`, baselines, the time of each merge, run and
+   proof), and the report repeats them in a labelled block. This agent has no Write tool, so the
+   main session copies records into a runbook; the GitHub comment is the record, the runbook a
+   copy. A value that is only in a transcript is not recorded. Never post a private value on a
+   public repository's PR.
+
+   **Read before you re-prove.** A proof-only, resume or retry dispatch starts by listing what is
+   already recorded: for each PR in scope,
+   `gh api repos/<owner>/<repo>/issues/<n>/comments --paginate --jq '.[] | select(.body | startswith("release-engineer record")) | .created_at + " " + .body'`,
+   plus the batch's run-record issue. Report what is recorded before proving anything again. On
+   2026-11-04 a resume session called a recorded index build "not recorded", because it read a
+   triage note and never the PR comments.
 
 ## Previews, packaging and proofs (v7 release window, 2026-10-19/20)
 
@@ -248,6 +266,12 @@ Each of these was a real STOP or correction in the v7 window (vivreal-hq
 - **Read a workflow's own job condition before dispatching it on a ref.** Secure's `websocket.yml`
   deploy job runs only on `refs/heads/main`, so a dispatch with `--ref stable` is skipped and still
   reads green. Dispatch it with `--ref main`.
+- **A Stripe key-permission check is an owner browser read, never a pass by inference.** Read the
+  CONNECT PERMISSIONS column of both platform keys, live and test, in the Stripe Dashboard. The
+  selected value shows only as a CSS class, not an aria attribute. An edit needs the owner's SMS
+  code, so report the step as owner-pending, naming the row and the value it must read (for
+  refunds, "Charges and Refunds: Write"; there is no Refunds row). Detail:
+  `vivreal-knowledge:vivreal-cms-api-knowledge`, Stripe credential handling.
 - **Ghost runs multiply.** A new queued-forever promote run appeared in a third repo during the v7
   window. The ghost check before every train promote lists every known ghost id, and a run of
   yours that stays `queued` with zero jobs joins that list.
@@ -357,8 +381,10 @@ strategy.
 - DON'T hand-edit live a setting the template also changes or removes. The deploy rolls back.
 - DON'T assert a line count on a file you did not write, and DON'T trust a `--wait` exit code.
   Assert the content, and read the final status.
-- DON'T leave a value only in your transcript. Put every "record here" value in a labelled
-  block in the report for the main session to write down.
+- DON'T leave a value only in your transcript. Post each step's record on the PR before the next
+  step starts, and repeat every "record here" value in a labelled block in the report.
+- DON'T re-prove, re-run or call a step "not recorded" before reading the PR comments and the
+  batch's run-record issue.
 - DON'T report a release done off a green workflow run. Prove it against the stack's own state,
   baseline changed AND terminal status, not either alone.
 - DON'T derive a backport's scope from a commit list or count. Derive from `git diff --name-only`.

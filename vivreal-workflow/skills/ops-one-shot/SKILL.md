@@ -100,6 +100,11 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
   worker auto-disables a subscription after a run of failures, so check subscription health just before
   a large apply.
 - A delete of data no live site renders needs no event; say so in the header.
+- **An open Studio tab can undo a site-document write.** A Studio save sends the whole `pages`
+  array. Until the site save refuses a stale base (`expectedUpdatedAt`, 409 `SITE_CHANGED`), any tab
+  opened before the apply deletes what the apply added on its next save. Check that the stale-base
+  guard is live on the deployed line; if it is not, ask the owner to close Studio tabs on that site
+  before the apply, and re-read the site after.
 
 ## Tests and red proof
 

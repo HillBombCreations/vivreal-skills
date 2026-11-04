@@ -18,7 +18,7 @@ How media is stored, uploaded, and delivered across the stack. Bytes live in **S
 
 1. Client requests a presigned S3 URL from VR_CMS_API **`POST /tenant/presignUpload`** (`handleMedia` Lambda). The portal proxies this via `/api/proxy/uploadFiles` → `/tenant/presignedUploadUrl`.
 2. Client uploads **directly to S3** (native `fetch`, never through a Lambda, keeps bytes off the 30s/6MB Lambda path).
-3. Image/video processing uses the **FFmpeg Lambda layer** (its ARN resolves from SSM `/vivreal/prod/shared/ffmpeg-arn` on the CreateSites function; it must be **arm64**, see `vivreal-lambda`).
+3. Image/video processing uses the **FFmpeg Lambda layer** (its ARN resolves from SSM `<ssm-prefix>/shared/ffmpeg-arn` on the CreateSites function; it must be **arm64**, see `vivreal-lambda`).
 
 ## Delivery path (CloudFront signed URLs): VR_Client_API
 

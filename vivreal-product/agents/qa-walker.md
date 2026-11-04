@@ -147,6 +147,41 @@ the portal is reported as browser-only, below a defect in the app.
 
 Each of these cost a session a false conclusion.
 
+- **The harness rules come first:** `vivreal-knowledge:vivreal-accounts-and-writes`,
+  `references/walk-harness.md` (guard the browser context with a 403, the POST reads to let
+  through, signing in in process, script mechanics, `:visible` selectors, and `X-App-Source:
+  vivreal` on every direct API call). Read it before writing a walk script.
+- **Record why a page failed before you report it.** For every measured page load, keep in the
+  findings folder: failed requests with their error text (`page.on('requestfailed')`) and any 4xx
+  or 5xx answers; console errors (`page.on('console')` at error level) and page errors
+  (`page.on('pageerror')`); the service worker state just before the load (scope, active or
+  installing, controlling or not); and every abort your own guard or request blocking made, with
+  its URL. A "This page did not load" seen once in three loads could never be explained because
+  none of this was kept. "No event in Sentry" is not evidence of no error: the portal project
+  filters chunk-load and hydration errors.
+- **Copy `test-results/` out after every Playwright run.** Playwright empties it at the start of
+  the next run, so a second spec run erased the first run's page snapshots. Copy every
+  `error-context.md` into the walk folder as soon as a run ends.
+- **A serial suite hides everything after its first failure.** Later tests are NOT RUN: unknown,
+  neither a pass nor a failure. Count passed, failed, skipped and not run from the totals, and
+  re-run the hidden ones by name.
+- **Studio's query parameter is `?site=<id>`.** A wrong name (`?siteId=`) silently opens the
+  group's FIRST site, so a 15-site sweep walked one site 15 times. Read the shown site name back
+  on every Studio load.
+- **Two tabs in one browser context share Studio state.** Never open a second tab in a context a
+  sweep is driving; use a separate context for parallel work.
+- **Read accessible names from the accessibility tree** (CDP `Accessibility.getFullAXTree`), not
+  from DOM guesses: a placeholder or a slider root's `aria-label` looks named in the DOM and is
+  not.
+- **A text run can scroll a page sideways while no element box overflows** (a long unbroken
+  link). Sweep text ranges, not only element boxes, and prove the scroll with `scrollLeft`.
+- **A page overlay can eat clicks** (a site's newsletter overlay at 1440). Press the control with
+  `locator.evaluate((el) => el.click())` for booking and checkout steps, or every wait after a
+  click that silently did nothing times out.
+- **A harness that cannot show the state is NOT JUDGED, with the reason**, never a PASS or a
+  FAIL: say what the harness could not reach (a provider the local stack refuses, an empty
+  fixture a layout guard waits on) and what would let it be judged.
+
 - **The portal saves over axios/XHR, not `fetch`.** Hooking `window.fetch`
   catches nothing on a save and you will report "no request was made". Verify a
   write by RELOADING and re-reading, which is the better check anyway.
@@ -286,23 +321,26 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 
 | Tenant | Use for | Watch out |
 |---|---|---|
-| **QA v5 scratch** (and scratch-2 to scratch-4) | **The CRUD and commerce tenant.** Create, update, delete, checkout on Stripe test | Its Stripe test account cannot charge. Sign in as its owner (below) |
+| **QA scratch-2** | **The one business where tests write freely** (owners, 2026-11-04): create, update, delete, orders, refunds, checkout on Stripe TEST, destructive checks | Its Stripe test account cannot charge. Sign in as its owner (below); permission and role tests sign in as its non-admin member `canlook` |
 | **Vivreal Content** | Read-mostly walks, the filming business | A **prospect** business, so search-visibility UI is hidden there by design. Its channels are Vivreal's own real accounts. Never leave QA objects on it |
 | **Vivreal** | Surfaces Vivreal Content hides | A real live business: read only. Staff surfaces are in the admin app, not in its portal nav |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
-or written to a file): Vivreal Content `vivreal/prod/agent-walk-user` (its own secret, never bundled). The QA
-logins `canlook`, `empty-owner`, `scratch-owner` (QA v5 scratch) and `scratch2-owner` (scratch-2) are KEYS of one
-secret, `vivreal/qa/walk-accounts` (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
-`JSON.parse(...)[key]`, or the e2e harness resolver `vivreal/qa/walk-accounts#<key>`), never `--output text` on
-the bundle, which would print all four. `vivreal/qa/square-sandbox` and `admin-operator` (TOTP) stay separate
-secrets. `scratch3-owner`, `scratch4-owner`, `canedit` and `free-walker` were retired with their businesses
-(2026-10-16). List secrets by name only (`aws secretsmanager list-secrets --filters Key=name,Values=vivreal/qa/
---query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`. `agent-walk-user` cannot reach the scratch businesses. Delete any saved
-session state file a walk produced at the end of the run.
+or written to a file). Three test identities exist and no others (owners, 2026-11-04): Vivreal Content's
+agent sign-in, `<secret-prefix>/agent-walk-user`, the default for read-only walks; and two KEYS of one secret,
+the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): `scratch2-owner` (QA scratch-2's owner) and `canlook` (its non-admin member, for permission and
+role tests). Read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)[key]`, or the e2e harness
+resolver for that key), never `--output text` on the bundle, which would print every login in it.
+`<qa-secret-prefix>/square-sandbox` and `admin-operator` (TOTP) stay separate secrets. Every other QA login, its
+business and the platform review accounts are deleted; never look for them. **Empty-state and first-run tests
+use a fresh sign-up** created for the test and deleted, with its business, at the end of the run. List secrets
+by name only (`aws secretsmanager list-secrets --filters Key=name,Values=<qa-secret-prefix>/
+--query 'SecretList[].Name'`); a bundle's keys are listed by reading it in process and printing `Object.keys`.
+`agent-walk-user` cannot reach QA scratch-2. Delete any saved session state file a walk produced at the end of
+the run.
 
 **"No credential for that tenant" is a claim to check against the bundle, not a blocker.** The
-per-tenant QA secrets were merged into `vivreal/qa/walk-accounts` on 2026-10-17, so a missing
+per-tenant QA secrets were merged into the QA account bundle on 2026-10-17, so a missing
 standalone `scratch2-owner` secret does not mean the login is gone. List the bundle's keys in
 process before reporting a sign-in as unavailable (a v7 release step was wrongly deferred for
 exactly this, 2026-10-20).
@@ -360,7 +398,7 @@ existed. So before ANY local walk:
 7. **Put gate lines G-1 to G-5 at the top of the matrix, each PASS before any product row:**
    G-1 the launcher start (every guard-holds line, worktrees on the named heads); G-2 the
    launcher's own suite and `probe` exit 0; G-3 the shared package versions each consumer
-   resolves, with no dev overlay marker; G-4 one labelled QA scratch write, created and deleted,
+   resolves, with no dev overlay marker; G-4 one labelled QA scratch-2 write, created and deleted,
    with the recorder counts before and after; G-5 a sign-in smoke for each login the walk uses
    (the v7 local walks, 2026-10-19, under `docs/projects/next-release-v7/walks/` in vivreal-hq).
 
@@ -392,7 +430,7 @@ current walk's matrix; it moves.
 
 Read-only by default. When the matrix calls for create/update/delete:
 
-1. Only on a tenant the owner has named for it: by default the QA v5 scratch businesses,
+1. Only on a tenant the owner has named for it: by default QA scratch-2,
    never Vivreal Content or Vivreal.
 2. Name every object you create `QA TEST <date>` (or your walk id) so it is identifiable on sight.
 3. Follow every create through to a delete, in the same run.

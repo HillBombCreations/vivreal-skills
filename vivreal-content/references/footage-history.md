@@ -58,8 +58,8 @@ are new refusals to film in their place. All of that is in the unsafe table belo
 
 **Two caveats that apply to every number below.**
 
-1. **The walks ran as Justin on the Vivreal group. We film `vivreal-content-demo` (Cobalt
-   Crumb).** Product behaviour carries across: sheet geometry, timings, broken screens, the
+1. **The walks ran as Justin on the Vivreal group. We film the demo
+   account.** Product behaviour carries across: sheet geometry, timings, broken screens, the
    words on the buttons. Tenant content does not. The 30 pages, the 157 lists, the four
    social links and the "one site" dashboard all belong to the Vivreal group. Never caption
    a demo-tenant shot with a Vivreal-group number, and expect different counts on screen.
@@ -210,7 +210,7 @@ Everything else that changes a shot:
   preview footer from 30 links to 31 with all four socials intact (walk 10 take 2 #1). See the
   save caveat under the unsafe table.
 - **Campaigns renders**: the People/Campaigns switcher on the Subscribers screen, then "Where
-  your emails come from / Vivreal <vivreal@campaigns.vivreal.io>", Drafts, Sent, and "No
+  your emails come from / Vivreal <the campaigns sender address>", Drafts, Sent, and "No
   campaigns yet" (walk 10 take 2 #3). Good for one establishing shot of a product area that did
   not exist for any user a day ago. **The send flow is not filmable. See the unsafe table.**
 
@@ -291,7 +291,7 @@ before the floating AI assistant was removed (2026-09-24), and before X and Goog
 removed from the product entirely. **Treat any 2026-09-08 "do not film" as a question, not an
 answer**, which is that list's own stated principle.
 
-Walked signed in as the demo tenant (`vivreal-content-demo`, group Vivreal Content) at **both 1440
+Walked signed in as the demo tenant (the demo account, group Vivreal Content) at **both 1440
 and 390**, on the deployed `stable` line, not `main`. Every surface settled before it was read.
 
 **Confirmed GONE from the live portal, at both widths, on all eleven surfaces:** any X or
@@ -795,7 +795,7 @@ alone, and write your own dry-run check to catch the destination rows and routes
 - **A heredoc eats one level of backslashes**, so a `.cjs` written with `<<'EOF'` containing
   `replace(/\\\\/g, '\\')` arrives as a syntax error. Write such files with Python's `open().write()`
   on a raw string, or build the backslash with `String.fromCharCode(92)`.
-- **Python cannot open an MSYS path** like `/c/Users/...`. A status check that did so printed
+- **Python cannot open an MSYS path** like `/c/...`. A status check that did so printed
   nothing, and the runner read that as a failed capture when all twelve had in fact succeeded.
   Check statuses with `grep` on the file, or pass a Windows path.
 
@@ -823,7 +823,7 @@ them, and a stale "do not film" costs more than a stale "film".**
 | **Site Version History** | Opened on "Internal server error" with `sites/versions` answering **502** twice (walk 8 task 8). Now opens on "Site Version History (49 versions)", shows the count, and the comparison works: the list is fetched once, then each version's detail on demand as you open it (walk 10 take 2 #2) | **Yes.** Never press Revert |
 | **A section with no list** | Rendered **nothing at all** in the preview, no heading, no placeholder, no warning: walk 8's give-up moment. The editor now says **"Nothing here yet, so this band will not show on the page. Add your first step."** and offers an **"Add a step"** button, and the preview correctly renders nothing, which now matches what the panel said it would do (walk 10, 4.1) | **Yes**, and it is a better beat than the old one: the product explains itself on camera |
 | **The order a list comes out in** | Was "No": the same four items came out in **three different orders** in the editor list, the preview and the published page, and the only control was a "Sort items" offering alphabetical or by date (walk 8, 4.5; walk 7, section 4). The three surfaces now agree, the live Migrate page went from `2, 0, 3, 1` to `0, 1, 2, 3`, and SORT ITEMS explains in copy that an Order number on each item is what sets it (`release-2-runbook.md`, "Verified live"; walk 10, 4.1) | **Yes**, as "set the Order number, watch the page change". **There is still no drag handle**, so never film a drag |
-| **Campaigns** | The word "Campaigns" did not appear anywhere in the product, for any user, until v0.18.0, because every campaigns call read one level too deep past the axios envelope so the switcher never mounted (walk 9, W9-B1). It now renders on `/app/subscribers` **with zero subscribers**, the exact condition that broke it, showing "Where your emails come from / Vivreal <vivreal@campaigns.vivreal.io>", Drafts, Sent and "No campaigns yet". The Subscribers empty state is honest and its button now reads "Open Studio" (walk 9, walk 10 take 2 #3) | **The empty state, yes. The send flow, no**, see above |
+| **Campaigns** | The word "Campaigns" did not appear anywhere in the product, for any user, until v0.18.0, because every campaigns call read one level too deep past the axios envelope so the switcher never mounted (walk 9, W9-B1). It now renders on `/app/subscribers` **with zero subscribers**, the exact condition that broke it, showing "Where your emails come from / Vivreal <the campaigns sender address>", Drafts, Sent and "No campaigns yet". The Subscribers empty state is honest and its button now reads "Open Studio" (walk 9, walk 10 take 2 #3) | **The empty state, yes. The send flow, no**, see above |
 | **Nineteen new block and section types, and a Locations page type** | Ten layouts and nine home-sections joined the picker, which now holds 143 cards; adding "Step medallions" took SECTIONS from 15 to 16. Add Page now offers "One location" (walk 10 take 2 #4) | **Yes** |
 | **Richer block settings** | 161 of the 191 keys reaching the generated panel now carry a written control and the other 30 print the reason they have none. Three editors, not one raw config key on screen, and "SMALL LINE ABOVE THE TITLE" where the key is `eyebrow` (walk 10 take 2 #5) | **Yes** |
 
@@ -881,7 +881,7 @@ phantom outage mid-shoot.
 
 ### Session and state, before the first frame
 
-- **Tenant: `vivreal-content-demo` only.** Never `justin@vivreal.io`, which resolves to 20
+- **Tenant: the demo account only.** Never the owner's own login, which resolves to 20
   groups including real customers. filming-hygiene.md is the rule; this is the reminder.
   (2026-10-14: superseded by the agent's "Accounts and owner-approved writes".)
 - **Demo tenant site slots are scarce** (9 of 10 used on 2026-08-30; read `get-group-usage`

@@ -6,15 +6,19 @@
  * string because the bare `mongodb-mcp-server` starts UNCONNECTED whenever
  * MDB_MCP_CONNECTION_STRING isn't exported in the launching shell. This wrapper
  * sources the string the same way every backend Lambda does, from AWS Secrets
- * Manager (secret `vivreal/prod/main-api`, key `CLUSTER_URL`), so the server is already
+ * Manager (the Main API service secret, key `CLUSTER_URL`), so the server is already
  * connected before any agent runs a query. The agent never has to ask.
  *
- * Resolution order:
+ * Resolution order, with no setup beyond a vivreal-hq clone (the clone root is derived by
+ * `repos-root.cjs`; `VIVREAL_REPOS` is an optional override):
  *   1. MDB_MCP_CONNECTION_STRING already in the environment  → use verbatim.
- *   2. CLUSTER_URL from AWS Secrets Manager (vivreal/prod/main-api)  → use that.
- *   3. Neither available → start UNCONNECTED and tell stderr how to recover.
- *      The /db-query and /db-schema commands carry the self-service fallback:
- *      source the string + call mcp__mongodb__connect, still never asking the user.
+ *   2. Otherwise `cluster-url.cjs` reads CLUSTER_URL from the secret named by the optional
+ *      VIVREAL_DB_SECRET_ID override, or by key `dbSecretId` of
+ *      `<clone root>/vivreal-hq/.vivreal/private-names.json`. This repository is PUBLIC and
+ *      never names the secret itself.
+ *   3. Neither available → start UNCONNECTED and say on stderr exactly what is missing.
+ *      The /db-query and /db-schema commands carry the self-service fallback: run
+ *      `cluster-url.cjs` and call mcp__mongodb__connect, still never asking the user.
  *
  * PROTOCOL SAFETY: this process speaks JSON-RPC over stdio. It MUST NOT write
  * anything to stdout (that would corrupt the MCP stream), all diagnostics go to
@@ -22,19 +26,19 @@
  * connection string is a SECRET: it is only ever placed in the child's env, never
  * logged, echoed, or written to stdout/stderr.
  *
- * CONNECTION FOOTPRINT: per the fleet-wide connection policy
- * (vivreal-hq/docs/projects/atlas-connection-fixes-2026-09-15/spec.md section 11 and 7.3),
- * every non-Lambda connector bounds its pool and identifies itself. `withMcpOptions` below
+ * CONNECTION FOOTPRINT: per the fleet-wide connection policy (the 2026-09-15 Atlas
+ * connection spec in vivreal-hq), every non-Lambda connector bounds its pool and identifies itself. `withMcpOptions` below
  * appends `maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer` to whichever
  * connection string this launcher resolves, whether that came from the environment or from
  * Secrets Manager.
  *
- * FOLLOW-UP (not done here): `vivreal/prod/main-api`'s user can write. Spec section 14
- * proposes a dedicated read-only `dev-tools-ro` user for MCP/CLI use; that user and its
- * secret do not exist yet, so this launcher still points at the writable service secret.
- * Repoint it once that read-only user exists. Do not invent a secret id ahead of that work.
+ * FOLLOW-UP (not done here): the Main API service secret's user can write. The connection
+ * spec proposes a dedicated read-only `dev-tools-ro` user for MCP/CLI use; that user and its
+ * secret do not exist yet, so `dbSecretId` still names the writable service secret.
+ * Repoint it in vivreal-hq once that read-only user exists.
  */
-const { spawnSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
+const { readClusterUrl } = require('./cluster-url.cjs');
 
 const log = (msg) => process.stderr.write(`[vivreal-db-explorer] ${msg}\n`);
 const onWindows = process.platform === 'win32';
@@ -55,36 +59,14 @@ function resolveConnectionString() {
     return process.env.MDB_MCP_CONNECTION_STRING;
   }
 
-  log('No MDB_MCP_CONNECTION_STRING in env, sourcing CLUSTER_URL from Secrets Manager (vivreal/prod/main-api)…');
-  const res = spawnSync(
-    'aws',
-    ['secretsmanager', 'get-secret-value',
-      '--secret-id', 'vivreal/prod/main-api',
-      '--query', 'SecretString',
-      '--output', 'text'],
-    { encoding: 'utf8', shell: onWindows },
-  );
-
-  if (res.status !== 0 || !res.stdout) {
-    const why = res.error ? res.error.message : (res.stderr || '').trim();
-    log(`Could not read vivreal/prod/main-api (aws CLI exit ${res.status}). ${why}`);
-    log('Starting UNCONNECTED. The agent must source the string and call connect, see the');
-    log('"Connecting" section of /db-query (sources CLUSTER_URL itself; never asks the user).');
+  const r = readClusterUrl(process.env, { onWindows });
+  if (r.error) {
+    log(`NOT CONNECTED: ${r.error}`);
+    log('Starting UNCONNECTED. The "Connecting" section of /db-query is the fallback; it never asks the user.');
     return null;
   }
-
-  try {
-    const secret = JSON.parse(res.stdout);
-    if (!secret.CLUSTER_URL) {
-      log('vivreal/prod/main-api resolved but has no CLUSTER_URL key. Starting unconnected.');
-      return null;
-    }
-    log('Resolved CLUSTER_URL from Secrets Manager, server will start connected (read-only).');
-    return secret.CLUSTER_URL;
-  } catch (e) {
-    log(`Failed to parse vivreal/prod/main-api JSON: ${e.message}. Starting unconnected.`);
-    return null;
-  }
+  log(`Resolved CLUSTER_URL from the secret named in ${r.source}; the server will start connected (read-only).`);
+  return r.url;
 }
 
 const connectionString = resolveConnectionString();

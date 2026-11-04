@@ -224,6 +224,8 @@ Before any work, read:
    can for a non-portal repo.
 3. Plan mode: the `plan.md`/`design.md` named in the dispatch, this is your spec, zero scope
    creep. Standalone mode: restate the contract from the task itself, same as `coder`.
+4. **Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in
+   the PR body, as "Docs impact".
 4. Any `review-N.md` if you are in fix mode.
 
 Check every change against the anti-pattern catalog (`vivreal-workflow:shared-standards`, "Anti-pattern catalog", and its `references/anti-patterns.md`) before writing code and again before reporting done. Adding an instance without its guard is a defect.
@@ -252,13 +254,14 @@ Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8
 1. Callers: grep every caller of each changed route, function, field or component; list them and whether each still works.
 2. Deployed contract: for any param that becomes new, required or rejected, quote the backend validator on the DEPLOYED release line (`origin/release/*`), never `main`.
 3. Absent and malformed identity: REFUSE tests for missing, duplicated, padded and mixed-case `groupID`, and a failed upstream fetch; each asserts fail-closed.
-4. Siblings: grep the same pattern in adjacent handlers and screens; fix or list them.
+4. Siblings and every door of the rule: grep the same pattern in adjacent handlers and screens, and name every other place the CHANGED RULE applies: every route sharing the predicate, every sender of the same kind of message, every save door (portal, MCP, API, worker), every reader of a set you add an exclusion to (counts, sums, averages, snapshots, exports), and every place a shared sentence or constant is shown. Fix them or list them with the reason each is left. This was the largest walk-defect class of the November release (14 instances).
 5. Real data: for any filter, projection, cap or status change, one read-only production count of what it affects.
 6. Claims: every "pre-existing", "harmless", "fail-open" or "unchanged" cites a command output; every row the PR body says is in, the diff shows.
-7. Owner-visible success: no success copy before the server confirmed the write; a queued or `202` answer is never shown as done.
+7. Owner-visible words: no success copy before the server confirmed the write; a queued or `202` answer is never shown as done. No failure words that claim nothing happened when the request may have reached the server (a timeout or a dropped answer): say we could not tell, and make the retry safe. Every owner-visible sentence the diff writes or reuses must be true in each place it is shown, including hints, empty states and code comments that describe behaviour.
 8. Pass-through sweep: for a shared utility, primitive or merge config, sweep every direct and pass-through caller.
 9. **Role gate.** Every new or changed write control goes through the matching `useAccess('<area>.<verb>')` key (for example `content.write`, `site.write`, `post.write`, `commerce.write`) and renders the look-only path for a member without it. 9 of 76 portal review FAILs were this.
-10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. 21 of 76 portal review FAILs were this.
+10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. **Measured**: a box size read from `getBoundingClientRect`, or a screenshot you opened; a class name is not a check (a November layout fix proven by class assertions drew a control 0 px wide). 21 of 76 portal review FAILs were this.
+11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change.
 Then end the report with the review it needs on its last line: `Needs: vivreal-principal:reviewer on Vivreal_Portal_Mobile#<n> at <sha>`. You cannot dispatch it; the main thread does. Never call your own checklist a review.
 
 **Exception, a command owns the gate:** if the dispatch prompt says you are running inside a
@@ -283,9 +286,10 @@ never glossed as "Ship it."
 
 **Prove it before the report (every mode that pushes).** From your worktree, run `git
 ls-remote origin <branch>` and `gh pr list --head <branch> --json url,headRefOid`. Both must
-return your head SHA (`git rev-parse HEAD`); PARALLEL opens no PR, so there only the
-`ls-remote` line counts. If either is empty or shows another SHA, you are not done: push and
-open the PR. The report is the last thing in your reply; nothing runs after it.
+return your head SHA (`git rev-parse HEAD`). FOLLOWUP pushes to the branch of the PR that
+already exists, so both lines must show your new head on THAT PR (never a second PR). PARALLEL
+opens no PR, so there only the `ls-remote` line counts. If either is empty or shows another SHA,
+you are not done: push, and open the PR in SOLO or INTEGRATE. The report is the last thing in your reply; nothing runs after it.
 
 **Branch check before the first commit, and again in the report.** Print
 `git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a

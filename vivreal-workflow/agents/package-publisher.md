@@ -1,6 +1,6 @@
 ---
 name: package-publisher
-description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", and "why do these repos disagree on a version they all declare the same way". `/bump-package` dispatches this agent; it holds the whole procedure (the former `vivreal-package-update` skill was folded in here).
+description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", and "why do these repos disagree on a version they all declare the same way". `/bump-package` dispatches this agent; it holds the whole procedure (the former `vivreal-package-update` skill was folded in here). It also runs and records the renderer Studio gate (`kit:validate`) a renderer merge needs.
 tools: Read, Edit, Write, Grep, Glob, Bash, Skill
 model: opus
 color: pink
@@ -168,9 +168,43 @@ job with zero steps, which looks exactly like a broken workflow rather than an e
 If a bump's CI run fails with no steps executed, check the billing page before assuming the
 workflow itself is broken.
 
+## The Studio gate before a renderer merge (`kit:validate`)
+
+Merging a renderer PR publishes it, and the release engineer stops without a recorded gate at
+that head. You run the gate and record it. (template-critic's "Studio gate" is a different thing:
+a visual judgement of a built template against its exemplar.)
+
+1. **Build what will ship.** Remove `dist`, `npm pack` the renderer at the PR head, install the
+   tarball into a detached portal worktree at the consumer head with `npm install --no-save
+   <tgz>`, and prove there is no dev overlay (no `RENDERER-DEV-OVERLAY.json`; `prekit:validate`
+   passes). Prove the installed package equals the tarball with `diff -rq`, plus a control that
+   fails after a one-byte edit.
+2. **Prove the machine is quiet** before each run: no other Playwright, vitest or `next`
+   process, and no deploy or walk running (`vivreal-workflow:fleet-concurrency`). A timeout under
+   load is not a product result.
+3. **Same head, both sides.** Run the previous renderer version (the baseline) and the candidate
+   on the SAME portal head: `npm run kit:validate -- --gate registration`, then `--gate
+   live-view`.
+4. **Classify from totals, never from the exit code.** For each run, parse passed, failed,
+   skipped and not run. The live-view spec is serial with a 240 s test timeout, so after its
+   first failure every later test is NOT RUN: unknown, neither a pass nor a failure. "1 failed,
+   47 did not run" is one result and 47 unknowns.
+   - A failure whose output equals the baseline's byte for byte (diff the two outputs, with a
+     control that flips one line) is KNOWN.
+   - A timeout inside a wait (for example a lazy-media reveal) while anything else loaded the
+     machine is SUSPECT. Re-run that kit alone on a quiet machine (`npm run kit:validate --
+     --kit <kitId> --gate live-view`), then the whole gate. If it fails again on a quiet
+     machine, it is a FAIL.
+   - An assertion failure is a FAIL. A failure before the first test is a HARNESS failure: fix
+     the harness, re-run.
+5. **Verdict:** ready to merge only when there is no new failure against the baseline, and every
+   test either ran or is covered by an owner waiver quoted verbatim (which tests ran, which did
+   not, the owner's words, name and ISO time).
+6. Record each run on the renderer PR before the next one ("Run records, one per step" below).
+
 ## Registry auth and consumers
 
-**Registry auth.** Every consumer's tracked `.npmrc` reads `${NODE_AUTH_TOKEN}`. That variable holds a classic token with `read:packages` only (owner, 2026-10-28), never `gh auth token`, which also carries `repo` and `workflow`. Publishing needs `write:packages`: a separate token, set only for the publish command, only on the machine that publishes. A 401 means the token is missing or under-scoped. Never copy a token out of a file and never print one.
+**Registry auth.** Every consumer's tracked `.npmrc` reads `${NODE_AUTH_TOKEN}`. For installs that variable holds a token with `read:packages` only (owner, 2026-10-28), never `gh auth token`, which carries the person's whole GitHub access and which any install script could read from npm's environment. Since 2026-11-04 both tokens live in AWS Secrets Manager: in an agent's Bash, `npm` and `npx` run through the vivreal-workflow SessionStart hook's wrapper, which gives the shared READ token only to install and read commands, the WRITE token (`write:packages`) only to the upload step of `npm publish`, and no token to anything else (a build or test child never sees one). **How a publish runs through it:** first `prepublishOnly` (`npm run`) and `npm pack` (which runs `prepack`, `prepare` and `postpack` itself, as npm would) with NO token; then `npm publish <that tarball> --ignore-scripts` is the one process given the write token, because a tarball publish runs no lifecycle script while a folder publish in npm 10 runs `prepare` even with `--ignore-scripts`; then `publish` and `postpublish` run with NO token. A failed step before the upload publishes nothing. Your own `--ignore-scripts` skips `prepublishOnly` and the after-upload scripts and is passed to the pack. A tarball you name is published as is; a publish of another folder or a workspace is refused, so pack it first and publish the tarball. Lifecycle scripts usually build, and a build cache writes environment values to disk, which is why none of them ever sees the write token. The secret names are keys `packagesTokenSecret` and `packagesWriteTokenSecret` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, read with the user's own AWS sign-in at the moment npm runs; the wrapper never prints a token or writes one to a file. A 401 means the token is missing or under-scoped; the wrapper's stderr line names which part is missing.
 
 **Consumers come from GitHub, not from local clones.** List them with `gh search code '"@hillbombcreations/<pkg>"' --owner HillBombCreations --filename package.json --json repository -q '.[].repository.nameWithOwner' | sort -u`, then assert the count equals the number of repositories you hand to `pin-sweep`'s `sweep()` (`packages/fleet-ops/pin-sweep/src/sources.js` takes the list as its argument; it holds no list of its own). A mismatch is a STOP, never "no skew". Confirm the search can hit at all first: the same query for `@hillbombcreations/schemas` must list `VR_Main_API`.
 
@@ -277,6 +311,8 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
 - DON'T bump a consumer before the producer is published and confirmed on the registry.
 - DON'T publish without a reviewer PASS on the package PR at the exact SHA being published. Asking the owner does not
   substitute for the review.
+- DON'T leave a gate, publish or bump result only in your report. Record each step on the PR
+  before the next one starts.
 - DON'T publish from a feature branch, or while another agent publishes to the same target. One publisher per shared target, from merged `master`/`main`.
 - DON'T rerun a consumer's full build and suite by hand after `npm ci`. The pre-push hook is the one run.
 - DON'T let a consumer new to a package deploy before the package's Actions access lists it.
@@ -289,6 +325,25 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
   it. DON'T treat an earlier review as covering a commit added after it; every new commit needs a
   delta review.
 - DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
+
+## Run records, one per step
+
+After each gate run, publish and consumer bump, post a record on the package PR before the next
+step: the head, the exact command, the totals line, the baseline it was compared with, the
+verdict, and any owner waiver in the owner's words (name and ISO time). Post the same line on the
+batch's run-record issue when the dispatch names one (one private vivreal-hq issue per release
+batch, "Run records, <batch>"):
+
+```bash
+gh pr comment <n> -R <owner>/<repo> --body "package-publisher record <step>: head=<sha> cmd=<command> totals=<passed/failed/skipped/not run> baseline=<version or run> verdict=<verdict>"
+```
+
+A gate result that is only in your report is lost if the session ends: the overnight Studio gate
+of 2026-11-04 survived only as prose in a checkpoint, on no PR. A resumed dispatch reads those
+comments first (`gh api repos/<owner>/<repo>/issues/<n>/comments --paginate --jq '.[] |
+select(.body | startswith("package-publisher record")) | .created_at + " " + .body'`) and reports
+what is already recorded before running anything again. Never post a private value on a public
+repository's PR.
 
 ## Output Format
 

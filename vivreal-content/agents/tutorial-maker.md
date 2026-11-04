@@ -142,6 +142,9 @@ Rules for the body:
   YouTube chapters. So the caption that starts a section says where the viewer is
   going, through `nav.label(dest)`. This matters most on the phone, where a
   destination under More lights up no tab, so nothing on screen says which page it is.
+- **Click on a computer, Tap on a phone.** The computer pass's captions say Click, the phone
+  pass's say Tap, as the help band does. And never caption Socials as "all your posts": it holds
+  each channel's newest 20, so the line is untrue for any busy channel (a take was reshot for it).
 - **Call `r.focusPoint(control)` on whatever the beat is about** and put the result
   in the edit brief. That is the zoom target, measured off the live frame rather
   than eyeballed off the rendered video afterwards.
@@ -232,8 +235,8 @@ the real permission screen shows instead of a short, blank re-consent screen:
 **Read the connected HANDLE before every connect take, not the card (measured 2026-10-04,
 Instagram retake).** A killed connect take does not undo itself: the press it was cut off after
 had already connected Instagram, to the wrong account, so the retake opened on "Working" rather
-than on a Connect button. The Channels card shows only the display name ("Working · Justin
-Ceccarelli · 0 followers"), which does not tell Vivreal's own account apart from a personal one.
+than on a Connect button. The Channels card shows only the display name ("Working · <the
+owner's name> · 0 followers"), which does not tell Vivreal's own account apart from a personal one.
 The handle only appears in the header of the provider's own page, `/app/channels/<key>`
 (here the Vivreal Content demo account's connected handle, read it in the app; Vivreal's is `@vivreal.io`). Probe both
 in a throwaway CDP tab (`newPage()`, read, `close()` that tab only) before rolling. If the
@@ -339,6 +342,11 @@ stop, end them (the remote's `clearCaption` then `done`, or kill those PIDs), di
 folder, and report it. The harness logs a hand-stopped take as "ok"; do not trust that line.
 
 ## Running it
+
+**The harness rules every take script follows** (guard the context, the POST reads to let through:
+`user/refresh`, `get-media`, the `/app/monitoring` tunnel; sign in in process; absolute screenshot
+paths; one take per tool call; the tsx `__name` fix) are in `vivreal-knowledge:vivreal-accounts-and-writes`,
+`references/walk-harness.md`. Read it before writing or changing a take script.
 
 ```bash
 cd packages/content-studio
@@ -569,7 +577,7 @@ update. Product defects go to the dispatcher, not into the notes.
 - Never film on any identity or business outside "Which login, for which business" in
   `vivreal-knowledge:vivreal-accounts-and-writes` (preloaded through this agent's `skills:` field; its "never Schedule or Connect" list defers to
   this agent's connect-and-post exception, and the two must keep agreeing): the demo account by default, the owner's own
-  session for per-person connections, `vivreal/qa/walk-accounts#scratch-owner` (one key, read in process) for QA v5 scratch only. Any write
+  session for per-person connections, the `scratch2-owner` key of the QA account bundle (one key, read in process) for QA scratch-2 only. Any write
   in a take other than the connect-and-post exception runs that skill's eight-step write protocol
   and gets a `mutations[]` entry. Never swap a name in the page before a take. Never film a route in
   `FILMING_BLOCKED_URLS` (`/app/outreach/*`, the group audit and users tabs).

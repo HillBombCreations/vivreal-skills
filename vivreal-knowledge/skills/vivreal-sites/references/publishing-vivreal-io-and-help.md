@@ -28,6 +28,34 @@ marketing agents point here rather than keeping their own copy.
   and friends), and the name field is `fileName`. A lookup against the tenant database returns a
   false zero.
 
+## Writing a help or vivreal.io row
+
+`help-page-producer`'s PUBLISH mode follows this section, and so does any reviewed one-shot that
+writes a row of either site.
+
+- **Every row saves through the portal's `collectionObjects/update`, and the CMS sets
+  `objectValue` and `publishDate` whole.** Send the full `objectValue`, or `article`, `kind`,
+  `band` and any field the list's schema does not declare (a Home Use Cases row keeps a `panel`
+  object) are lost. Send the stored `publishDate`, or the row unpublishes, and the stored
+  `usingVariant`, or the proxy writes `{}` over it.
+- **The answer is `{ success, data: { groupID, updated } }`.** `data.groupID` is the guard that the
+  right business is active; assert it on every write.
+- **`raw._id` in a page's payload is the sub-document id.** The document id is the rendered item's
+  own `id`. Table row keys and aside note keys are already document ids. A plan that cites
+  `objectValue._id` updates nothing, or the wrong row.
+- **A table row's first cell is `title`;** the rest are `values` lines `"Column | Value"`, with the
+  prefix byte-identical to the column heading.
+- **Headings also live in Help Article Contents rows** (matched by `anchor`), and index cards are
+  Help Articles rows: change all three or none.
+- **A band with a `video` shows the video, never its `image`.** Check the video's frames before
+  calling a band's media current.
+- **Blog bodies hold no table tags** (they print as run-together text). Use headings and short
+  lists.
+- **A new page is a site-document write** (pages keep `blocks` and a mirror `collections` array).
+  That is the main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`), never a row
+  write.
+- **Never re-run a help site loader:** it duplicates every entry.
+
 ## Help site structure that trips a duplicate check
 
 - **Table rows share a band.** Many rows sit in one `band`, so a "does this row already exist"

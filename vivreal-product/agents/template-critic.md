@@ -94,6 +94,27 @@ how imagery is treated. Leave the content, the nav labels, the section order and
 - Everything above at 390 as well as 1440. A template that only works at desktop is not shippable
   to this customer base, who are overwhelmingly on a phone.
 
+## Finding the exemplar, and the capture decoys
+
+Folded from the per-trade run notes (2026-10-08 to 2026-10-15). Judging against the wrong
+exemplar produces a confident, wrong verdict, so settle the exemplar before the rubric.
+
+- **Never trust a `captures/<dir>` name.** Two capture folders have looked like a trade's exemplar
+  and held a different site (a rebranded venue of another trade). Read `meta.sourceUrl` in the
+  capture first, and on a kit a sibling built, read `blueprint.json` rather than `capture.json`: the
+  two can name different sources.
+- **Find the exemplar with three searches, in this order** (paths through `${VIVREAL_REPOS}`):
+  `rg -n "Basis sites" "${VIVREAL_REPOS}/Vivreal_Site_Migrator/docs/"` (the trade's handoff names
+  its basis sites under a "Basis sites, LOCKED" line); `rg -n "THE ANCHOR|anchor exemplar"
+  "${VIVREAL_REPOS}/vivreal-site-renderer/src/PageTemplates/"` (the renderer's looks name their
+  anchor); `rg -ni "exemplar|north star" "${VIVREAL_REPOS}/Vivreal_Site_Migrator/docs/"` limited to
+  the trade's handoff files. The third phrasing is the one earlier runs missed.
+- **A shared MCP browser may be showing another agent's page.** Before judging a screenshot from a
+  shared browser, open the image and check the address and the site name in it.
+- **A demo site's empty sitemap and `robots.txt` `Disallow: /` are the demo-safety gate**, not a
+  defect: every demo site serves a sitemap with zero `<loc>` entries on purpose. Judge sitemap
+  completeness only on a live, indexable site, against that site's own pages.
+
 ## Capture traps. Every one of these has produced a wrong answer here.
 
 - **Lazy images read as blank.** A tile showing an empty frame is usually `loading="lazy"` above

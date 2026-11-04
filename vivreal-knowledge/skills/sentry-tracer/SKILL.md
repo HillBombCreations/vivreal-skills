@@ -5,6 +5,8 @@ description: 'Use when investigating what happened during a Vivreal user action 
 
 # Cross-Stack Sentry Tracing (Vivreal)
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U24-reporting-a-problem.md`, `05-reference/alarms-and-monitoring.md`; `npm run docs:route -- "sentry"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Every portal user action produces a **complete distributed trace**: browser → edge proxy → backend Lambda → MongoDB. Reconstruct that trail from Sentry to explain what happened, what failed, and what's missing. This skill is the **passive knowledge layer**; the active **`sentry` agent** (in the `vivreal-sentry` plugin, driven by `/sentry-trace`) owns the Sentry MCP querying. For LIVE infrastructure state (Lambda concurrency, Step Functions executions, Atlas saturation) rather than Sentry telemetry, that's the `vivreal-ops` agent, and when a Sentry error's cause looks like infrastructure (502 with no backend event, timeout, Mongo connect-hang, throttle, OOM, deploy stall), the **`sentry-infra-bridge`** skill maps the error class to the confirming CloudWatch/Atlas metric and `/sentry-to-aws` runs the trace→metric chain end-to-end.
 
 **Always pass `organizationSlug: 'vivreal'` and `regionUrl: 'https://us.sentry.io'` on every Sentry MCP call.**
