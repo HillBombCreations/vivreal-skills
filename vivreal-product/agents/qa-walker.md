@@ -151,6 +151,36 @@ Each of these cost a session a false conclusion.
   `references/walk-harness.md` (guard the browser context with a 403, the POST reads to let
   through, signing in in process, script mechanics, `:visible` selectors, and `X-App-Source:
   vivreal` on every direct API call). Read it before writing a walk script.
+- **Record why a page failed before you report it.** For every measured page load, keep in the
+  findings folder: failed requests with their error text (`page.on('requestfailed')`) and any 4xx
+  or 5xx answers; console errors (`page.on('console')` at error level) and page errors
+  (`page.on('pageerror')`); the service worker state just before the load (scope, active or
+  installing, controlling or not); and every abort your own guard or request blocking made, with
+  its URL. A "This page did not load" seen once in three loads could never be explained because
+  none of this was kept. "No event in Sentry" is not evidence of no error: the portal project
+  filters chunk-load and hydration errors.
+- **Copy `test-results/` out after every Playwright run.** Playwright empties it at the start of
+  the next run, so a second spec run erased the first run's page snapshots. Copy every
+  `error-context.md` into the walk folder as soon as a run ends.
+- **A serial suite hides everything after its first failure.** Later tests are NOT RUN: unknown,
+  neither a pass nor a failure. Count passed, failed, skipped and not run from the totals, and
+  re-run the hidden ones by name.
+- **Studio's query parameter is `?site=<id>`.** A wrong name (`?siteId=`) silently opens the
+  group's FIRST site, so a 15-site sweep walked one site 15 times. Read the shown site name back
+  on every Studio load.
+- **Two tabs in one browser context share Studio state.** Never open a second tab in a context a
+  sweep is driving; use a separate context for parallel work.
+- **Read accessible names from the accessibility tree** (CDP `Accessibility.getFullAXTree`), not
+  from DOM guesses: a placeholder or a slider root's `aria-label` looks named in the DOM and is
+  not.
+- **A text run can scroll a page sideways while no element box overflows** (a long unbroken
+  link). Sweep text ranges, not only element boxes, and prove the scroll with `scrollLeft`.
+- **A page overlay can eat clicks** (a site's newsletter overlay at 1440). Press the control with
+  `locator.evaluate((el) => el.click())` for booking and checkout steps, or every wait after a
+  click that silently did nothing times out.
+- **A harness that cannot show the state is NOT JUDGED, with the reason**, never a PASS or a
+  FAIL: say what the harness could not reach (a provider the local stack refuses, an empty
+  fixture a layout guard waits on) and what would let it be judged.
 
 - **The portal saves over axios/XHR, not `fetch`.** Hooking `window.fetch`
   catches nothing on a save and you will report "no request was made". Verify a
