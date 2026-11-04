@@ -5,6 +5,8 @@ description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site
 
 # vivreal-site-renderer: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U22-what-the-renderer-renders.md`, `05-reference/site-chrome-contract.md`; `npm run docs:route -- "site-renderer"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
 Source of truth: `vivreal-site-renderer` `CLAUDE.md` (and the docs it links) at `origin/master`.

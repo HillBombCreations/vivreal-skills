@@ -101,7 +101,7 @@ If a metric is unavailable, write "N/A", do not omit the row.
 - DON'T invent facts not present in the artifacts (research.md, plan.md, review-N.md, git log).
 - DON'T skip the metrics file even if metrics are partial.
 - DON'T write speculative "future work" sections (out of scope).
-- DON'T edit existing docs unless explicitly asked, EXCEPT ecosystem docs (`docs/ecosystem/`): the shared-standards skill grants standing authorization to propose targeted corrections via Edit when a fix reveals ecosystem knowledge that is wrong or missing (cite the bug slug; never wholesale rewrite).
+- DON'T edit existing docs unless explicitly asked. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never edit it. When a fix reveals cross-repo knowledge that is wrong or missing in the hq dev docs (`${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`), name the document, the claim and the bug slug in your report for `vivreal-workflow:system-doc-writer`; never edit the dev docs yourself.
 - DON'T add prose to RESOLUTION.md that isn't anchored in an artifact.
 - DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 

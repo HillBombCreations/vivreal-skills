@@ -12,6 +12,8 @@ Last extended: 2026-09-16 (stored buildSpec vs `buildSpec.js`, the `SITE_RENDER_
 
 # Vivreal_EventHandler: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U5-site-creation-to-live.md`, `03-use-cases/U31-outbound-webhooks.md`; `npm run docs:route -- "eventhandler sagas"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Orchestrates the **full customer-site deploy pipeline** via AWS Step Functions. Four entry points start the Deploy-Site SFN: `createSiteCollectionData` (mode `hosted_by_us`), `POST /api/deploySite` (blank first deploy), `redeploySite` (Secure, since 2026-07-29), and `updateSiteEnvVars`'s rebuild (here, since 2026-07-29). **Serverless Framework + esbuild** (NOT SAM), Node 22 since 2026-10-02 (`serverless.yml:43`, gated by a test on the deploy workflow), Step Functions + Amplify + Route53 + GitHub API + DynamoDB. Read `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` for depth (audited claim by claim 2026-09-21, last edited 2026-09-23; it records that four files it once cited no longer exist, so check a path before trusting it).
 
 ## Pipeline (ordered: typos preserved: DO NOT rename)

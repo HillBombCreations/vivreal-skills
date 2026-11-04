@@ -36,11 +36,15 @@ subagent_type: researcher
 prompt: Research the bug at docs/bugs/<slug>/issue.md. Slug is <slug>. Read the shared-standards skill first. Trace the full path from UI to DB. Cite file:line for every claim. Check Sentry MCP for any reported errors. Write your findings to docs/bugs/<slug>/research.md. Do not propose fixes, that's the architect's job.
 ```
 
-Include relevant ecosystem docs based on the bug area (same routing table as coordinator):
-- Frontend: `docs/ecosystem/FRONTEND_APPLICATION.md`, `docs/ecosystem/ARCHITECTURE.md`
-- Backend: `docs/ecosystem/BACKEND_APIS.md`, `docs/ecosystem/CROSS_API_DEBUGGING_GUIDE.md`
-- Database: `docs/ecosystem/DATABASE.md`
-- Sites: `docs/ecosystem/SITE_CREATION_PIPELINE.md`
+Include the hq dev docs for the bug area, found from `${VIVREAL_REPOS}/vivreal-hq` with
+`npm run docs:route -- "<symptom>"` (or the symptom table in `docs/dev-docs/README.md` when the
+script is missing), and name `npm run docs:impact -- <repo>:<path>` for the files the bug touches.
+Starting points under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`:
+- Frontend: `02-architecture/the-portal.md`, `02-architecture/platform-and-services.md`
+- Backend: `02-architecture/platform-and-services.md`, the `03-use-cases/U<n>-*.md` the README names for the symptom
+- Database: `02-architecture/data-and-tenancy.md`
+- Sites: `03-use-cases/U5-site-creation-to-live.md`, `03-use-cases/U16-serving-a-live-customer-site.md`
+Never the portal's `docs/ecosystem/`, which is frozen (owners, 2026-11-04).
 
 Also include relevant backend CLAUDE.md paths if backend repos are involved.
 

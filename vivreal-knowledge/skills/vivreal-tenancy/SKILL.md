@@ -9,6 +9,8 @@ this file. Report it rather than quoting it.
 
 # Tenant placement: which database a group lives in
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/data-and-tenancy.md`, `03-use-cases/U21-provisioning-a-new-tenant.md`; `npm run docs:route -- "tenant-db"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 This skill is about **routing a tenant to a database**. For querying once you are in the right
 database (collection shapes, join rules, the `publishDate` gate) use `vivreal-db`. For cluster
 capacity, connection arithmetic and pool hygiene use `vivreal-atlas-topology`.

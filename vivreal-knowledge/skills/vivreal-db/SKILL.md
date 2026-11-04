@@ -11,6 +11,8 @@ against a lowercased collection name returns zero rows against a database that h
 
 # Vivreal Multi-Tenant MongoDB: Safe Query & Linking Rules
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/data-and-tenancy.md`, `05-reference/connection-pooling.md`; `npm run docs:route -- "tenant-db"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 > **Which database a tenant lives in is a different subject, and it has its own skill.** This file
 > is about querying once you are in the right database. For `group.dbKey`, `resolvePlacement`, the
 > `pod_01`/`pod_02` placements, the merged `tenant-db` package, or a group whose site is 403 because

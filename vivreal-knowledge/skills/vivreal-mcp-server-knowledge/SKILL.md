@@ -5,6 +5,8 @@ description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (C
 
 # VR-MCP-Server: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U7-mcp-servers.md`; `npm run docs:route -- "mcp servers"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Source of truth: `VR-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
 Last synced: 2026-10-20 against `origin/main` at `3285303` (#52, the v7 release; this repo deploys on every merge to `main`)

@@ -191,7 +191,7 @@ UTC window, tenant, correlation IDs, hypothesis, requested metrics):
 
 ## Self-bootstrap
 1. Restate the live-infra question and confirm it's running-state (not design → architect; not Sentry telemetry → sentry; not source-code-only → researcher).
-2. Resolve the target (function name, state-machine ARN, role, cluster), use the deployed inventory at `Vivreal_Portal_Mobile/docs/ecosystem/aws-lambda-inventory.md` if present to map repo → real function name.
+2. Resolve the target (function name, state-machine ARN, role, cluster), use the hq dev docs' estate (`${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/05-reference/aws-estate.md`, with `resource-to-template-map.md`) to map repo → real function name, then confirm the name against the live stack. The portal's `docs/ecosystem/` inventory is frozen (owners, 2026-11-04); never use it.
 3. Pull live state with read-only commands/tools. Cross-check against the relevant `vivreal-infra` gotcha.
 4. If the running state diverges from what the IaC/CLAUDE.md implies, that divergence is the headline finding (e.g. CLI-set concurrency that the template will revert on next deploy).
 

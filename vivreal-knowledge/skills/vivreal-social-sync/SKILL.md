@@ -5,6 +5,8 @@ description: 'Use when a task touches how an owner''s Instagram, Facebook or Tik
 
 # Social sync: how platform posts reach Vivreal, and what removes them
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U35-the-hourly-social-sync.md`, `03-use-cases/U36-disconnecting-a-social-channel.md`; `npm run docs:route -- "social sync"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Last synced: 2026-10-04. Sources: VR_CMS_API `origin/main` (v2.14.3 on `stable` that day),
 VR_Secure_API v2.20.1, VR_Main_API, VR_Client_API v2.15.0, and the evidence rows in
 `vivreal-hq/docs/projects/shipped-ledger.md` (2026-10-04 sections). **No source CLAUDE.md covers

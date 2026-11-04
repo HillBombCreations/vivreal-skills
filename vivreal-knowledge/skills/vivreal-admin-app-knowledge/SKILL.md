@@ -5,6 +5,8 @@ description: 'Use when working on, walking, deploying or reasoning about the int
 
 # The internal admin app
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/the-admin-app.md`; `npm run docs:route -- "admin app"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Source of truth: `vivreal-hq` `packages/admin-app/CLAUDE.md` (and the docs it links) at `origin/deploy/admin-app`.
 
 Last synced: 2026-10-20 (vivreal-hq `origin/main` `28bb8b4a`; `deploy/admin-app` at `482b746a`, an

@@ -5,6 +5,8 @@ description: 'Use when working in VR_Secure_API, Vivreal''s authenticated-ops ba
 
 # VR_Secure_API: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U3-how-studio-works.md`, `03-use-cases/U20-changing-plans.md`, `03-use-cases/U14-domains-search-purchase-renewal.md`; `npm run docs:route -- "site save"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
 Source of truth: `VR_Secure_API` `CLAUDE.md` (and the docs it links) at `origin/stable`.

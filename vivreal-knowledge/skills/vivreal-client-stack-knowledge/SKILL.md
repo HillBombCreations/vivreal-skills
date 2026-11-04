@@ -5,6 +5,8 @@ description: 'Use when working in the Vivreal public content-delivery stack: VR_
 
 # VR_Client_API + VR_Client_Auth: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U16-serving-a-live-customer-site.md`, `05-reference/edge-and-rate-limiting.md`; `npm run docs:route -- "client read path"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
 Source of truth: `VR_Client_API` and `VR_Client_Auth` `CLAUDE.md` (and the docs it links) at `origin/stable`.

@@ -5,6 +5,8 @@ description: 'Use when working on Vivreal''s first-party analytics, VR_Analytics
 
 # VR_Analytics_API: knowledge digest
 
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/platform-and-services.md`; `npm run docs:route -- "analytics"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+
 Source of truth: `VR_Analytics_API` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
 Last synced: 2026-10-21 against `origin/main` at `13c0763` (#25, the v7 release; deploys on push to `main`, which has no `stable`)

@@ -73,6 +73,36 @@ than the order you discovered things in:
 6. **`## How this was verified`, last, with nothing after it.** It is what makes
    the document worth trusting and it is not what a reader arrives for.
 
+**Scope (owners, 2026-11-04).** The dev docs own what crosses repos: flows, decisions, dependency
+maps, the estate and operations. One repo's internals live in that repo's `CLAUDE.md`, which ships
+with its code; where a document would restate them, it links that `CLAUDE.md` section instead. The
+portal's `docs/ecosystem/` is frozen and is never a source.
+
+**The dependency map, one standard section.** Every component card and every use case carries
+`## Dependencies and blast radius`, placed directly before "How this breaks, and the first thing to
+check", with one mermaid diagram (the component in the middle, upstream left, downstream right,
+edges labelled with what travels, dashed edges for what is NOT checked) and these six subsections,
+by these names:
+
+- `### Upstream: what this needs to work`, a table: Needs, Owned by, Contract it relies on, If that changes.
+- `### Downstream: what needs this`, a table: Consumer, Reads or calls, Contract it relies on, What it sees if this breaks.
+- `### Contracts, and the file and test that own each`, a table: Contract, Defined at, Pinned by, Hand copies that must move with it.
+- `### What breaks if it changes`, a table: Change, What breaks where, First thing to check.
+- `### Before you change it`, a numbered checklist: the files to touch together, the tests to run, the docs to re-read.
+- `### Regenerate this map`, the commands that rebuild every row above from the deployed refs, each with a control.
+
+Every row cites `file:line` at a deployed ref. A hand copy of a contract is a row in "Hand copies",
+never a sentence. A contract no test pins says `[GAP: no test pins this]`. Counts of callers come
+from the regenerate commands, never typed.
+
+**The sidecar stamp.** Metadata lives beside the documents in `docs/dev-docs/_meta/docs.json`, one
+entry per document (components, symptoms, the files it `owns` per repo, collections, events,
+routes, and `verified`: the date and the SHA per repo it was checked at), because the prose holds no
+SHA and no front matter. **Update `_meta/docs.json` for every document you touch**, in the same
+commit: a new `verified` date and refs, and any file, route or symptom the document now covers.
+`docs:route`, `docs:impact` and `docs:drift` all read it, so a stale entry sends the next reader
+to the wrong page.
+
 ## The contract is mechanical. Run it.
 
 ```bash
@@ -219,7 +249,7 @@ What it means for how you write:
    pointer.
 4. **Verify the document against the code again**, mechanically, including every
    pointer you wrote.
-5. **Run `npm run docs:lint` and make it clean**, then `npm run docs:build` on
+5. **Update the document's `_meta/docs.json` entry** (above). **Run `npm run docs:lint` and make it clean**, then `npm run docs:build` on
    the document and look at the rendered diagrams.
 6. Report what you changed, what you found stale that nobody listed, and every
    sentence you removed for being history rather than description.

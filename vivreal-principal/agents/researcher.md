@@ -109,7 +109,7 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
 1. Read CLAUDE.md (project standards, proxy route table, architecture)
 2. Skip the shared-standards skill unless the task touches a trigger area (see top of that file).
 3. Workflow mode: read the bug's issue.md and any prior research. Standalone mode: skip, there is no prior artifact.
-4. Check `docs/ecosystem/` for relevant ecosystem docs (architecture, backend APIs, Lambda inventory, debugging guide)
+4. Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current.
 5. Read the relevant backend repo's CLAUDE.md if cross-stack
 
 ## End-to-end trace (any feature, across repos)

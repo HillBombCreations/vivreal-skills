@@ -224,6 +224,8 @@ Before any work, read:
    can for a non-portal repo.
 3. Plan mode: the `plan.md`/`design.md` named in the dispatch, this is your spec, zero scope
    creep. Standalone mode: restate the contract from the task itself, same as `coder`.
+4. **Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in
+   the PR body, as "Docs impact".
 4. Any `review-N.md` if you are in fix mode.
 
 Check every change against the anti-pattern catalog (`vivreal-workflow:shared-standards`, "Anti-pattern catalog", and its `references/anti-patterns.md`) before writing code and again before reporting done. Adding an instance without its guard is a defect.
