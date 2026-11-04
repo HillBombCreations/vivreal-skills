@@ -610,7 +610,7 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 ## Anti-pattern catalog (check every diff)
 
 Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
-the 19 rules in checklist form, then each entry with how to spot it and its guard (source of
+the 22 rules in checklist form, then each entry with how to spot it and its guard (source of
 truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
 evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
 when its tests pass.

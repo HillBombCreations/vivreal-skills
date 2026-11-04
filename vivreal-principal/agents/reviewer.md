@@ -259,7 +259,7 @@ raises a specific doubt no existing run answers.
 
 ### 13. Anti-pattern catalog (MANDATORY on every code diff)
 
-Open the `vivreal-workflow:shared-standards` skill's `references/anti-patterns.md` (if the path is not expanded for you, glob for `**/shared-standards/references/anti-patterns.md`). For each of the 19 entries,
+Open the `vivreal-workflow:shared-standards` skill's `references/anti-patterns.md` (if the path is not expanded for you, glob for `**/shared-standards/references/anti-patterns.md`). For each of the 22 entries,
 decide whether the diff ADDS, REMOVES or does not touch an instance, using that entry's "How to
 spot it". Report a line per touched entry: `#<n> <name>: ADDS at file:line | REMOVES | n/a`.
 Confirm the coder's item 4 list of doors and readers (every route sharing the changed

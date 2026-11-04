@@ -38,6 +38,9 @@ The rules as a reviewer walks them, one line per entry.
 17. **Tests that fake the failing layer.** One test per change runs through the real next hop and the real schema, and asserts the exact set.
 18. **Safety nets never exercised.** A renewal, refresh, backup, failover or alarm proves it worked, not only that it ran.
 19. **Expiries with no register.** Anything that expires has a date, an owner and an alarm before it lapses, in one register.
+20. **Catch blocks that assume an Error.** A catch reads the rejection through `?.` or a normaliser, and never throws.
+21. **An exclusion honoured by one reader only.** A new hide, archive or exclude flag lists every reader of the set and decides each.
+22. **Device clock for a business time.** A time an owner or a customer reads is in the business time zone and names the zone.
 
 ---
 
@@ -211,11 +214,11 @@ The rules as a reviewer walks them, one line per entry.
 
 ## 15. Mirrored copies that drift
 
-**Rule:** A rule needed in two repositories lives in one package; where a copy is unavoidable, a parity test compares the copies and moves with the function it mirrors.
+**Rule:** A rule needed in two places lives in one source: one package across repositories, one module or constant inside a repository. Where a copy is unavoidable, a parity test compares the copies and moves with the function it mirrors. A change to a rule names every door it applies at (every route sharing the predicate, every sender of the same message, every save path) and changes them together.
 
-**Why it hurts:** Two copies of one rule can diverge silently, so one path can reject or drop what the other accepts.
+**Why it hurts:** Two copies of one rule can diverge silently, so one path can reject or drop what the other accepts. Inside one repository the copies are the easiest to miss, because nobody goes looking for them.
 
-**How to spot it:** A comment containing "must match", "ported", "mirrors" or "copy of". The same filename with similar contents in two repositories. A constant table duplicated across services.
+**How to spot it:** A comment containing "must match", "ported", "mirrors" or "copy of". The same filename with similar contents in two repositories. A constant table duplicated across services. Inside one repository: a shared sentence or constant shown in two contexts where only one is true; two editors of one value with different checks; a predicate repeated across several routes; a fallback or refusal added at one save door (portal, MCP, API, worker) and absent from the others.
 
 **Guard shape:** A sweep that lists same-named files and mirror comments across repositories and requires each to name its parity test in a register. A parity test that runs both copies over the same inputs and compares the results.
 
@@ -266,3 +269,39 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** A stored `tokenExpiry`, `expiresAt`, `expires_in`, `NotAfter` or similar field with no reader that alarms. A credential or certificate created by hand in a console with no record of its expiry.
 
 **Guard shape:** A register generated on a schedule from read-only sources (stored token dates, certificate `NotAfter`, domain expiry lookups, API token expiry headers), plus a hand-kept section for what cannot be read automatically. An alarm on any row that does not renew itself inside its lead time, escalating as the date nears.
+
+---
+
+## 20. Catch blocks that assume an Error
+
+**Rule:** A `catch` (or `.catch`) that reads `message`, `code`, `name` or `stack` reads them through `?.` or a normaliser, because a promise can reject with `null`, `undefined`, a string or a plain object. A catch never throws.
+
+**Why it hurts:** A catch that throws turns a handled failure into an unhandled one at the exact moment something already went wrong, so a step that had already succeeded (a saved connection) can be reported as failed.
+
+**How to spot it:** Inside a `catch (x)` block or a `.catch((x) => ...)` callback, a property read on `x` without `?.`. A logging call that passes `x.message` directly.
+
+**Guard shape:** A lint rule against unguarded member access on a catch binding, allowing `x?.prop`, `x instanceof Error && x.prop`, or one shared normaliser. REFUSE cases for every helper documented as "never throws", rejecting with `null` and `undefined`, through the real logger.
+
+---
+
+## 21. An exclusion honoured by one reader only
+
+**Rule:** A new hide, archive or exclude flag (or status filter) lists every reader of the set it narrows, and decides each one: counts, sums, averages, snapshots, exports, emails and searches.
+
+**Why it hurts:** A record the owner archived can vanish from a list and still be counted in a total, a revenue figure or an export, so two screens disagree and the owner cannot tell which one is true.
+
+**How to spot it:** A new boolean or status condition added to one query or aggregation of a collection that other code also aggregates. A diff that touches one reader of a set and none of its siblings.
+
+**Guard shape:** A test per reader with an excluded row in the fixture, asserting it is left out (or deliberately kept, with the reason). A PR body that lists every reader of the set and the decision for each.
+
+---
+
+## 22. Device clock for a business time
+
+**Rule:** Any time or date an owner or a customer reads (send times, delivery days, pickup times, opening hours, schedules) uses the business's time zone, never the device's or the server's clock, and names the zone wherever two zones can meet.
+
+**Why it hurts:** An owner travelling, a customer in another zone, or a server in UTC sees a time that is off by hours, and a DST change moves it again, so a pickup or a post lands at the wrong time with no error anywhere.
+
+**How to spot it:** `new Date()` formatted with `toLocaleString`, `getHours` or a date library default, with no time zone argument, on a value a person reads. A day boundary computed from the device's midnight. A test that only runs in the machine's own zone.
+
+**Guard shape:** A test that runs with the process or browser in a zone different from the business, and one across a DST change. A lint rule against zone-less formatting of owner-facing times outside one shared formatter.
