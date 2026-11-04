@@ -140,8 +140,14 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    validator for that route on the DEPLOYED release line (`origin/release/*`), never `main`.
 3. **Absent and malformed identity.** REFUSE tests for missing, duplicated, padded, and
    mixed-case `groupID`, and for a failed upstream fetch. Each must assert fail-closed.
-4. **Siblings.** Grep the same pattern in the adjacent handlers of the same file or router.
-   Fix them or list them explicitly.
+4. **Siblings and every door of the rule.** Grep the same pattern in adjacent handlers, and name
+   every other place the CHANGED RULE applies: every route sharing the predicate (grep its name),
+   every sender of the same kind of message (adding an owner fallback to one email means listing
+   every other owner email), every save door (portal, MCP, API, worker), every reader of a set
+   you add an exclusion to (counts, sums, averages, snapshots, exports), and every place a shared
+   sentence or constant is shown. Fix them or list them with the reason each is left. One rule
+   changed at one door and missed at its siblings was the largest walk-defect class of the
+   November release (14 instances).
 5. **Real data.** For any filter, projection, cap, or status change, run one read-only
    production count of what it affects (for example, site-loader batch sizes, live posts).
 6. **Claims.** Every "pre-existing", "harmless", "fail-open", or "unchanged" in a comment or
@@ -151,11 +157,19 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    confirmed the write. For a queued, deferred, offline-queued or `202` answer, grep EVERY caller
    of the queueing interceptor or retry wrapper and list what each one shows; a queued answer is
    never reported as done. A test mock's response shape matches the real chain (upstream,
-   proxy envelope, interceptor unwrap, the caller's read), cited hop by hop.
+   proxy envelope, interceptor unwrap, the caller's read), cited hop by hop. And no failure
+   words that claim nothing happened when the request may have reached the server (a timeout or
+   a dropped answer): say we could not tell, and make the retry safe. Every owner-visible
+   sentence the diff writes or reuses must be true in each place it is shown, including hints,
+   empty states and code comments that describe behaviour.
 8. **Pass-through sweep.** For a shared utility, a primitive's base classes, or a merge config
    (`tailwind-merge`, `cn()`), sweep the direct call sites AND every caller that passes the
    affected prop through (`className`, `style`, variants). Paste both counts and a positive
    control.
+9. **Whose clock.** Any backend or renderer string with a time or date that an owner or a
+   customer reads uses the business time zone, never the server's or the device's clock, and
+   names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21).
+   Test with the process in a different zone from the business, and across a DST change.
 
 **Exception, a command owns the gate:** if my dispatch prompt says I'm running
 inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP
@@ -164,7 +178,7 @@ coder-side review here is redundant. Stop after lint + type-check and report res
 
 - On a gap, fix it and recheck the item. Cap at 3 passes; if it still fails, stop and
   escalate to the user with the unresolved list.
-- Do not claim "done" until all 8 items are satisfied or the user accepts the remaining
+- Do not claim "done" until all 9 items are satisfied or the user accepts the remaining
   notes.
 - **Report it as a self-check.** An independent reviewer is a separate dispatch the
   orchestrating thread makes, and only it can.
