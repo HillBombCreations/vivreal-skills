@@ -205,6 +205,32 @@ test('REFUSE: a package publish in vivreal-hq still routes to package-publisher 
   assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-workflow:package-publisher/);
 });
 
+test('REFUSE: a usability pass routes to regular-user, and a dry run of a data step to coder (S7)', () => {
+  const cases = [
+    ['Usability pass on the checkout screens', /^Route this to vivreal-product:regular-user/],
+    ['Regular-user read of the new sign-up flow', /^Route this to vivreal-product:regular-user/],
+    ['Dry-run the archived orders cleanup', /^Route this to vivreal-principal:coder/],
+  ];
+  for (const [description, expected] of cases) {
+    const r = run(
+      GUARD,
+      { cwd: cms, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.match(decisionOf(r.stdout).permissionDecisionReason, expected, description);
+  }
+});
+
+test('ALLOW: "seed" no longer routes; tenant data setup stays on the main thread (S7, Q11)', () => {
+  const r = run(
+    GUARD,
+    { cwd: cms, tool_input: { subagent_type: 'general-purpose', description: 'Seed the QA business with bakery products' } },
+    { VIVREAL_REPOS: root },
+  );
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout, '');
+});
+
 test('session hook prints nothing outside a Vivreal checkout (control)', () => {
   const r = run(SESSION, { cwd: elsewhere }, { VIVREAL_REPOS: root });
   assert.equal(r.status, 0);

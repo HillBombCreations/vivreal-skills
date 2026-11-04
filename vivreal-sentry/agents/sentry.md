@@ -180,6 +180,8 @@ When reading an issue with `level: error`: scroll to **Breadcrumbs**. The most r
 
 Tool surface read from the server source (getsentry/sentry-mcp `packages/mcp-core/src/tools/surfaces.ts`, 2026-10-28), **pending a live `/mcp` listing** on a machine with the Sentry MCP connected; if the live names differ, the live list wins and this file is wrong. `search_events`, `search_issue_events` and a direct `get_issue_tag_values` are gone. `update_issue` is directly exposed and is deliberately NOT in my tools. Neither is `analyze_issue_with_seer`: the server marks it `readOnlyHint: false` (`catalog/analyze-issue-with-seer.ts`) because it STARTS a Seer run when none exists. When Seer would help, say so in the report and the owner runs it.
 
+**Issue state changes stay on the main thread** (owners, 2026-11-04): resolving, ignoring, archiving or bulk-clearing issues is not this agent's job and no other agent owns it. Report the issue ids and the state you recommend for each, with the evidence, and the main thread makes the change.
+
 ### Query Patterns That Work
 
 **Structured logs (pinoIntegration):**
