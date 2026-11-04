@@ -271,7 +271,7 @@ command runs it. Stop after the mode's gates and report results.
 
 Fill `.github/pull_request_template.md` (Summary, Testing, Risk, How to revert, Directed by).
 
-**Security review for sensitive paths.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, run `/security-review` on the branch before opening the PR and put its result (findings, or "none") under the PR body's Risk heading.
+**Security pass for sensitive paths: inline, never a skill.** When the diff touches authentication, tenancy (`groupID`, `dbKey`, `active_ctx`), billing or Stripe, `.github/workflows/`, IAM or deploy templates, or a shared `@hillbombcreations/*` package, walk `vivreal-principal:reviewer`'s 13-point items 4 (multi-tenant safety), 5 (auth), 5a (consent and identity) and 6 (security) yourself over `git -C <your worktree> diff <base>...HEAD`, before opening the PR, and write the result (findings, or "none, checked: <items>") under the PR body's Risk heading. **Never invoke `/security-review`, or any other skill, as a finishing step.** That command's prompt makes its own report the whole final reply, so it replaces your push, your PR and your report, and it reads git state from the session's directory rather than your worktree, so it can review the wrong diff. Between 2026-10-29 and 2026-11-03 it ended 11 coder runs (2 of them portal-coder) with nothing pushed. If the dispatcher wants that command's pass, the main thread runs it after your PR exists.
 
 **SOLO and INTEGRATE end in a pushed PR, never on a self-review with the work uncommitted.**
 Done means, in order: self-review passes, committed with hooks green (`git commit --only
@@ -280,6 +280,12 @@ foreground with the turn held open until it finishes (never background a push, i
 the turn and leaves a stale dev server that poisons the next one), a PR opened and its URL in
 the report, and the release state stated plainly, merged, open and unmerged, or not touched,
 never glossed as "Ship it."
+
+**Prove it before the report (every mode that pushes).** From your worktree, run `git
+ls-remote origin <branch>` and `gh pr list --head <branch> --json url,headRefOid`. Both must
+return your head SHA (`git rev-parse HEAD`); PARALLEL opens no PR, so there only the
+`ls-remote` line counts. If either is empty or shows another SHA, you are not done: push and
+open the PR. The report is the last thing in your reply; nothing runs after it.
 
 **Branch check before the first commit, and again in the report.** Print
 `git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
@@ -388,6 +394,9 @@ have saved roughly a quarter of that usage.
 - DON'T skip `rm -rf .next-test` before a push just because your own run finished cleanly.
 - DON'T background a push. It dies with the turn and leaves a stale dev server behind.
 - DON'T end SOLO or INTEGRATE on a self-review with the work uncommitted.
+- DON'T end the turn on any review, a self-review or a skill's (`/security-review` included).
+  The last thing in the reply is the report, with the PR URL (PARALLEL: the pushed head SHA)
+  and the line `worktree <path> on <branch> at <sha>`.
 - DON'T print secrets. Never run `aws amplify get-app` / `get-branch` / `list-branches` / `list-apps`, `aws lambda get-function-configuration` / `get-function`, `aws secretsmanager get-secret-value` or `aws ssm get-parameter --with-decryption` without a `--query` naming only the fields you need, and never print `environmentVariables` / `Environment.Variables` or Amplify's `basicAuthCredentials` (base64 `user:password`). Their default output carries every env value and secret into the transcript, and routine reads have leaked live credentials here more than once. To check that a key exists, ask for names only (`--query 'keys(Environment.Variables)'`, `--query 'keys(app.environmentVariables)'`).
 
 ## Output Format
