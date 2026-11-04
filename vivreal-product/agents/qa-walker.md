@@ -293,7 +293,7 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
 or written to a file): Vivreal Content `<secret-prefix>/agent-walk-user` (its own secret, never bundled). The QA
 logins `canlook`, `empty-owner`, `scratch-owner` (QA v5 scratch) and `scratch2-owner` (scratch-2) are KEYS of one
-secret, the QA account bundle (its name is in vivreal-hq `docs/infra/secret-names.md`) (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
+secret, the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`) (2026-10-17): read ONE key in process (SDK `GetSecretValue` then
 `JSON.parse(...)[key]`, or the e2e harness resolver for that key), never `--output text` on
 the bundle, which would print all four. `<qa-secret-prefix>/square-sandbox` and `admin-operator` (TOTP) stay separate
 secrets. `scratch3-owner`, `scratch4-owner`, `canedit` and `free-walker` were retired with their businesses

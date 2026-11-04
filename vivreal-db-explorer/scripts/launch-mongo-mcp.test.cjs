@@ -1,25 +1,30 @@
 // Run: node --test vivreal-db-explorer/scripts/launch-mongo-mcp.test.cjs
-// Drives the REAL launcher with a fake `aws` and a fake `npx` first on PATH, so every assertion is
-// about what the launcher actually hands the AWS CLI and the MCP server. The secret id comes from
-// VIVREAL_DB_SECRET_ID, and on Windows the launcher spawns through a shell, so an id outside the
-// Secrets Manager name alphabet must never reach `aws` at all.
+// Drives the REAL launcher and the REAL fallback script (cluster-url.cjs) with a fake `aws` and a
+// fake `npx` first on PATH, so every assertion is about what they actually hand the AWS CLI and
+// the MCP server. The secret id resolves, in order, from the VIVREAL_DB_SECRET_ID override, then
+// key `dbSecretId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, else a message
+// naming what is missing. Each branch has an ALLOW and a REFUSE case. On Windows both scripts spawn
+// `aws` through a shell, so an id outside the Secrets Manager name alphabet must never reach it.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
-const { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
+const { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 
 const LAUNCHER = join(__dirname, 'launch-mongo-mcp.cjs');
+const FALLBACK = join(__dirname, 'cluster-url.cjs');
 const isWin = process.platform === 'win32';
 const OPTIONS = 'maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer';
 const CLUSTER = 'mongodb+srv://fake.example/';
+const FILE_ID = 'example/prod/from-file';
+const OVERRIDE_ID = 'example/prod/override';
 
 const FAKE_AWS = `
 const fs = require('fs');
 fs.appendFileSync(process.env.FAKE_AWS_LOG, JSON.stringify(process.argv.slice(2)) + '\\n');
 if (process.env.FAKE_AWS_FAIL) { process.stderr.write('fake aws: AccessDenied'); process.exit(255); }
-process.stdout.write(JSON.stringify({ CLUSTER_URL: ${JSON.stringify(CLUSTER)} }));
+process.stdout.write(process.env.FAKE_AWS_OUT || JSON.stringify({ CLUSTER_URL: ${JSON.stringify(CLUSTER)} }));
 `;
 const FAKE_NPX = `
 const fs = require('fs');
@@ -31,40 +36,64 @@ fs.writeFileSync(process.env.FAKE_NPX_LOG, JSON.stringify({
 `;
 
 const dir = mkdtempSync(join(tmpdir(), 'vr-mongo-launcher-'));
-writeFileSync(join(dir, 'fake-aws.js'), FAKE_AWS);
-writeFileSync(join(dir, 'fake-npx.js'), FAKE_NPX);
+const bin = join(dir, 'bin');
+mkdirSync(bin);
+writeFileSync(join(bin, 'fake-aws.js'), FAKE_AWS);
+writeFileSync(join(bin, 'fake-npx.js'), FAKE_NPX);
 for (const [name, script] of [['aws', 'fake-aws.js'], ['npx', 'fake-npx.js']]) {
   if (isWin) {
-    // The launcher runs both through cmd.exe on Windows, which resolves a .cmd on PATH.
-    writeFileSync(join(dir, `${name}.cmd`), `@"${process.execPath}" "%~dp0${script}" %*\r\n`);
+    // Both scripts run these through cmd.exe on Windows, which resolves a .cmd on PATH.
+    writeFileSync(join(bin, `${name}.cmd`), `@"${process.execPath}" "%~dp0${script}" %*\r\n`);
   } else {
-    writeFileSync(join(dir, name), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/${script}" "$@"\n`);
-    chmodSync(join(dir, name), 0o755);
+    writeFileSync(join(bin, name), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/${script}" "$@"\n`);
+    chmodSync(join(bin, name), 0o755);
   }
 }
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 
 let runs = 0;
-function launch(extraEnv) {
+
+/**
+ * A scratch VIVREAL_REPOS root. `hq: false` leaves out the vivreal-hq clone, `names: null` leaves
+ * out the private names file, and `raw` writes that text as the file instead of JSON.
+ */
+function repos({ hq = true, names = { dbSecretId: FILE_ID }, raw } = {}) {
+  runs += 1;
+  const root = join(dir, `repos-${runs}`);
+  mkdirSync(root);
+  if (hq) {
+    const dotdir = join(root, 'vivreal-hq', '.vivreal');
+    mkdirSync(dotdir, { recursive: true });
+    if (raw !== undefined) writeFileSync(join(dotdir, 'private-names.json'), raw);
+    else if (names) writeFileSync(join(dotdir, 'private-names.json'), JSON.stringify(names));
+  }
+  return root;
+}
+
+function run(script, extraEnv) {
   runs += 1;
   const awsLog = join(dir, `aws-${runs}.log`);
   const npxLog = join(dir, `npx-${runs}.json`);
   const env = { ...process.env, FAKE_AWS_LOG: awsLog, FAKE_NPX_LOG: npxLog };
-  delete env.MDB_MCP_CONNECTION_STRING;
-  delete env.VIVREAL_DB_SECRET_ID;
-  delete env.FAKE_AWS_FAIL;
+  // The machine running the tests may have any of these set; every case states its own.
+  for (const k of ['MDB_MCP_CONNECTION_STRING', 'VIVREAL_DB_SECRET_ID', 'VIVREAL_REPOS', 'FAKE_AWS_FAIL', 'FAKE_AWS_OUT']) {
+    delete env[k];
+  }
   Object.assign(env, extraEnv);
   const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
-  env[pathKey] = dir + (isWin ? ';' : ':') + (env[pathKey] || '');
-  const res = spawnSync(process.execPath, [LAUNCHER], { cwd: dir, env, encoding: 'utf8', timeout: 60000 });
+  env[pathKey] = bin + (isWin ? ';' : ':') + (env[pathKey] || '');
+  const res = spawnSync(process.execPath, [script], { cwd: dir, env, encoding: 'utf8', timeout: 60000 });
   const awsCalls = existsSync(awsLog)
     ? readFileSync(awsLog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
     : [];
   const server = existsSync(npxLog) ? JSON.parse(readFileSync(npxLog, 'utf8')) : null;
-  return { status: res.status, stderr: res.stderr || '', awsCalls, server };
+  return { status: res.status, stdout: res.stdout || '', stderr: res.stderr || '', awsCalls, server };
 }
+const launch = (extraEnv) => run(LAUNCHER, extraEnv);
+const fallback = (extraEnv) => run(FALLBACK, extraEnv);
 
 const awsArgs = (id) => ['secretsmanager', 'get-secret-value', '--secret-id', id, '--query', 'SecretString', '--output', 'text'];
+const CONNECTED = `${CLUSTER}?${OPTIONS}`;
 
 test('control: the fake npx is the server the launcher starts, read-only', () => {
   const r = launch({ MDB_MCP_CONNECTION_STRING: CLUSTER });
@@ -73,87 +102,97 @@ test('control: the fake npx is the server the launcher starts, read-only', () =>
   assert.equal(r.server.readOnly, 'true');
 });
 
-test('ALLOW: a well-formed secret name reaches aws verbatim and the server starts connected', () => {
-  const r = launch({ VIVREAL_DB_SECRET_ID: 'example/prod/main-api' });
-  assert.deepEqual(r.awsCalls, [awsArgs('example/prod/main-api')], r.stderr);
-  assert.equal(r.server.conn, `${CLUSTER}?${OPTIONS}`);
-  assert.equal(r.status, 0, r.stderr);
-});
-
-test('ALLOW: a full secret ARN reaches aws verbatim', () => {
-  const arn = 'arn:aws:secretsmanager:us-east-1:' + '0'.repeat(12) + ':secret:example/prod/main-api-AbCdEf';
-  const r = launch({ VIVREAL_DB_SECRET_ID: arn });
-  assert.deepEqual(r.awsCalls, [awsArgs(arn)], r.stderr);
-  assert.equal(r.server.conn, `${CLUSTER}?${OPTIONS}`);
-});
-
-test('ALLOW: a connection string already in the environment wins and aws is never called', () => {
-  const r = launch({ MDB_MCP_CONNECTION_STRING: 'mongodb+srv://env.example/', VIVREAL_DB_SECRET_ID: 'example/prod/main-api' });
+// (a) MDB_MCP_CONNECTION_STRING
+test('(a) ALLOW: a connection string in the environment wins, and aws is never called', () => {
+  const r = launch({ MDB_MCP_CONNECTION_STRING: 'mongodb+srv://env.example/', VIVREAL_DB_SECRET_ID: OVERRIDE_ID, VIVREAL_REPOS: repos() });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.server.conn, `mongodb+srv://env.example/?${OPTIONS}`);
 });
 
-test('ALLOW: an aws failure starts the server unconnected rather than not at all', () => {
-  const r = launch({ VIVREAL_DB_SECRET_ID: 'example/prod/main-api', FAKE_AWS_FAIL: '1' });
-  assert.equal(r.awsCalls.length, 1, r.stderr);
-  assert.ok(r.server, 'the server never started');
-  assert.equal(r.server.conn, null);
+test('(a) REFUSE: an empty connection string does not count, so resolution moves on', () => {
+  const r = launch({ MDB_MCP_CONNECTION_STRING: '', VIVREAL_REPOS: repos() });
+  assert.deepEqual(r.awsCalls, [awsArgs(FILE_ID)], r.stderr);
 });
 
-// The one sentence both the launcher and the /db-query fallback's extractor print when no secret
-// was read, so an unset variable is named as the cause rather than a JSON or length error.
-const UNSET = /no secret read: is VIVREAL_DB_SECRET_ID set\? \(see SETUP\.md\)/;
-
-test('REFUSE: no VIVREAL_DB_SECRET_ID never reaches aws, starts unconnected, and says why', () => {
-  const r = launch({});
-  assert.deepEqual(r.awsCalls, [], 'aws was called with no secret id configured');
-  assert.equal(r.server.conn, null);
-  assert.match(r.stderr, UNSET);
+// (b) the optional VIVREAL_DB_SECRET_ID override
+test('(b) ALLOW: the override wins over the private names file', () => {
+  const r = launch({ VIVREAL_DB_SECRET_ID: OVERRIDE_ID, VIVREAL_REPOS: repos() });
+  assert.deepEqual(r.awsCalls, [awsArgs(OVERRIDE_ID)], r.stderr);
+  assert.equal(r.server.conn, CONNECTED);
 });
 
-test('REFUSE: an empty VIVREAL_DB_SECRET_ID never reaches aws, and says why', () => {
-  const r = launch({ VIVREAL_DB_SECRET_ID: '' });
+test('(b) ALLOW: a full secret ARN override reaches aws verbatim', () => {
+  const arn = 'arn:aws:secretsmanager:us-east-1:' + '0'.repeat(12) + ':secret:example/prod/main-api-AbCdEf';
+  const r = launch({ VIVREAL_DB_SECRET_ID: arn });
+  assert.deepEqual(r.awsCalls, [awsArgs(arn)], r.stderr);
+  assert.equal(r.server.conn, CONNECTED);
+});
+
+test('(b) ALLOW: an empty override is not set, so the file decides', () => {
+  const r = launch({ VIVREAL_DB_SECRET_ID: '', VIVREAL_REPOS: repos() });
+  assert.deepEqual(r.awsCalls, [awsArgs(FILE_ID)], r.stderr);
+});
+
+test('(b) REFUSE: a malformed override never reaches aws and never falls through to the file', () => {
+  const r = launch({ VIVREAL_DB_SECRET_ID: ' example/prod/main-api ', VIVREAL_REPOS: repos() });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, UNSET);
+  assert.match(r.stderr, /NOT CONNECTED: the database secret id from the VIVREAL_DB_SECRET_ID override is not a valid Secrets Manager name/);
 });
 
-// The /db-query fallback pipes `aws ... --secret-id "$VIVREAL_DB_SECRET_ID"` into the extractor.
-// With the variable unset, aws prints nothing on stdout, so the extractor sees empty input.
-const EXTRACTOR = join(__dirname, 'extract-cluster-url.cjs');
-const extract = (input) => spawnSync(process.execPath, [EXTRACTOR], { input, encoding: 'utf8', timeout: 30000 });
+// (c) key dbSecretId of the private names file
+test('(c) ALLOW: with no override, dbSecretId from the private names file reaches aws verbatim', () => {
+  const r = launch({ VIVREAL_REPOS: repos() });
+  assert.deepEqual(r.awsCalls, [awsArgs(FILE_ID)], r.stderr);
+  assert.equal(r.server.conn, CONNECTED);
+  assert.equal(r.status, 0, r.stderr);
+});
 
-test('REFUSE: the extractor on empty input names the unset variable and prints no URL', () => {
-  for (const input of ['', '\n', '  \r\n']) {
-    const r = extract(input);
-    assert.notEqual(r.status, 0, `exit 0 on ${JSON.stringify(input)}`);
-    assert.equal(r.stdout, '');
-    assert.match(r.stderr, UNSET);
+test('(c) REFUSE: a private names file that is not JSON never reaches aws, and says so', () => {
+  const r = launch({ VIVREAL_REPOS: repos({ raw: '{ not json' }) });
+  assert.deepEqual(r.awsCalls, []);
+  assert.equal(r.server.conn, null);
+  assert.match(r.stderr, /private-names\.json is not valid JSON/);
+});
+
+test('(c) REFUSE: a private names file with no dbSecretId never reaches aws, and says so', () => {
+  for (const names of [{ secretPrefix: 'x' }, { dbSecretId: '' }, { dbSecretId: 42 }]) {
+    const r = launch({ VIVREAL_REPOS: repos({ names }) });
+    assert.deepEqual(r.awsCalls, [], JSON.stringify(names));
+    assert.match(r.stderr, /private-names\.json has no dbSecretId/);
   }
 });
 
-test('REFUSE: the extractor on input that is not JSON says so and never echoes it', () => {
-  const r = extract('not-json-SECRETVALUE');
-  assert.notEqual(r.status, 0);
-  assert.equal(r.stdout, '');
-  assert.match(r.stderr, /stdin is not JSON/);
-  assert.doesNotMatch(r.stderr, /SECRETVALUE/);
+// (d) nothing to resolve from
+test('(d) REFUSE: VIVREAL_REPOS unset never reaches aws, starts unconnected, and names it', () => {
+  const r = launch({});
+  assert.deepEqual(r.awsCalls, [], 'aws was called with nothing configured');
+  assert.equal(r.server.conn, null);
+  assert.match(r.stderr, /NOT CONNECTED: VIVREAL_REPOS is not set/);
 });
 
-test('ALLOW: the extractor prints exactly the CLUSTER_URL of a secret', () => {
-  const r = extract(JSON.stringify({ CLUSTER_URL: CLUSTER, OTHER: 'x' }));
-  assert.equal(r.status, 0, r.stderr);
-  assert.equal(r.stdout, CLUSTER);
-});
-
-test('REFUSE: a padded VIVREAL_DB_SECRET_ID never reaches aws', () => {
-  const r = launch({ VIVREAL_DB_SECRET_ID: ' example/prod/main-api ' });
+test('(d) REFUSE: no vivreal-hq under VIVREAL_REPOS never reaches aws, and names it', () => {
+  const r = launch({ VIVREAL_REPOS: repos({ hq: false }) });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, /not a valid Secrets Manager name/);
+  assert.match(r.stderr, /NOT CONNECTED: vivreal-hq not found under VIVREAL_REPOS/);
 });
 
-test('REFUSE: shell metacharacters never reach aws and the injected command never runs', () => {
+test('(d) REFUSE: vivreal-hq without the private names file never reaches aws, and names it', () => {
+  const r = launch({ VIVREAL_REPOS: repos({ names: null }) });
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /NOT CONNECTED: vivreal-hq\/\.vivreal\/private-names\.json not found under VIVREAL_REPOS/);
+});
+
+test('ALLOW: an aws failure starts the server unconnected rather than not at all', () => {
+  const r = launch({ VIVREAL_REPOS: repos(), FAKE_AWS_FAIL: '1' });
+  assert.equal(r.awsCalls.length, 1, r.stderr);
+  assert.ok(r.server, 'the server never started');
+  assert.equal(r.server.conn, null);
+  assert.match(r.stderr, /could not read the database secret/);
+});
+
+test('REFUSE: shell metacharacters, from the override or the file, never reach aws or run', () => {
   const marker = join(dir, 'injected.txt');
   const payloads = [
     `x&echo INJECTED>${marker}`,
@@ -171,9 +210,38 @@ test('REFUSE: shell metacharacters never reach aws and the injected command neve
     'x\ny',
   ];
   for (const id of payloads) {
-    const r = launch({ VIVREAL_DB_SECRET_ID: id });
-    assert.deepEqual(r.awsCalls, [], `aws was called for ${JSON.stringify(id)}`);
-    assert.equal(r.server.conn, null, `the server started connected for ${JSON.stringify(id)}`);
-    assert.equal(existsSync(marker), false, `the injected command ran for ${JSON.stringify(id)}`);
+    for (const env of [{ VIVREAL_DB_SECRET_ID: id }, { VIVREAL_REPOS: repos({ names: { dbSecretId: id } }) }]) {
+      const where = `${JSON.stringify(id)} via ${Object.keys(env)[0]}`;
+      const r = launch(env);
+      assert.deepEqual(r.awsCalls, [], `aws was called for ${where}`);
+      assert.equal(r.server.conn, null, `the server started connected for ${where}`);
+      assert.equal(existsSync(marker), false, `the injected command ran for ${where}`);
+    }
+  }
+});
+
+// The /db-query and /db-schema fallback: the same resolution, printing the URL for the connect call.
+test('fallback ALLOW: prints exactly the CLUSTER_URL, from the private names file', () => {
+  const r = fallback({ VIVREAL_REPOS: repos() });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout, CLUSTER);
+  assert.deepEqual(r.awsCalls, [awsArgs(FILE_ID)]);
+});
+
+test('fallback REFUSE: with nothing configured it prints no URL and names what is missing', () => {
+  const r = fallback({});
+  assert.notEqual(r.status, 0);
+  assert.equal(r.stdout, '');
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /cluster-url: NOT CONNECTED: VIVREAL_REPOS is not set/);
+});
+
+test('fallback REFUSE: a secret that is not JSON or has no CLUSTER_URL prints no URL and never echoes it', () => {
+  for (const out of ['not-json-SECRETVALUE', JSON.stringify({ OTHER: 'SECRETVALUE' })]) {
+    const r = fallback({ VIVREAL_REPOS: repos(), FAKE_AWS_OUT: out });
+    assert.notEqual(r.status, 0);
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, /the database secret (is not JSON|has no CLUSTER_URL key)/);
+    assert.doesNotMatch(r.stderr, /SECRETVALUE/);
   }
 });

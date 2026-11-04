@@ -35,28 +35,23 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
    no query string. **There is no single shared secret anymore.** The old `hb-api-secrets`
    store is fully deleted (2026-09-15, no recovery window). Do not read or resolve it.
    `vivreal-db-explorer`'s launcher (below) reads `<secret-prefix>/main-api`, which is a live
-   writable services-user secret, through the `VIVREAL_DB_SECRET_ID` environment variable (set it
-   to that secret's full name, which is in vivreal-hq `docs/infra/secret-names.md`). Retrieve it
-   the same way if you need it directly (requires AWS credentials for the account):
-   ```bash
-   aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" \
-     --query SecretString --output text \
-     | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
-   ```
+   writable services-user secret. Its full name is key `dbSecretId` of
+   `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json` (the optional `VIVREAL_DB_SECRET_ID`
+   environment variable overrides it; nothing needs setting). To read the URL directly (requires AWS
+   credentials for the account), run the db-explorer plugin's `scripts/cluster-url.cjs` with node: it
+   resolves the name the same way and prints only `CLUSTER_URL`.
 2. **Local backend `.env`** (dev fallback), any backend repo under `${VIVREAL_REPOS}`
    (e.g. `${VIVREAL_REPOS}/VR_CMS_API/.env`) carries `CLUSTER_URL=mongodb+srv://…`.
 
 **Then connect:** the `vivreal-db-explorer` plugin registers a **read-only** MongoDB
 MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`). Its launcher, not `.mcp.json`, sets `MDB_MCP_READ_ONLY=true` (`scripts/launch-mongo-mcp.cjs`).
-Its launcher (`scripts/launch-mongo-mcp.cjs`) sources the secret named by `VIVREAL_DB_SECRET_ID` itself when
+Its launcher (`scripts/launch-mongo-mcp.cjs`) sources that secret itself (through `scripts/cluster-url.cjs`) when
 `MDB_MCP_CONNECTION_STRING` isn't already exported, and appends
 `maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer` to whichever string it
 resolves. Match that if you export the variable by hand:
 
 ```bash
-export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" \
-  --query SecretString --output text \
-  | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)')?maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer"
+export MDB_MCP_CONNECTION_STRING="$(node "<db-explorer plugin root>/scripts/cluster-url.cjs")?maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer"
 ```
 
 The server loads at session start (approve it on first use). If it isn't registered or

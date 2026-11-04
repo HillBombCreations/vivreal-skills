@@ -9,18 +9,15 @@
  * Manager (the Main API service secret, key `CLUSTER_URL`), so the server is already
  * connected before any agent runs a query. The agent never has to ask.
  *
- * WHICH SECRET: the name comes from the VIVREAL_DB_SECRET_ID environment variable, never
- * from this file. This repository is PUBLIC and does not publish secret names; the value
- * is in the private vivreal-hq repo at docs/infra/secret-names.md. Set it once in the
- * user-level Claude Code settings `env` block so every session's launcher sees it.
- *
- * Resolution order:
+ * Resolution order, with no setup beyond `VIVREAL_REPOS` and a vivreal-hq clone:
  *   1. MDB_MCP_CONNECTION_STRING already in the environment  → use verbatim.
- *   2. CLUSTER_URL from the Secrets Manager secret VIVREAL_DB_SECRET_ID names  → use that.
- *   3. Neither available (or the id is unset or malformed) → start UNCONNECTED and tell
- *      stderr how to recover.
- *      The /db-query and /db-schema commands carry the self-service fallback:
- *      source the string + call mcp__mongodb__connect, still never asking the user.
+ *   2. Otherwise `cluster-url.cjs` reads CLUSTER_URL from the secret named by the optional
+ *      VIVREAL_DB_SECRET_ID override, or by key `dbSecretId` of
+ *      `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`. This repository is PUBLIC and
+ *      never names the secret itself.
+ *   3. Neither available → start UNCONNECTED and say on stderr exactly what is missing.
+ *      The /db-query and /db-schema commands carry the self-service fallback: run
+ *      `cluster-url.cjs` and call mcp__mongodb__connect, still never asking the user.
  *
  * PROTOCOL SAFETY: this process speaks JSON-RPC over stdio. It MUST NOT write
  * anything to stdout (that would corrupt the MCP stream), all diagnostics go to
@@ -36,10 +33,11 @@
  *
  * FOLLOW-UP (not done here): the Main API service secret's user can write. The connection
  * spec proposes a dedicated read-only `dev-tools-ro` user for MCP/CLI use; that user and its
- * secret do not exist yet, so VIVREAL_DB_SECRET_ID still names the writable service secret.
- * Repoint the variable once that read-only user exists.
+ * secret do not exist yet, so `dbSecretId` still names the writable service secret.
+ * Repoint it in vivreal-hq once that read-only user exists.
  */
-const { spawnSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
+const { readClusterUrl } = require('./cluster-url.cjs');
 
 const log = (msg) => process.stderr.write(`[vivreal-db-explorer] ${msg}\n`);
 const onWindows = process.platform === 'win32';
@@ -48,10 +46,6 @@ const onWindows = process.platform === 'win32';
 // a small pool, a bounded idle time, and an appName so the connection is attributable instead
 // of landing under the shared "hillbomb_api" name every backend Lambda still reports today.
 const MCP_CONNECTION_OPTIONS = 'maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer';
-
-// The characters AWS allows in a Secrets Manager secret name, plus the colon of a full secret
-// ARN (both are accepted by --secret-id). None of them is a cmd.exe or POSIX shell metacharacter.
-const SECRET_ID_SHAPE = /^[A-Za-z0-9/_+=.@:-]{1,2048}$/;
 
 function withMcpOptions(uri) {
   const separator = uri.includes('?') ? '&' : '?';
@@ -64,51 +58,14 @@ function resolveConnectionString() {
     return process.env.MDB_MCP_CONNECTION_STRING;
   }
 
-  const secretId = process.env.VIVREAL_DB_SECRET_ID;
-  if (!secretId) {
-    // Same words the /db-query fallback's extractor prints, so both halves name the one cause.
-    log('no secret read: is VIVREAL_DB_SECRET_ID set? (see SETUP.md)');
-    log('No MDB_MCP_CONNECTION_STRING in env either. Starting UNCONNECTED. The variable\'s value is in');
-    log('vivreal-hq docs/infra/secret-names.md; the "Connecting" section of /db-query is the fallback.');
+  const r = readClusterUrl(process.env, { onWindows });
+  if (r.error) {
+    log(`NOT CONNECTED: ${r.error}`);
+    log('Starting UNCONNECTED. The "Connecting" section of /db-query is the fallback; it never asks the user.');
     return null;
   }
-  // On Windows the spawn below runs through a shell, so the id is joined into a command line.
-  // Refuse anything outside the Secrets Manager name alphabet rather than let it be parsed.
-  if (!SECRET_ID_SHAPE.test(secretId)) {
-    log('VIVREAL_DB_SECRET_ID is not a valid Secrets Manager name. Starting UNCONNECTED.');
-    return null;
-  }
-
-  log('No MDB_MCP_CONNECTION_STRING in env, sourcing CLUSTER_URL from the secret VIVREAL_DB_SECRET_ID names…');
-  const res = spawnSync(
-    'aws',
-    ['secretsmanager', 'get-secret-value',
-      '--secret-id', secretId,
-      '--query', 'SecretString',
-      '--output', 'text'],
-    { encoding: 'utf8', shell: onWindows },
-  );
-
-  if (res.status !== 0 || !res.stdout) {
-    const why = res.error ? res.error.message : (res.stderr || '').trim();
-    log(`Could not read the secret VIVREAL_DB_SECRET_ID names (aws CLI exit ${res.status}). ${why}`);
-    log('Starting UNCONNECTED. The agent must source the string and call connect, see the');
-    log('"Connecting" section of /db-query (sources CLUSTER_URL itself; never asks the user).');
-    return null;
-  }
-
-  try {
-    const secret = JSON.parse(res.stdout);
-    if (!secret.CLUSTER_URL) {
-      log('The secret resolved but has no CLUSTER_URL key. Starting unconnected.');
-      return null;
-    }
-    log('Resolved CLUSTER_URL from Secrets Manager, server will start connected (read-only).');
-    return secret.CLUSTER_URL;
-  } catch (e) {
-    log(`Failed to parse the secret JSON: ${e.message}. Starting unconnected.`);
-    return null;
-  }
+  log(`Resolved CLUSTER_URL from the secret named in ${r.source}; the server will start connected (read-only).`);
+  return r.url;
 }
 
 const connectionString = resolveConnectionString();

@@ -20,9 +20,10 @@ Keep Git for Windows' default `core.autocrlf=true` and set `git config --global 
 - **`VIVREAL_REPOS`**: the folder that holds every Vivreal clone, with forward slashes. Set it as a user environment
   variable (`setx VIVREAL_REPOS <folder>`) AND in the `env` block of `~/.claude/settings.json`. Every agent resolves
   cross-repo paths through it (see the `shared-standards` skill, "Path resolution").
-- **`VIVREAL_DB_SECRET_ID`**: the Secrets Manager secret `vivreal-db-explorer` reads its cluster URL from. This repo
-  is public and does not publish secret names; the value is in vivreal-hq `docs/infra/secret-names.md`. Set it in the
-  `env` block of `~/.claude/settings.json`. Without it the MongoDB MCP server starts unconnected.
+- **Private names** need no setup. Where a skill writes a placeholder such as `<secret-prefix>/`, the value is a key
+  of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, which the vivreal-hq clone already carries.
+  `vivreal-db-explorer` reads its database secret from key `dbSecretId` there. `VIVREAL_DB_SECRET_ID` is an optional
+  override only; nothing requires it.
 - **`NODE_AUTH_TOKEN`**: a GitHub token with `read:packages` only (add `write:packages` only on a machine that
   publishes), stored as a user environment variable. It lets `npm ci` install the private `@hillbombcreations/*`
   packages. Set it without echoing it, and never paste it into a chat.
@@ -75,5 +76,5 @@ Every line should PASS, including plugin versions equal to `origin/main`'s.
 - `uvx` runs the AWS documentation MCP where a project declares it.
 - `mongodb-mcp-server` reads `MDB_MCP_CONNECTION_STRING_RO` and `MDB_MCP_CONNECTION_STRING_RW`, set as user
   environment variables (by vivreal-hq's onboarding scripts, not by hand).
-- `/db-query` reads the secret named by `VIVREAL_DB_SECRET_ID` through the `default` profile. That database user can WRITE,
+- `/db-query` reads the secret named by key `dbSecretId` of the vivreal-hq private names file through the `default` profile. That database user can WRITE,
   so `/db-query` stays read-only by its own guards, not by its credential.

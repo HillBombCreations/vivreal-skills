@@ -1,7 +1,7 @@
 ---
 name: db-query
 description: Safely query Vivreal's multi-tenant MongoDB via MCP, with built-in dbKey routing, safety guards, and result formatting
-allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" --query SecretString --output text), Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__db-stats
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__aggregate, mcp__mongodb__count, mcp__mongodb__list-databases, mcp__mongodb__list-collections, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__aggregate, mcp__plugin_vivreal-db-explorer_mongodb__count, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__db-stats
 user-invocable: true
 ---
 
@@ -34,21 +34,23 @@ Query Vivreal's multi-tenant MongoDB with built-in awareness of the database rou
 
 The MCP server is normally **already connected**: the `vivreal-db-explorer` plugin launches it
 through `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets
-Manager (the secret named by the `VIVREAL_DB_SECRET_ID` environment variable; its value is in
-vivreal-hq `docs/infra/secret-names.md`) at startup. So your first query usually just works, try it first.
+Manager at startup, with no setup beyond `VIVREAL_REPOS`. The secret is named, in order, by the optional
+`VIVREAL_DB_SECRET_ID` override, else by key `dbSecretId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
+So your first query usually just works, try it first.
 
 **If a query returns "you need to connect first" / "not connected":** the launcher could not
-reach Secrets Manager (e.g. AWS creds weren't present at launch, or `VIVREAL_DB_SECRET_ID` is unset). Source the string yourself and
+reach Secrets Manager (e.g. AWS creds weren't present at launch, or the private names file was not found). Source the string yourself and
 connect, do **NOT** ask the user to paste a connection string. It is the Atlas **cluster** URI
 (`mongodb+srv://…`, no database path; the DB is chosen per query):
 
 ```bash
-aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" --query SecretString --output text | node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/cluster-url.cjs"
 ```
 
-Run it exactly as written, on one line: this command's `allowed-tools` pre-approves those two
-commands verbatim and no other shell command, so any variation asks first. The script reads the
-secret JSON on stdin and prints only `CLUSTER_URL`.
+Run it exactly as written: this command's `allowed-tools` pre-approves that one command verbatim and
+no other shell command, so any variation asks first. It resolves the secret the same way the launcher
+does and prints only `CLUSTER_URL`. If it fails, its stderr starts with `NOT CONNECTED:` and names
+exactly what is missing (for example "VIVREAL_REPOS is not set"); report that line.
 
 Pass that value to `mcp__mongodb__connect`, then re-run the query. The `vivreal-db` knowledge skill
 (vivreal-knowledge plugin) carries the full sourcing detail and a no-MCP driver fallback.
@@ -304,7 +306,7 @@ database is deleted fleet-wide). The `key` field is the group's slug, NOT databa
 
 ## Procedure
 
-1. **Connect**, try the query first (the launcher usually has the server connected). If it reports "not connected", follow the **Connecting** section above: source `CLUSTER_URL` from the secret named by `VIVREAL_DB_SECRET_ID` yourself and call `mcp__mongodb__connect`. Never ask the user for the string.
+1. **Connect**, try the query first (the launcher usually has the server connected). If it reports "not connected", follow the **Connecting** section above: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/cluster-url.cjs"` yourself and call `mcp__mongodb__connect`. Never ask the user for the string.
 2. **Resolve database name**:
    - `main` or `Vivreal` → use `Vivreal` (control plane)
    - If the user gives a group name, look the group up in `Vivreal.groups` and **read its `dbKey`**. That field IS the database. Do NOT derive one from `tier`: that ladder is deleted from every repository, and it silently picks the shared placement for a group whose stored tier is a retired one

@@ -1,7 +1,7 @@
 ---
 name: db-schema
 description: Show the Mongoose schema definition, indexes, and a sample document for any Vivreal MongoDB collection
-allowed-tools: Bash(aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" --query SecretString --output text), Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/cluster-url.cjs"), mcp__mongodb__connect, mcp__mongodb__find, mcp__mongodb__collection-schema, mcp__mongodb__collection-indexes, mcp__mongodb__list-collections, mcp__mongodb__list-databases, mcp__mongodb__db-stats, mcp__mongodb__count, Read, Glob, Grep, mcp__plugin_vivreal-db-explorer_mongodb__connect, mcp__plugin_vivreal-db-explorer_mongodb__find, mcp__plugin_vivreal-db-explorer_mongodb__collection-schema, mcp__plugin_vivreal-db-explorer_mongodb__collection-indexes, mcp__plugin_vivreal-db-explorer_mongodb__list-collections, mcp__plugin_vivreal-db-explorer_mongodb__list-databases, mcp__plugin_vivreal-db-explorer_mongodb__db-stats, mcp__plugin_vivreal-db-explorer_mongodb__count
 user-invocable: true
 ---
 
@@ -13,17 +13,17 @@ Shows the full picture of a MongoDB collection: Mongoose schema definition (from
 
 The MCP server is normally **already connected**, the `vivreal-db-explorer` plugin launches it via
 `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets Manager
-(the secret named by the `VIVREAL_DB_SECRET_ID` environment variable; its value is in vivreal-hq
-`docs/infra/secret-names.md`) at startup. Try your first MCP call directly. If it returns "not connected"
+(named by the optional `VIVREAL_DB_SECRET_ID` override, else by key `dbSecretId` of
+`${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`; no setup needed) at startup. Try your first MCP call directly. If it returns "not connected"
 source the string yourself and call `mcp__mongodb__connect`, do **NOT** ask the user to paste one:
 
 ```bash
-aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" --query SecretString --output text | node "${CLAUDE_PLUGIN_ROOT}/scripts/extract-cluster-url.cjs"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/cluster-url.cjs"
 ```
 
-Run it exactly as written, on one line: this command's `allowed-tools` pre-approves those two
-commands verbatim and no other shell command, so any variation asks first. The script reads the
-secret JSON on stdin and prints only `CLUSTER_URL`.
+Run it exactly as written: this command's `allowed-tools` pre-approves that one command verbatim and
+no other shell command, so any variation asks first. It prints only `CLUSTER_URL`; on failure its
+stderr starts with `NOT CONNECTED:` and names exactly what is missing.
 
 It is a secret (embeds the Atlas user + password): pass it only into the connect call, never log or
 persist it. Only ask the user as a true last resort, and only if Secrets Manager is genuinely

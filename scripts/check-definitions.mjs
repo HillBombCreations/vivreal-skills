@@ -1158,7 +1158,7 @@ const TOKEN_MESSAGES = {
   account: 'a named private account (the demo login or the QA account bundle). Write "the demo account" or "the QA account bundle".',
   prefix:
     'a Secrets Manager or SSM name prefix. Write <secret-prefix>/, <ssm-prefix>/ or <qa-secret-prefix>/; ' +
-    'the real names are in the private vivreal-hq repo at docs/infra/secret-names.md.',
+    'each value is a key of ${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json.',
 };
 /** sha256 of a lowercased private token, to the kind of finding it raises. */
 const PRIVATE_TOKENS = new Map([
@@ -1241,6 +1241,15 @@ const LEAK_PATTERNS = [
       'Write a placeholder such as <portal-amplify-app-id>, or the command that looks it up.',
   },
 ];
+// Any drive-letter path (any drive, either slash, escaped or not) and any home folder, anywhere,
+// docs/ included: this repository is installed on other people's machines, so a path has to be
+// `${VIVREAL_REPOS}/...` or relative. A path into a folder every Windows machine has (Program
+// Files, Windows) or an elided one (the drive, a slash, then three dots) names no one and is allowed.
+// The letter must not follow another letter or digit, so a URL scheme (`https://`) is not a hit.
+const DRIVE_PATH = new RegExp(
+  '(?<![A-Za-z0-9])[A-Za-z]:[' + BSL + BSL + '/]+(?![' + BSL + BSL + '/])(?!' + BSL + '.' + BSL + '.' + BSL + '.|Program Files|Windows[' + BSL + BSL + '/])',
+);
+const HOME_PATH = /(^|[^A-Za-z0-9_.$}-])\/(?:Users|home)\/[A-Za-z0-9._-]+\//;
 // Files that carried real cost and revenue figures. The method stays public; the numbers live
 // in the private vivreal-hq repo at docs/finance/unit-economics.md.
 const FIGURE_SCOPE = /(?:^|\/)skills\/vivreal-unit-economics\/|(?:^|\/)agents\/finance-auditor\.md$/;
@@ -1260,7 +1269,7 @@ function rulePublicLeaks(files) {
     if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
     const lines = readFileSync(abs, 'utf8').split('\n');
     const figures = FIGURE_SCOPE.test(rel);
-    // Rule 11 does not scan docs/, so the machine-path half of this rule covers exactly that.
+    // Rule 11 reports a C: clone root or a user folder outside docs/; a line it owns is left to it.
     const docs = rel.startsWith('docs/');
     lines.forEach((line, i) => {
       for (const p of LEAK_PATTERNS) {
@@ -1268,8 +1277,14 @@ function rulePublicLeaks(files) {
         if (m && !(p.allow && p.allow(line, m))) fail('public-leak', `${rel}:${i + 1}`, p.msg);
       }
       for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
-      if (docs && !line.includes(MACHINE_PATH_EXAMPLE) && MACHINE_PATH.test(line)) {
-        fail('public-leak', `${rel}:${i + 1}`, 'a machine path under docs/, which names a person and their machine. Write ${VIVREAL_REPOS}/<repo>.');
+      const ruleElevenOwns = !docs && MACHINE_PATH.test(line);
+      if (!ruleElevenOwns && !line.includes(MACHINE_PATH_EXAMPLE) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
+        fail(
+          'public-leak',
+          `${rel}:${i + 1}`,
+          'a drive-letter or home-folder path, which only exists on one machine and can name its user. ' +
+            'Write ${VIVREAL_REPOS}/<repo>/... or a relative path.',
+        );
       }
       if (figures && DOLLAR_FIGURE.test(line)) {
         fail(
@@ -1334,6 +1349,8 @@ const FAKE_TOKENS = [
   ['selftest-' + 'token', 'account'],
 ];
 const FAKE_PREFIX = 'selftest' + 'prefix';
+// The drive the generic-path ALLOW case uses, built so this file carries no drive-letter path.
+const SYSTEM_DRIVE = 'C' + ':';
 
 function registerFakeTokens(on) {
   for (const [token, kind] of FAKE_TOKENS) {
@@ -1705,11 +1722,36 @@ function selfTest() {
       body: '# findings\n\nnothing here\n',
     },
     {
+      // Under docs/, where rule 11 does not look.
       rule: 'public-leak',
-      match: 'a machine path under docs/',
+      match: 'a drive-letter or home-folder path',
       label: 'public-leak: a machine path in docs',
       path: join(ROOT, 'docs', SELFTEST_DOCS_DIR, 'paths.md'),
       body: '# paths\n\nRead C:' + '/repos/x/CLAUDE.md first.\n',
+    },
+    {
+      // Any drive, not only the C: clone root rule 11 knows.
+      rule: 'public-leak',
+      match: 'a drive-letter or home-folder path',
+      label: 'public-leak: a drive-letter path',
+      path: join(tmp, 'skills', 'drive-path', 'SKILL.md'),
+      body: '---\nname: drive-path\ndescription: fixture\n---\n\nOpen D' + ':/work/kit.txt first.\n',
+    },
+    {
+      // How a path is written inside a .js, .cjs or .json string.
+      rule: 'public-leak',
+      match: 'a drive-letter or home-folder path',
+      label: 'public-leak: an escaped drive path',
+      path: join(tmp, 'skills', 'escaped-drive', 'SKILL.md'),
+      body: '---\nname: escaped-drive\ndescription: fixture\n---\n\n`const p = \'E' + ':' + BSL + BSL + 'data' + BSL + BSL + 'kit\';`\n',
+    },
+    {
+      // Under docs/: in a plugin tree rule 11 already reports a home folder.
+      rule: 'public-leak',
+      match: 'a drive-letter or home-folder path',
+      label: 'public-leak: a home folder in docs',
+      path: join(ROOT, 'docs', SELFTEST_DOCS_DIR, 'home.md'),
+      body: '# home\n\nThe kit is at /home/' + 'someone/kit.txt.\n',
     },
     {
       rule: 'public-leak',
@@ -1723,7 +1765,7 @@ function selfTest() {
       match: 'a OneDrive path',
       label: 'public-leak: a OneDrive path',
       path: join(tmp, 'skills', 'sync', 'SKILL.md'),
-      body: '---\nname: sync\ndescription: fixture\n---\n\nThe kit is at D:/sync/One' + 'Drive/Desktop/kit.txt.\n',
+      body: '---\nname: sync\ndescription: fixture\n---\n\nThe kit is at sync/One' + 'Drive/Desktop/kit.txt.\n',
     },
     {
       rule: 'public-leak',
@@ -1805,7 +1847,10 @@ function selfTest() {
         'portal origin `stable.<portal-amplify-app-id>.amplifyapp.com`. Status `in_progress`, commit ' +
         'a'.repeat(40) + '. Never kill OneDrive.exe. Use the demo account or the QA account bundle. ' +
         // A private token inside a longer word, and a non-private word before /prod, are not hits.
-        'The word pre' + fakeHandle + 'post and `example/prod/main-api` are fine, and so is `<name>@gmail.com`.\n',
+        'The word pre' + fakeHandle + 'post and `example/prod/main-api` are fine, and so is `<name>@gmail.com`. ' +
+        // Paths that exist on every machine, an elided path, a URL and the repo variable name no one.
+        'Git Bash turns `/aws/x` into `' + SYSTEM_DRIVE + '/Program Files/Git/aws/x`; import `' + SYSTEM_DRIVE + '/...` fails; see ' +
+        '`https://example.com/a` and `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md`.\n',
     },
     {
       rule: 'public-leak',

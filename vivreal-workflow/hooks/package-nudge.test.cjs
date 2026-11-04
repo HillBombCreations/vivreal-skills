@@ -32,7 +32,8 @@ function messageFrom(stdout) {
 }
 
 test('a package.json edit gets the surgical-lockfile advice', (t) => {
-  const run = runHook('D:\\work\\X\\package.json');
+  // Backslash separators, as a Windows tool reports them, with no drive letter or machine path.
+  const run = runHook('work\\X\\package.json');
   t.after(() => fs.rmSync(run.marker, { force: true }));
   assert.equal(run.status, 0);
   const msg = messageFrom(run.stdout);
