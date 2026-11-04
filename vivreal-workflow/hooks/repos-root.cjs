@@ -1,109 +1,101 @@
-// The folder that holds every Vivreal clone, found with no configuration.
-//
-// One algorithm, byte-identical in vivreal-workflow/hooks/repos-root.cjs and
-// vivreal-db-explorer/scripts/repos-root.cjs (a plugin can only require files inside itself);
-// vivreal-workflow/hooks/routing-hooks.test.cjs fails when the two copies differ.
-//
-// Order:
-//   1. VIVREAL_REPOS, an OPTIONAL override. Used only when it is absolute and holds a vivreal-hq
-//      clone (vivreal-hq/.git); otherwise it is reported as rejected and derivation runs.
-//   2. For each start folder in order (the session's cwd, CLAUDE_PROJECT_DIR, a script's own
-//      folder): the parent of the MAIN checkout, from `git rev-parse --git-common-dir`, so a
-//      worktree under _wt/ resolves to the same root as its main checkout; then the first ancestor
-//      of the start that holds a vivreal-hq clone, which covers _ops/ and other non-git folders.
-//   3. null, with the reason. Never a guessed drive or home folder.
-//
-// No side effects and no dependencies; every failure is a null root with a reason.
 'use strict';
-
-const { execFileSync } = require('child_process');
+// The folder that holds every Vivreal clone side by side, found with NO setup on any machine.
+//
+// One algorithm for every consumer (docs/projects/universal-setup-2026-11/research.md, 2.1):
+//   1. VIVREAL_REPOS, when set, is an OPTIONAL override. It must be absolute and hold a
+//      vivreal-hq clone (`<it>/vivreal-hq/.git`). A set but wrong override is refused, never
+//      silently replaced by a derived folder: whoever set it meant it.
+//   2. For each start folder (the calling script's own folder first, then the cwd, then
+//      CLAUDE_PROJECT_DIR): `git rev-parse --git-common-dir` gives the MAIN checkout's .git even
+//      from a linked worktree, so its parent's parent is the clones folder. When git cannot
+//      answer (not a checkout, git missing), walk up from the start to the first ancestor that
+//      holds `vivreal-hq/.git` (covers `_ops/` and other plain folders beside the clones).
+//   3. Otherwise null, with a reason. Never a drive or home-folder guess: a guessed root is how a
+//      parked sibling checkout produced false greens.
+//
+// Zero dependencies. `exists` and `commonDir` are injectable so the tests prove each branch.
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
-function isDir(p) {
-  try {
-    return fs.statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
-}
+const HQ = 'vivreal-hq';
 
-/** True when `dir` holds a vivreal-hq clone (a main checkout's .git folder or a worktree's .git file). */
-function holdsHq(dir) {
-  try {
-    return fs.existsSync(path.join(dir, 'vivreal-hq', '.git'));
-  } catch {
-    return false;
-  }
-}
+const isSet = (v) => typeof v === 'string' && v.trim() !== '';
 
-/** Forward slashes, so the value reads the same in Git Bash, on macOS and on Linux. */
-function forwardSlashes(p) {
-  return p.split(path.sep).join('/');
-}
-
-/** The absolute git common dir for `start`, or null when `start` is not inside a git checkout. */
+/** The git common dir for `start`, absolute, or null when git cannot answer there. */
 function gitCommonDir(start) {
-  try {
-    const out = execFileSync('git', ['-C', start, 'rev-parse', '--git-common-dir'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 3000,
-    }).trim();
-    // Relative from a main checkout (".git", "../../.git"), absolute from a worktree.
-    return out ? path.resolve(start, out) : null;
-  } catch {
-    return null;
-  }
+  const res = spawnSync('git', ['-C', start, 'rev-parse', '--git-common-dir'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+    windowsHide: true,
+  });
+  if (res.error || res.status !== 0) return null;
+  const out = String(res.stdout || '').trim();
+  if (!out) return null;
+  // Relative from a main checkout (`.git`, `../../.git`), absolute from a worktree.
+  return path.resolve(start, out);
 }
 
-/** The clone root reachable from one start folder, or null. */
-function rootFromStart(start) {
-  if (typeof start !== 'string' || !start || !path.isAbsolute(start) || !isDir(start)) return null;
-  const common = gitCommonDir(start);
-  if (common) {
-    const candidate = path.dirname(path.dirname(common));
-    if (holdsHq(candidate)) return candidate;
-  }
-  let dir = path.resolve(start);
-  for (;;) {
-    if (holdsHq(dir)) return dir;
-    const up = path.dirname(dir);
-    if (up === dir) return null;
-    dir = up;
-  }
-}
+const holdsHq = (dir, exists) => exists(path.join(dir, HQ, '.git'));
 
 /**
- * Resolve the clone root.
- * @param {{ env?: object, starts?: Array<string|undefined> }} options
- * @returns {{ root: string|null, source: string, rejected: string|null, reason?: string }}
- *   `root` uses forward slashes; `source` is "VIVREAL_REPOS" or "derived from <start>";
- *   `rejected` says why a set VIVREAL_REPOS was not used; `reason` explains a null root.
+ * @param {object} [opts]
+ * @param {Record<string,string|undefined>} [opts.env]  process.env by default
+ * @param {string[]} [opts.starts]  folders to derive from, in order; the cwd and
+ *   CLAUDE_PROJECT_DIR are appended after them
+ * @returns {{ root: string|null, source: 'VIVREAL_REPOS'|'git'|'ancestor'|'none', from?: string, reason?: string }}
  */
-function resolveReposRoot({ env = process.env, starts = [] } = {}) {
-  const override = env.VIVREAL_REPOS;
-  let rejected = null;
-  if (override) {
-    if (path.isAbsolute(override) && holdsHq(override)) {
-      return { root: forwardSlashes(path.resolve(override)), source: 'VIVREAL_REPOS', rejected: null };
+function resolveReposRoot({ env = process.env, starts = [], cwd = process.cwd(), exists = fs.existsSync, commonDir = gitCommonDir } = {}) {
+  if (isSet(env.VIVREAL_REPOS)) {
+    const given = env.VIVREAL_REPOS.trim();
+    if (!path.isAbsolute(given)) {
+      return { root: null, source: 'none', reason: `VIVREAL_REPOS is set to a relative path (${given}); unset it to derive the folder, or make it absolute` };
     }
-    rejected = 'VIVREAL_REPOS is set but is not an absolute folder holding a vivreal-hq clone';
+    const root = path.resolve(given);
+    if (!holdsHq(root, exists)) {
+      return { root: null, source: 'none', reason: `VIVREAL_REPOS (${root}) holds no ${HQ} clone; unset it to derive the folder, or point it at the folder that holds ${HQ}` };
+    }
+    return { root, source: 'VIVREAL_REPOS' };
   }
-  const tried = starts.filter((s) => typeof s === 'string' && s);
-  for (const start of tried) {
-    const root = rootFromStart(start);
-    if (root) return { root: forwardSlashes(root), source: `derived from ${forwardSlashes(start)}`, rejected };
+
+  const all = [...starts, cwd, env.CLAUDE_PROJECT_DIR].filter(isSet).map((s) => path.resolve(s));
+  const seen = new Set();
+  for (const start of all) {
+    if (seen.has(start)) continue;
+    seen.add(start);
+
+    const common = commonDir(start);
+    if (common) {
+      const root = path.dirname(path.dirname(common));
+      if (holdsHq(root, exists)) return { root, source: 'git', from: start };
+    }
+
+    for (let dir = start; ; dir = path.dirname(dir)) {
+      if (holdsHq(dir, exists)) return { root: dir, source: 'ancestor', from: start };
+      if (path.dirname(dir) === dir) break;
+    }
   }
-  const where = tried.length ? tried.map(forwardSlashes).join(', ') : 'no start folder';
   return {
     root: null,
     source: 'none',
-    rejected,
-    reason:
-      `${rejected || 'VIVREAL_REPOS is not set'}, and no folder holding a vivreal-hq clone was found from ${where}. ` +
-      'Open the session inside a Vivreal clone.',
+    reason: `no folder holding a ${HQ} clone was found from ${all.join(', ') || '(no start folder)'}; run this from inside a Vivreal clone, or set VIVREAL_REPOS`,
   };
 }
 
-module.exports = { resolveReposRoot, holdsHq };
+/** The root, or an Error carrying the reason. For CLIs that cannot do anything without it. */
+function requireReposRoot(opts) {
+  const r = resolveReposRoot(opts);
+  if (!r.root) throw new Error(r.reason);
+  return r.root;
+}
+
+/** One line saying which folder was used and why, for a CLI's first line of output. */
+function describeReposRoot(r) {
+  if (r.source === 'VIVREAL_REPOS') return `repos root: ${r.root} (from VIVREAL_REPOS)`;
+  if (r.source === 'git' || r.source === 'ancestor') {
+    return `repos root: ${r.root} (derived from ${r.from}; VIVREAL_REPOS overrides it)`;
+  }
+  return `repos root: none (${r.reason})`;
+}
+
+module.exports = { resolveReposRoot, requireReposRoot, describeReposRoot, gitCommonDir, HQ };

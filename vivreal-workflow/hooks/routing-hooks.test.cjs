@@ -287,6 +287,8 @@ const repoDir = path.join(tree, 'VR_CMS_API');
 fs.mkdirSync(path.join(repoDir, 'src', 'deep'), { recursive: true });
 git(repoDir, 'init', '-q');
 git(repoDir, 'commit', '-q', '--allow-empty', '-m', 'probe');
+// A real Vivreal checkout names its origin, which is how the hooks recognise it with no root at all.
+git(repoDir, 'remote', 'add', 'origin', 'https://github.com/HillBombCreations/VR_CMS_API.git');
 const wtDir = path.join(tree, '_wt', 'cms-probe');
 git(repoDir, 'worktree', 'add', '-q', '--detach', wtDir);
 const opsDir = path.join(tree, '_ops', 'one-shot');
@@ -306,32 +308,43 @@ const noOverride = () => {
 
 test('ALLOW: the clone root is derived from a main checkout, a subfolder, a _wt worktree and a non-git _ops folder', () => {
   for (const start of [repoDir, path.join(repoDir, 'src', 'deep'), wtDir, opsDir]) {
-    const r = resolveReposRoot({ env: noOverride(), starts: [start] });
+    const r = resolveReposRoot({ env: noOverride(), starts: [start], cwd: outside });
     assert.ok(r.root, `no root from ${start}: ${r.reason}`);
     assert.equal(real(r.root), real(tree), `wrong root from ${start}`);
-    assert.match(r.source, /^derived from /);
-    assert.doesNotMatch(r.root, /\\/, 'the root must use forward slashes');
+    assert.ok(r.source === 'git' || r.source === 'ancestor', `source ${r.source}`);
+    assert.equal(real(r.from), real(start));
   }
 });
 
 test('REFUSE: no clone root above the start gives null and a reason, never a guess', () => {
-  const r = resolveReposRoot({ env: noOverride(), starts: [outside] });
+  const r = resolveReposRoot({ env: noOverride(), starts: [outside], cwd: outside });
   assert.equal(r.root, null);
-  assert.match(r.reason, /VIVREAL_REPOS is not set, and no folder holding a vivreal-hq clone was found/);
+  assert.match(r.reason, /no folder holding a vivreal-hq clone was found from /);
 });
 
 test('ALLOW: a valid VIVREAL_REPOS override wins over derivation', () => {
-  const r = resolveReposRoot({ env: { ...noOverride(), VIVREAL_REPOS: tree }, starts: [outside] });
+  const r = resolveReposRoot({ env: { ...noOverride(), VIVREAL_REPOS: tree }, starts: [outside], cwd: outside });
   assert.equal(real(r.root), real(tree));
   assert.equal(r.source, 'VIVREAL_REPOS');
 });
 
-test('REFUSE: an override that holds no vivreal-hq clone, or is relative, is rejected and derivation runs', () => {
-  for (const bad of [outside, 'repos']) {
-    const r = resolveReposRoot({ env: { ...noOverride(), VIVREAL_REPOS: bad }, starts: [repoDir] });
-    assert.match(r.rejected, /VIVREAL_REPOS is set but is not an absolute folder holding a vivreal-hq clone/);
-    assert.equal(real(r.root), real(tree), `derivation did not run for override ${bad}`);
+test('REFUSE: a wrong VIVREAL_REPOS is refused loudly, never replaced by a derived root (hq policy)', () => {
+  const cases = [
+    [outside, /VIVREAL_REPOS \(.+\) holds no vivreal-hq clone; unset it to derive the folder/],
+    ['repos', /VIVREAL_REPOS is set to a relative path \(repos\)/],
+  ];
+  for (const [bad, reason] of cases) {
+    // repoDir would derive a root, so a non-null root here would mean the override was replaced.
+    const r = resolveReposRoot({ env: { ...noOverride(), VIVREAL_REPOS: bad }, starts: [repoDir], cwd: repoDir });
+    assert.equal(r.root, null, `override ${bad} was replaced by ${r.root}`);
+    assert.match(r.reason, reason);
   }
+});
+
+test('session hook: a wrong VIVREAL_REPOS is reported as refused, and no export replaces it', () => {
+  const r = runSession(repoDir, { VIVREAL_REPOS: outside });
+  assert.match(r.stdout, /Doctor: VIVREAL_REPOS set but REFUSED \(VIVREAL_REPOS \(.+\) holds no vivreal-hq clone/);
+  assert.ok(!r.lines.some((l) => l.startsWith('export VIVREAL_REPOS')), 'a refused override was replaced');
 });
 
 function runSession(cwd, overrides) {
@@ -341,7 +354,7 @@ function runSession(cwd, overrides) {
   delete env.NODE_AUTH_TOKEN;
   delete env.CLAUDE_PROJECT_DIR;
   Object.assign(env, { CLAUDE_ENV_FILE: envFile }, overrides);
-  const res = spawnSync(process.execPath, [SESSION], { input: JSON.stringify({ cwd }), encoding: 'utf8', env });
+  const res = spawnSync(process.execPath, [SESSION], { cwd, input: JSON.stringify({ cwd }), encoding: 'utf8', env });
   const lines = fs.readFileSync(envFile, 'utf8').split('\n').filter(Boolean);
   fs.rmSync(path.dirname(envFile), { recursive: true, force: true });
   return { status: res.status, stdout: res.stdout, lines };
@@ -356,13 +369,13 @@ test('session hook with no overrides appends exactly the derived export and the 
   assert.equal(real(m[1]), real(tree));
   assert.deepEqual(r.lines.slice(1), NPM_FUNCTIONS);
   assert.match(r.stdout, /Vivreal routing for VR_CMS_API/);
-  assert.match(r.stdout, /Doctor: VIVREAL_REPOS derived \(derived from .*\), exported to Bash, NODE_AUTH_TOKEN read-only packages token from AWS, per npm call in Bash/);
+  assert.match(r.stdout, /Doctor: VIVREAL_REPOS derived from .*, exported to Bash, NODE_AUTH_TOKEN read-only packages token from AWS per npm call in Bash \(install and read commands only, publish gets the write token, others none\)/);
 });
 
-test('session hook: a set VIVREAL_REPOS suppresses the export, a set NODE_AUTH_TOKEN suppresses the functions', () => {
+test('session hook: a set VIVREAL_REPOS suppresses the export; the npm functions are written even with a token set, so builds are stripped', () => {
   const both = runSession(repoDir, { VIVREAL_REPOS: tree, NODE_AUTH_TOKEN: 'set-by-test' });
-  assert.deepEqual(both.lines, [], `appended ${JSON.stringify(both.lines)}`);
-  assert.match(both.stdout, /Doctor: VIVREAL_REPOS set \(override\), NODE_AUTH_TOKEN set \(override\)/);
+  assert.deepEqual(both.lines, NPM_FUNCTIONS, `appended ${JSON.stringify(both.lines)}`);
+  assert.match(both.stdout, /Doctor: VIVREAL_REPOS set \(override\), NODE_AUTH_TOKEN set \(override; install and read commands only/);
   const reposOnly = runSession(repoDir, { VIVREAL_REPOS: tree });
   assert.deepEqual(reposOnly.lines, NPM_FUNCTIONS);
   assert.ok(!reposOnly.lines.some((l) => l.startsWith('export VIVREAL_REPOS')), 'an override was replaced');
@@ -388,7 +401,10 @@ test('REFUSE: no line the session hook writes uses gh auth token (owners, 2026-1
 // part. A fake `aws` and a fake `npm`/`npx` first on PATH record what each was handed.
 
 const TOKEN = 'ghp_FAKE' + 'packages0token0for0tests';
+const WRITE_TOKEN = 'ghp_FAKE' + 'write0token0for0tests';
 const SECRET_NAME = 'example/packages-token';
+const WRITE_SECRET_NAME = 'example/packages-write-token';
+const NAMES = { packagesTokenSecret: SECRET_NAME, packagesWriteTokenSecret: WRITE_SECRET_NAME };
 const isWin = process.platform === 'win32';
 const fake = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-npm-token-'));
 const fakeBin = path.join(fake, 'bin');
@@ -403,7 +419,8 @@ fs.writeFileSync(
     "if (mode === 'notfound') { process.stderr.write('An error occurred (ResourceNotFoundException) when calling the GetSecretValue operation'); process.exit(254); }",
     "if (mode === 'nocreds') { process.stderr.write('Unable to locate credentials. You can configure credentials by running \"aws configure\".'); process.exit(253); }",
     "if (mode === 'nokey') { process.stdout.write(JSON.stringify({ OTHER: 'x' })); process.exit(0); }",
-    "process.stdout.write(JSON.stringify({ NODE_AUTH_TOKEN: process.env.FAKE_TOKEN }));",
+    "const id = process.argv[process.argv.indexOf('--secret-id') + 1];",
+    "process.stdout.write(JSON.stringify({ NODE_AUTH_TOKEN: id === process.env.FAKE_WRITE_ID ? process.env.FAKE_WRITE_TOKEN : process.env.FAKE_TOKEN }));",
   ].join('\n'),
 );
 const FAKE_TOOL = [
@@ -413,6 +430,9 @@ const FAKE_TOOL = [
   "  args: process.argv.slice(2),",
   "  hasToken: Boolean(process.env.NODE_AUTH_TOKEN),",
   "  tokenMatches: process.env.NODE_AUTH_TOKEN === process.env.FAKE_TOKEN || process.env.NODE_AUTH_TOKEN === process.env.FAKE_OVERRIDE,",
+  "  which: !process.env.NODE_AUTH_TOKEN ? 'none' : process.env.NODE_AUTH_TOKEN === process.env.FAKE_TOKEN ? 'read'",
+  "    : process.env.NODE_AUTH_TOKEN === process.env.FAKE_WRITE_TOKEN ? 'write'",
+  "    : process.env.NODE_AUTH_TOKEN === process.env.FAKE_OVERRIDE ? 'override' : 'other',",
   "}));",
   "process.stdout.write('fake tool ran\\n');",
   "process.exit(Number(process.env.FAKE_TOOL_EXIT || 0));",
@@ -453,7 +473,7 @@ function runWrapper(cwd, tool, args, extraEnv = {}) {
   tokenRuns += 1;
   const awsLog = path.join(fake, `aws-${tokenRuns}.log`);
   const npmLog = path.join(fake, `npm-${tokenRuns}.json`);
-  const env = { ...process.env, FAKE_AWS_LOG: awsLog, FAKE_NPM_LOG: npmLog, FAKE_TOKEN: TOKEN };
+  const env = { ...process.env, FAKE_AWS_LOG: awsLog, FAKE_NPM_LOG: npmLog, FAKE_TOKEN: TOKEN, FAKE_WRITE_TOKEN: WRITE_TOKEN, FAKE_WRITE_ID: WRITE_SECRET_NAME };
   for (const k of ['VIVREAL_REPOS', 'NODE_AUTH_TOKEN', 'CLAUDE_PROJECT_DIR', 'FAKE_AWS_MODE', 'FAKE_OVERRIDE', 'FAKE_TOOL_EXIT']) delete env[k];
   Object.assign(env, extraEnv);
   const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
@@ -467,13 +487,15 @@ function runWrapper(cwd, tool, args, extraEnv = {}) {
 }
 
 const neverLeaks = (r) => {
-  assert.ok(!r.stdout.includes(TOKEN), 'the token reached stdout');
-  assert.ok(!r.stderr.includes(TOKEN), 'the token reached stderr');
-  assert.ok(!(r.child && r.child.args.some((a) => a.includes(TOKEN))), 'the token reached argv');
+  for (const t of [TOKEN, WRITE_TOKEN]) {
+    assert.ok(!r.stdout.includes(t), 'a token reached stdout');
+    assert.ok(!r.stderr.includes(t), 'a token reached stderr');
+    assert.ok(!(r.child && r.child.args.some((a) => a.includes(t))), 'a token reached argv');
+  }
 };
 
 test('ALLOW: the shared token reaches only the npm child env, never stdout, stderr or argv', () => {
-  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci', '--arg with space']);
+  const r = runWrapper(tokenRoot(NAMES), 'npm', ['ci', '--arg with space']);
   assert.equal(r.status, 0, r.stderr);
   assert.ok(r.child, `the fake npm never ran: ${r.stderr}`);
   assert.equal(r.child.tool, 'npm');
@@ -485,23 +507,69 @@ test('ALLOW: the shared token reaches only the npm child env, never stdout, stde
   neverLeaks(r);
 });
 
-test('ALLOW: npx gets the token the same way', () => {
-  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npx', ['some-bin']);
+test('ALLOW: npx naming @hillbombcreations/ gets the read token', () => {
+  const r = runWrapper(tokenRoot(NAMES), 'npx', ['@hillbombcreations/' + 'site-loader', 'check']);
   assert.equal(r.child && r.child.tool, 'npx');
   assert.equal(r.child.tokenMatches, true);
   neverLeaks(r);
 });
 
 test('ALLOW: a NODE_AUTH_TOKEN already set wins, and aws is never called', () => {
-  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['view', 'x'], { NODE_AUTH_TOKEN: 'override-token', FAKE_OVERRIDE: 'override-token' });
+  const r = runWrapper(tokenRoot(NAMES), 'npm', ['view', 'x'], { NODE_AUTH_TOKEN: 'override-token', FAKE_OVERRIDE: 'override-token' });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.child.hasToken, true);
   assert.equal(r.child.tokenMatches, true);
 });
 
 test('ALLOW: the child exit code is the wrapper exit code', () => {
-  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['test'], { FAKE_TOOL_EXIT: '3' });
+  const r = runWrapper(tokenRoot(NAMES), 'npm', ['test'], { FAKE_TOOL_EXIT: '3' });
   assert.equal(r.status, 3);
+});
+
+test('ALLOW: install-type commands get the READ token, from the read secret', () => {
+  for (const args of [['ci'], ['install'], ['i', 'x'], ['add', 'x'], ['update'], ['view', 'x'], ['info', 'x'], ['outdated'], ['--prefix', 'sub', 'ci']]) {
+    const r = runWrapper(tokenRoot(NAMES), 'npm', args);
+    assert.equal(r.child && r.child.which, 'read', `npm ${args.join(' ')} got ${r.child && r.child.which}`);
+    assert.deepEqual(r.awsCalls.map((c) => c[c.indexOf('--secret-id') + 1]), [SECRET_NAME]);
+    neverLeaks(r);
+  }
+});
+
+test('ALLOW: npm publish ONLY gets the WRITE token, from the write secret', () => {
+  const r = runWrapper(tokenRoot(NAMES), 'npm', ['publish']);
+  assert.equal(r.child && r.child.which, 'write');
+  assert.deepEqual(r.awsCalls.map((c) => c[c.indexOf('--secret-id') + 1]), [WRITE_SECRET_NAME]);
+  neverLeaks(r);
+});
+
+test('REFUSE: build, test and npx next build children see NO token, and aws is never called', () => {
+  const cases = [
+    ['npm', ['run', 'build']],
+    ['npm', ['test']],
+    ['npm', ['run', 'test:unit', '--', '--watch=false']],
+    ['npx', ['next', 'build']],
+    ['npm', ['exec', 'next', 'build']],
+  ];
+  for (const [tool, args] of cases) {
+    const r = runWrapper(tokenRoot(NAMES), tool, args);
+    assert.equal(r.child && r.child.hasToken, false, `${tool} ${args.join(' ')} saw a token`);
+    assert.deepEqual(r.awsCalls, [], `${tool} ${args.join(' ')} called aws`);
+    assert.equal(r.stderr, '', `${tool} ${args.join(' ')} printed noise`);
+  }
+});
+
+test('REFUSE: a NODE_AUTH_TOKEN the caller set is stripped from build and test children', () => {
+  for (const [tool, args] of [['npm', ['run', 'build']], ['npm', ['test']], ['npx', ['next', 'build']]]) {
+    const r = runWrapper(tokenRoot(NAMES), tool, args, { NODE_AUTH_TOKEN: 'override-token', FAKE_OVERRIDE: 'override-token' });
+    assert.equal(r.child && r.child.hasToken, false, `${tool} ${args.join(' ')} kept the caller's token`);
+  }
+});
+
+test('REFUSE: publish with no packagesWriteTokenSecret key names that key and never uses the read token', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['publish']);
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /has no packagesWriteTokenSecret key/);
+  assert.equal(r.child.hasToken, false);
 });
 
 test('REFUSE: no packagesTokenSecret key names the key, never reaches aws, and npm runs tokenless', () => {
@@ -521,7 +589,7 @@ test('REFUSE: no private names file at all says so and never reaches aws', () =>
 test('REFUSE: a secret the owners have not created yet is named as missing, and npm runs tokenless', () => {
   const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci'], { FAKE_AWS_MODE: 'notfound' });
   assert.equal(r.awsCalls.length, 1);
-  assert.match(r.stderr, /the shared packages token secret does not exist yet \(the owners create it\)/);
+  assert.match(r.stderr, /the shared read-only packages token secret does not exist/);
   assert.equal(r.child.hasToken, false);
 });
 
@@ -534,7 +602,7 @@ test('REFUSE: no AWS credentials is named as the missing part', () => {
 
 test('REFUSE: a secret with no NODE_AUTH_TOKEN key is named, and npm runs tokenless', () => {
   const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci'], { FAKE_AWS_MODE: 'nokey' });
-  assert.match(r.stderr, /the shared packages token secret has no NODE_AUTH_TOKEN key/);
+  assert.match(r.stderr, /the shared read-only packages token secret has no NODE_AUTH_TOKEN key/);
   assert.equal(r.child.hasToken, false);
 });
 
@@ -561,4 +629,9 @@ test('repos-root.cjs copies in vivreal-workflow and vivreal-db-explorer are byte
   const there = fs.readFileSync(path.join(__dirname, '..', '..', 'vivreal-db-explorer', 'scripts', 'repos-root.cjs'));
   assert.ok(here.length > 0);
   assert.ok(here.equals(there), 'the two repos-root.cjs copies differ; copy the workflow one over the other');
+  // Both are vivreal-hq's packages/fleet-ops/lib/repos-root.js, vendored byte-identical (its sha256,
+  // with line endings as committed). Re-vendor both copies and move this pin when hq changes it.
+  const VENDORED_SHA256 = '9ff838579cda51909986ff950d93b0dee082e6c5b5be70645513c3710cbbf13d';
+  const lf = here.toString('utf8').replace(/\r\n/g, '\n');
+  assert.equal(require('node:crypto').createHash('sha256').update(lf).digest('hex'), VENDORED_SHA256);
 });

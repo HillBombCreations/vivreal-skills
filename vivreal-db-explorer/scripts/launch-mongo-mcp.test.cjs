@@ -170,14 +170,14 @@ test('(d) REFUSE: VIVREAL_REPOS unset never reaches aws, starts unconnected, and
   const r = launch({});
   assert.deepEqual(r.awsCalls, [], 'aws was called with nothing configured');
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is not set, and no folder holding a vivreal-hq clone was found/);
+  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: no folder holding a vivreal-hq clone was found from /);
 });
 
-test('(d) REFUSE: a VIVREAL_REPOS with no vivreal-hq is rejected, never reaches aws, and names it', () => {
+test('(d) REFUSE: a VIVREAL_REPOS with no vivreal-hq is refused, never replaced, never reaches aws, and names it', () => {
   const r = launch({ VIVREAL_REPOS: repos({ hq: false }) });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is set but is not an absolute folder holding a vivreal-hq clone/);
+  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS \(.+\) holds no vivreal-hq clone/);
 });
 
 test('(d) REFUSE: vivreal-hq without the private names file never reaches aws, and names it', () => {
@@ -235,7 +235,7 @@ test('fallback REFUSE: with nothing configured it prints no URL and names what i
   assert.notEqual(r.status, 0);
   assert.equal(r.stdout, '');
   assert.deepEqual(r.awsCalls, []);
-  assert.match(r.stderr, /cluster-url: NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is not set/);
+  assert.match(r.stderr, /cluster-url: NOT CONNECTED: no Vivreal clone root: no folder holding a vivreal-hq clone was found/);
 });
 
 test('fallback REFUSE: a secret that is not JSON or has no CLUSTER_URL prints no URL and never echoes it', () => {
@@ -262,5 +262,5 @@ test('(e) REFUSE: a CLAUDE_PROJECT_DIR with no clone root above it never reaches
   mkdirSync(project, { recursive: true });
   const r = launch({ CLAUDE_PROJECT_DIR: project });
   assert.deepEqual(r.awsCalls, []);
-  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: VIVREAL_REPOS is not set, and no folder holding a vivreal-hq clone was found from /);
+  assert.match(r.stderr, /NOT CONNECTED: no Vivreal clone root: no folder holding a vivreal-hq clone was found from /);
 });

@@ -1,22 +1,27 @@
 #!/usr/bin/env node
-// Runs npm or npx with a NODE_AUTH_TOKEN for the private @hillbombcreations/* packages, with no setup.
-// The vivreal-workflow SessionStart hook defines `npm` and `npx` in the session's Bash as calls to
-// this file: `node <this file> npm <args...>`.
+// Runs npm or npx, handing a GitHub Packages token for the private @hillbombcreations/* packages ONLY
+// to the commands that need one, with no setup. The vivreal-workflow SessionStart hook defines `npm`
+// and `npx` in the session's Bash as calls to this file: `node <this file> npm <args...>`.
 //
-// The token, in order (owners, 2026-11-04):
-//   1. NODE_AUTH_TOKEN already in the environment: used as is (an optional override).
-//   2. ONE shared READ-ONLY packages token in AWS Secrets Manager, read with the user's own AWS
-//      sign-in at the moment npm runs. The secret's NAME is key `packagesTokenSecret` of
-//      `<clone root>/vivreal-hq/.vivreal/private-names.json` (this repository is PUBLIC and never
-//      names it); the value is JSON with key `NODE_AUTH_TOKEN`.
-//   3. Otherwise one stderr line naming the missing part (the key, the secret, or AWS credentials),
-//      and npm runs without a token, so a command that needs no private package still works.
-// Never `gh auth token`: that carries the person's whole GitHub access, and any install script can
-// read npm's environment.
+// Which command gets which token (owners, 2026-11-04):
+//   - install and read commands (`ci`, `install`, `i`, `add`, `update`, `view`, `info`, `outdated`),
+//     and `npx` (or `npm exec`/`npm x`) only when an argument names `@hillbombcreations/`: the shared
+//     READ-ONLY token, from the secret named by key `packagesTokenSecret`;
+//   - `npm publish` ONLY: the WRITE token, from the secret named by key `packagesWriteTokenSecret`;
+//   - every other command (`run`, `test`, `exec` of anything else, `npx next build` and the rest):
+//     NO token. NODE_AUTH_TOKEN is deleted from the child's environment, even when the caller set it,
+//     because a Next.js build cache writes environment values to disk and a test or build script has
+//     no use for it. No AWS call is made and nothing is printed for these.
+// The secret NAMES are keys of `<clone root>/vivreal-hq/.vivreal/private-names.json` (this repository
+// is PUBLIC and never names them); each value is JSON with key `NODE_AUTH_TOKEN`, read with the
+// user's own AWS sign-in at the moment npm runs. A NODE_AUTH_TOKEN already in the environment is an
+// optional override, used only for the commands above that get a token. Never `gh auth token`: it
+// carries the person's whole GitHub access.
 //
-// The token goes ONLY into the npm or npx child's environment. It is never printed, never logged,
-// never written to disk and never put on a command line; no message here echoes it or the aws
-// CLI's output.
+// What is and is not true about where the token goes: this wrapper puts it only into the environment
+// of the one npm or npx child that needs it, and never prints it, logs it, puts it on a command line
+// or writes it to a file. That child, and every install script it runs, can read its environment;
+// that is npm's design, and why build and test commands get none.
 'use strict';
 
 const { spawnSync } = require('child_process');
@@ -25,20 +30,53 @@ const path = require('path');
 const { resolveReposRoot } = require('./repos-root.cjs');
 
 const TOOLS = new Set(['npm', 'npx']);
-const NAME_KEY = 'packagesTokenSecret';
+const READ_KEY = 'packagesTokenSecret';
+const WRITE_KEY = 'packagesWriteTokenSecret';
 const VALUE_KEY = 'NODE_AUTH_TOKEN';
+const READ_COMMANDS = new Set(['ci', 'install', 'i', 'add', 'update', 'view', 'info', 'outdated']);
+const EXEC_COMMANDS = new Set(['exec', 'x']);
+// npm options that take the next argument as their value, so it is not mistaken for the command.
+const VALUE_FLAGS = new Set(['--prefix', '-C', '--workspace', '-w', '--registry', '--cache', '--userconfig', '--loglevel', '--tag', '--access', '--otp']);
+const OUR_SCOPE = '@hillbombcreations/';
 // The Secrets Manager name alphabet, plus the colon of a full ARN. None of these is a shell
 // metacharacter, which matters because `aws` is spawned through a shell on Windows.
 const SECRET_ID_SHAPE = /^[A-Za-z0-9/_+=.@:-]{1,2048}$/;
 const onWindows = process.platform === 'win32';
 
+/** The npm command word: the first argument that is neither an option nor an option's value. */
+function npmCommand(args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--') return null;
+    if (a.startsWith('-')) {
+      if (VALUE_FLAGS.has(a)) i += 1;
+      continue;
+    }
+    return a;
+  }
+  return null;
+}
+
+/** Which token this call gets: 'read', 'write' or 'none'. */
+function tokenKindFor(tool, args) {
+  const namesOurScope = args.some((a) => a.includes(OUR_SCOPE));
+  if (tool === 'npx') return namesOurScope ? 'read' : 'none';
+  const cmd = npmCommand(args);
+  if (cmd === 'publish') return 'write';
+  if (cmd && READ_COMMANDS.has(cmd)) return 'read';
+  if (cmd && EXEC_COMMANDS.has(cmd)) return namesOurScope ? 'read' : 'none';
+  return 'none';
+}
+
 /**
- * The token for the child, or the reason there is none. Never throws, never logs.
+ * The token for one kind, or the reason there is none. Never throws, never logs.
  * @returns {{ token: string, source: string } | { missing: string }}
  */
-function resolvePackagesToken(env, starts) {
+function resolvePackagesToken(env, kind) {
   if (env.NODE_AUTH_TOKEN) return { token: env.NODE_AUTH_TOKEN, source: 'NODE_AUTH_TOKEN' };
-  const resolved = resolveReposRoot({ env, starts });
+  const key = kind === 'write' ? WRITE_KEY : READ_KEY;
+  const label = kind === 'write' ? 'write' : 'read-only';
+  const resolved = resolveReposRoot({ env });
   if (!resolved.root) return { missing: `no Vivreal clone root (${resolved.reason})` };
   const file = path.join(resolved.root, 'vivreal-hq', '.vivreal', 'private-names.json');
   let names;
@@ -47,13 +85,11 @@ function resolvePackagesToken(env, starts) {
   } catch {
     return { missing: 'vivreal-hq/.vivreal/private-names.json is missing or not JSON (pull vivreal-hq main)' };
   }
-  const id = names && names[NAME_KEY];
+  const id = names && names[key];
   if (typeof id !== 'string' || !id) {
-    return { missing: `vivreal-hq/.vivreal/private-names.json has no ${NAME_KEY} key (pull vivreal-hq main)` };
+    return { missing: `vivreal-hq/.vivreal/private-names.json has no ${key} key (pull vivreal-hq main)` };
   }
-  if (!SECRET_ID_SHAPE.test(id)) {
-    return { missing: `the ${NAME_KEY} value is not a valid Secrets Manager name` };
-  }
+  if (!SECRET_ID_SHAPE.test(id)) return { missing: `the ${key} value is not a valid Secrets Manager name` };
   const res = spawnSync(
     'aws',
     ['secretsmanager', 'get-secret-value', '--secret-id', id, '--query', 'SecretString', '--output', 'text'],
@@ -63,25 +99,25 @@ function resolvePackagesToken(env, starts) {
     const err = String(res.stderr || '');
     if (res.error && res.error.code === 'ENOENT') return { missing: 'the AWS CLI is not on PATH' };
     if (/ResourceNotFoundException|can't find the specified secret/i.test(err)) {
-      return { missing: 'the shared packages token secret does not exist yet (the owners create it)' };
+      return { missing: `the shared ${label} packages token secret does not exist` };
     }
     if (/Unable to locate credentials|ExpiredToken|InvalidClientTokenId|UnrecognizedClientException|SSO session|token has expired|could not be found/i.test(err)) {
       return { missing: 'AWS credentials: sign in with your own identity (`aws sso login` or `aws configure`)' };
     }
-    if (/AccessDenied/i.test(err)) return { missing: 'AWS access: your identity cannot read the shared packages token secret' };
-    return { missing: `could not read the shared packages token secret (aws CLI exit ${res.status})` };
+    if (/AccessDenied/i.test(err)) return { missing: `AWS access: your identity cannot read the shared ${label} packages token secret` };
+    return { missing: `could not read the shared ${label} packages token secret (aws CLI exit ${res.status})` };
   }
   let secret;
   try {
     secret = JSON.parse(res.stdout);
   } catch {
-    return { missing: `the shared packages token secret is not JSON with a ${VALUE_KEY} key` };
+    return { missing: `the shared ${label} packages token secret is not JSON with a ${VALUE_KEY} key` };
   }
   const token = secret && secret[VALUE_KEY];
   if (typeof token !== 'string' || !token) {
-    return { missing: `the shared packages token secret has no ${VALUE_KEY} key` };
+    return { missing: `the shared ${label} packages token secret has no ${VALUE_KEY} key` };
   }
-  return { token, source: 'the shared read-only packages token in AWS' };
+  return { token, source: `the shared ${label} packages token in AWS` };
 }
 
 /**
@@ -117,14 +153,19 @@ function main(argv) {
     return 2;
   }
   const env = { ...process.env };
-  const found = resolvePackagesToken(env, [process.cwd(), env.CLAUDE_PROJECT_DIR]);
-  if (found.token) {
-    env.NODE_AUTH_TOKEN = found.token;
-  } else {
+  const kind = tokenKindFor(tool, args);
+  if (kind === 'none') {
     delete env.NODE_AUTH_TOKEN;
-    process.stderr.write(
-      `npm-token: no NODE_AUTH_TOKEN for @hillbombcreations packages: ${found.missing}. ${tool} runs without it.\n`,
-    );
+  } else {
+    const found = resolvePackagesToken(env, kind);
+    if (found.token) {
+      env.NODE_AUTH_TOKEN = found.token;
+    } else {
+      delete env.NODE_AUTH_TOKEN;
+      process.stderr.write(
+        `npm-token: no NODE_AUTH_TOKEN for @hillbombcreations packages: ${found.missing}. ${tool} runs without it.\n`,
+      );
+    }
   }
   const cmd = commandFor(tool, args, env);
   if (!cmd) {
@@ -139,7 +180,7 @@ function main(argv) {
   return child.status === null ? 1 : child.status;
 }
 
-module.exports = { resolvePackagesToken, commandFor, NAME_KEY, VALUE_KEY };
+module.exports = { resolvePackagesToken, tokenKindFor, npmCommand, commandFor, READ_KEY, WRITE_KEY, VALUE_KEY };
 
 if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));

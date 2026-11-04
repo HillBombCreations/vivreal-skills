@@ -35,7 +35,7 @@ function vivrealRepoOf(cwd, env = process.env) {
   const origin = originOf(cwd);
   const m = origin.match(/HillBombCreations\/([^/]+?)(\.git)?$/i);
   if (m) return m[1];
-  const root = slash(env.VIVREAL_REPOS || resolveReposRoot({ env, starts: [cwd, env.CLAUDE_PROJECT_DIR] }).root);
+  const root = slash(env.VIVREAL_REPOS || resolveReposRoot({ env, starts: [cwd] }).root);
   const here = slash(cwd);
   if (root && here.toLowerCase().startsWith(root.toLowerCase() + '/')) {
     const first = here.slice(root.length + 1).split('/')[0];

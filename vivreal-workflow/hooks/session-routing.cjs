@@ -4,12 +4,15 @@
 //
 // Zero configuration: when Claude Code offers CLAUDE_ENV_FILE, this hook appends, for the Bash
 // commands of the session (subagents included):
-//   - `export VIVREAL_REPOS='<root>'`, derived by repos-root.cjs, only when VIVREAL_REPOS is NOT
-//     already set (a set value is the user's override and is never replaced);
-//   - `npm` and `npx` shell functions that run them through npm-token.cjs, which reads the shared
-//     READ-ONLY packages token from AWS Secrets Manager with the user's own AWS sign-in at the
-//     moment npm runs (owners, 2026-11-04), only when NODE_AUTH_TOKEN is NOT already set. The token
-//     is never written to disk, never printed, and lives only in that npm process's environment.
+//   - `export VIVREAL_REPOS='<root>'`, derived by repos-root.cjs (vendored byte-identical from
+//     vivreal-hq), only when VIVREAL_REPOS is NOT already set (a set value is the user's override;
+//     a wrong one is refused and reported, never replaced);
+//   - `npm` and `npx` shell functions, always, that run them through npm-token.cjs. It gives the
+//     shared read-only packages token (from AWS, with the user's own sign-in) only to install and
+//     read commands, the write token only to `npm publish`, and strips NODE_AUTH_TOKEN from every
+//     other command, a caller's own included (owners, 2026-11-04). This hook writes no token: the
+//     env file holds only the function text. The wrapper never prints a token or writes one to a
+//     file; the npm child that receives one, and its install scripts, can read their environment.
 // PowerShell commands get none of this (Claude Code passes them no path-valued variable and no
 // functions), so agents use the Bash tool for repo work.
 const fs = require('fs');
@@ -18,6 +21,11 @@ const { loadRoutes, vivrealRepoOf, routesFor, TEMPLATE_PATH } = require('./route
 const { resolveReposRoot } = require('./repos-root.cjs');
 
 const MAX_LINES = 40;
+
+/** Forward slashes, so the value reads the same in Git Bash, on macOS and on Linux. */
+function forwardSlashes(p) {
+  return String(p).split(path.sep).join('/');
+}
 
 /** POSIX single-quote a value for an `export` line. */
 function shQuote(value) {
@@ -31,23 +39,25 @@ const NPM_FUNCTIONS = ['npm', 'npx'].map((tool) => `${tool}() { node ${shQuote(W
 /** The lines this session should append to CLAUDE_ENV_FILE; empty when nothing is needed. */
 function envFileLines(env, resolved) {
   const lines = [];
-  if (!env.VIVREAL_REPOS && resolved.root) lines.push(`export VIVREAL_REPOS=${shQuote(resolved.root)}`);
-  if (!env.NODE_AUTH_TOKEN) lines.push(...NPM_FUNCTIONS);
+  if (!env.VIVREAL_REPOS && resolved.root) lines.push(`export VIVREAL_REPOS=${shQuote(forwardSlashes(resolved.root))}`);
+  lines.push(...NPM_FUNCTIONS);
   return lines;
 }
 
 function doctorLine(env, resolved, exported) {
   let repos;
   if (env.VIVREAL_REPOS) {
-    repos = resolved.rejected ? `set but REJECTED (${resolved.rejected})` : 'set (override)';
+    repos = resolved.root ? 'set (override)' : `set but REFUSED (${resolved.reason})`;
   } else if (resolved.root) {
-    repos = `derived (${resolved.source})${exported ? ', exported to Bash' : ''}`;
+    repos = `derived from ${forwardSlashes(resolved.from)}${exported ? ', exported to Bash' : ''}`;
   } else {
     repos = 'NOT FOUND (open the session inside a Vivreal clone)';
   }
   let token;
-  if (env.NODE_AUTH_TOKEN) token = 'set (override)';
-  else token = exported ? 'read-only packages token from AWS, per npm call in Bash' : 'MISSING (no CLAUDE_ENV_FILE this session)';
+  const scope = 'install and read commands only, publish gets the write token, others none';
+  if (!exported) token = 'MISSING (no CLAUDE_ENV_FILE this session)';
+  else if (env.NODE_AUTH_TOKEN) token = `set (override; ${scope})`;
+  else token = `read-only packages token from AWS per npm call in Bash (${scope})`;
   return `Doctor: VIVREAL_REPOS ${repos}, NODE_AUTH_TOKEN ${token}`;
 }
 
@@ -63,7 +73,7 @@ function main() {
   const repo = vivrealRepoOf(cwd, env);
   if (!repo) return;
 
-  const resolved = resolveReposRoot({ env, starts: [cwd, env.CLAUDE_PROJECT_DIR] });
+  const resolved = resolveReposRoot({ env, starts: [cwd] });
   let exported = false;
   if (env.CLAUDE_ENV_FILE) {
     const lines = envFileLines(env, resolved);

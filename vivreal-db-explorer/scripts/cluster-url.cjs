@@ -47,9 +47,10 @@ const isDir = (p) => {
 
 /**
  * The secret id and where it came from, or an error naming exactly what is missing. `starts` are
- * the folders the clone root is derived from when VIVREAL_REPOS is unset or rejected.
+ * the folders the clone root is derived from (the cwd is appended) when VIVREAL_REPOS is unset. A set
+ * but wrong VIVREAL_REPOS is refused, never replaced (repos-root.cjs).
  */
-function resolveSecretId(env, starts = [env.CLAUDE_PROJECT_DIR, process.cwd()]) {
+function resolveSecretId(env, starts = [env.CLAUDE_PROJECT_DIR]) {
   let id;
   let source;
   if (env.VIVREAL_DB_SECRET_ID) {
@@ -62,11 +63,11 @@ function resolveSecretId(env, starts = [env.CLAUDE_PROJECT_DIR, process.cwd()]) 
     }
     const hq = path.join(resolved.root, 'vivreal-hq');
     if (!isDir(hq)) {
-      return { error: `vivreal-hq not found under the clone root (${resolved.source}). Clone it there (SETUP.md).` };
+      return { error: `vivreal-hq not found under the clone root ${resolved.root}. Clone it there (SETUP.md).` };
     }
     const file = path.join(hq, ...PRIVATE_NAMES);
     if (!existsSync(file)) {
-      return { error: `vivreal-hq/.vivreal/private-names.json not found under the clone root (${resolved.source}). Pull vivreal-hq main.` };
+      return { error: `vivreal-hq/.vivreal/private-names.json not found under the clone root ${resolved.root}. Pull vivreal-hq main.` };
     }
     let names;
     try {
