@@ -1189,6 +1189,7 @@ const TOKEN_MESSAGES = {
 /** sha256 of a lowercased private token, to the kind of finding it raises. */
 const PRIVATE_TOKENS = new Map([
   ['7921e87ef7e7bfdcae199db9dac0c33320d80e62eaa8d1866d1db6ffcc96c7a0', 'handle'],
+  ['09dce69f59700f917184cd6520cbdd30e68655ddce1cdda7911100dd18afb9a3', 'handle'],
   ['a38047809c89760d9412d7d24ce8f240a77fd6ebf8b66a53d8a59018294032ea', 'account'],
   ['89e780fc23c079a68409125984abaf4e9fd46eac9d3452c3f3dc51e42361685a', 'account'],
 ]);
@@ -1228,10 +1229,12 @@ const LEAK_PATTERNS = [
     msg: 'a OneDrive path, which names a personal sync folder.',
   },
   {
-    // A mailbox on the company's root domain names a person's login. The public sender is the
-    // one sanctioned address, and it is what every manifest's author and owner field carries.
-    re: /(?<![A-Za-z0-9._%+-])([A-Za-z0-9][A-Za-z0-9._%+-]*)@vivreal\.io\b/,
-    allow: (line, m) => m[1] === 'hello',
+    // A mailbox on the company's domain, root or any subdomain (a sending subdomain names a real
+    // sender; the batch review found two), names a person's login or a private sender. The public
+    // sender at the root is the one sanctioned address, and it is what every manifest's author and
+    // owner field carries.
+    re: /(?<![A-Za-z0-9._%+-])([A-Za-z0-9][A-Za-z0-9._%+-]*)@((?:[a-z0-9-]+\.)*)vivreal\.io\b/i,
+    allow: (line, m) => m[1] === 'hello' && m[2] === '',
     msg: 'a personal mailbox on the company domain, which is a real login. Write "the owner\'s own login", or hello@ in a manifest.',
   },
   {
@@ -1302,9 +1305,13 @@ function rulePublicLeaks(files) {
     // Rule 11 reports any machine path outside docs/; a line it owns is left to it.
     const docs = rel.startsWith('docs/');
     lines.forEach((line, i) => {
+      // Every match on the line, not the first: an allowed address first on a line once hid a
+      // private one after it (the batch review's lifecycle sender).
       for (const p of LEAK_PATTERNS) {
-        const m = p.re.exec(line);
-        if (m && !(p.allow && p.allow(line, m))) fail('public-leak', `${rel}:${i + 1}`, p.msg);
+        const all = p.re.flags.includes('g') ? p.re : new RegExp(p.re.source, p.re.flags + 'g');
+        if ([...line.matchAll(all)].some((m) => !(p.allow && p.allow(line, m)))) {
+          fail('public-leak', `${rel}:${i + 1}`, p.msg);
+        }
       }
       for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
       // Rule 11 owns a machine path outside docs/, and a line marked generic is generic here too.
@@ -1854,6 +1861,16 @@ function selfTest() {
       label: 'public-leak: a login address',
       path: join(tmp, 'skills', 'login-address', 'SKILL.md'),
       body: '---\nname: login-address\ndescription: fixture\n---\n\nNever sign in as `someone' + '@' + 'vivreal.io`.\n',
+    },
+    {
+      // The batch review: a sender on a sending subdomain is as private as a root login.
+      rule: 'public-leak',
+      match: 'a personal mailbox',
+      label: 'public-leak: a mailbox on a company subdomain',
+      path: join(tmp, 'skills', 'subdomain-sender', 'SKILL.md'),
+      // The sanctioned address comes FIRST on the line, so a first-match-only check would pass it.
+      body:
+        '---\nname: subdomain-sender\ndescription: fixture\n---\n\nReplies go to `hello' + '@' + 'vivreal.io`; it sends as `someone' + '@' + 'mail.vivreal.io`.\n',
     },
     {
       rule: 'public-leak',

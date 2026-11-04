@@ -235,8 +235,8 @@ the real permission screen shows instead of a short, blank re-consent screen:
 **Read the connected HANDLE before every connect take, not the card (measured 2026-10-04,
 Instagram retake).** A killed connect take does not undo itself: the press it was cut off after
 had already connected Instagram, to the wrong account, so the retake opened on "Working" rather
-than on a Connect button. The Channels card shows only the display name ("Working · Justin
-Ceccarelli · 0 followers"), which does not tell Vivreal's own account apart from a personal one.
+than on a Connect button. The Channels card shows only the display name ("Working · <the
+owner's name> · 0 followers"), which does not tell Vivreal's own account apart from a personal one.
 The handle only appears in the header of the provider's own page, `/app/channels/<key>`
 (here the Vivreal Content demo account's connected handle, read it in the app; Vivreal's is `@vivreal.io`). Probe both
 in a throwaway CDP tab (`newPage()`, read, `close()` that tab only) before rolling. If the

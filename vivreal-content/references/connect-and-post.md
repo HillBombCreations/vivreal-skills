@@ -199,7 +199,7 @@ read before any LinkedIn take.
   (`[data-testid=linkedin-see-all-posts]`) re-reads it as "Published, 1 minute ago". Proof on
   LinkedIn, read-only in a throwaway tab: `linkedin.com/company/vivreal/posts/` redirects an
   admin to the dashboard, so read `/company/106085315/admin/page-posts/published/` instead (it
-  shows the post authored by Vivreal, "By Justin Ceccarelli" is only LinkedIn's admin
+  shows the post authored by Vivreal, "By <the owner>" is only LinkedIn's admin
   attribution), and `/in/me/recent-activity/all/` to confirm it is NOT on the personal profile.
 - **A killed agent does not kill its recorder.** The previous take's `run-tutorial` node process
   outlived the agent by over ten minutes, still screencasting its tab and polling its own
