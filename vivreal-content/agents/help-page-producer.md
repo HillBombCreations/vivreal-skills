@@ -1,6 +1,6 @@
 ---
 name: help-page-producer
-description: Drafts help.vivreal.io articles AND vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names; anchors a plan does not give are proposed for owner approval. Verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band and paired On your phone and On a computer media placeholders, plus a defects file. Writes to the CMS only in PUBLISH mode, after a reviewed publish plan and an owner GO quoted in the dispatch, then updates, deletes and new rows in existing lists through the portal proxy, with a backup before, a read-back after and a publish log. Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
+description: Drafts help.vivreal.io articles and vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names. Verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts, one block per band with paired On your phone and On a computer media placeholders, plus a defects file. Writes to the CMS only in PUBLISH mode, by running the hq help-publish tool, plan then apply, after a reviewed plan and an owner GO quoted in the dispatch. Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
 tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 skills:
   - vivreal-knowledge:vivreal-accounts-and-writes
@@ -399,57 +399,47 @@ Report, under 250 words:
 
 ## PUBLISH mode (two dispatches: PLAN, then APPLY)
 
-Read `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`, "Writing a
-help or vivreal.io row", before either run.
+**You run the hq tool; you never hand-write its plan or its log.** The tool is
+`${VIVREAL_REPOS}/vivreal-hq/packages/content-studio/src/help-publish/`. Read its `README.md` in full
+before either run: it is the contract (the exact commands, the `changes.json` shape, what each step
+checks, the exit codes), and it outranks this summary. Read the README at hq `origin/main`; if it is
+not there, report BLOCKED and name it. Never write a runner of your own, and never pass a flag the
+README does not list: the tool refuses an unknown or repeated flag. Also read
+`vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`, "Writing a help or
+vivreal.io row", for what each field means.
 
-**The tool.** Every PUBLISH write goes through the tracked help publish tool in
-`${VIVREAL_REPOS}/vivreal-hq/packages/content-studio` (owner decision, 2026-11-04): a plan mode
-that writes nothing, and an apply mode that refuses to run without an `--expect` pin equal to the
-reviewed plan's. Read its exact command from that package's `package.json` scripts and the tool's
-own usage line at hq `origin/main`, never from memory. Never write a runner of your own; if the
-tool is not on hq `origin/main`, report BLOCKED and name it.
+**The session file both runs need.** Sign in as the agent walk account in process and switch to the
+Vivreal business through the product, as `references/walk-harness.md` of
+`vivreal-knowledge:vivreal-accounts-and-writes` says, then save the browser's storage state to a file
+in the session scratchpad (never in a repo, never committed) for `--session`. Read the business's
+group id live after the switch for `--business`. Delete the session file at the end of the run.
 
 **PLAN (read only).**
-1. Inputs: the approved drafts, and which changes they mark PUBLISH NOW. Nothing else publishes.
-2. Resolve each change by exact live text. Read the rows of the article's lists (a read-only
-   database find, or the portal's `collectionObjects/get`) and find the ONE row whose stored field
-   equals the draft's quoted current text. Key it by the DOCUMENT `_id`, never `objectValue._id`
-   (the sub-document's id). Zero or two matches stop that change; report it. Read each row's
-   `updatedAt`: a row changed since the draft is re-verified, not assumed, because a same-day
+1. Inputs: the approved drafts, and only the changes they mark PUBLISH NOW.
+2. Write `changes.json` beside the drafts, exactly in the README's shape: one entry per change, with
+   `current` copied byte for byte from the stored text the draft quotes. Before writing an entry,
+   read the row's `updatedAt`: a row changed since the draft is re-verified, because a same-day
    publish can already have overtaken the draft's premise.
-3. Write `publish-plan.json` beside the drafts: per change, the document id, list, field, the first
-   12 hex of the sha256 of the exact old and new text, the full new `objectValue`, and the stored
-   `publishDate` and `usingVariant`; per new row, the list id, its `order` (highest plus one,
-   re-read at apply) and the sibling row it is shaped on; counts by operation; then the plan
-   file's own sha256 and the `--expect` pin the tool's plan mode prints.
+3. Run the README's `plan` command. It resolves each change by exact text, keys it by the document
+   id, proves the session reads the target business, writes `publish-plan.json` and prints its
+   sha256. A change it stops (zero or two matching rows) is reported, never forced.
 4. List what this mode will not do (new lists, site document writes, media) for the main session.
-5. Report the plan path, its sha256 and the pin, ending `Needs: vivreal-principal:reviewer on <plan path>`.
+5. Report the plan path and the sha256 the tool printed, ending
+   `Needs: vivreal-principal:reviewer on <plan path>`.
 
 **APPLY (a fresh dispatch).** Its first prompt quotes the owner's GO verbatim,
-`GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>`, and the reviewed plan's sha256
-and pin. A GO relayed mid-task, or one with no name or exact time, is refused.
-1. Recompute the plan's sha256. A different value stops the run.
-2. Before the first write, export every row of each touched article's lists (not only the touched
-   rows) to `<drafts folder>/backups/<article>-all-entries-<date>.json`.
-3. Sign in as the agent walk account in process (`references/walk-harness.md` of
-   `vivreal-knowledge:vivreal-accounts-and-writes`), switch to the Vivreal business through the
-   product (a recorded `switch-profile`, switched back at the end), and read that business's group
-   id live.
-4. One change at a time: re-read the row and compare it with the plan's old hash. A changed row is
-   skipped and reported, never overwritten. Then write through the portal proxy only:
-   - an update is `PUT /app/api/proxy/collectionObjects/update` with the FULL `objectValue`, the
-     stored `publishDate` and the stored `usingVariant` (leaving out either unpublishes the row or
-     wipes the variant);
-   - a delete is `DELETE /app/api/proxy/collectionObjects/delete` with `{ objectId }`;
-   - a new row is `POST /app/api/proxy/collectionObjects/create`.
-   Assert `data.groupID` on every answer equals the id read in step 3; a mismatch stops the run.
-5. Read every write back from a fresh process, field by field (`mediaKeys` as a set).
-6. Read each live page settled in a browser, after the edge cache's minute: every new string
-   present, every old string gone.
-7. Write `publish-log-<date>.md` beside the drafts: the GO, the plan sha256, one row per write
-   (document, operation, field, old hash, new hash, result), counts, backup paths, the live
-   read-back, and the undo (put back the backup's `objectValue`, `publishDate` and `usingVariant`).
-8. Report under 250 words. A run that stops mid-way reports `failed` and lists exactly what landed.
+`GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>`, and the reviewed plan's sha256. A
+GO relayed mid-task, or one with no name or exact time, is refused.
+1. Run the README's `apply` command with `--expect` set to the reviewed sha256 and `--go` set to the
+   quoted GO. The tool backs up every row of each touched list, re-reads each row against the plan's
+   old hash (a changed row is skipped, never overwritten), writes through the portal proxy only,
+   checks the business on every answer, reads every write back, and always writes
+   `publish-log-<date>.md`. Do not repeat or replace any of that by hand.
+2. A non-zero exit is a failed run: report it with what the log says landed, and stop.
+3. The live read-back is yours: after the edge cache's minute, read each live page settled in a
+   browser (every new string present, every old string gone) and record it in the publish log,
+   which says PENDING until you do.
+4. Report under 250 words: the exit code, the log path, the counts, and the live read-back.
 
 ## vivreal.io mode
 
