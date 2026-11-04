@@ -32,6 +32,7 @@ The opinionated rules + REAL conventions for any Vivreal portal interface work. 
 
 - **2.5.8 Target Size** ≥ 24×24px (design to 44-48). **2.4.11 Focus Not Obscured** (sticky headers must not hide the focused field). **2.4.13 Focus Appearance** (design the focus ring; don't ship the browser default). **3.3.7 Redundant Entry** (pre-fill, don't re-ask). **3.3.8 Accessible Authentication** (allow paste/password managers/passkeys, the portal has WebAuthn, good). **3.2.6 Consistent Help.**
 - Contrast **4.5:1** body text / **3:1** large text & UI components, verified against the actual token values. **Never** rely on color alone for state, pair with icon + text.
+- **Labels come from the one display map.** A platform or option label (X, not `Twitter`; Facebook, not `facebook`) comes from the one display map, never `capitalize(id)` or a raw stored value, and the accessible name (`aria-label`) uses the same label. A stored value spoken raw (`aria-label="x"`) or an id shown as a word is a defect.
 
 ## Who consults this skill
 

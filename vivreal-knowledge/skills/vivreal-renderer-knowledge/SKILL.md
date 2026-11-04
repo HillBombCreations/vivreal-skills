@@ -133,6 +133,9 @@ Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older v
 ## Gotchas + forward/backward skew
 
 - **Config-less blocks are legit**, `blockToComposedSection` in `src/composition/blocks.ts` guards `block.config?.`: a Mongo/Mixed round-trip drops empty `config` objects, and before the guard `block.config.bindings` threw and killed the entire Server-Components render. Never assume `block.config` exists.
+- **A stored alias is normalised for every reader that draws or links it.** A stored `twitter` for X is
+  mapped once, and every reader (glyphs, labels, accessible names and hrefs) uses the mapped value; a
+  reader that maps only the label draws two X buttons with one href.
 - `DetailSection` is a closed union: adding an enum value is a MINOR bump; changing existing semantics is MAJOR. Unknown section values from a future portal version render `null` (no crash).
 - Versioning in older CLAUDE.md sections is historical. The published line moves fast, so check `package.json` and the registry. Refresh the CLAUDE.md header only on a release commit, never on a docs-only master push: ANY master push triggers the publish workflow.
 
