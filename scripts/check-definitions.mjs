@@ -1260,10 +1260,14 @@ const LEAK_PATTERNS = [
         BSL + '.[a-z0-9]{5}' + BSL + '.mongodb' + BSL + '.net',
         BSL + 'bE(?=[A-Z]*[0-9])[A-Z0-9]{12,13}' + BSL + 'b',
         BSL + 'b[a-z]{2}-[a-z]+-[0-9]_[A-Za-z0-9]{9}' + BSL + 'b',
+        // A Lambda function URL host, and a Cognito identity pool id (region, a colon, a UUID).
+        '[a-z0-9]{32}' + BSL + '.lambda-url' + BSL + '.[a-z0-9-]+' + BSL + '.on' + BSL + '.aws',
+        BSL + 'b[a-z]{2}-[a-z]+-[0-9]:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' + BSL + 'b',
       ].join('|'),
     ),
     msg:
-      'an AWS or Atlas generated hostname or resource id (API, distribution, Amplify app, cluster, user pool). ' +
+      'an AWS or Atlas generated hostname or resource id (API, distribution, Amplify app, cluster, user pool, ' +
+      'function URL, identity pool). ' +
       'Write a placeholder such as <portal-amplify-app-id>, or the command that looks it up.',
   },
 ];
@@ -1878,6 +1882,34 @@ function selfTest() {
       label: 'public-leak: an Amplify app hostname',
       path: join(tmp, 'skills', 'amplify-host', 'SKILL.md'),
       body: '---\nname: amplify-host\ndescription: fixture\n---\n\nThe origin is `main.' + 'd1a2b3c4d5e6f7' + '.amplifyapp.com`.\n',
+    },
+    {
+      // #65 review pass 1 Note 2: a Lambda function URL host names one function in one account.
+      rule: 'public-leak',
+      match: 'an AWS or Atlas generated hostname',
+      label: 'public-leak: a Lambda function URL host',
+      path: join(tmp, 'skills', 'function-url', 'SKILL.md'),
+      body:
+        '---\nname: function-url\ndescription: fixture\n---\n\nPOST to `https://' + 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6' +
+        '.lambda-' + 'url.us-east-1.on.aws/`.\n',
+    },
+    {
+      // #65 review pass 1 Note 2: a Cognito identity pool id.
+      rule: 'public-leak',
+      match: 'an AWS or Atlas generated hostname',
+      label: 'public-leak: a Cognito identity pool id',
+      path: join(tmp, 'skills', 'identity-pool', 'SKILL.md'),
+      body: '---\nname: identity-pool\ndescription: fixture\n---\n\nThe pool is `us-east-1' + ':' + '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d`.\n',
+    },
+    {
+      // The ALLOW side: the placeholders a skill writes instead stay green.
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: function URL and identity pool placeholders',
+      path: join(tmp, 'skills', 'aws-placeholders', 'SKILL.md'),
+      body:
+        '---\nname: aws-placeholders\ndescription: fixture\n---\n\n' +
+        'POST to `https://<function-url-id>.lambda-' + 'url.<region>.on.aws/`; the pool is `<region>:<identity-pool-uuid>`.\n',
     },
     {
       rule: 'public-leak',
