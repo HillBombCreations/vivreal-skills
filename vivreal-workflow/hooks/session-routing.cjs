@@ -6,27 +6,27 @@
 // commands of the session (subagents included):
 //   - `export VIVREAL_REPOS='<root>'`, derived by repos-root.cjs, only when VIVREAL_REPOS is NOT
 //     already set (a set value is the user's override and is never replaced);
-//   - `npm` and `npx` shell functions that hand npm a NODE_AUTH_TOKEN read from `gh auth token` at
-//     the moment npm runs, only when NODE_AUTH_TOKEN is NOT already set. The token is never written
-//     to disk, never printed, and lives only in that npm process's environment.
+//   - `npm` and `npx` shell functions that run them through npm-token.cjs, which reads the shared
+//     READ-ONLY packages token from AWS Secrets Manager with the user's own AWS sign-in at the
+//     moment npm runs (owners, 2026-11-04), only when NODE_AUTH_TOKEN is NOT already set. The token
+//     is never written to disk, never printed, and lives only in that npm process's environment.
 // PowerShell commands get none of this (Claude Code passes them no path-valued variable and no
 // functions), so agents use the Bash tool for repo work.
 const fs = require('fs');
+const path = require('path');
 const { loadRoutes, vivrealRepoOf, routesFor, TEMPLATE_PATH } = require('./routes-lib.cjs');
 const { resolveReposRoot } = require('./repos-root.cjs');
 
 const MAX_LINES = 40;
 
-// Shell text, appended verbatim. ${NODE_AUTH_TOKEN:-...} keeps a token the user set themselves.
-const NPM_FUNCTIONS = [
-  'npm() { NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-$(gh auth token 2>/dev/null)}" command npm "$@"; }',
-  'npx() { NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-$(gh auth token 2>/dev/null)}" command npx "$@"; }',
-];
-
 /** POSIX single-quote a value for an `export` line. */
 function shQuote(value) {
   return "'" + String(value).replace(/'/g, "'\\''") + "'";
 }
+
+// Shell text, appended verbatim: npm and npx run through the token wrapper beside this file.
+const WRAPPER = path.join(__dirname, 'npm-token.cjs').split(path.sep).join('/');
+const NPM_FUNCTIONS = ['npm', 'npx'].map((tool) => `${tool}() { node ${shQuote(WRAPPER)} ${tool} "$@"; }`);
 
 /** The lines this session should append to CLAUDE_ENV_FILE; empty when nothing is needed. */
 function envFileLines(env, resolved) {
@@ -47,7 +47,7 @@ function doctorLine(env, resolved, exported) {
   }
   let token;
   if (env.NODE_AUTH_TOKEN) token = 'set (override)';
-  else token = exported ? 'from gh auth token, per npm call in Bash' : 'MISSING (no CLAUDE_ENV_FILE this session)';
+  else token = exported ? 'read-only packages token from AWS, per npm call in Bash' : 'MISSING (no CLAUDE_ENV_FILE this session)';
   return `Doctor: VIVREAL_REPOS ${repos}, NODE_AUTH_TOKEN ${token}`;
 }
 

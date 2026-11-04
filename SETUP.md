@@ -57,9 +57,11 @@ node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo 
   hook exports it to every Bash command of the session, subagents included; hooks and the db-explorer MCP server
   derive it themselves. Setting `VIVREAL_REPOS` yourself is an optional override, never a step. The PowerShell tool
   does not receive it, so agents do repo work in Bash. See the `shared-standards` skill, "Path resolution".
-- **`NODE_AUTH_TOKEN`** for the private `@hillbombcreations/*` packages: in an agent's Bash, `npm` and `npx` read it
-  from `gh auth token` at the moment they run, never written to disk. In your own terminal, prefix the command:
-  `NODE_AUTH_TOKEN="$(gh auth token)" npm ci`. A token you set yourself always wins.
+- **`NODE_AUTH_TOKEN`** for the private `@hillbombcreations/*` packages: a read-only packages token from AWS. In an
+  agent's Bash, `npm` and `npx` fetch the one shared READ-ONLY token from AWS Secrets Manager with your own AWS
+  sign-in at the moment they run (its name is key `packagesTokenSecret` of the private names file below), and
+  hand it only to npm; it is never written to disk or printed. Never `gh auth token`, which carries your whole
+  GitHub access. In your own terminal, run npm commands through the agent. A token you set yourself always wins.
 - **Private names** (secret and parameter prefixes, the database secret): keys of
   `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, which the hq clone carries. Where a skill writes a
   placeholder such as `<secret-prefix>/`, the value is that file's key of the same name.

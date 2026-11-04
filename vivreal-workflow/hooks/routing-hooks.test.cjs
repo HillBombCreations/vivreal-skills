@@ -259,9 +259,13 @@ test('session hook prints the portal routes inside the portal', () => {
 const resolveReposRoot = (...args) => require('./repos-root.cjs').resolveReposRoot(...args);
 // The exact shell text the session hook must append, written out here rather than imported, so the
 // test checks what lands in the file, not what the module declares.
+// npm and npx run through the token wrapper beside the hook (owners, 2026-11-04: one shared read-only
+// packages token from AWS, never `gh auth token`).
+const WRAPPER = path.join(__dirname, 'npm-token.cjs');
+const WRAPPER_FWD = WRAPPER.split(path.sep).join('/');
 const NPM_FUNCTIONS = [
-  'npm() { NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-$(gh auth token 2>/dev/null)}" command npm "$@"; }',
-  'npx() { NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-$(gh auth token 2>/dev/null)}" command npx "$@"; }',
+  `npm() { node '${WRAPPER_FWD}' npm "$@"; }`,
+  `npx() { node '${WRAPPER_FWD}' npx "$@"; }`,
 ];
 
 function git(cwd, ...args) {
@@ -352,7 +356,7 @@ test('session hook with no overrides appends exactly the derived export and the 
   assert.equal(real(m[1]), real(tree));
   assert.deepEqual(r.lines.slice(1), NPM_FUNCTIONS);
   assert.match(r.stdout, /Vivreal routing for VR_CMS_API/);
-  assert.match(r.stdout, /Doctor: VIVREAL_REPOS derived \(derived from .*\), exported to Bash, NODE_AUTH_TOKEN from gh auth token, per npm call in Bash/);
+  assert.match(r.stdout, /Doctor: VIVREAL_REPOS derived \(derived from .*\), exported to Bash, NODE_AUTH_TOKEN read-only packages token from AWS, per npm call in Bash/);
 });
 
 test('session hook: a set VIVREAL_REPOS suppresses the export, a set NODE_AUTH_TOKEN suppresses the functions', () => {
@@ -371,10 +375,184 @@ test('session hook outside any Vivreal checkout writes nothing to CLAUDE_ENV_FIL
   assert.deepEqual(r.lines, []);
 });
 
-test('the npm functions read the token at call time and never print it', () => {
-  for (const fn of NPM_FUNCTIONS) {
-    assert.match(fn, /^np[mx]\(\) \{ NODE_AUTH_TOKEN="\$\{NODE_AUTH_TOKEN:-\$\(gh auth token 2>\/dev\/null\)\}" command np[mx] "\$@"; \}$/);
-    assert.doesNotMatch(fn, /echo|printf/);
+test('REFUSE: no line the session hook writes uses gh auth token (owners, 2026-11-04)', () => {
+  const r = runSession(repoDir, {});
+  assert.ok(r.lines.length > 0, 'the hook wrote nothing, so this check saw nothing');
+  for (const line of r.lines) assert.doesNotMatch(line, /gh auth token/, `a gh token path survives: ${line}`);
+  for (const fn of NPM_FUNCTIONS) assert.doesNotMatch(fn, /echo|printf|NODE_AUTH_TOKEN/);
+});
+
+// ---------------------------------------------------------------------------------------------
+// npm-token.cjs: NODE_AUTH_TOKEN from the env override, else the shared read-only packages token
+// in AWS (name from private-names.json key packagesTokenSecret), else a message naming the missing
+// part. A fake `aws` and a fake `npm`/`npx` first on PATH record what each was handed.
+
+const TOKEN = 'ghp_FAKE' + 'packages0token0for0tests';
+const SECRET_NAME = 'example/packages-token';
+const isWin = process.platform === 'win32';
+const fake = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-npm-token-'));
+const fakeBin = path.join(fake, 'bin');
+fs.mkdirSync(path.join(fakeBin, 'node_modules', 'npm', 'bin'), { recursive: true });
+test.after(() => fs.rmSync(fake, { recursive: true, force: true }));
+fs.writeFileSync(
+  path.join(fakeBin, 'fake-aws.js'),
+  [
+    "const fs = require('fs');",
+    "fs.appendFileSync(process.env.FAKE_AWS_LOG, JSON.stringify(process.argv.slice(2)) + '\\n');",
+    "const mode = process.env.FAKE_AWS_MODE || 'ok';",
+    "if (mode === 'notfound') { process.stderr.write('An error occurred (ResourceNotFoundException) when calling the GetSecretValue operation'); process.exit(254); }",
+    "if (mode === 'nocreds') { process.stderr.write('Unable to locate credentials. You can configure credentials by running \"aws configure\".'); process.exit(253); }",
+    "if (mode === 'nokey') { process.stdout.write(JSON.stringify({ OTHER: 'x' })); process.exit(0); }",
+    "process.stdout.write(JSON.stringify({ NODE_AUTH_TOKEN: process.env.FAKE_TOKEN }));",
+  ].join('\n'),
+);
+const FAKE_TOOL = [
+  "const fs = require('fs');",
+  "fs.writeFileSync(process.env.FAKE_NPM_LOG, JSON.stringify({",
+  "  tool: process.env.FAKE_TOOL_NAME || 'unknown',",
+  "  args: process.argv.slice(2),",
+  "  hasToken: Boolean(process.env.NODE_AUTH_TOKEN),",
+  "  tokenMatches: process.env.NODE_AUTH_TOKEN === process.env.FAKE_TOKEN || process.env.NODE_AUTH_TOKEN === process.env.FAKE_OVERRIDE,",
+  "}));",
+  "process.stdout.write('fake tool ran\\n');",
+  "process.exit(Number(process.env.FAKE_TOOL_EXIT || 0));",
+].join('\n');
+for (const tool of ['npm', 'npx']) {
+  const cli = path.join(fakeBin, 'node_modules', 'npm', 'bin', `${tool}-cli.js`);
+  fs.writeFileSync(cli, FAKE_TOOL.replace("process.env.FAKE_TOOL_NAME || 'unknown'", `'${tool}'`));
+  if (isWin) {
+    // The wrapper runs the CLI script beside npm.cmd with node, so the .cmd only has to exist.
+    fs.writeFileSync(path.join(fakeBin, `${tool}.cmd`), `@"${process.execPath}" "%~dp0node_modules\\npm\\bin\\${tool}-cli.js" %*\r\n`);
+  } else {
+    fs.writeFileSync(path.join(fakeBin, tool), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/node_modules/npm/bin/${tool}-cli.js" "$@"\n`);
+    fs.chmodSync(path.join(fakeBin, tool), 0o755);
+  }
+}
+if (isWin) {
+  fs.writeFileSync(path.join(fakeBin, 'aws.cmd'), `@"${process.execPath}" "%~dp0fake-aws.js" %*\r\n`);
+} else {
+  fs.writeFileSync(path.join(fakeBin, 'aws'), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/fake-aws.js" "$@"\n`);
+  fs.chmodSync(path.join(fakeBin, 'aws'), 0o755);
+}
+
+let tokenRuns = 0;
+/** A clone root whose private names file carries `names`, or none when `names` is null. */
+function tokenRoot(names) {
+  tokenRuns += 1;
+  const r = path.join(fake, `root-${tokenRuns}`);
+  fs.mkdirSync(path.join(r, 'vivreal-hq', '.git'), { recursive: true });
+  fs.mkdirSync(path.join(r, 'VR_CMS_API'), { recursive: true });
+  if (names) {
+    fs.mkdirSync(path.join(r, 'vivreal-hq', '.vivreal'), { recursive: true });
+    fs.writeFileSync(path.join(r, 'vivreal-hq', '.vivreal', 'private-names.json'), JSON.stringify(names));
+  }
+  return path.join(r, 'VR_CMS_API');
+}
+
+function runWrapper(cwd, tool, args, extraEnv = {}) {
+  tokenRuns += 1;
+  const awsLog = path.join(fake, `aws-${tokenRuns}.log`);
+  const npmLog = path.join(fake, `npm-${tokenRuns}.json`);
+  const env = { ...process.env, FAKE_AWS_LOG: awsLog, FAKE_NPM_LOG: npmLog, FAKE_TOKEN: TOKEN };
+  for (const k of ['VIVREAL_REPOS', 'NODE_AUTH_TOKEN', 'CLAUDE_PROJECT_DIR', 'FAKE_AWS_MODE', 'FAKE_OVERRIDE', 'FAKE_TOOL_EXIT']) delete env[k];
+  Object.assign(env, extraEnv);
+  const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
+  env[pathKey] = fakeBin + path.delimiter + (env[pathKey] || '');
+  const res = spawnSync(process.execPath, [WRAPPER, tool, ...args], { cwd, env, encoding: 'utf8', timeout: 60000 });
+  const awsCalls = fs.existsSync(awsLog)
+    ? fs.readFileSync(awsLog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
+    : [];
+  const child = fs.existsSync(npmLog) ? JSON.parse(fs.readFileSync(npmLog, 'utf8')) : null;
+  return { status: res.status, stdout: res.stdout || '', stderr: res.stderr || '', awsCalls, child };
+}
+
+const neverLeaks = (r) => {
+  assert.ok(!r.stdout.includes(TOKEN), 'the token reached stdout');
+  assert.ok(!r.stderr.includes(TOKEN), 'the token reached stderr');
+  assert.ok(!(r.child && r.child.args.some((a) => a.includes(TOKEN))), 'the token reached argv');
+};
+
+test('ALLOW: the shared token reaches only the npm child env, never stdout, stderr or argv', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci', '--arg with space']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(r.child, `the fake npm never ran: ${r.stderr}`);
+  assert.equal(r.child.tool, 'npm');
+  assert.deepEqual(r.child.args, ['ci', '--arg with space']);
+  assert.equal(r.child.hasToken, true);
+  assert.equal(r.child.tokenMatches, true);
+  assert.deepEqual(r.awsCalls, [['secretsmanager', 'get-secret-value', '--secret-id', SECRET_NAME, '--query', 'SecretString', '--output', 'text']]);
+  assert.equal(r.stderr, '');
+  neverLeaks(r);
+});
+
+test('ALLOW: npx gets the token the same way', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npx', ['some-bin']);
+  assert.equal(r.child && r.child.tool, 'npx');
+  assert.equal(r.child.tokenMatches, true);
+  neverLeaks(r);
+});
+
+test('ALLOW: a NODE_AUTH_TOKEN already set wins, and aws is never called', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['view', 'x'], { NODE_AUTH_TOKEN: 'override-token', FAKE_OVERRIDE: 'override-token' });
+  assert.deepEqual(r.awsCalls, []);
+  assert.equal(r.child.hasToken, true);
+  assert.equal(r.child.tokenMatches, true);
+});
+
+test('ALLOW: the child exit code is the wrapper exit code', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['test'], { FAKE_TOOL_EXIT: '3' });
+  assert.equal(r.status, 3);
+});
+
+test('REFUSE: no packagesTokenSecret key names the key, never reaches aws, and npm runs tokenless', () => {
+  const r = runWrapper(tokenRoot({ dbSecretId: 'example/other' }), 'npm', ['ci']);
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /npm-token: no NODE_AUTH_TOKEN for @hillbombcreations packages: .*has no packagesTokenSecret key/);
+  assert.equal(r.child.hasToken, false);
+});
+
+test('REFUSE: no private names file at all says so and never reaches aws', () => {
+  const r = runWrapper(tokenRoot(null), 'npm', ['ci']);
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /private-names\.json is missing or not JSON/);
+  assert.equal(r.child.hasToken, false);
+});
+
+test('REFUSE: a secret the owners have not created yet is named as missing, and npm runs tokenless', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci'], { FAKE_AWS_MODE: 'notfound' });
+  assert.equal(r.awsCalls.length, 1);
+  assert.match(r.stderr, /the shared packages token secret does not exist yet \(the owners create it\)/);
+  assert.equal(r.child.hasToken, false);
+});
+
+test('REFUSE: no AWS credentials is named as the missing part', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci'], { FAKE_AWS_MODE: 'nocreds' });
+  assert.match(r.stderr, /AWS credentials: sign in with your own identity/);
+  assert.doesNotMatch(r.stderr, /Unable to locate credentials/, 'the aws CLI output was echoed');
+  assert.equal(r.child.hasToken, false);
+});
+
+test('REFUSE: a secret with no NODE_AUTH_TOKEN key is named, and npm runs tokenless', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['ci'], { FAKE_AWS_MODE: 'nokey' });
+  assert.match(r.stderr, /the shared packages token secret has no NODE_AUTH_TOKEN key/);
+  assert.equal(r.child.hasToken, false);
+});
+
+test('REFUSE: a secret name with shell metacharacters never reaches aws', () => {
+  const r = runWrapper(tokenRoot({ packagesTokenSecret: 'x & echo pwned' }), 'npm', ['ci']);
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /packagesTokenSecret value is not a valid Secrets Manager name/);
+});
+
+test('REFUSE: with no clone root the wrapper says so and never reaches aws', () => {
+  const lone = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-npm-noroot-'));
+  try {
+    const r = runWrapper(lone, 'npm', ['ci']);
+    assert.deepEqual(r.awsCalls, []);
+    assert.match(r.stderr, /no Vivreal clone root/);
+    assert.equal(r.child.hasToken, false);
+  } finally {
+    fs.rmSync(lone, { recursive: true, force: true });
   }
 });
 
