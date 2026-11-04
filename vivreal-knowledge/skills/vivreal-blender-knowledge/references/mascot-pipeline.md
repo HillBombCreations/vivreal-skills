@@ -119,6 +119,11 @@ Units: 1 = head radius. Ground is z = 0. The duck faces **-y** (toward the camer
    pose shows them; the camera elevation, not a 2D edit, decides what is visible.
 5. Compose a side-by-side with the approved reference (`source/laptop.png`) in PIL and Read the
    image yourself before showing the owner.
+6. **Pixel-diff the approved renders after any kit change** (`out/v1/`, the approved set), not only
+   the pose you touched: a leg-height refactor once moved the standing pose by 62 pixels. Render
+   the old scripts from a scratch copy of the tree to tell a real change from noise.
+7. **Favicons:** at 16 px only the big head reads; a full-body pose is a white blob. Fit a mark at
+   0.9 on a rounded tile (0.94 clips wide marks at the corners).
 
 ## Iterating on owner feedback, piece by piece
 

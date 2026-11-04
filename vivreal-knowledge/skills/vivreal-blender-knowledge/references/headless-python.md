@@ -110,6 +110,15 @@ in 5.2.
 - `Object.ray_cast(origin, direction, distance=..., depsgraph=...)` casts "onto evaluated
   geometry, **in object space**" (5.2 description). Convert world points with
   `ob.matrix_world.inverted() @ p` unless the object's matrix is identity.
+- **A curve converted with `new_from_object` brings its own UV layer**, and an image texture node
+  reads the ACTIVE layer, so a UV layer you add afterwards is ignored (a logo mark rendered as its
+  bleed colours, 2026-11). Remove the converted mesh's UV layers (`me.uv_layers.remove(...)`) before
+  adding yours, or make yours active.
+- **Bleed a texture's edge colour outward before mapping it onto a solid.** A bevel and the sides
+  sample just outside the shape, so transparent edge pixels show as a fringe. Fill each empty pixel
+  with its nearest solid neighbour (scipy `distance_transform_edt(..., return_indices=True)`).
+- **Keep an extruded mark's slab thin**, and the camera elevation under about 10 degrees: a thick
+  slab plus elevation turns a flat mark into 3D letters (smeared top faces, counters filled).
 
 ## mathutils transform gotchas
 
