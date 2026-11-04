@@ -180,10 +180,12 @@ exactly as the screen prints them.
 
 - **Phone, portal v0.36.0:** the business menu only switches business and points to More ("Open
   More"); Channels, Settings and every other destination are under More.
-- **Prefer a path that survives a customised bar.** "Tap More, then Channels" holds for everyone;
-  "tap Channels on the bar" does not, because each person chooses their own tabs. If the demo
-  business's bar differs from `defaultFavorites`, it has been customised: write the default and
-  say so.
+- **Write the path that holds for everyone:** "tap **X** on the bar, or **More**, then **X** if it
+  is not on your bar". More lists only destinations that are NOT on the phone bar, so "More, then
+  X" fails for a business whose bar carries X, and "tap X on the bar" fails for one whose bar
+  does not (each person chooses their own tabs). If the demo business's bar differs from
+  `defaultFavorites`, it has been customised: write the default and say so. (Supersedes the
+  earlier "prefer More, then X" rule, 2026-11-03.)
 - Where the two views differ (usually getting to a screen), that is where the paired lines go.
 
 ### Rules that have each already caught a real defect
@@ -356,7 +358,9 @@ node packages/content-studio/scripts/voice-check.mjs knowledge/help-drafts/<arti
 ```
 
 Zero errors, or the draft is not done. Draft mode requires the `**Meta:**` line and holds
-it to 150 to 160 characters. Fix the copy; never weaken the check. The script
+it to 150 to 160 characters. **The gate checks only the text below a `## Body` line** when the
+draft has one, so never put a `## Body` line in a band-shaped draft: everything above it would go
+unchecked. Fix the copy; never weaken the check. The script
 cannot see headings you did not write or media the owner will add, so re-read the anchors
 and headings yourself.
 
