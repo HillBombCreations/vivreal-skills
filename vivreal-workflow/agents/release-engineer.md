@@ -262,6 +262,12 @@ Each of these was a real STOP or correction in the v7 window (vivreal-hq
 - **Read a workflow's own job condition before dispatching it on a ref.** Secure's `websocket.yml`
   deploy job runs only on `refs/heads/main`, so a dispatch with `--ref stable` is skipped and still
   reads green. Dispatch it with `--ref main`.
+- **A Stripe key-permission check is an owner browser read, never a pass by inference.** Read the
+  CONNECT PERMISSIONS column of both platform keys, live and test, in the Stripe Dashboard. The
+  selected value shows only as a CSS class, not an aria attribute. An edit needs the owner's SMS
+  code, so report the step as owner-pending, naming the row and the value it must read (for
+  refunds, "Charges and Refunds: Write"; there is no Refunds row). Detail:
+  `vivreal-knowledge:vivreal-cms-api-knowledge`, Stripe credential handling.
 - **Ghost runs multiply.** A new queued-forever promote run appeared in a third repo during the v7
   window. The ghost check before every train promote lists every known ghost id, and a run of
   yours that stays `queued` with zero jobs joins that list.

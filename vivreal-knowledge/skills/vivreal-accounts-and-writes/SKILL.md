@@ -61,8 +61,9 @@ Every one runs the same eight steps, or not at all:
    says loudly what is left dirty.
 
 **Never, approved or not:** Post, Publish to a channel, Schedule, Send, Connect, Disconnect, Delete
-anything that is not your own approved test item, Deploy, Purchase, Revert a site version, or save
-the footer social panel. (Connect and Schedule of one approved calendar row happen only in
+anything that is not your own approved test item, Deploy, Purchase, Revert a site version, save
+the footer social panel, or type a verification code the owner received (an SMS or email code is
+the owner's to enter). (Connect and Schedule of one approved calendar row happen only in
 `vivreal-content:tutorial-maker`'s connect-and-post take, under its own owner authority, never here.)
 
 **Never swap names in the page.** Editing a business or site name in the DOM before a capture fakes
