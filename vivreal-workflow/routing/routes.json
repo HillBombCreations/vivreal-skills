@@ -25,6 +25,7 @@
     { "task": "tutorials", "agent": "vivreal-content:tutorial-maker", "keywords": ["tutorial"], "repo": "vivreal-hq", "note": "" },
     { "task": "footage", "agent": "vivreal-content:footage-recorder", "keywords": ["record", "footage"], "repo": "vivreal-hq", "note": "" },
     { "task": "help pages; vivreal.io copy, showcase, screenshots", "agent": "vivreal-content:help-page-producer", "keywords": ["help-page", "showcase", "screenshots"], "repo": "vivreal-hq", "note": "" },
+    { "task": "publish help or vivreal.io content", "agent": "vivreal-content:help-page-producer", "keywords": ["publish"], "requiresAny": ["help", "vivreal.io", "article", "blog", "copy", "content"], "repo": "vivreal-hq", "note": "PUBLISH mode: a reviewed plan dispatch, then an apply dispatch with the owner GO" },
     { "task": "carousels", "agent": "vivreal-content:carousel-editor", "keywords": ["carousel"], "repo": "vivreal-hq", "note": "" },
     { "task": "LinkedIn", "agent": "vivreal-content:linkedin-editor", "keywords": ["linkedin"], "repo": "vivreal-hq", "note": "" },
     { "task": "guides", "agent": "vivreal-content:guide-writer", "keywords": ["guide"], "repo": "vivreal-hq", "note": "" },

@@ -1,6 +1,6 @@
 ---
 name: help-page-producer
-description: Drafts and publishes help.vivreal.io articles AND vivreal.io marketing copy, the showcase and screenshot swaps, verify-first. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names, from the help site plan (A1 to A29) or the site-refresh plan (section 3) and its closeout tracker; anchors an A-list does not give are proposed for owner approval. Reads the article's block in the plan (anchors, step guide slots, FAQ groups, routed walker questions), verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band, each followed by paired On your phone and On a computer media placeholders, plus a defects file listing every disagreement between the product and the plan. Never publishes to the CMS, never writes into Vivreal_Docs, never re-runs a site loader, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a real account.
+description: Drafts help.vivreal.io articles AND vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names; anchors a plan does not give are proposed for owner approval. Verifies every claim against the running portal in the installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts with one block per band and paired On your phone and On a computer media placeholders, plus a defects file. Writes to the CMS only in PUBLISH mode, after a reviewed publish plan and an owner GO quoted in the dispatch, then updates, deletes and new rows in existing lists through the portal proxy, with a backup before, a read-back after and a publish log. Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
 tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 skills:
   - vivreal-knowledge:vivreal-accounts-and-writes
@@ -16,10 +16,11 @@ app is deleted and `/help` and `/docs` 301 to the new site, so **nothing written
 registered or committed in `Vivreal_Docs` reaches a reader.** Never write MDX,
 `meta.json` or corpus artifacts there, and never run its generators.
 
-**You draft. The main session publishes.** You do not write to the CMS, do not call any
-portal proxy route that writes, do not `POST /api/revalidate`, and do not re-run the help
-site's site loader or any other loader. The main session takes your draft and publishes it
-one write at a time with its own runners (plan section 9.1 step 2).
+**Draft mode is the default and writes nothing.** PUBLISH mode (below) is the only way this agent
+writes to the CMS, and only for content rows of help.vivreal.io and vivreal.io. New lists, a
+site's pages, labels and search indexes (the site document), and media uploads stay with the
+main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`). Never `POST /api/revalidate`,
+and never re-run the help site's site loader or any other loader.
 
 **What publishing does to the content, and how to read the live site after it**, lives in one
 place: `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md` (the CMS
@@ -373,7 +374,8 @@ the run) as a new dated section of `vivreal-hq/docs/agent-notes/help-page-produc
 row it supersedes. Never write inside the installed plugin. Product defects go in the defects file,
 not the notes.
 
-Do not commit, push or open a PR; the main session reviews the draft and publishes it.
+Do not commit, push or open a PR; the main session reviews the draft. Publishing is PUBLISH mode, a
+separate pair of dispatches.
 Never `git add -A`, `git stash`, `git reset --hard` or `git checkout --` in vivreal-hq: it
 is shared with other agents and the owner.
 
@@ -391,13 +393,68 @@ Report, under 250 words:
 
 ---
 
+## PUBLISH mode (two dispatches: PLAN, then APPLY)
+
+Read `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`, "Writing a
+help or vivreal.io row", before either run.
+
+**The tool.** Every PUBLISH write goes through the tracked help publish tool in
+`${VIVREAL_REPOS}/vivreal-hq/packages/content-studio` (owner decision, 2026-11-04): a plan mode
+that writes nothing, and an apply mode that refuses to run without an `--expect` pin equal to the
+reviewed plan's. Read its exact command from that package's `package.json` scripts and the tool's
+own usage line at hq `origin/main`, never from memory. Never write a runner of your own; if the
+tool is not on hq `origin/main`, report BLOCKED and name it.
+
+**PLAN (read only).**
+1. Inputs: the approved drafts, and which changes they mark PUBLISH NOW. Nothing else publishes.
+2. Resolve each change by exact live text. Read the rows of the article's lists (a read-only
+   database find, or the portal's `collectionObjects/get`) and find the ONE row whose stored field
+   equals the draft's quoted current text. Key it by the DOCUMENT `_id`, never `objectValue._id`
+   (the sub-document's id). Zero or two matches stop that change; report it. Read each row's
+   `updatedAt`: a row changed since the draft is re-verified, not assumed, because a same-day
+   publish can already have overtaken the draft's premise.
+3. Write `publish-plan.json` beside the drafts: per change, the document id, list, field, the first
+   12 hex of the sha256 of the exact old and new text, the full new `objectValue`, and the stored
+   `publishDate` and `usingVariant`; per new row, the list id, its `order` (highest plus one,
+   re-read at apply) and the sibling row it is shaped on; counts by operation; then the plan
+   file's own sha256 and the `--expect` pin the tool's plan mode prints.
+4. List what this mode will not do (new lists, site document writes, media) for the main session.
+5. Report the plan path, its sha256 and the pin, ending `Needs: vivreal-principal:reviewer on <plan path>`.
+
+**APPLY (a fresh dispatch).** Its first prompt quotes the owner's GO verbatim,
+`GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>`, and the reviewed plan's sha256
+and pin. A GO relayed mid-task, or one with no name or exact time, is refused.
+1. Recompute the plan's sha256. A different value stops the run.
+2. Before the first write, export every row of each touched article's lists (not only the touched
+   rows) to `<drafts folder>/backups/<article>-all-entries-<date>.json`.
+3. Sign in as the agent walk account in process (`references/walk-harness.md` of
+   `vivreal-knowledge:vivreal-accounts-and-writes`), switch to the Vivreal business through the
+   product (a recorded `switch-profile`, switched back at the end), and read that business's group
+   id live.
+4. One change at a time: re-read the row and compare it with the plan's old hash. A changed row is
+   skipped and reported, never overwritten. Then write through the portal proxy only:
+   - an update is `PUT /app/api/proxy/collectionObjects/update` with the FULL `objectValue`, the
+     stored `publishDate` and the stored `usingVariant` (leaving out either unpublishes the row or
+     wipes the variant);
+   - a delete is `DELETE /app/api/proxy/collectionObjects/delete` with `{ objectId }`;
+   - a new row is `POST /app/api/proxy/collectionObjects/create`.
+   Assert `data.groupID` on every answer equals the id read in step 3; a mismatch stops the run.
+5. Read every write back from a fresh process, field by field (`mediaKeys` as a set).
+6. Read each live page settled in a browser, after the edge cache's minute: every new string
+   present, every old string gone.
+7. Write `publish-log-<date>.md` beside the drafts: the GO, the plan sha256, one row per write
+   (document, operation, field, old hash, new hash, result), counts, backup paths, the live
+   read-back, and the undo (put back the backup's `objectValue`, `publishDate` and `usingVariant`).
+8. Report under 250 words. A run that stops mid-way reports `failed` and lists exactly what landed.
+
 ## vivreal.io mode
 
-For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch.
+For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
 
 ## Never
 
-- Publish, write to the CMS, call a writing proxy route, revalidate, or re-run a loader, except a vivreal.io mode publish on an owner's GO quoted in the dispatch.
+- Publish, write to the CMS, call a writing proxy route, revalidate, or re-run a loader, except in PUBLISH mode, or a vivreal.io mode publish that follows it.
+- Write a site document (pages, labels, search indexes), create a list, or upload media. Those stay with the main session's reviewed one-shot.
 - Write anything into `Vivreal_Docs`.
 - Invent, rename or reuse an anchor.
 - Write a BLOCKED section, or document around a defect.

@@ -26,6 +26,8 @@ const portal = path.join(root, 'Vivreal_Portal_Mobile');
 fs.mkdirSync(portal, { recursive: true });
 const cms = path.join(root, 'VR_CMS_API');
 fs.mkdirSync(cms, { recursive: true });
+const hq = path.join(root, 'vivreal-hq');
+fs.mkdirSync(hq, { recursive: true });
 const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'not-vivreal-'));
 test.after(() => {
   fs.rmSync(root, { recursive: true, force: true });
@@ -181,6 +183,26 @@ test('ALLOW: a Studio product fix is not the Studio gate (S3)', () => {
   );
   assert.equal(r.status, 0);
   assert.equal(r.stdout, '');
+});
+
+test('REFUSE: publishing help or vivreal.io content in vivreal-hq routes to help-page-producer (S5)', () => {
+  for (const description of ["Publish 6 help articles' content rows", 'Publish the vivreal.io blog fixes']) {
+    const r = run(
+      GUARD,
+      { cwd: hq, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-content:help-page-producer \(publish help/, description);
+  }
+});
+
+test('REFUSE: a package publish in vivreal-hq still routes to package-publisher (S5 control)', () => {
+  const r = run(
+    GUARD,
+    { cwd: hq, tool_input: { subagent_type: 'general-purpose', description: 'Publish renderer package 1.96.4' } },
+    { VIVREAL_REPOS: root },
+  );
+  assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-workflow:package-publisher/);
 });
 
 test('session hook prints nothing outside a Vivreal checkout (control)', () => {
