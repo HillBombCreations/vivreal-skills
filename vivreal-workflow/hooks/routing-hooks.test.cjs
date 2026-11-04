@@ -162,6 +162,27 @@ test('REFUSE: publishing a package still routes to package-publisher', () => {
   }
 });
 
+test('REFUSE: a renderer Studio gate routes to package-publisher (S3)', () => {
+  for (const description of ['Studio gate on renderer 1.96.4', 'Gate kit:validate live-view for renderer 1.96.4']) {
+    const r = run(
+      GUARD,
+      { cwd: portal, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-workflow:package-publisher \(renderer Studio gate/, description);
+  }
+});
+
+test('ALLOW: a Studio product fix is not the Studio gate (S3)', () => {
+  const r = run(
+    GUARD,
+    { cwd: portal, tool_input: { subagent_type: 'general-purpose', description: 'Studio photo retry fix' } },
+    { VIVREAL_REPOS: root },
+  );
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout, '');
+});
+
 test('session hook prints nothing outside a Vivreal checkout (control)', () => {
   const r = run(SESSION, { cwd: elsewhere }, { VIVREAL_REPOS: root });
   assert.equal(r.status, 0);

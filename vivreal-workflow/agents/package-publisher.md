@@ -1,6 +1,6 @@
 ---
 name: package-publisher
-description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", and "why do these repos disagree on a version they all declare the same way". `/bump-package` dispatches this agent; it holds the whole procedure (the former `vivreal-package-update` skill was folded in here).
+description: Use this agent to publish a new version of any private @hillbombcreations/* GitHub Package and move its exact RESOLVED pin across every consumer repository, verifying the publish on the registry rather than a workflow's green, patching each consumer's lockfile surgically (never `npm install` on Windows), and proving convergence with `packages/fleet-ops/pin-sweep` and `reference-sweep`. Typical triggers include "bump @hillbombcreations/schemas everywhere", "publish the new site-renderer and move the fleet onto it", and "why do these repos disagree on a version they all declare the same way". `/bump-package` dispatches this agent; it holds the whole procedure (the former `vivreal-package-update` skill was folded in here). It also runs and records the renderer Studio gate (`kit:validate`) a renderer merge needs.
 tools: Read, Edit, Write, Grep, Glob, Bash, Skill
 model: opus
 color: pink
@@ -167,6 +167,40 @@ spend sits close to its budget cap with "Stop usage" enabled, a billing stop REA
 job with zero steps, which looks exactly like a broken workflow rather than an exhausted budget.
 If a bump's CI run fails with no steps executed, check the billing page before assuming the
 workflow itself is broken.
+
+## The Studio gate before a renderer merge (`kit:validate`)
+
+Merging a renderer PR publishes it, and the release engineer stops without a recorded gate at
+that head. You run the gate and record it. (template-critic's "Studio gate" is a different thing:
+a visual judgement of a built template against its exemplar.)
+
+1. **Build what will ship.** Remove `dist`, `npm pack` the renderer at the PR head, install the
+   tarball into a detached portal worktree at the consumer head with `npm install --no-save
+   <tgz>`, and prove there is no dev overlay (no `RENDERER-DEV-OVERLAY.json`; `prekit:validate`
+   passes). Prove the installed package equals the tarball with `diff -rq`, plus a control that
+   fails after a one-byte edit.
+2. **Prove the machine is quiet** before each run: no other Playwright, vitest or `next`
+   process, and no deploy or walk running (`vivreal-workflow:fleet-concurrency`). A timeout under
+   load is not a product result.
+3. **Same head, both sides.** Run the previous renderer version (the baseline) and the candidate
+   on the SAME portal head: `npm run kit:validate -- --gate registration`, then `--gate
+   live-view`.
+4. **Classify from totals, never from the exit code.** For each run, parse passed, failed,
+   skipped and not run. The live-view spec is serial with a 240 s test timeout, so after its
+   first failure every later test is NOT RUN: unknown, neither a pass nor a failure. "1 failed,
+   47 did not run" is one result and 47 unknowns.
+   - A failure whose output equals the baseline's byte for byte (diff the two outputs, with a
+     control that flips one line) is KNOWN.
+   - A timeout inside a wait (for example a lazy-media reveal) while anything else loaded the
+     machine is SUSPECT. Re-run that kit alone on a quiet machine (`npm run kit:validate --
+     --kit <kitId> --gate live-view`), then the whole gate. If it fails again on a quiet
+     machine, it is a FAIL.
+   - An assertion failure is a FAIL. A failure before the first test is a HARNESS failure: fix
+     the harness, re-run.
+5. **Verdict:** ready to merge only when there is no new failure against the baseline, and every
+   test either ran or is covered by an owner waiver quoted verbatim (which tests ran, which did
+   not, the owner's words, name and ISO time).
+6. Record each run on the renderer PR before the next one ("Run records, one per step" below).
 
 ## Registry auth and consumers
 

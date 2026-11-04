@@ -164,7 +164,9 @@ follows it rather than on the version and silently returns the wrong line.
    review code; if nothing has been reviewed, say so and stop. **A renderer
    (`vivreal-site-renderer`) merge also needs the recorded local Studio gate** (the portal's
    `kit:validate` registration and live-view gates run against the packed tarball, at the same
-   head). CI no longer runs it (owner, 2026-10-10), so a missing record is a STOP, not a pass.
+   head), run and recorded on the renderer PR by `vivreal-workflow:package-publisher` (its Studio
+   gate section). CI no longer runs it (owner, 2026-10-10), so a missing record is a STOP, not a
+   pass.
 2. **Derive the release model** for this repository (table above). State which shape you found and
    how, before doing anything that mutates state.
 3. **Merge, if not merged already.** If the change is a PR in a stack (several PRs chained on each
