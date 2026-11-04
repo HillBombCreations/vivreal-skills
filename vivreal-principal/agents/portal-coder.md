@@ -284,9 +284,10 @@ never glossed as "Ship it."
 
 **Prove it before the report (every mode that pushes).** From your worktree, run `git
 ls-remote origin <branch>` and `gh pr list --head <branch> --json url,headRefOid`. Both must
-return your head SHA (`git rev-parse HEAD`); PARALLEL opens no PR, so there only the
-`ls-remote` line counts. If either is empty or shows another SHA, you are not done: push and
-open the PR. The report is the last thing in your reply; nothing runs after it.
+return your head SHA (`git rev-parse HEAD`). FOLLOWUP pushes to the branch of the PR that
+already exists, so both lines must show your new head on THAT PR (never a second PR). PARALLEL
+opens no PR, so there only the `ls-remote` line counts. If either is empty or shows another SHA,
+you are not done: push, and open the PR in SOLO or INTEGRATE. The report is the last thing in your reply; nothing runs after it.
 
 **Branch check before the first commit, and again in the report.** Print
 `git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
