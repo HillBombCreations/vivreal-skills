@@ -439,9 +439,13 @@ Operate it by these rules:
 - **An approved write needs its own allow-list entry, anchored on host and method** (the model is
   `WRITE_A_POST_WRITES`, the presigned S3 PUT only). A broad pattern such as
   `/upload|presign|media/i` once passed media-library deletes and contact uploads.
-- **Two writes the app makes on view** (refresh-profile, recommendations/events) are blocked
-  without failing the take and counted as "blocked on view" in the summary line. Not a defect in
-  your take.
+- **SUPERSEDED (2026-11-03): "refresh-profile is blocked without failing the take."** Blocking
+  `user/refresh` signs the session out and hides every plan-gated block. The POST reads a take
+  must let through (`user/refresh`, `get-media`, the `/app/monitoring` tunnel and the rest), and
+  the one write on view it blocks and counts (`recommendations/events`), are in
+  `vivreal-knowledge:vivreal-accounts-and-writes`, `references/walk-harness.md`, with the
+  generic guard rules and the script mechanics (absolute screenshot paths, one take per call,
+  `:visible` selectors, case-sensitive scans).
 - **Not covered:** WebSocket frames, and the browser's HTTP cache is off for the take (first loads
   are slower).
 - **The guard is armed by the help scripts, not by `vivreal-hq/packages/content-studio/src/portal-capture.ts`**, which arms no request

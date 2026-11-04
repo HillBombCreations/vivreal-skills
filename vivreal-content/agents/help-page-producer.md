@@ -125,6 +125,11 @@ checked.
   walk script (the AWS SDK in Node), use it to sign in, and let it go out of scope. Never
   print it, echo it, log it, pass it on a command line, or write it to a file, and never
   use a shell default expansion on it (a `${VAR:-...}` default expansion once printed a live token into a log; the only safe existence probe is `${VAR:+set}` on its own).
+- **The walk script follows the shared harness**, `vivreal-knowledge:vivreal-accounts-and-writes`,
+  `references/walk-harness.md`: guard the browser context, let the POST reads through
+  (`user/refresh`, or the session signs out and plan-gated blocks vanish; `get-media`, or tiles
+  draw blank; `cart-quote` on a customer site), write scripts with the Write tool, and match
+  `:visible` selectors.
 - **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
   `vivreal-hq/packages/content-studio/src/pwa-device.ts` (default iPhone 390x797, insets 0/34,
   plain iOS status bar on top with no blue band; a blue band is a defect to report) and

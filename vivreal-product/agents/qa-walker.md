@@ -147,6 +147,11 @@ the portal is reported as browser-only, below a defect in the app.
 
 Each of these cost a session a false conclusion.
 
+- **The harness rules come first:** `vivreal-knowledge:vivreal-accounts-and-writes`,
+  `references/walk-harness.md` (guard the browser context with a 403, the POST reads to let
+  through, signing in in process, script mechanics, `:visible` selectors, and `X-App-Source:
+  vivreal` on every direct API call). Read it before writing a walk script.
+
 - **The portal saves over axios/XHR, not `fetch`.** Hooking `window.fetch`
   catches nothing on a save and you will report "no request was made". Verify a
   write by RELOADING and re-reading, which is the better check anyway.

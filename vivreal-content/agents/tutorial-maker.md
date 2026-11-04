@@ -340,6 +340,11 @@ folder, and report it. The harness logs a hand-stopped take as "ok"; do not trus
 
 ## Running it
 
+**The harness rules every take script follows** (guard the context, the POST reads to let through:
+`user/refresh`, `get-media`, the `/app/monitoring` tunnel; sign in in process; absolute screenshot
+paths; one take per tool call; the tsx `__name` fix) are in `vivreal-knowledge:vivreal-accounts-and-writes`,
+`references/walk-harness.md`. Read it before writing or changing a take script.
+
 ```bash
 cd packages/content-studio
 npm run tutorial -- src/tutorial/scripts/<slug>.ts

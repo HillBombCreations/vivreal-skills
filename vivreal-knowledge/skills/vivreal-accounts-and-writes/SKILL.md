@@ -1,6 +1,6 @@
 ---
 name: vivreal-accounts-and-writes
-description: 'Use before filming, walking or capturing anything in the Vivreal portal or on vivreal.io, and before any write a capture or walk makes. Carries which login to use for which business (the demo account, the QA scratch owner, the owner session), the eight-step owner-approved write protocol (named approval, snapshot, write through the UI, fresh-process read-back, restore, manifest entry), the never-list (Post, Publish, Schedule, Connect and the rest), and the rules for stills that fill vivreal.io marketing slots (pair by what the slot says, no demo site has its own web address, mask comped plan figures). Shared by footage-recorder, tutorial-maker, help-page-producer, qa-walker and marketing-auditor. Triggers on: which login, demo account, scratch owner, switch business, owner-approved write, write protocol, snapshot and restore, mutations, marketing still, screenshot swap, vivreal.io slot.'
+description: 'Use before filming, walking or capturing anything in the Vivreal portal or on vivreal.io, and before any write a capture or walk makes. Carries which login to use for which business (the demo account, the QA scratch owner, the owner session), the eight-step owner-approved write protocol (named approval, snapshot, write through the UI, fresh-process read-back, restore, manifest entry), the never-list (Post, Publish, Schedule, Connect and the rest), and the rules for stills that fill vivreal.io marketing slots (pair by what the slot says, no demo site has its own web address, mask comped plan figures). Shared by footage-recorder, tutorial-maker, help-page-producer, qa-walker and marketing-auditor. Triggers on: which login, demo account, scratch owner, switch business, owner-approved write, write protocol, snapshot and restore, mutations, marketing still, screenshot swap, vivreal.io slot, walk harness, write guard, POST allow list, PRO badge.'
 ---
 
 # Accounts and owner-approved writes
@@ -34,6 +34,13 @@ buttons with that label (the phone avatar carries it too), so a bare selector ma
 and click only the visible one, in every session script. Chain the restore inside the same script and read the LAST `switch-profile` response;
 restores crashed mid-run more than once on 2026-10-13. Never film the business list itself (see
 vivreal-hq `docs/filming-hygiene.md`).
+
+## The walk and capture harness
+
+How a browser script stays read-only and still sees the product as an owner does (guard the
+context, the POST reads to let through, signing in in process, script mechanics, selectors, the
+`X-App-Source` header on direct calls) is in `references/walk-harness.md`. Read it before writing
+or changing any walk, capture or proof script.
 
 ## The write protocol
 
@@ -89,6 +96,9 @@ follows it.
   "Websites 15 of 40" (Pro is five websites), and storage figures that are not on /pricing. Check
   every figure against vivreal.io/pricing. Mask in the still itself (crop it out or cover it, and
   record the mask in the manifest), never by editing the page (see "Never swap names in the page" above).
+- **The comped plan's PRO badge** sits under the business name in the computer sidebar, and inside
+  some of Vivreal's own post pictures. A text scan of plan figures does not catch it. Clip the
+  region or mask it (record the mask), and open every computer still before placing it.
 - **The A19 home flip tiles have two images each.** The T1 to T6 swap keys are the tile BACKS
   (the hover screenshot). Each front is that tile's own image field in the CMS, so a front is
   changed by a CMS image write, not by overwriting a T key. The CMS publishing traps that go
