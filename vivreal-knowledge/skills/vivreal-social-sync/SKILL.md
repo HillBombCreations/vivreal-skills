@@ -15,7 +15,7 @@ this yet**; every claim below cites the code.
 1. **Schedule.** `ScheduledSocialSyncSchedule`, an `AWS::Scheduler::Schedule` declared ONCE in
    `VR_CMS_API/cloudformation/create-update-integrations.yaml` (about :464-500): `rate(1 hour)`,
    named `${StackName}-scheduled-social-sync` (live: `VR-CMS-API-scheduled-social-sync`), target the
-   shared FIFO queue (`/vivreal/prod/shared/fifo-sqs-arn`), input `{"messageType":"integration-sync-sweep"}`,
+   shared FIFO queue (`<ssm-prefix>/shared/fifo-sqs-arn`), input `{"messageType":"integration-sync-sweep"}`,
    constant `MessageGroupId` so a running sweep never overlaps the next. Deploying it needed
    `scheduler:*Schedule` on `schedule/default/VR-CMS-API-*` for `GitHubActions-Deploy`; without it
    the v2.14.1 deploy rolled back (ledger 03:12Z and 03:59Z).

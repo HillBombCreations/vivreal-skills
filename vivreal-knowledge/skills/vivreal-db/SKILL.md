@@ -30,15 +30,16 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
 
 **Where the connection string lives** (priority order):
 
-1. **AWS Secrets Manager**: each backend has its own `vivreal/prod/<service>` secret
-   (e.g. `vivreal/prod/cms-api`, `vivreal/prod/main-api`), key `CLUSTER_URL`, no path and
+1. **AWS Secrets Manager**: each backend has its own `<secret-prefix>/<service>` secret
+   (e.g. `<secret-prefix>/cms-api`, `<secret-prefix>/main-api`), key `CLUSTER_URL`, no path and
    no query string. **There is no single shared secret anymore.** The old `hb-api-secrets`
    store is fully deleted (2026-09-15, no recovery window). Do not read or resolve it.
-   `vivreal-db-explorer`'s launcher (below) reads `vivreal/prod/main-api`, which is a live
-   writable services-user secret; retrieve it the same way if you need it directly
-   (requires AWS credentials for the account):
+   `vivreal-db-explorer`'s launcher (below) reads `<secret-prefix>/main-api`, which is a live
+   writable services-user secret, through the `VIVREAL_DB_SECRET_ID` environment variable (set it
+   to that secret's full name, which is in vivreal-hq `docs/infra/secret-names.md`). Retrieve it
+   the same way if you need it directly (requires AWS credentials for the account):
    ```bash
-   aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api \
+   aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" \
      --query SecretString --output text \
      | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)'
    ```
@@ -47,13 +48,13 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
 
 **Then connect:** the `vivreal-db-explorer` plugin registers a **read-only** MongoDB
 MCP server (`vivreal-db-explorer/.mcp.json` → `mongodb-mcp-server`). Its launcher, not `.mcp.json`, sets `MDB_MCP_READ_ONLY=true` (`scripts/launch-mongo-mcp.cjs`).
-Its launcher (`scripts/launch-mongo-mcp.cjs`) sources `vivreal/prod/main-api` itself when
+Its launcher (`scripts/launch-mongo-mcp.cjs`) sources the secret named by `VIVREAL_DB_SECRET_ID` itself when
 `MDB_MCP_CONNECTION_STRING` isn't already exported, and appends
 `maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer` to whichever string it
 resolves. Match that if you export the variable by hand:
 
 ```bash
-export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id vivreal/prod/main-api \
+export MDB_MCP_CONNECTION_STRING="$(aws secretsmanager get-secret-value --secret-id "$VIVREAL_DB_SECRET_ID" \
   --query SecretString --output text \
   | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).CLUSTER_URL)')?maxPoolSize=2&maxIdleTimeMS=60000&appName=mcp:vivreal-db-explorer"
 ```
@@ -65,7 +66,7 @@ driver: `NODE_PATH=${VIVREAL_REPOS}/VR_CMS_API/node_modules node <script using M
 Set `maxPoolSize: 1`, an `appName: 'script:<what>'`, and close the client in `finally`
 (the same policy every non-Lambda connector follows; see `vivreal-atlas-topology`).
 
-**Known gap:** `vivreal/prod/main-api`'s user can write. A dedicated read-only
+**Known gap:** `<secret-prefix>/main-api`'s user can write. A dedicated read-only
 `dev-tools-ro` user is proposed for MCP/CLI use but does not exist yet. Treat this
 connection as read-only by convention (`MDB_MCP_READ_ONLY=true` and the query-safety rules
 below), not by database-level enforcement, until that user lands.
@@ -76,7 +77,7 @@ below), not by database-level enforcement, until that user lands.
 - **Prefer a read-only Atlas database user.** That DB-level restriction, not the
   `MDB_MCP_READ_ONLY` flag, is the real security boundary (the flag is defense-in-depth).
   A read-only user also protects `groups.apiKey`, `webhooks.secret`, `groups.integrations`.
-  Today's default path (`vivreal/prod/main-api`) does **not** have one (see "Known gap"
+  Today's default path (`<secret-prefix>/main-api`) does **not** have one (see "Known gap"
   above), so until `dev-tools-ro` exists, `MDB_MCP_READ_ONLY` plus the query-safety rules
   below are the only boundary in practice. Treat that as a real gap, not a technicality.
 

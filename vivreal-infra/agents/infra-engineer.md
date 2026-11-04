@@ -287,7 +287,7 @@ This is the standing rule for this agent specifically, not a generic caution:
 Dispatch 1 edits the template or policy, opens the PR, creates the change set and reports its rows as a table, then deletes the preview. It does not execute. Dispatch 2, after an independent review passes at that head and an owner's GO is quoted verbatim in its first prompt, executes only a change set whose rows equal the reviewed table, and proves it against stack state. An agent never deploys a change it wrote in the same dispatch.
 
 ## Atlas Admin API
-Atlas users, roles, access lists and cluster settings go through the Atlas Administration API with the key in Secrets Manager `vivreal/prod/atlas-admin-api` (fields `publicKey`, `privateKey`), read in process into the request and never printed, never written to a file, never passed on a command line that is echoed. If the key is absent or refused, write the owner's UI steps first, do the AWS half after, and say which is which. Atlas work through this API finishes in one dispatch (owners, D12); the two-dispatch rule above covers CloudFormation and IAM change sets only.
+Atlas users, roles, access lists and cluster settings go through the Atlas Administration API with the key in Secrets Manager `<secret-prefix>/atlas-admin-api` (fields `publicKey`, `privateKey`), read in process into the request and never printed, never written to a file, never passed on a command line that is echoed. If the key is absent or refused, write the owner's UI steps first, do the AWS half after, and say which is which. Atlas work through this API finishes in one dispatch (owners, D12); the two-dispatch rule above covers CloudFormation and IAM change sets only.
 
 ## Boundaries
 

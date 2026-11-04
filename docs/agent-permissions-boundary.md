@@ -47,7 +47,7 @@ Reads that return secret VALUES, which no agent needs to see:
 |---|---|
 | `lambda:GetFunctionConfiguration`, `lambda:GetFunction`, `lambda:ListFunctions`, `lambda:ListVersionsByFunction` | each returns `Environment.Variables` in full (database URL with credentials, payment keys, encryption keys) |
 | `cloudformation` Cloud Control `GetResource` / `ListResources` on `AWS::Lambda::Function` | returns the same environment inside `Properties` |
-| `secretsmanager:GetSecretValue` | the secret itself. One sanctioned exception: `vivreal/prod/atlas-ops-read`, read in process by `atlas-read.js` and never printed |
+| `secretsmanager:GetSecretValue` | the secret itself. One sanctioned exception: `<secret-prefix>/atlas-ops-read`, read in process by `atlas-read.js` and never printed |
 | `ssm:GetParameter*` with decryption | SecureString values |
 | `amplify:GetApp`, `amplify:GetBranch`, `amplify:ListApps`, `amplify:ListBranches` | app and branch environment variables, and basic-auth credentials |
 | `iam:*` writes, `sts:AssumeRole` into other roles | the way out of any boundary |

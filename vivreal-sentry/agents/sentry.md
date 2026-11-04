@@ -65,7 +65,7 @@ The passive **`sentry-tracer`** knowledge skill (in the `vivreal-knowledge` plug
 | `vivreal-mcp-server` | VR-MCP-Server (MCP Lambda) | node | **100%** | OAuth flow, tool entry/exit, downstream CMS+Secure API breadcrumbs |
 | `vivreal-templates` | Vivreal_Templates (customer sites on Amplify compute) | javascript-nextjs | **0% (errors only)**, `tracesSampleRate: 0` in `src/instrumentation.ts` and `src/instrumentation-client.ts` | Customer-site render and route errors, no tracing by design. Slug inferred from its issue prefix (`VIVREAL-TEMPLATES-*`), confirm with `find_projects` |
 
-This table is not a roster. VR_Outreach_API reports too (its DSN is `/vivreal/prod/outreach/sentry-dsn`); list the org's projects with `find_projects` before concluding a service sends nothing.
+This table is not a roster. VR_Outreach_API reports too (its DSN is `<ssm-prefix>/outreach/sentry-dsn`); list the org's projects with `find_projects` before concluding a service sends nothing.
 
 ### Distributed Tracing Architecture (current as of 2026-05-18)
 

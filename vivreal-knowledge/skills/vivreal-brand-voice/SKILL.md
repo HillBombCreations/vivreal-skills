@@ -7,7 +7,7 @@ description: 'Use when writing, reviewing, or critiquing Vivreal marketing copy,
 
 The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor the `vivreal-content` plugin's editors (`content-planner`, `linkedin-editor`, `carousel-editor`, `short-form-editor` and the rest) write to. Those agents live in the vivreal-skills marketplace, not in `vivreal-hq/.claude/`, which holds only settings and hooks.
 
-> **Canonical voice source: `${VIVREAL_REPOS}/vivreal-hq/brand/voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`; the old `${VIVREAL_REPOS}/vivreal-content` checkout is a pre-merge leftover, never the source.)
+> **Canonical voice source: `${VIVREAL_REPOS}/vivreal-hq/brand/voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`.)
 
 Last synced: 2026-10-29 (against vivreal-hq `brand/voice.md`, last changed 2026-10-29; re-read it, it is the canonical copy)
 

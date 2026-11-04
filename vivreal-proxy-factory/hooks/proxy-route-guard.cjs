@@ -8,7 +8,7 @@ const fs = require('fs');
 // Known manual routes, path segment after src/app/api/proxy/, without the trailing
 // /route.ts. Prefix entries end with '/'.
 //
-// RE-MEASURED 2026-09-24 against Vivreal_Portal_Mobile origin/main (80f46c2d): 223 proxy
+// RE-MEASURED 2026-09-24 against Vivreal_Portal_Mobile origin/main: 223 proxy
 // routes, 185 factory, 38 manual. Four manual routes were missing from this list and THREE
 // OF THEM WERE BEING BLOCKED OUTRIGHT (outreach/studio-draft, outreach/studio-draft/[id],
 // outreach/studio-funnel): all public no-active_ctx Studio routes that createProxyHandler
@@ -17,10 +17,10 @@ const fs = require('fs');
 // factory's module path and so trips the fail-open check below. That is luck, not coverage,
 // so it is listed explicitly now.
 //
-// RE-MEASURED 2026-10-04 against origin/stable 1c0fdd45 (v0.33.0, the deployed line), by
+// RE-MEASURED 2026-10-04 against origin/stable (the deployed line), by
 // stripping comments and looking for a `createProxyHandler(` CALL in every route.ts, with both
 // directions checked on known files. One manual route was missing and would have been BLOCKED:
-// support/contact (added 2026-09-27, H6052). One entry was dead: integrations/tiktok-oembed no
+// support/contact (added 2026-09-27). One entry was dead: integrations/tiktok-oembed no
 // longer exists (the TikTok oEmbed call was deleted), so it is removed rather than left as a
 // standing exemption for whatever is created at that path next.
 //

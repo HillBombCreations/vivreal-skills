@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Reads the `vivreal/prod/main-api` secret JSON on stdin and writes its CLUSTER_URL to stdout.
+ * Reads the Main API service secret JSON (the one `VIVREAL_DB_SECRET_ID` names) on stdin and writes its CLUSTER_URL to stdout.
  *
  * WHY A FILE: /db-query and /db-schema pre-approve this exact command in `allowed-tools`. An
  * inline `node -e '...'` rule had to be matched as a quoted, parenthesised program text; a
@@ -19,7 +19,7 @@ process.stdin.on('end', () => {
   try {
     secret = JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    process.stderr.write('extract-cluster-url: stdin is not JSON (expected the SecretString of vivreal/prod/main-api)\n');
+    process.stderr.write('extract-cluster-url: stdin is not JSON (expected the SecretString of the secret VIVREAL_DB_SECRET_ID names)\n');
     process.exit(1);
   }
   const url = secret && typeof secret.CLUSTER_URL === 'string' ? secret.CLUSTER_URL : '';

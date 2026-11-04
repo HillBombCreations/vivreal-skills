@@ -17,7 +17,7 @@ producer → vivreal-notification-queue (SQS, batch size 1, + DLQ) → Notificat
 ```
 
 - **Queue**: `vivreal-notification-queue`, **CFN-owned in VR_Main_API's stack** together with its DLQ; the queue URL is exported for the cross-repo SSM handoff (same mechanism as `WEBHOOK_QUEUE_URL`).
-- **Consumer**: `NotificationConsumerFunction` (VR_Main_API `notificationConsumer.handler`, 256MB/30s, reserved concurrency 5). Resolves `pushsubscriptions`/`pushpreferences` against the main Vivreal DB via **its own connection** (`src/notificationConsumer/db.js`, deliberately not `hbcreations/scripts/db.js`), then sends via VAPID keys (from the shared `vivreal/prod/vapid` secret). Ported from VR_Secure_API's `sendPushToGroup` **with a fix**: the original's inline `.catch()` made every send report `fulfilled` regardless of real delivery outcome, delivery results are now truthful.
+- **Consumer**: `NotificationConsumerFunction` (VR_Main_API `notificationConsumer.handler`, 256MB/30s, reserved concurrency 5). Resolves `pushsubscriptions`/`pushpreferences` against the main Vivreal DB via **its own connection** (`src/notificationConsumer/db.js`, deliberately not `hbcreations/scripts/db.js`), then sends via VAPID keys (from the shared `<secret-prefix>/vapid` secret). Ported from VR_Secure_API's `sendPushToGroup` **with a fix**: the original's inline `.catch()` made every send report `fulfilled` regardless of real delivery outcome, delivery results are now truthful.
 
 ## Producers
 

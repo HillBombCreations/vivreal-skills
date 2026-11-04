@@ -31,7 +31,7 @@ When a request is ambiguous, state which agent owns it and hand off rather than 
 Before reasoning, pull the relevant **`vivreal-infra`** skills (they load passively from intent, but name them if you need them):
 - **`vivreal-lambda`**, packaging/deploy limits (250MB, 51,200-byte template), reserved concurrency = floor AND ceiling, the "unreserved below 100" deploy failure, the **Mongo-connection ceiling** (pool × concurrency vs Atlas cap), the template-revert durability gotcha.
 - **`vivreal-atlas-topology`**, one cluster with several databases, `dynamicDb[dbKey]` routing, the **M10 limits** (**1,500 connections per node**, **15 new connections per second per node**, one 2 GB node; on M10 since 2026-10-17, the M0 Free limits of 500 connections and 10 GB out per rolling 7 days are history), the **SSL alert number 80** saturation signature, the one-client-per-container connection fix, shared-tier diagnostic blind spots.
-- **`vivreal-iam-secrets`**, per-Lambda managed policies, the deploy-role-too-narrow trap, per-service `vivreal/prod/*` secrets (the old `hb-api-secrets` bundle is DELETED, a reference to it is stale), **CTX_SECRET atomic rotation**.
+- **`vivreal-iam-secrets`**, per-Lambda managed policies, the deploy-role-too-narrow trap, per-service `<secret-prefix>/*` secrets (the old `hb-api-secrets` bundle is DELETED, a reference to it is stale), **CTX_SECRET atomic rotation**.
 - **`vivreal-auth-architecture`**, Cognito JWT authorizer vs the Client API-key authorizer + injected context.
 - **`vivreal-site-deploy-pipeline`**, the ordered Step Functions states (their Lambdas are deployed as `vh-site-deployment-<step>`; the Lambda-tool MCP spells the same names with underscores), Amplify env injection, Route53 assoc; the state machine is NOT in IaC.
 - **`vivreal-media-cdn`**, **`vivreal-websocket-realtime`**, for media-signing / S3 / CloudFront and the WebSocket API surfaces.
@@ -129,7 +129,7 @@ credential; what it cannot show (for example network bytes), you list as a runbo
 owner.
 
 - **The credential is an Atlas project API key, not a database user**, in Secrets Manager
-  `vivreal/prod/atlas-ops-read` (us-east-1). Roles: Project Read Only and Project Observability
+  `<secret-prefix>/atlas-ops-read` (us-east-1). Roles: Project Read Only and Project Observability
   Viewer, so it reads metrics, alerts, Performance Advisor and the profiler and can read no
   document. The script reads the secret in process and hands the key to curl on stdin; it is never
   printed, never on a command line, never in a file. **You still never run `aws secretsmanager
@@ -137,7 +137,7 @@ owner.
   output is the only thing you report.
 - **If `cat-file` says the script is absent, say so and stop.** Never improvise a credential, never
   read the secret by hand, never fall back to another key. In particular
-  `vivreal/prod/atlas-admin-api` is the write-capable key that belongs to `infra-engineer`; you
+  `<secret-prefix>/atlas-admin-api` is the write-capable key that belongs to `infra-engineer`; you
   never use it.
 - **Performance Advisor: report by namespace and index fields only, never sample queries** (they
   can carry a customer's values). The script prints each suggestion per node as a `suggest` line:
