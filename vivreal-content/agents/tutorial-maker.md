@@ -142,6 +142,9 @@ Rules for the body:
   YouTube chapters. So the caption that starts a section says where the viewer is
   going, through `nav.label(dest)`. This matters most on the phone, where a
   destination under More lights up no tab, so nothing on screen says which page it is.
+- **Click on a computer, Tap on a phone.** The computer pass's captions say Click, the phone
+  pass's say Tap, as the help band does. And never caption Socials as "all your posts": it holds
+  each channel's newest 20, so the line is untrue for any busy channel (a take was reshot for it).
 - **Call `r.focusPoint(control)` on whatever the beat is about** and put the result
   in the edit brief. That is the zoom target, measured off the live frame rather
   than eyeballed off the rendered video afterwards.
