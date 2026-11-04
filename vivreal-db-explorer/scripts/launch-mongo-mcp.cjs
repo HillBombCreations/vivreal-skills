@@ -66,9 +66,10 @@ function resolveConnectionString() {
 
   const secretId = process.env.VIVREAL_DB_SECRET_ID;
   if (!secretId) {
-    log('No MDB_MCP_CONNECTION_STRING and no VIVREAL_DB_SECRET_ID in env. Starting UNCONNECTED.');
-    log('Set VIVREAL_DB_SECRET_ID (its value is in vivreal-hq docs/infra/secret-names.md), or see');
-    log('the "Connecting" section of /db-query.');
+    // Same words the /db-query fallback's extractor prints, so both halves name the one cause.
+    log('no secret read: is VIVREAL_DB_SECRET_ID set? (see SETUP.md)');
+    log('No MDB_MCP_CONNECTION_STRING in env either. Starting UNCONNECTED. The variable\'s value is in');
+    log('vivreal-hq docs/infra/secret-names.md; the "Connecting" section of /db-query is the fallback.');
     return null;
   }
   // On Windows the spawn below runs through a shell, so the id is joined into a command line.

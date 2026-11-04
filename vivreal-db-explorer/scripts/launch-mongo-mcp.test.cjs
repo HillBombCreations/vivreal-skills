@@ -100,17 +100,50 @@ test('ALLOW: an aws failure starts the server unconnected rather than not at all
   assert.equal(r.server.conn, null);
 });
 
-test('REFUSE: no VIVREAL_DB_SECRET_ID never reaches aws and starts unconnected', () => {
+// The one sentence both the launcher and the /db-query fallback's extractor print when no secret
+// was read, so an unset variable is named as the cause rather than a JSON or length error.
+const UNSET = /no secret read: is VIVREAL_DB_SECRET_ID set\? \(see SETUP\.md\)/;
+
+test('REFUSE: no VIVREAL_DB_SECRET_ID never reaches aws, starts unconnected, and says why', () => {
   const r = launch({});
   assert.deepEqual(r.awsCalls, [], 'aws was called with no secret id configured');
   assert.equal(r.server.conn, null);
-  assert.match(r.stderr, /VIVREAL_DB_SECRET_ID/);
+  assert.match(r.stderr, UNSET);
 });
 
-test('REFUSE: an empty VIVREAL_DB_SECRET_ID never reaches aws', () => {
+test('REFUSE: an empty VIVREAL_DB_SECRET_ID never reaches aws, and says why', () => {
   const r = launch({ VIVREAL_DB_SECRET_ID: '' });
   assert.deepEqual(r.awsCalls, []);
   assert.equal(r.server.conn, null);
+  assert.match(r.stderr, UNSET);
+});
+
+// The /db-query fallback pipes `aws ... --secret-id "$VIVREAL_DB_SECRET_ID"` into the extractor.
+// With the variable unset, aws prints nothing on stdout, so the extractor sees empty input.
+const EXTRACTOR = join(__dirname, 'extract-cluster-url.cjs');
+const extract = (input) => spawnSync(process.execPath, [EXTRACTOR], { input, encoding: 'utf8', timeout: 30000 });
+
+test('REFUSE: the extractor on empty input names the unset variable and prints no URL', () => {
+  for (const input of ['', '\n', '  \r\n']) {
+    const r = extract(input);
+    assert.notEqual(r.status, 0, `exit 0 on ${JSON.stringify(input)}`);
+    assert.equal(r.stdout, '');
+    assert.match(r.stderr, UNSET);
+  }
+});
+
+test('REFUSE: the extractor on input that is not JSON says so and never echoes it', () => {
+  const r = extract('not-json-SECRETVALUE');
+  assert.notEqual(r.status, 0);
+  assert.equal(r.stdout, '');
+  assert.match(r.stderr, /stdin is not JSON/);
+  assert.doesNotMatch(r.stderr, /SECRETVALUE/);
+});
+
+test('ALLOW: the extractor prints exactly the CLUSTER_URL of a secret', () => {
+  const r = extract(JSON.stringify({ CLUSTER_URL: CLUSTER, OTHER: 'x' }));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout, CLUSTER);
 });
 
 test('REFUSE: a padded VIVREAL_DB_SECRET_ID never reaches aws', () => {

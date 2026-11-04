@@ -54,7 +54,7 @@
  *      under `docs/projects/` (working papers belong in the private vivreal-hq repo), a personal
  *      handle, a OneDrive path, a machine path under docs/ (rule 11 covers the rest), a Secrets
  *      Manager or SSM name prefix (write `<secret-prefix>/` or `<ssm-prefix>/`), a named private
- *      account, a personal mailbox on the company domain, a Stripe key or account id, a real
+ *      account, a personal mailbox on the company domain or a free-mail one, a Stripe key or account id, a real
  *      Mongo ObjectId, an AWS or Atlas generated hostname or resource id, and a dollar figure in
  *      the unit-economics skill or the finance-auditor.
  *
@@ -87,6 +87,7 @@ import { tmpdir } from 'node:os';
 import { join, relative, sep, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const norm = (p) => p.split(sep).join('/');
@@ -1136,40 +1137,82 @@ function ruleSkillSources(files) {
 // THIS REPOSITORY IS PUBLIC. A 2026-10-26 review found a private security audit, Windows home
 // paths, a personal handle, real cost and revenue figures and secret names published here. Each
 // pattern below is one of those shapes, or one the 2026-11-04 sweep added (a login address, a
-// distribution id). Like the account-id rule, every pattern that would match its own source is
-// ASSEMBLED from fragments, so this file never holds the literal it hunts and the no-poison
-// control cannot be tripped by the checker itself. A finding names the rule, never the value,
-// so the report does not republish what it found.
+// distribution id, a free-mail address). A finding names the rule, never the value, so the
+// report does not republish what it found.
+//
+// PRIVATE TOKENS ARE MATCHED BY HASH, NEVER BY LITERAL. A guard that embeds the value it hunts
+// republishes it, and splitting the literal across a `+` only hides it from grep, not from a
+// reader. So the handle, the secret-name prefix, the demo login id and the QA bundle name are
+// held below as the sha256 of the lowercased token. Every word on a line, every hyphen or
+// underscore joined name, and the word in front of every `/prod` or `/qa` is hashed and looked
+// up. The self-test adds the hash of a fake token built at run time, and plants that token, so
+// no real one appears in this file or its tests. To add a token, hash it on your own machine
+// (`node -e "console.log(require('crypto').createHash('sha256').update('<token>').digest('hex'))"`)
+// and add only the hash.
 //
 // `docs/projects/` is matched as a FILE PATH, not as text. The text form is the workflow's own
 // artifact convention (`docs/projects/<slug>/design.md`) and several agents read and write real
 // project files in the private repos they run in, so banning the string would break them.
+const TOKEN_MESSAGES = {
+  handle: 'a personal handle or user name. Name the role ("the owner"), not the person.',
+  account: 'a named private account (the demo login or the QA account bundle). Write "the demo account" or "the QA account bundle".',
+  prefix:
+    'a Secrets Manager or SSM name prefix. Write <secret-prefix>/, <ssm-prefix>/ or <qa-secret-prefix>/; ' +
+    'the real names are in the private vivreal-hq repo at docs/infra/secret-names.md.',
+};
+/** sha256 of a lowercased private token, to the kind of finding it raises. */
+const PRIVATE_TOKENS = new Map([
+  ['7921e87ef7e7bfdcae199db9dac0c33320d80e62eaa8d1866d1db6ffcc96c7a0', 'handle'],
+  ['a38047809c89760d9412d7d24ce8f240a77fd6ebf8b66a53d8a59018294032ea', 'account'],
+  ['89e780fc23c079a68409125984abaf4e9fd46eac9d3452c3f3dc51e42361685a', 'account'],
+]);
+/** sha256 of each private word that, in front of `/prod` or `/qa`, makes a secret or SSM name. */
+const PRIVATE_PREFIXES = new Set(['5f37cd034a6fae8a8cc26e89ba78c0c0cd9d66c799b795b3ad9c8525827a8d73']);
+const tokenHashes = new Map();
+function hashToken(token) {
+  let h = tokenHashes.get(token);
+  if (h === undefined) {
+    h = createHash('sha256').update(token).digest('hex');
+    tokenHashes.set(token, h);
+  }
+  return h;
+}
+
+/** The kinds of private token a line carries, found by hash. */
+function privateTokenKinds(line) {
+  const kinds = new Set();
+  const lower = line.toLowerCase();
+  // Plain words catch a handle inside `@someone_handle` or a path; joined names catch a login id.
+  for (const re of [/[a-z0-9]+/g, /[a-z0-9][a-z0-9_-]*/g]) {
+    for (const m of lower.matchAll(re)) {
+      const kind = PRIVATE_TOKENS.get(hashToken(m[0]));
+      if (kind) kinds.add(kind);
+    }
+  }
+  for (const m of lower.matchAll(/([a-z0-9][a-z0-9_-]*)\/(?:prod|qa)(?![a-z0-9_-])/g)) {
+    if (PRIVATE_PREFIXES.has(hashToken(m[1]))) kinds.add('prefix');
+  }
+  return kinds;
+}
+
 const LEAK_PATTERNS = [
-  {
-    re: new RegExp('jc' + 'ecc', 'i'),
-    msg: 'a personal handle or user name. Name the role ("the owner"), not the person.',
-  },
   {
     // A path segment, so a process name in a never-kill list is not a hit.
     re: new RegExp('One' + 'Drive(?: - [^' + BSL + BSL + '/' + BSL + 'n]*)?[' + BSL + BSL + '/]', 'i'),
     msg: 'a OneDrive path, which names a personal sync folder.',
   },
   {
-    re: new RegExp('viv' + 'real/(?:prod|qa)(?![A-Za-z0-9_-])'),
-    msg:
-      'a Secrets Manager or SSM name prefix. Write <secret-prefix>/, <ssm-prefix>/ or <qa-secret-prefix>/; ' +
-      'the real names are in the private vivreal-hq repo at docs/infra/secret-names.md.',
-  },
-  {
-    re: new RegExp('viv' + 'real-content-' + 'demo|walk-' + 'accounts'),
-    msg: 'a named private account (the demo login or the QA account bundle). Write "the demo account" or "the QA account bundle".',
-  },
-  {
-    // A mailbox on the company's root domain names a person's login. The public sender and a
-    // plugin manifest's author field are the two sanctioned uses.
+    // A mailbox on the company's root domain names a person's login. The public sender is the
+    // one sanctioned address, and it is what every manifest's author and owner field carries.
     re: /(?<![A-Za-z0-9._%+-])([A-Za-z0-9][A-Za-z0-9._%+-]*)@vivreal\.io\b/,
-    allow: (line, m, rel) => m[1] === 'hello' || (rel.endsWith('.json') && /"email"\s*:\s*"[^"]*"/.test(line)),
-    msg: 'a personal mailbox on the company domain, which is a real login. Write "the owner\'s own login".',
+    allow: (line, m) => m[1] === 'hello',
+    msg: 'a personal mailbox on the company domain, which is a real login. Write "the owner\'s own login", or hello@ in a manifest.',
+  },
+  {
+    // A personal free-mail address names a person outside the company. A placeholder such as
+    // `<name>@gmail.com` is not an address and does not match.
+    re: /(?<![A-Za-z0-9._%+-])[A-Za-z0-9][A-Za-z0-9._%+-]*@(?:gmail|yahoo|outlook|hotmail|icloud)\.com\b/i,
+    msg: 'a personal free-mail address (gmail, yahoo, outlook, hotmail, icloud). Name the role, never the address.',
   },
   {
     re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\bwhsec_[A-Za-z0-9]{8,}|\b(?:acct|cus)_[A-Za-z0-9]{12,}/,
@@ -1222,8 +1265,9 @@ function rulePublicLeaks(files) {
     lines.forEach((line, i) => {
       for (const p of LEAK_PATTERNS) {
         const m = p.re.exec(line);
-        if (m && !(p.allow && p.allow(line, m, rel))) fail('public-leak', `${rel}:${i + 1}`, p.msg);
+        if (m && !(p.allow && p.allow(line, m))) fail('public-leak', `${rel}:${i + 1}`, p.msg);
       }
+      for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
       if (docs && !line.includes(MACHINE_PATH_EXAMPLE) && MACHINE_PATH.test(line)) {
         fail('public-leak', `${rel}:${i + 1}`, 'a machine path under docs/, which names a person and their machine. Write ${VIVREAL_REPOS}/<repo>.');
       }
@@ -1282,6 +1326,24 @@ function removeDocsPoison() {
   }
 }
 
+// R15's private-token poisons are FAKE tokens, built at run time and registered by hash for the
+// self-test only, so no real token is planted and no literal one sits in this file for the
+// no-poison run to find.
+const FAKE_TOKENS = [
+  ['selftest' + 'handle', 'handle'],
+  ['selftest-' + 'token', 'account'],
+];
+const FAKE_PREFIX = 'selftest' + 'prefix';
+
+function registerFakeTokens(on) {
+  for (const [token, kind] of FAKE_TOKENS) {
+    if (on) PRIVATE_TOKENS.set(hashToken(token), kind);
+    else PRIVATE_TOKENS.delete(hashToken(token));
+  }
+  if (on) PRIVATE_PREFIXES.add(hashToken(FAKE_PREFIX));
+  else PRIVATE_PREFIXES.delete(hashToken(FAKE_PREFIX));
+}
+
 function selfTest() {
   // The fixture is a real plugin directory at the repo root, because the rules key
   // off the path shape `<plugin>/agents/<name>.md`. A fixture nested one level
@@ -1289,6 +1351,8 @@ function selfTest() {
   // which is the failure this control exists to catch. It caught it.
   const tmp = join(ROOT, FIXTURE_PLUGIN);
   PLUGIN_DIRS.push(FIXTURE_PLUGIN);
+  registerFakeTokens(true);
+  const [[fakeHandle], [fakeAccount]] = FAKE_TOKENS;
 
   const cases = [
     {
@@ -1652,7 +1716,7 @@ function selfTest() {
       match: 'a personal handle',
       label: 'public-leak: a personal handle',
       path: join(tmp, 'skills', 'handle', 'SKILL.md'),
-      body: '---\nname: handle\ndescription: fixture\n---\n\nPost from @someone_' + 'jc' + 'ecc today.\n',
+      body: '---\nname: handle\ndescription: fixture\n---\n\nPost from @someone_' + fakeHandle + ' today.\n',
     },
     {
       rule: 'public-leak',
@@ -1666,21 +1730,21 @@ function selfTest() {
       match: 'a Secrets Manager or SSM name prefix',
       label: 'public-leak: a secret name',
       path: join(tmp, 'skills', 'secret-name', 'SKILL.md'),
-      body: '---\nname: secret-name\ndescription: fixture\n---\n\nRead `CLUSTER_URL` from `viv' + 'real/prod/main-api`.\n',
+      body: '---\nname: secret-name\ndescription: fixture\n---\n\nRead `CLUSTER_URL` from `' + FAKE_PREFIX + '/prod/main-api`.\n',
     },
     {
       rule: 'public-leak',
       match: 'a Secrets Manager or SSM name prefix',
       label: 'public-leak: an SSM parameter name',
       path: join(tmp, 'skills', 'ssm-name', 'SKILL.md'),
-      body: '---\nname: ssm-name\ndescription: fixture\n---\n\nRead SSM `/viv' + 'real/prod/shared/name`.\n',
+      body: '---\nname: ssm-name\ndescription: fixture\n---\n\nRead SSM `/' + FAKE_PREFIX + '/qa/shared/name`.\n',
     },
     {
       rule: 'public-leak',
       match: 'a named private account',
       label: 'public-leak: the demo login id',
       path: join(tmp, 'skills', 'demo-login', 'SKILL.md'),
-      body: '---\nname: demo-login\ndescription: fixture\n---\n\nSign in as `viv' + 'real-content-' + 'demo`.\n',
+      body: '---\nname: demo-login\ndescription: fixture\n---\n\nSign in as `' + fakeAccount + '`.\n',
     },
     {
       rule: 'public-leak',
@@ -1739,14 +1803,31 @@ function selfTest() {
         'Prices come from `$TIER_DISPLAY`. Mail `hello@vivreal.io` or `<sender>+outreach@vivreal.io`. ' +
         'Filter on groupID `0123456789abcdef01234567`. The cluster is `vivreal.<cluster-id>.mongodb.net` and the ' +
         'portal origin `stable.<portal-amplify-app-id>.amplifyapp.com`. Status `in_progress`, commit ' +
-        'a'.repeat(40) + '. Never kill OneDrive.exe. Use the demo account or the QA account bundle.\n',
+        'a'.repeat(40) + '. Never kill OneDrive.exe. Use the demo account or the QA account bundle. ' +
+        // A private token inside a longer word, and a non-private word before /prod, are not hits.
+        'The word pre' + fakeHandle + 'post and `example/prod/main-api` are fine, and so is `<name>@gmail.com`.\n',
     },
     {
       rule: 'public-leak',
       kind: 'clean',
-      label: 'public-leak: a manifest author address',
+      label: 'public-leak: the manifest author address',
       path: join(tmp, 'skills', 'author', 'manifest.json'),
+      body: '{ "author": { "name": "Vivreal", "email": "hello' + '@' + 'vivreal.io" } }\n',
+    },
+    {
+      // A manifest is no exemption: its author field publishes a login as surely as prose does.
+      rule: 'public-leak',
+      match: 'a personal mailbox',
+      label: 'public-leak: a login in a manifest',
+      path: join(tmp, 'skills', 'author-login', 'manifest.json'),
       body: '{ "author": { "name": "Vivreal", "email": "owner' + '@' + 'vivreal.io" } }\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'a personal free-mail address',
+      label: 'public-leak: a free-mail address',
+      path: join(tmp, 'skills', 'free-mail', 'SKILL.md'),
+      body: '---\nname: free-mail\ndescription: fixture\n---\n\nThe owner reads `someone' + '@' + 'gmail.com`.\n',
     },
   ];
 
@@ -1880,6 +1961,7 @@ function selfTest() {
     failures.length = 0;
     rmSync(tmp, { recursive: true, force: true });
     removeDocsPoison();
+    registerFakeTokens(false);
     const i = PLUGIN_DIRS.indexOf(FIXTURE_PLUGIN);
     if (i >= 0) PLUGIN_DIRS.splice(i, 1);
     runAll(walk(ROOT));
@@ -1895,6 +1977,7 @@ function selfTest() {
   } finally {
     rmSync(tmp, { recursive: true, force: true });
     removeDocsPoison();
+    registerFakeTokens(false);
     failures.length = 0;
     warnings.length = 0;
   }

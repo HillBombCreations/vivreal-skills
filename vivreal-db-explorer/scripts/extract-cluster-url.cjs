@@ -15,9 +15,16 @@
 const chunks = [];
 process.stdin.on('data', (c) => chunks.push(c));
 process.stdin.on('end', () => {
+  const input = Buffer.concat(chunks).toString('utf8');
+  // Empty input almost always means the `aws` half of the pipe failed, most often because the
+  // secret id variable is unset, so say that rather than "not JSON".
+  if (!input.trim()) {
+    process.stderr.write('extract-cluster-url: no secret read: is VIVREAL_DB_SECRET_ID set? (see SETUP.md)\n');
+    process.exit(1);
+  }
   let secret;
   try {
-    secret = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    secret = JSON.parse(input);
   } catch {
     process.stderr.write('extract-cluster-url: stdin is not JSON (expected the SecretString of the secret VIVREAL_DB_SECRET_ID names)\n');
     process.exit(1);
