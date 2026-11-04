@@ -425,6 +425,12 @@ fs.writeFileSync(
 );
 const FAKE_TOOL = [
   "const fs = require('fs');",
+  "const argv = process.argv.slice(2);",
+  "if (argv[0] === 'pack') {",
+  "  const dest = argv[argv.indexOf('--pack-destination') + 1];",
+  "  fs.writeFileSync(require('path').join(dest, 'vr-token-probe-1.0.0.tgz'), 'fake tarball');",
+  "}",
+  "fs.appendFileSync(process.env.FAKE_NPM_LOG + '.all', JSON.stringify({ args: argv, hasToken: Boolean(process.env.NODE_AUTH_TOKEN) }) + '\\n');",
   "fs.writeFileSync(process.env.FAKE_NPM_LOG, JSON.stringify({",
   "  tool: process.env.FAKE_TOOL_NAME || 'unknown',",
   "  args: process.argv.slice(2),",
@@ -448,20 +454,30 @@ for (const tool of ['npm', 'npx']) {
     fs.chmodSync(path.join(fakeBin, tool), 0o755);
   }
 }
-if (isWin) {
-  fs.writeFileSync(path.join(fakeBin, 'aws.cmd'), `@"${process.execPath}" "%~dp0fake-aws.js" %*\r\n`);
-} else {
-  fs.writeFileSync(path.join(fakeBin, 'aws'), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/fake-aws.js" "$@"\n`);
-  fs.chmodSync(path.join(fakeBin, 'aws'), 0o755);
+// The fake aws in two places: beside the fake npm and npx, and alone, so a test can run REAL npm.
+const awsOnlyBin = path.join(fake, 'aws-only');
+fs.mkdirSync(awsOnlyBin, { recursive: true });
+fs.copyFileSync(path.join(fakeBin, 'fake-aws.js'), path.join(awsOnlyBin, 'fake-aws.js'));
+for (const dir of [fakeBin, awsOnlyBin]) {
+  if (isWin) {
+    fs.writeFileSync(path.join(dir, 'aws.cmd'), `@"${process.execPath}" "%~dp0fake-aws.js" %*\r\n`);
+  } else {
+    fs.writeFileSync(path.join(dir, 'aws'), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/fake-aws.js" "$@"\n`);
+    fs.chmodSync(path.join(dir, 'aws'), 0o755);
+  }
 }
 
 let tokenRuns = 0;
-/** A clone root whose private names file carries `names`, or none when `names` is null. */
-function tokenRoot(names) {
+/**
+ * A clone root whose private names file carries `names` (none when `names` is null), and a package
+ * folder in it with `pkg` as its package.json.
+ */
+function tokenRoot(names, pkg = { name: 'vr-token-probe', version: '1.0.0' }) {
   tokenRuns += 1;
   const r = path.join(fake, `root-${tokenRuns}`);
   fs.mkdirSync(path.join(r, 'vivreal-hq', '.git'), { recursive: true });
   fs.mkdirSync(path.join(r, 'VR_CMS_API'), { recursive: true });
+  fs.writeFileSync(path.join(r, 'VR_CMS_API', 'package.json'), JSON.stringify(pkg, null, 2));
   if (names) {
     fs.mkdirSync(path.join(r, 'vivreal-hq', '.vivreal'), { recursive: true });
     fs.writeFileSync(path.join(r, 'vivreal-hq', '.vivreal', 'private-names.json'), JSON.stringify(names));
@@ -469,7 +485,7 @@ function tokenRoot(names) {
   return path.join(r, 'VR_CMS_API');
 }
 
-function runWrapper(cwd, tool, args, extraEnv = {}) {
+function runWrapper(cwd, tool, args, extraEnv = {}, bin = fakeBin) {
   tokenRuns += 1;
   const awsLog = path.join(fake, `aws-${tokenRuns}.log`);
   const npmLog = path.join(fake, `npm-${tokenRuns}.json`);
@@ -477,13 +493,16 @@ function runWrapper(cwd, tool, args, extraEnv = {}) {
   for (const k of ['VIVREAL_REPOS', 'NODE_AUTH_TOKEN', 'CLAUDE_PROJECT_DIR', 'FAKE_AWS_MODE', 'FAKE_OVERRIDE', 'FAKE_TOOL_EXIT']) delete env[k];
   Object.assign(env, extraEnv);
   const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
-  env[pathKey] = fakeBin + path.delimiter + (env[pathKey] || '');
+  env[pathKey] = bin + path.delimiter + (env[pathKey] || '');
   const res = spawnSync(process.execPath, [WRAPPER, tool, ...args], { cwd, env, encoding: 'utf8', timeout: 60000 });
   const awsCalls = fs.existsSync(awsLog)
     ? fs.readFileSync(awsLog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
     : [];
   const child = fs.existsSync(npmLog) ? JSON.parse(fs.readFileSync(npmLog, 'utf8')) : null;
-  return { status: res.status, stdout: res.stdout || '', stderr: res.stderr || '', awsCalls, child };
+  const calls = fs.existsSync(npmLog + '.all')
+    ? fs.readFileSync(npmLog + '.all', 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
+    : [];
+  return { status: res.status, stdout: res.stdout || '', stderr: res.stderr || '', awsCalls, child, calls };
 }
 
 const neverLeaks = (r) => {
@@ -562,6 +581,90 @@ test('REFUSE: a NODE_AUTH_TOKEN the caller set is stripped from build and test c
   for (const [tool, args] of [['npm', ['run', 'build']], ['npm', ['test']], ['npx', ['next', 'build']]]) {
     const r = runWrapper(tokenRoot(NAMES), tool, args, { NODE_AUTH_TOKEN: 'override-token', FAKE_OVERRIDE: 'override-token' });
     assert.equal(r.child && r.child.hasToken, false, `${tool} ${args.join(' ')} kept the caller's token`);
+  }
+});
+
+test('ALLOW: a token-free pack, then the one publish of that tarball gets the WRITE token, --ignore-scripts added', () => {
+  const r = runWrapper(tokenRoot(NAMES), 'npm', ['publish', '--tag', 'next']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.calls.length, 2, JSON.stringify(r.calls));
+  assert.equal(r.calls[0].args[0], 'pack');
+  assert.equal(r.calls[0].hasToken, false, 'npm pack ran with a token');
+  const [cmd, tarball, ...rest] = r.calls[1].args;
+  assert.equal(cmd, 'publish');
+  assert.match(tarball, /vr-token-probe-1\.0\.0\.tgz$/);
+  assert.deepEqual(rest, ['--tag', 'next', '--ignore-scripts']);
+  assert.equal(r.child.which, 'write');
+  neverLeaks(r);
+});
+
+test('ALLOW: the caller\'s own tarball is published as is, with the write token and no pack', () => {
+  const dir = tokenRoot(NAMES);
+  const r = runWrapper(dir, 'npm', ['publish', 'probe-1.0.0.tgz']);
+  assert.equal(r.calls.length, 1, JSON.stringify(r.calls));
+  assert.deepEqual(r.calls[0].args, ['publish', path.join(dir, 'probe-1.0.0.tgz'), '--ignore-scripts']);
+  assert.equal(r.child.which, 'write');
+});
+
+test('REFUSE (A5, real npm): publish-time lifecycle scripts run with NO token; only the publish has it', () => {
+  // A real package whose prepublishOnly, prepare and postpack each record the token they see.
+  const pkg = {
+    name: 'vr-a5-probe',
+    version: '1.0.0',
+    scripts: {
+      prepublishOnly: 'node probe.js prepublishOnly',
+      prepack: 'node probe.js prepack',
+      prepare: 'node probe.js prepare',
+      postpack: 'node probe.js postpack',
+    },
+  };
+  const dir = tokenRoot(NAMES, pkg);
+  fs.writeFileSync(
+    path.join(dir, 'probe.js'),
+    "require('fs').writeFileSync(__dirname + '/seen-' + process.argv[2] + '.txt', process.env.NODE_AUTH_TOKEN || '');\n",
+  );
+  const r = runWrapper(dir, 'npm', ['publish', '--dry-run'], { NODE_AUTH_TOKEN: '', FAKE_OVERRIDE: '' }, awsOnlyBin);
+  assert.equal(r.status, 0, `real npm publish --dry-run failed: ${r.stderr.slice(-400)}`);
+  for (const name of ['prepublishOnly', 'prepack', 'prepare', 'postpack']) {
+    const seen = path.join(dir, `seen-${name}.txt`);
+    assert.ok(fs.existsSync(seen), `${name} never ran`);
+    assert.equal(fs.readFileSync(seen, 'utf8'), '', `${name} saw a token`);
+  }
+  // The write token was fetched once, for the publish process alone.
+  assert.deepEqual(r.awsCalls.map((c) => c[c.indexOf('--secret-id') + 1]), [WRITE_SECRET_NAME]);
+  neverLeaks(r);
+});
+
+test('REFUSE (A5): a caller token is stripped from the scripts too, and --ignore-scripts skips them', () => {
+  const pkg = { name: 'vr-a5-probe', version: '1.0.0', scripts: { prepublishOnly: 'node probe.js prepublishOnly' } };
+  const dir = tokenRoot(NAMES, pkg);
+  fs.writeFileSync(
+    path.join(dir, 'probe.js'),
+    "require('fs').writeFileSync(__dirname + '/seen-' + process.argv[2] + '.txt', process.env.NODE_AUTH_TOKEN || '');\n",
+  );
+  const withToken = runWrapper(dir, 'npm', ['publish', '--dry-run'], { NODE_AUTH_TOKEN: 'override-token', FAKE_OVERRIDE: 'override-token' }, awsOnlyBin);
+  assert.equal(withToken.status, 0, withToken.stderr.slice(-400));
+  assert.equal(fs.readFileSync(path.join(dir, 'seen-prepublishOnly.txt'), 'utf8'), '', 'the caller token reached prepublishOnly');
+  fs.rmSync(path.join(dir, 'seen-prepublishOnly.txt'));
+  const skipped = runWrapper(dir, 'npm', ['publish', '--dry-run', '--ignore-scripts'], {}, awsOnlyBin);
+  assert.equal(skipped.status, 0, skipped.stderr.slice(-400));
+  assert.ok(!fs.existsSync(path.join(dir, 'seen-prepublishOnly.txt')), '--ignore-scripts still ran a script');
+});
+
+test('REFUSE (A5): a failed prepublishOnly stops the publish, and the token is never fetched', () => {
+  const r = runWrapper(tokenRoot(NAMES, { name: 'p', version: '1.0.0', scripts: { prepublishOnly: 'node -e "process.exit(4)"' } }), 'npm', ['publish'], {}, awsOnlyBin);
+  assert.equal(r.status, 4);
+  assert.deepEqual(r.awsCalls, []);
+  assert.match(r.stderr, /the prepublishOnly script failed \(exit 4\); nothing was published/);
+});
+
+test('REFUSE (A5): publishing another folder or a workspace is refused, even with --ignore-scripts', () => {
+  for (const args of [['publish', 'other-dir'], ['publish', '--ignore-scripts', 'other-dir'], ['publish', '--workspace', 'pkg-a'], ['publish', '--workspaces']]) {
+    const r = runWrapper(tokenRoot(NAMES), 'npm', args);
+    assert.equal(r.status, 1, `npm ${args.join(' ')} was not refused`);
+    assert.equal(r.child, null, `npm ${args.join(' ')} ran npm`);
+    assert.deepEqual(r.awsCalls, []);
+    assert.match(r.stderr, /would run its scripts in the publish process/);
   }
 });
 

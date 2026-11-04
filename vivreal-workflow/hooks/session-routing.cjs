@@ -9,7 +9,8 @@
 //     a wrong one is refused and reported, never replaced);
 //   - `npm` and `npx` shell functions, always, that run them through npm-token.cjs. It gives the
 //     shared read-only packages token (from AWS, with the user's own sign-in) only to install and
-//     read commands, the write token only to `npm publish`, and strips NODE_AUTH_TOKEN from every
+//     read commands, the write token only to the upload of `npm publish` (never its lifecycle
+//     scripts), and strips NODE_AUTH_TOKEN from every
 //     other command, a caller's own included (owners, 2026-11-04). This hook writes no token: the
 //     env file holds only the function text. The wrapper never prints a token or writes one to a
 //     file; the npm child that receives one, and its install scripts, can read their environment.

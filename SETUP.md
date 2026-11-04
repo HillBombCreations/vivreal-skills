@@ -61,7 +61,7 @@ node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo 
 - **`NODE_AUTH_TOKEN`** for the private `@hillbombcreations/*` packages: a read-only packages token from AWS. In an
   agent's Bash, install and read commands (`npm ci`, `install`, `update`, `view`, `outdated`, and `npx` naming
   `@hillbombcreations/`) fetch the one shared READ-ONLY token from AWS Secrets Manager with your own AWS sign-in at
-  the moment they run; `npm publish` alone gets the write token; build, test and every other command get none.
+  the moment they run; `npm publish` alone gets the write token, for the upload only (never its lifecycle scripts); build, test and every other command get none.
   The secret names are keys of the private names file below. The wrapper never prints a token or writes one to a
   file. Never `gh auth token`, which carries your whole GitHub access. In your own terminal, run npm commands
   through the agent. A token you set yourself is used for installs and publish only.
