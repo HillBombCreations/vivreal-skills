@@ -795,7 +795,7 @@ alone, and write your own dry-run check to catch the destination rows and routes
 - **A heredoc eats one level of backslashes**, so a `.cjs` written with `<<'EOF'` containing
   `replace(/\\\\/g, '\\')` arrives as a syntax error. Write such files with Python's `open().write()`
   on a raw string, or build the backslash with `String.fromCharCode(92)`.
-- **Python cannot open an MSYS path** like `/c/Users/...`. A status check that did so printed
+- **Python cannot open an MSYS path** like `/c/...`. A status check that did so printed
   nothing, and the runner read that as a failed capture when all twelve had in fact succeeded.
   Check statuses with `grep` on the file, or pass a Windows path.
 

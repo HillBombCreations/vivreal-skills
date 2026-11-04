@@ -864,24 +864,50 @@ function ruleAwsAccountId(files) {
 }
 
 // ------------------------------------------------- rule 11: machine paths (R11)
-// A literal clone path works on one machine and silently reads a stale or absent tree on every
-// other. Paths go through ${VIVREAL_REPOS}. The patterns are built from character codes so this
-// file never holds the strings it refuses. docs/ is history and is not scanned.
+// A literal machine path works on one machine and silently reads a stale or absent tree on every
+// other. Paths go through ${VIVREAL_REPOS}, which is derived (shared-standards, "Path resolution").
+// One pattern, the fleet's shared machine-path pattern (vivreal-hq universal-setup research 4.1):
+// a drive root of ANY letter (either slash, escaped or not), an MSYS drive root onto repos or Users,
+// a POSIX home, and a Windows user profile tree. Built from character codes so this file never holds
+// the strings it refuses. docs/ is history and is left to rule 15.
+//
+// Shapes every machine has name no machine and pass: Program Files, the Windows folder, and an
+// elided path (a drive or a home, then three dots). Any other line that is legitimately generic (a
+// test fixture's sample drive, a guard's own example) carries `machine-path-ok: <reason>` on the
+// same line. There is no path-wide exemption.
 const BSL = String.fromCharCode(92);
 const MACHINE_PATH = new RegExp(
   [
-    // A separator is one or more of either slash, so the escaped form a .js, .cjs or .json
-    // string holds (two backslashes) is caught as well as the single one.
-    '[Cc]:[' + BSL + BSL + '/]+repos\\b',
-    '/c' + '/repos\\b',
-    '[Cc]:[' + BSL + BSL + '/]+Users[' + BSL + BSL + '/]+',
-    '(^|[^A-Za-z0-9_.$}-])/Users/[A-Za-z0-9._-]+/',
-    '(^|[^A-Za-z0-9_.$}-])/home/[A-Za-z0-9._-]+/',
+    // A drive root: a letter that does not end a word, a colon, then one slash that does not start
+    // `//` (a URL scheme), or a run of backslashes that is not a lone string escape such as the
+    // newline escape, and then a path character.
+    '(?<![A-Za-z0-9' + BSL + BSL + '])[A-Za-z]:(?:/(?!/)|' + BSL + BSL + '+(?![nrtsdbwfv0](?![A-Za-z])))(?=[A-Za-z0-9_.~$<{%-])',
+    // An MSYS drive root onto the clone folder or the user folders.
+    '(?<![A-Za-z0-9_.@$}/-])/[a-z]/(?:repos|Users)' + BSL + 'b',
+    // A POSIX home folder.
+    '(?<![A-Za-z0-9_.@$}/-])/(?:Users|home)/[A-Za-z0-9._-]+',
+    // A Windows user profile tree.
+    'AppData(?:/|' + BSL + BSL + '{1,2})(?:Local|Roaming|LocalLow)',
   ].join('|'),
 );
-// The one sanctioned example of the variable's VALUE, in the shared-standards preamble the plan
-// quotes verbatim. Exact line text, so any other use of the same path still fails.
-const MACHINE_PATH_EXAMPLE = 'with forward slashes (for example `' + 'C:' + '/repos`)';
+const MACHINE_PATH_ALL = new RegExp(MACHINE_PATH.source, 'g');
+const MACHINE_PATH_OK = 'machine-path-ok:';
+// What a generic match looks like from where it starts: a drive into Program Files, the Windows
+// folder or three dots, or a home folder written as three dots.
+const GENERIC_PATH = new RegExp(
+  '^(?:[A-Za-z]:[' + BSL + BSL + '/]+(?:' + BSL + '.' + BSL + '.' + BSL + '.|Program Files|Windows[' + BSL + BSL + '/])' +
+    '|/(?:Users|home)/' + BSL + '.' + BSL + '.' + BSL + '.)',
+);
+
+/** The machine-specific paths on one line: every match that is not a generic shape, unless marked. */
+function machinePathsIn(line) {
+  if (line.includes(MACHINE_PATH_OK)) return [];
+  const out = [];
+  for (const m of line.matchAll(MACHINE_PATH_ALL)) {
+    if (!GENERIC_PATH.test(line.slice(m.index))) out.push(m[0]);
+  }
+  return out;
+}
 
 function ruleMachinePaths(files) {
   for (const abs of files) {
@@ -890,14 +916,14 @@ function ruleMachinePaths(files) {
     if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
     const lines = readFileSync(abs, 'utf8').split('\n');
     lines.forEach((line, i) => {
-      if (line.includes(MACHINE_PATH_EXAMPLE)) return;
-      const m = MACHINE_PATH.exec(line);
-      if (!m) return;
+      const hits = machinePathsIn(line);
+      if (hits.length === 0) return;
       fail(
         'machine-path',
         `${rel}:${i + 1}`,
-        `a literal machine path ("${m[0].trim()}") only exists on one machine. ` +
-          'Write `${VIVREAL_REPOS}/<repo>/...` in prose, or `"$VIVREAL_REPOS/<repo>/..."` in shell.',
+        `a literal machine path ("${hits[0].trim()}") only exists on one machine. ` +
+          'Write `${VIVREAL_REPOS}/<repo>/...` in prose, or `"$VIVREAL_REPOS/<repo>/..."` in shell; ' +
+          'a shape every machine has carries `machine-path-ok: <reason>` on the line.',
       );
     });
   }
@@ -1269,7 +1295,7 @@ function rulePublicLeaks(files) {
     if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
     const lines = readFileSync(abs, 'utf8').split('\n');
     const figures = FIGURE_SCOPE.test(rel);
-    // Rule 11 reports a C: clone root or a user folder outside docs/; a line it owns is left to it.
+    // Rule 11 reports any machine path outside docs/; a line it owns is left to it.
     const docs = rel.startsWith('docs/');
     lines.forEach((line, i) => {
       for (const p of LEAK_PATTERNS) {
@@ -1277,8 +1303,9 @@ function rulePublicLeaks(files) {
         if (m && !(p.allow && p.allow(line, m))) fail('public-leak', `${rel}:${i + 1}`, p.msg);
       }
       for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
+      // Rule 11 owns a machine path outside docs/, and a line marked generic is generic here too.
       const ruleElevenOwns = !docs && MACHINE_PATH.test(line);
-      if (!ruleElevenOwns && !line.includes(MACHINE_PATH_EXAMPLE) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
+      if (!ruleElevenOwns && !line.includes(MACHINE_PATH_OK) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
         fail(
           'public-leak',
           `${rel}:${i + 1}`,
@@ -1634,6 +1661,37 @@ function selfTest() {
         '---\nname: escaped-user\ndescription: fixture\n---\n\n`"C:' + BSL + BSL + 'Users' + BSL + BSL + 'someone"`\n',
     },
     {
+      // The shared pattern (universal-setup research 4.1): an MSYS drive root onto the user folders.
+      rule: 'machine-path',
+      label: 'machine-path: an MSYS user folder',
+      path: join(tmp, 'skills', 'msys-user', 'SKILL.md'),
+      body: '---\nname: msys-user\ndescription: fixture\n---\n\nIt lives at /d' + '/Us' + 'ers/someone/kit.\n',
+    },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: a POSIX home folder',
+      path: join(tmp, 'skills', 'posix-home', 'SKILL.md'),
+      body: '---\nname: posix-home\ndescription: fixture\n---\n\nIt lives at /home/' + 'someone/kit.\n',
+    },
+    {
+      rule: 'machine-path',
+      label: 'machine-path: a Windows user profile tree',
+      path: join(tmp, 'skills', 'profile-tree', 'SKILL.md'),
+      body: '---\nname: profile-tree\ndescription: fixture\n---\n\n`~/' + 'AppData' + BSL + BSL + 'Roaming' + BSL + BSL + 'kit`\n',
+    },
+    {
+      // The ALLOW side: shapes every machine has, and a line marked generic, stay green.
+      rule: 'machine-path',
+      kind: 'clean',
+      label: 'machine-path: Program Files, an elided path, a URL, a newline escape and a marked fixture',
+      path: join(tmp, 'skills', 'generic-paths', 'SKILL.md'),
+      body:
+        '---\nname: generic-paths\ndescription: fixture\n---\n\n' +
+        'Git Bash rewrites it to C' + ':/Program Files/Git/x. Write C' + ':/... or /home/.../kit in prose.\n' +
+        'See https://x.example/a and `const s = \'a:' + BSL + 'n\';`.\n' +
+        'const sample = \'D' + ':/sample\'; // machine-path-ok: a test fixture root\n',
+    },
+    {
       // Definition review blocker: the documented skill limit is 1,024 characters.
       rule: 'description-length',
       label: 'description-length: a skill over 1,024',
@@ -1730,18 +1788,16 @@ function selfTest() {
       body: '# paths\n\nRead C:' + '/repos/x/CLAUDE.md first.\n',
     },
     {
-      // Any drive, not only the C: clone root rule 11 knows.
-      rule: 'public-leak',
-      match: 'a drive-letter or home-folder path',
-      label: 'public-leak: a drive-letter path',
+      // Any drive, not only C: (rule 11 owns every drive letter outside docs/ since the shared pattern).
+      rule: 'machine-path',
+      label: 'machine-path: a drive-letter path on another drive',
       path: join(tmp, 'skills', 'drive-path', 'SKILL.md'),
       body: '---\nname: drive-path\ndescription: fixture\n---\n\nOpen D' + ':/work/kit.txt first.\n',
     },
     {
-      // How a path is written inside a .js, .cjs or .json string.
-      rule: 'public-leak',
-      match: 'a drive-letter or home-folder path',
-      label: 'public-leak: an escaped drive path',
+      // How a path is written inside a .js, .cjs or .json string, on another drive.
+      rule: 'machine-path',
+      label: 'machine-path: an escaped path on another drive',
       path: join(tmp, 'skills', 'escaped-drive', 'SKILL.md'),
       body: '---\nname: escaped-drive\ndescription: fixture\n---\n\n`const p = \'E' + ':' + BSL + BSL + 'data' + BSL + BSL + 'kit\';`\n',
     },
