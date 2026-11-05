@@ -99,24 +99,26 @@ before starting the next.
 
 **The portal also needs an owner's QA-walk sign-off before MERGE.** Confirm the dispatch quotes it for the PR head you are merging. Portal branches are pushed and open as PRs before the walk (owners, 2026-10-28); what waits for the walk is the merge, the backport and the promote.
 
-**Before GO, a backport or a merge to `main` is a scheduled deploy.** All five train repos run
-`promote.yml` on staggered Monday crons (read `on.schedule` in each repo's `promote.yml`; never a
-copied time), so a backport landed on a release line ships at the next cron whether or not anyone
-said GO. The Saturday `release-cut.yml` cron cuts a new line from `main`, so a merge to `main`
-before GO also ships the following Monday. Hold both until GO, or confirm the train's promote is
-disabled first: `gh api repos/<owner>/<repo>/actions/workflows/promote.yml -q .state` reads
-`disabled_manually` (`gh workflow view` has no `--json state` on the installed gh). The v6 and v7
-releases disabled all five at their first step, re-enabled each repo's promote IMMEDIATELY BEFORE that
-repo's own dispatch (a disabled workflow cannot be dispatched), and on any STOP disabled it again
-first, before diagnosing anything.
+**The weekly release crons are retired (owners, 2026-11-04).** Releases are owner-approved batches, merged, backported and promoted by hand. From the 2026-11 batch on, the
+five train repos' `promote.yml` and `release-cut.yml` carry no `schedule:` trigger, only
+`workflow_dispatch` (TD-2), and both workflows rest `disabled_manually` between releases. Never
+re-add a `schedule:`, and never leave either workflow enabled. Enable one only for the single
+dispatch a runbook step makes, in this order: read the lock (below), enable, dispatch, wait for that
+run to finish, then disable it again in the same step, before the next step starts. On any STOP,
+disable it first, before diagnosing anything. A disabled workflow cannot be dispatched, which is
+the only reason the enable exists. Read the state with
+`gh api repos/<owner>/<repo>/actions/workflows/<file> -q .state` (`gh workflow view` has no
+`--json state` on the installed gh).
 
-**Scheduled workflows fire late, so a missing run at noon is not evidence it will not run.** The
-v7 Monday promote crons (2026-10-19) fired about five hours late and moved three `stable` lines
-(version stamps only, read at the release's first step). Disable both cron sets (`promote.yml` and
-`release-cut.yml`) at the first step of a release window and re-enable them only at the runbook's
-named step, rather than reasoning about whether a cron already fired.
+**Until a repo's TD-2 change is on its `main`, its old cron is live whenever the workflow is
+enabled.** Before every enable, read `on.schedule` in that repo's `promote.yml` and `release-cut.yml`
+at `origin/main`. A schedule still there means a backport landed on a release line, or a merge to
+`main`, can ship at the next cron while the workflow is on. Scheduled runs also fire late (the v7
+Monday promote crons of 2026-10-19 fired about five hours late and moved three `stable` lines), so a
+missing run is not evidence it will not run: keep the enabled window to the one dispatch, rather
+than reasoning about whether a cron already fired.
 
-**The workflow state is the lock between two owners' machines.** Before disabling, enabling or dispatching `promote.yml`, `release-cut.yml` or `backport.yml`, read its `state` (`gh api repos/<owner>/<repo>/actions/workflows/<file> -q .state`) and its latest run's status and actor (`gh api "repos/<owner>/<repo>/actions/workflows/<file>/runs?per_page=1" -q '.workflow_runs[0] | [.status,.actor.login,.created_at]'`). If it is `disabled_manually` and this dispatch did not disable it, or a run started by someone else is `queued` or `in_progress`, STOP: another owner's release is open on this repo.
+**The workflow state is the lock between two owners' machines.** Before disabling, enabling or dispatching `promote.yml`, `release-cut.yml` or `backport.yml`, read its `state` (`gh api repos/<owner>/<repo>/actions/workflows/<file> -q .state`) and its latest run's status and actor (`gh api "repos/<owner>/<repo>/actions/workflows/<file>/runs?per_page=1" -q '.workflow_runs[0] | [.status,.actor.login,.created_at]'`). `promote.yml` and `release-cut.yml` rest `disabled_manually`, so for them the signal is the opposite of `backport.yml`'s, which rests enabled. STOP if `promote.yml` or `release-cut.yml` is `active` and this dispatch did not enable it, if `backport.yml` is `disabled_manually` and this dispatch did not disable it, or if a run started by someone else is `queued` or `in_progress`: another owner's release is open on this repo, or a workflow was left on. Say which, and let an owner decide.
 
 ## The release model is not one shape fleet-wide. Derive it, never guess it
 
@@ -141,7 +143,7 @@ follows it rather than on the version and silently returns the wrong line.
 ## How each repo ships (read the repo's `docs/RELEASE.md` first when it has one; re-derive, never trust this table over the repo)
 | Repo | Default | Deploy line | Ships by | Prove with |
 |---|---|---|---|---|
-| Vivreal_Portal_Mobile | main | `release/vX.Y` then `stable` | `release-cut.yml` (Saturday cron) cuts; `promote.yml` (Monday cron or dispatch with `target`) moves `stable` | Amplify job state; `curl https://vivreal.io/app/release.json` several times |
+| Vivreal_Portal_Mobile | main | `release/vX.Y` then `stable` | `release-cut.yml` (dispatch) cuts; `promote.yml` (dispatch with `target`) moves `stable`; no cron after TD-2 | Amplify job state; `curl https://vivreal.io/app/release.json` several times |
 | VR_Secure_API, VR_CMS_API, VR_Main_API, VR_Client_API | main | same train | same workflows | CloudFormation `LastUpdatedTime` and `CodeSha256` moved and terminal |
 | Vivreal_Templates | main | `stable` | `promote-stable.yml` (`scope`, `dry_run`); demo tier via `demo-catchup.yml` | per-app Amplify RELEASE job at the promoted commit |
 | vivreal-site-renderer | master | npm | publish workflow | run log `+ pkg@version` and `npm view` |
@@ -150,7 +152,19 @@ follows it rather than on the version and silently returns the wrong line.
 | VR-MCP-Server | main | main | `deploy.yaml` | stack state |
 | vivreal-hq admin-app | main | `deploy/admin-app` | fast-forward | Amplify job |
 
-**Backport (train repos), commits already merged to `main`:** `gh workflow run backport.yml -R HillBombCreations/<repo> -f commits="<merge sha> [<sha> ...]" -f target=release/vX.Y -f dry_run=true`; read the run's plan; then the same call with `dry_run=false`. Oldest first; the workflow adds `-m 1` for a merge commit itself. **It pushes server-side and runs NO husky gate**, so it is only for commits that passed review on `main`. Proof: `git fetch origin && git log origin/release/vX.Y --grep "cherry picked from commit <sha>"` finds it. A hand-written fix or a conflicting cherry-pick goes through `docs/RELEASE.md` section 3 Option B (local push to the line, through the full husky gate, never `--no-verify`). Ship now: dispatch `promote.yml` with `target=release/vX.Y`. Ride Monday: do nothing more. Never `release-cut.yml` for a backport.
+**Backport (train repos), commits already merged to `main`:** `gh workflow run backport.yml -R HillBombCreations/<repo> -f commits="<merge sha> [<sha> ...]" -f target=release/vX.Y -f dry_run=true`; read the run's plan; then the same call with `dry_run=false`. Oldest first; the workflow adds `-m 1` for a merge commit itself. **It pushes server-side and runs NO husky gate**, so it is only for commits that passed review on `main`. Proof: `git fetch origin && git log origin/release/vX.Y --grep "cherry picked from commit <sha>"` finds it. A hand-written fix or a conflicting cherry-pick goes through `docs/RELEASE.md` section 3 Option B (local push to the line, through the full husky gate, never `--no-verify`). Ship: dispatch `promote.yml` with `target=release/vX.Y`, enabled for that one dispatch as above. Nothing ships a backport on its own: there is no Monday cron to ride. Never `release-cut.yml` for a backport.
+
+**A fleet-wide Amplify env or setting change runs through hq's fleet-rollout, never by hand.** On
+2026-10-21 a redeploy of 21 customer sites replaced each app's env map and dropped
+`SITE_RENDER_MODE` from every one, while every check that ran ("the build succeeded, the page
+answers 200") passed. Any change to the Amplify env, a buildSpec or a branch setting on more than
+one site goes through `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/fleet-rollout/cli.js"`:
+a `--dry-run` first, then the change on one QA canary site, then small batches, with every app
+snapshotted (key names, never values) and diffed before and after each step, stopping on the first
+lost setting. A rollout stop is a STOP for this step. The canary, the flags, the stop rules and
+the documented exception are in the fleet-rollout section of
+`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/CLAUDE.md`; read them there, never from a copied
+command.
 
 ## Working protocol
 
@@ -371,9 +385,12 @@ strategy.
 - DON'T treat a flag as a dry run until the script's argument parser shows it exists.
 - DON'T re-run `promote-stable.yml` to recover a Templates fan-out. Use `demo-catchup.yml` with
   `tier: live`.
-- DON'T merge, backport, or promote anything before an owner's GO for the named batch, and
-  DON'T backport onto a train line before GO unless that repo's `promote.yml` is disabled: the
-  Monday cron turns the backport into a deploy.
+- DON'T merge, backport, or promote anything before an owner's GO for the named batch.
+- DON'T re-add a `schedule:` to a train repo's `promote.yml` or `release-cut.yml`, or leave either
+  enabled after the one dispatch you enabled it for. The weekly crons are retired (owners,
+  2026-11-04).
+- DON'T change an Amplify env, buildSpec or branch setting on more than one site by hand. Run it
+  through hq's fleet-rollout, canary first.
 - DON'T merge a head that differs from the last reviewed head. Ask for a delta review. Merge
   with `--merge --match-head-commit <reviewed sha>`, never a squash.
 - DON'T merge a renderer PR without the recorded local Studio gate at that head.
@@ -426,8 +443,8 @@ strategy.
 - State plainly what is live, what is merged-but-not-deployed, and what you deliberately left for
   later, with the reason.
 - A `Record:` block listing every value the runbook says to record, labelled, for the main session
-  to write into the runbook and release log, plus the workflow state of each `promote.yml` you
-  touched (disabled or re-enabled).
+  to write into the runbook and release log, plus the workflow state of each `promote.yml` or
+  `release-cut.yml` you touched, read after you disabled it again.
 - One-line summary: "`<repo>` `<change>`: merged `<sha>`, backported onto `<line>`, promoted,
   deployed and proven live (`<what was asserted>`)." or the honest partial equivalent, never
   rounded up to "done."
