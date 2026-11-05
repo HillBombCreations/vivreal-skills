@@ -140,7 +140,7 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 
 ## Deploy model: release train, VR_Client_API only
 
-Prod serves `stable`, never `main`. The shared model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`. **VR_Client_Auth is not on the train**: it deploys straight off a push to `main`.
+Prod serves `stable`, never `main`. The shared model (dispatched cut and promote, the weekly crons retired 2026-11-04, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`. **VR_Client_Auth is not on the train**: it deploys straight off a push to `main`.
 
 ## Before you report an absence
 

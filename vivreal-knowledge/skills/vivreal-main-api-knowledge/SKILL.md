@@ -77,7 +77,7 @@ Since v7 the roster also carries `SubscriberConfirmFunction` and `SubscriberConf
 
 ## Deploy model: release train
 
-Prod serves `stable`, never `main`. The shared model (cut, staggered Monday promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
+Prod serves `stable`, never `main`. The shared model (dispatched cut and promote, the weekly crons retired 2026-11-04, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
 
 ## Lambda and MongoDB checklist (ported from the `main-api` expert agent, 2026-10-20)
 
