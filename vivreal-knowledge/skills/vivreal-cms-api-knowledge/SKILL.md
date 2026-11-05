@@ -50,7 +50,7 @@ A route missing from the list never reaches Express: API Gateway answers **403**
 
 ## Deploy model: release train
 
-Prod serves `stable`, never `main`; CMS promotes FIRST in the Monday stagger. The model (cut, promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
+Prod serves `stable`, never `main`; promote order: CMS first, Secure second, portal last, each a dispatched promote (nothing ships without a dispatch). The model (cut, promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
 
 ## Inbound webhook receivers (Square, Meta, Stripe, Shopify)
 

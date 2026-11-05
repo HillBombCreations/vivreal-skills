@@ -151,8 +151,9 @@ production; a malformed probe has reopened a resolved issue.
   head SHA or creation time, never the first row of `gh run list`.
 - **A release-line-only commit regresses on the next promote** unless it is also on `main`. Compare
   the lines by content before every promote.
-- **The Monday promote crons re-ship whatever is on the line.** A line that failed to deploy fails
-  again on Monday until it is fixed.
+- **The next dispatched promote re-ships whatever is on the line.** Nothing ships without a
+  dispatch (the Monday crons were retired 2026-11-04), so a line that failed to deploy fails again
+  at the next promote until it is fixed.
 - **A service string limit fails only at deploy time.** CloudWatch caps `AlarmDescription` at 1024
   characters, `AlarmName` at 255 and a composite `AlarmRule` at 10240. Tests, lint, review and the
   change-set preview all pass an over-long value; the real update fails on that resource and rolls

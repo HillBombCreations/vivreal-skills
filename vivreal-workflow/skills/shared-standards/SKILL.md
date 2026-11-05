@@ -426,26 +426,29 @@ Amplify build canary with no traffic; the four backends fire zero workflow runs 
 push. Still deploying on push to `main` (unchanged): VR_Outreach_API, VR_Client_Auth, and
 everything else.
 
-The train is the same shape in all five repos:
-- Friday 5pm PST cron (`0 1 * * 6` UTC), `release-cut.yml` cuts `release/vX.Y` from `main`,
-  bumps `package.json` on the line only, and tags `vX.Y.0`. Portal's cut also writes a served
-  `public/release.json` marker.
-- Monday promote crons are STAGGERED, backends ahead of portal. Read the times from `on.schedule`
-  in each repo's `promote.yml`; a copied time here was already wrong once. While a batch waits for
-  an owner's GO, a backport onto a line ships at the next cron, so disable `promote.yml` for the
-  train or hold the backport. `promote.yml` force-with-lease moves
-  `stable` to the newest line's tip, a tagged cut ships as `vX.Y.0`; an untagged tip (backports
-  landed after the cut) auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19;
-  the cron refuses only when the line's last tag is yanked).
+The train is the same shape in all five repos. **Nothing ships without a dispatch.** The weekly
+crons (a Friday cut, staggered Monday promotes) are retired (owners, 2026-11-04): releases are
+owner-approved batches, and `promote.yml` and `release-cut.yml` rest disabled, enabled only for the
+one dispatch a release step makes and disabled again in the same step (`vivreal-workflow:release-engineer`
+owns that protocol and the lock). The 2026-11 batch deletes their `schedule:` lines (TD-2); until a
+repo's change is on its `main`, read `on.schedule` there, because an old cron is live whenever the
+workflow is enabled.
+- `release-cut.yml`, dispatched, cuts `release/vX.Y` from `main`, bumps `package.json` on the line
+  only, and tags `vX.Y.0`. Portal's cut also writes a served `public/release.json` marker.
+- `promote.yml`, dispatched, force-with-lease moves `stable` to the newest line's tip (or the
+  `target` line), a tagged cut ships as `vX.Y.0`; an untagged tip (backports landed after the cut)
+  auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19; it refuses only when
+  the line's last tag is yanked). The promote order is a cross-repo contract: backends ahead of
+  portal.
 - Incremental release / backport = PATCH, never a new minor (2026-08-19, all five repos).
   `backport.yml` cherry-picks main-merged commits onto a line (`-m 1` for PR merges) and pushes
-  - no tag, no bump, no deploy. Ship now: dispatch `promote.yml` with `target=release/vX.Y`
-  (tags `vX.Y.Z+1`). Ride Monday: do nothing, the cron mints the patch. Hand-written fixes
+  - no tag, no bump, no deploy. A backport ships only when `promote.yml` is dispatched with
+  `target=release/vX.Y` (tags `vX.Y.Z+1`); nothing picks it up on its own. Hand-written fixes
   still go local: commit on the line, push (husky gate runs), then dispatch the promote.
   **NEVER dispatch `release-cut.yml` to ship a backport**, a cut forks a NEW minor line off
   ALL of `main` (the 2026-08-19 v2.3.1→v2.4.0 mistake).
 - `rollback.yml` (dispatch-only) moves `stable` back to a prior `v*` tag and yanks it
-  (`yanked-vX.Y.Z` tags block cron re-deploys of that version).
+  (`yanked-vX.Y.Z` tags stop a later promote re-deploying that version).
 - Deployed-version check: portal `curl https://vivreal.io/app/release.json`; backends
   `git ls-remote origin refs/heads/stable` + the tag + the deploy run log.
 - Each repo's `docs/RELEASE.md` is the full runbook, read it before touching that repo's

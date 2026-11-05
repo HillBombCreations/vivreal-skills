@@ -68,8 +68,9 @@ mechanism actually fires the event you care about before assuming a shortcut app
 **The "ship a direct gtag conversion call in code" path exists but is usually not actually
 faster.** You could add a second `gtag('event', 'conversion', {send_to: 'AW-XXX/LABEL'})` call
 right next to `trackSignUp()`, live the moment it ships, no GA4 wait. But Vivreal's portal deploys
-on a **weekly release train** (Friday cut, Monday promote; merging to `main` deploys nothing by
-itself, see the portal's `docs/RELEASE.md`), so for a one-off ad test this is slower than just
+on a **release train** (owner-approved batches with a dispatched cut and promote, the weekly
+crons retired 2026-11-04; merging to `main` deploys nothing by itself, see the portal's
+`docs/RELEASE.md`), so for a one-off ad test this is slower than just
 waiting for the GA4 import, not faster. Reach for it only if the campaign is big enough, or
 permanent enough, to be worth riding the normal release cycle rather than waiting a few hours.
 

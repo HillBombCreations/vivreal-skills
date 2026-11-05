@@ -76,7 +76,7 @@ four-file content delta, and a cherry-pick attempted against the wrong instrumen
 times because a commit whose CONTENT was already present on the target line picked empty.
 
 **The release model is not one shape fleet-wide, and the newest release line is derived, never
-typed.** Some backends deploy from `stable` via a Friday cut, a backport, and a Monday promote;
+typed.** Some backends deploy from `stable` via a dispatched cut, a backport, and a dispatched promote (the Friday and Monday crons were retired 2026-11-04);
 others deploy on merge to `main`; at least one deploys from `master`. Before bumping a
 release-line repository, derive the line that actually deploys:
 
