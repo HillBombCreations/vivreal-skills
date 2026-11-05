@@ -27,7 +27,7 @@ A cross-tenant IDOR class was fixed: tenant-scoped `{_id, groupID}` filters at t
 
 ## Deploy model: release train
 
-Prod serves `stable`, never `main`; Secure promotes second in the Monday stagger, after CMS. The model (cut, promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
+Prod serves `stable`, never `main`; promote order: CMS first, Secure second, portal last, each a dispatched promote (nothing ships without a dispatch). The model (cut, promote, backport as a patch, rollback needing a manual `lambda_api.yml` run) is in `vivreal-infra:vivreal-lambda` `references/deploy.md`; this repo's runbook is `docs/RELEASE.md`.
 
 ## Gates on destructive and billing routes (September 2026)
 
