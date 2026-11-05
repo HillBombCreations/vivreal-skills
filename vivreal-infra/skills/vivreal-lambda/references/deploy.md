@@ -15,23 +15,25 @@ The packaging/build/deploy facet of `vivreal-lambda`. (Concurrency/scaling lives
 
 **None of the `dogfood` triggers above are removed yet.** That's a separate, still-pending PR per repo (spec `atlas-connection-fixes-2026-09-15` section 13.4, covering CMS, Client API, Secure, Main, Outreach, Client Auth and both MCP server repos). Until each lands, don't push to `dogfood` in any of these repos: for CMS/Secure/Client API it tries to rebuild a deleted stack, and for Client Auth it redeploys production from whatever the stale `dogfood` branch (`c81686c`, 2026-03-12) contains.
 
-**CI/CD = GitHub Actions → CloudFormation.** Workflow is typically `.github/workflows/lambda_api.yml`. VR_Client_Auth and Vivreal_EventHandler still auto-deploy prod on push to `main`, no manual deploy needed, push the branch. **VR_CMS_API, VR_Secure_API, VR_Main_API, and VR_Client_API do NOT**, since 2026-08-15 those four ship via a release train: `lambda_api.yml`'s prod trigger is push to the `stable` branch, which only moves on a staggered Monday `promote.yml` cron or a manual promote dispatch (`target=release/vX.Y`), and since 2026-08-19 the cron auto-mints a patch tag when backports landed on the line, reaching a line via each repo's `backport.yml` (PATCH semantics; never a new cut). A push to `main` in those repos fires zero prod workflow runs; the stack names above still apply, just on the new trigger. Full runbook: each repo's `docs/RELEASE.md`.
+**CI/CD = GitHub Actions → CloudFormation.** Workflow is typically `.github/workflows/lambda_api.yml`. VR_Client_Auth and Vivreal_EventHandler still auto-deploy prod on push to `main`, no manual deploy needed, push the branch. **VR_CMS_API, VR_Secure_API, VR_Main_API, and VR_Client_API do NOT**, since 2026-08-15 those four ship via a release train: `lambda_api.yml`'s prod trigger is push to the `stable` branch, which moves only on a dispatched `promote.yml` (`target=release/vX.Y`; the weekly crons are retired, owners 2026-11-04), and since 2026-08-19 the promote auto-mints a patch tag when backports landed on the line, reaching a line via each repo's `backport.yml` (PATCH semantics; never a new cut). A push to `main` in those repos fires zero prod workflow runs; the stack names above still apply, just on the new trigger. Full runbook: each repo's `docs/RELEASE.md`.
 
 ## The release train, the one copy every expert and digest points at
 
 The four backends above and `Vivreal_Portal_Mobile` share one model. Experts and knowledge digests carry a one-line
 pointer here instead of their own copy (ten copies drifted apart before this section existed).
 
-- **Prod serves `stable`.** `release-cut.yml` cuts `release/vX.Y` from `main` and tags it (Saturday 01:00 UTC, which is
-  Friday evening Pacific). `promote.yml` force-with-lease moves `stable` to the newest tag on a Monday cron. The crons
-  are staggered and the stagger is a cross-repo contract (CMS first, then Secure, Main, Client API, portal last): read
-  the `cron:` line in each repo's `promote.yml` rather than a copied time.
+- **Prod serves `stable`, and nothing ships without a dispatch.** A dispatched `release-cut.yml` cuts `release/vX.Y`
+  from `main` and tags it; a dispatched `promote.yml` force-with-lease moves `stable` to the newest tag (or the `target`
+  line). Both used to run on weekly crons (a Saturday 01:00 UTC cut, staggered Monday promotes); the owners retired
+  them on 2026-11-04, and the 2026-11 batch deletes the `schedule:` lines (TD-2). The promote order is still a
+  cross-repo contract (CMS first, then Secure, Main, Client API, portal last).
 - **A backport is a PATCH, never a new minor.** `backport.yml` cherry-picks a main-merged commit onto the line (no tag,
-  no bump, no deploy). Ship it now by dispatching `promote.yml` with `target=release/vX.Y`, or the Monday cron mints the
-  patch and ships it (it refuses only when the line's last tag is yanked). Never dispatch `release-cut.yml` for a
-  backport: a cut forks a new minor off ALL of `main`.
-- **Before an owner's GO, a backport or a merge to `main` is a scheduled deploy**, because the Monday cron ships
-  whatever is on the line (the batch-release rule lives in `vivreal-workflow:release-engineer`).
+  no bump, no deploy). It ships only when `promote.yml` is dispatched with `target=release/vX.Y`, which mints the patch
+  (it refuses only when the line's last tag is yanked); nothing picks it up on its own. Never dispatch `release-cut.yml`
+  for a backport: a cut forks a new minor off ALL of `main`.
+- **Releases are owner-approved batches.** The workflows rest disabled and are enabled only for the one dispatch, then
+  disabled again; until a repo's TD-2 change is on its `main`, an old cron is live whenever the workflow is enabled.
+  The batch rule, the enable protocol and the lock live in `vivreal-workflow:release-engineer`.
 - **Rollback** (`rollback.yml`, dispatch only) moves `stable` back and yanks the tag, but a force-push that REWINDS
   `stable` fires no push-triggered run, so also run `gh workflow run lambda_api.yml --ref stable` or the old build keeps
   serving. The portal has its own `rollback.yml`; read it before using it.

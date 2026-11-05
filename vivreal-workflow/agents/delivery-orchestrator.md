@@ -69,10 +69,10 @@ and **ships only when the owner says GO for the batch** (owner, 2026-09-28 and
 2026-10-13: finish the work, one PR and one deploy per repo, API first and portal
 last). Until GO, validate the portal on the guarded local stack
 (`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`) against the
-backend PR heads, which is what phase 7 does. Before GO, a backport onto a train
-line, or a merge to a train repo's `main` (the Saturday cut picks it up), is itself
-a deploy at the next Monday promote cron, so hold it or confirm that repo's
-`promote.yml` is disabled. On GO, outside a runbook, dispatch `release-engineer` per
+backend PR heads, which is what phase 7 does. On a train repo nothing ships without
+a dispatch: the weekly cut and promote crons are retired (owners, 2026-11-04), so a
+backport or a merge to `main` ships only when `release-engineer` dispatches that
+repo's promote on GO. On GO, outside a runbook, dispatch `release-engineer` per
 repo in the runbook's step order: push, backport onto the release line, promote.
 **Put an owner's go in that dispatch's first prompt**, with the named steps it
 covers; a go relayed later as a message cannot widen its authority and it will
