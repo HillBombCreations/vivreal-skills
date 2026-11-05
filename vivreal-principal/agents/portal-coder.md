@@ -28,7 +28,7 @@ failures and false passes; the modes below name who owns the gate. Every other r
 This agent runs on Justin's or Hunter's machine. Nothing below may depend on whose.
 1. `VIVREAL_REPOS` is set (shared-standards, Path resolution). If not, stop and say so.
 2. Every Vivreal repo is cloned under it, and each portal sibling (VR_Secure_API, Vivreal_Templates, VR_CMS_API, vivreal-hq, VR_Client_API, Vivreal_Site_Migrator) has its default branch contained in HEAD. The hooks throw when one is missing or parked; that throw is the gate working. Fix the sibling (fetch, fast-forward or switch to the default branch). Never set `VIVREAL_ALLOW_MISSING_SIBLINGS`, `VIVREAL_ALLOW_PARKED_SIBLINGS` or `VIVREAL_MIGRATOR_PUBLISH_OUT` (owners, 2026-10-28).
-3. `NODE_AUTH_TOKEN` is exported; the tracked `.npmrc` reads it for GitHub Packages. A 401 from `npm ci` means it is missing or lacks `read:packages`. Check presence with `node -e "process.exit(process.env.NODE_AUTH_TOKEN?0:1)"`; never print it.
+3. Installs get the shared read-only packages token through the vivreal-workflow npm wrapper; nothing to export. When in doubt, run the onboarding doctor (prerequisite 5), which checks it without printing it.
 4. Both hooks start with `node scripts/assert-no-renderer-overlay.mjs`. If it fails, a renderer dev overlay is active; see `vivreal-knowledge:vivreal-renderer-knowledge`, "dev overlay", and remove the overlay, never the check.
 5. When in doubt, run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo portal`; it names what is missing and prints no value.
 
@@ -303,7 +303,7 @@ This applies in every mode.
 "ready for integration" and stop there; opening a PR or running the full gate in this mode
 defeats the reason the mode exists.
 
-**When the hooked push fails (SOLO, INTEGRATE).** Read what failed. A prerequisite failure (a sibling, `NODE_AUTH_TOKEN`, `.env.local`, the overlay check, ports 3100 or 4600 held) is fixed at the prerequisite and the push rerun. For test failures, run each failing file once at `origin/main` in a detached worktree (`git worktree add --detach "$VIVREAL_REPOS/_wt/red-<slug>" origin/main`, `npm ci`, run the file by name, remove the worktree). If EVERY failing file is also red there, push with `--no-verify` and list each in the PR body as `red on origin/main@<sha>: <file>` (owners, 2026-10-28, D10). If any failing file is green at `origin/main`, your change broke it: fix it; never push past it.
+**When the hooked push fails (SOLO, INTEGRATE).** Read what failed. A prerequisite failure (a sibling, the packages token (doctor), `.env.local`, the overlay check, ports 3100 or 4600 held) is fixed at the prerequisite and the push rerun. For test failures, run each failing file once at `origin/main` in a detached worktree (`git worktree add --detach "$VIVREAL_REPOS/_wt/red-<slug>" origin/main`, `npm ci`, run the file by name, remove the worktree). If EVERY failing file is also red there, push with `--no-verify` and list each in the PR body as `red on origin/main@<sha>: <file>` (owners, 2026-10-28, D10). If any failing file is green at `origin/main`, your change broke it: fix it; never push past it.
 
 **Exception, a command owns the git mechanics:** inside `/implement`, `/coordinator`, or
 `/orchestrate`, the command commits and pushes itself, the same exception `coder` carries.

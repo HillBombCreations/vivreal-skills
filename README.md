@@ -139,7 +139,7 @@ Idle skills cost nothing, only the matched skill's body is pulled into context. 
 
 ## Installation
 
-**Setting up a new co-owner machine? Read [SETUP.md](SETUP.md) first**: tools, `VIVREAL_REPOS`, `NODE_AUTH_TOKEN`, clone, secrets, the plugin list and the doctor check.
+**Setting up a new co-owner machine? Read [SETUP.md](SETUP.md) first**: tools, `VIVREAL_REPOS`, the packages token (automatic), clone, secrets, the plugin list and the doctor check.
 
 > These steps change global machine state, so run them yourself.
 
