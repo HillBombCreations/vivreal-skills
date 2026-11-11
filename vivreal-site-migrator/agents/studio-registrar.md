@@ -150,6 +150,8 @@ while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
   `tsc --noEmit` on the touched areas. Never the full suite, the pre-push hook or the smoke.
 - Before any test run, check for a stale test or dev-server process on 3100 or 4600 and do not
   start a second one.
+- Any browser a test or script of yours launches gets `--mute-audio`: on 2026-11-11 a headless
+  portal spec played a Studio sample video's sound on the owner's machine.
 - You never commit or push. When the coordinator says go, the registration is handed to
   `vivreal-principal:portal-coder` (SOLO when it is the only portal agent, otherwise the INTEGRATE
   run), which owns the one full gate and the PR. Your edits stay uncommitted in the portal

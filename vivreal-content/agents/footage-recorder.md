@@ -328,6 +328,10 @@ close it in the pre-roll of every portal take; give a dismiss helper both labels
 - **The orders bar ("Hear about new orders")** slides over phone frames about 8 s into a load.
   Dismiss it before the frame, and trim a video's start past it (13 s was needed on 2026-11-02),
   rather than filming around it.
+- **Launch muted unless the shot needs sound on purpose.** `recordVideo` captures no audio, so
+  sound from a capture browser only reaches the owner's speakers: on 2026-11-11 a test browser
+  played a Studio sample video at him while he worked. Pass `--mute-audio` in the launch args of
+  every Chromium you start (your own Playwright scripts, `launchPwaDevice`'s `extraArgs`).
 - **Text scans are case-sensitive.** A scan for a label or a plan figure misses it when the screen
   writes it in another case. Scan for the words exactly as the product prints them, or lower-case
   both sides when the case does not matter.

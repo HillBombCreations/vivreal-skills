@@ -186,7 +186,7 @@ to catch, and it can lock the owner's account out.
 
 **Attach to the owner's own Chrome, do not launch one.** Start it yourself first:
 ```bash
-chrome.exe --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/vivreal-hq/.agent-cache/tutorial-profiles/chrome-cdp
+chrome.exe --mute-audio --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/vivreal-hq/.agent-cache/tutorial-profiles/chrome-cdp
 ```
 then run with `TUTORIAL_CDP_URL=http://127.0.0.1:9222` (`tutorial-lib.ts`
 `LaunchOptions.cdpUrl`, `src/tutorial/cdp-screencast.ts` records the tab through Chrome's own
@@ -352,6 +352,11 @@ paths; one take per tool call; the tsx `__name` fix) are in `vivreal-knowledge:v
 cd packages/content-studio
 npm run tutorial -- src/tutorial/scripts/<slug>.ts
 ```
+
+**Launch muted unless the take records sound on purpose.** Every Chromium you start, the take
+browser and the CDP Chrome above alike, gets `--mute-audio`: a take records no audio, and on
+2026-11-11 a test browser played a Studio sample video's sound on the owner's machine while he
+worked.
 
 **Give `--out` an ABSOLUTE path** (`--out=${VIVREAL_REPOS}/vivreal-hq/content/tutorials/<date>-<slug>`).
 With vivreal-hq #23, `run-tutorial.ts` resolves a relative `--out` from the vivreal-hq repo root

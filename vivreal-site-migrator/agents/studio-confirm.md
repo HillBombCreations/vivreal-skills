@@ -158,6 +158,9 @@ before/after GETs of the site document. If the site is NOT on Vivreal Content,
 STOP and flag it, that's a process violation (template sites belong there).
 
 ## Gotchas (hard-won, read before debugging)
+- **Any Chromium a script of yours launches gets `--mute-audio`.** Studio sample videos carry
+  sound, and on 2026-11-11 a headless test browser played one on the owner's machine while he
+  worked.
 - **THE SHIM REWRITES ITS OWN FIXTURE ON EVERY SAVE, a failing roundtrip may be
   a STALE FIXTURE, not a live defect.** `serve-preview` persists each captured
   PUT back into `<bundle>/siteDetails.json`, and `served-baseline.json` is

@@ -159,6 +159,10 @@ Each of these cost a session a false conclusion.
   its URL. A "This page did not load" seen once in three loads could never be explained because
   none of this was kept. "No event in Sentry" is not evidence of no error: the portal project
   filters chunk-load and hydration errors.
+- **Launch every browser muted.** Headless is not silent: on 2026-11-11 a test browser played a
+  Studio sample video's sound on the owner's machine while he worked. Give every Chromium your
+  script launches `--mute-audio` (`chromium.launch({ args: ['--mute-audio'] })`,
+  `launchPwaDevice({ ..., extraArgs: ['--mute-audio'] })`).
 - **Copy `test-results/` out after every Playwright run.** Playwright empties it at the start of
   the next run, so a second spec run erased the first run's page snapshots. Copy every
   `error-context.md` into the walk folder as soon as a run ends.

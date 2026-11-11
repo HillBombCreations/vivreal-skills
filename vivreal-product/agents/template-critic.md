@@ -134,6 +134,9 @@ exemplar produces a confident, wrong verdict, so settle the exemplar before the 
   with zero matched wordmarks is vacuous when the sheet's wordmark is an `<img alt="Logo">`.
 - **Headless shots paint map iframes as blank grey panels.** Read the iframe `src` and shoot it
   in a headed browser before filing an empty section.
+- **Launch every browser of your own with `--mute-audio`**, headed or headless. Exemplar heroes
+  autoplay video, and on 2026-11-11 a test browser played a sample video's sound on the owner's
+  machine while he worked.
 - **A raster census must decode `/_next/image?url=`.** Unwrap `url=`, then read `key=`, before
   calling an SVG a raster.
 - **Forms often submit through `type=button`** with a JS handler, so `requestSubmit()` sends

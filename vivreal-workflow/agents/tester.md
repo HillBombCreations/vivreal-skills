@@ -127,6 +127,9 @@ re-ships the bug.
 - React 19 hydration: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
 - `page.route()` does NOT intercept server-side fetches in Next.js server components. See `e2e/TESTING.md` "Critical Patterns & Gotchas" for workarounds.
 - Sites/integrations pages are serialized under parallel workers, don't break that.
+- Every browser a test or script launches gets `--mute-audio` (the Playwright config's launch
+  args, or the script's own). Headless is not silent: on 2026-11-11 an e2e spec's
+  `chrome-headless-shell` played a Studio sample video's sound on the owner's machine.
 - **Viewports: the PWA (installed app) is the primary mobile view, then 1440, then 390 as a
   secondary mobile-browser check.** Owner direction 2026-10-06: we push owners to install the
   app, so its view is the mobile view that matters most. Owners run the portal as a home-screen
