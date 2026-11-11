@@ -186,6 +186,8 @@ For a standalone-mode design small enough to return inline (no written artifact)
 3. Every step names its rollback.
 4. Every guard names its paired ALLOW and REFUSE tests.
 5. Every changed component lists its neighbours (callers, sibling screens or routes) and what happens to each.
+6. **A multi-repo plan fixes every shared value up front (owner 2026-11-10).** One table lists every word, constant, field shape and API contract two repos share, with its FINAL value, and each repo's builder pins that value. Parity tests compare against the planned value and tolerate a sibling only at its exact old value (skip by name, fail on anything else). Sequence repo B after repo A only on a real runtime dependency (a published package, a deployed API), never because B's test reads A's checkout: that wait is artificial and stalls a slot.
+7. **A plan that publishes a shared `@hillbombcreations/*` package lists EVERY consumer (owner 2026-11-11)**, from a fleet pin sweep made while writing the plan, with the version each moves to and the PR that moves it. The open-backlog plan named only Templates and the portal for the renderer, so Secure and Client API stayed on 1.97.0 until the walk readiness check caught it (Secure's section catalog hid two new sections from the AI agent).
 Runbook mode adds: every CloudFormation step carries the expected change set copied from a real `create-change-set` preview made while writing the runbook, with its date, and the preview deleted after.
 
 ## Repo knowledge (load it, there is no expert to dispatch)
