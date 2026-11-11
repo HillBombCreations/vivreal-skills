@@ -426,8 +426,9 @@ fs.writeFileSync(
 const FAKE_TOOL = [
   "const fs = require('fs');",
   "const argv = process.argv.slice(2);",
-  "if (argv[0] === 'pack') {",
+  "if (argv[0] === 'pack' && argv.includes('--pack-destination')) {",
   "  const dest = argv[argv.indexOf('--pack-destination') + 1];",
+  "  fs.mkdirSync(dest, { recursive: true });",
   "  fs.writeFileSync(require('path').join(dest, 'vr-token-probe-1.0.0.tgz'), 'fake tarball');",
   "}",
   "fs.appendFileSync(process.env.FAKE_NPM_LOG + '.all', JSON.stringify({ args: argv, hasToken: Boolean(process.env.NODE_AUTH_TOKEN) }) + '\\n');",
@@ -559,6 +560,93 @@ test('ALLOW: npm publish ONLY gets the WRITE token, from the write secret', () =
   assert.equal(r.child && r.child.which, 'write');
   assert.deepEqual(r.awsCalls.map((c) => c[c.indexOf('--secret-id') + 1]), [WRITE_SECRET_NAME]);
   neverLeaks(r);
+});
+
+// A preload that records every spawnSync the wrapper itself makes (not its children), then lets
+// the real call through, so the run still behaves exactly as in a session.
+const SPAWN_STUB = path.join(fake, 'spawn-stub.cjs');
+fs.writeFileSync(
+  SPAWN_STUB,
+  [
+    "const cp = require('child_process');",
+    "const fs = require('fs');",
+    "const real = cp.spawnSync;",
+    "cp.spawnSync = function (file, args, opts) {",
+    "  if (String(process.argv[1] || '').endsWith('npm-token.cjs')) {",
+    "    fs.appendFileSync(process.env.SPAWN_LOG, JSON.stringify({ file: require('path').basename(String(file)), windowsHide: Boolean(opts && opts.windowsHide === true) }) + '\\n');",
+    "  }",
+    "  return real.apply(this, arguments);",
+    "};",
+  ].join('\n'),
+);
+
+test('REFUSE: both wrapper spawns (aws and the npm child) are recorded with windowsHide, so no console window opens', () => {
+  const spawnLog = path.join(fake, 'spawn-hide.log');
+  const preload = SPAWN_STUB.split(path.sep).join('/');
+  const r = runWrapper(tokenRoot(NAMES), 'npm', ['ci'], { SPAWN_LOG: spawnLog, NODE_OPTIONS: `--require "${preload}"` });
+  assert.equal(r.status, 0, r.stderr);
+  const calls = fs.readFileSync(spawnLog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  // repos-root.cjs also spawns git to find the clone root; every spawn is held to the same rule.
+  const npmChild = isWin ? path.basename(process.execPath) : 'npm';
+  assert.ok(calls.some((c) => /^aws/.test(c.file)), `the aws spawn was not recorded: ${JSON.stringify(calls)}`);
+  assert.equal(calls[calls.length - 1].file, npmChild, `the npm child spawn was not recorded last: ${JSON.stringify(calls)}`);
+  for (const c of calls) assert.equal(c.windowsHide, true, `${c.file} was spawned without windowsHide`);
+  // ALLOW: hiding the window does not swallow output; the child's stdout still reaches the caller.
+  assert.match(r.stdout, /fake tool ran/);
+  assert.equal(r.child.which, 'read');
+  neverLeaks(r);
+});
+
+test('ALLOW: npm view and its aliases, and npm pack of an @hillbombcreations/ registry spec, get the READ token', () => {
+  const spec = '@hillbombcreations/' + 'site-renderer@1.98.2';
+  const cases = [
+    ['view', spec, 'dist.integrity'],
+    ['show', spec, 'version'],
+    ['v', spec],
+    ['pack', spec],
+    ['pack', spec, '--pack-destination', 'out'],
+    ['pack', '--json', '@hillbombcreations/' + 'tier-quotas@latest', '@hillbombcreations/' + 'schemas@^2.1.0'],
+  ];
+  for (const args of cases) {
+    const r = runWrapper(tokenRoot(NAMES), 'npm', args);
+    assert.equal(r.child && r.child.which, 'read', `npm ${args.join(' ')} got ${r.child && r.child.which}`);
+    assert.deepEqual(r.awsCalls.map((c) => c[c.indexOf('--secret-id') + 1]), [SECRET_NAME]);
+    neverLeaks(r);
+  }
+});
+
+test('REFUSE: npm pack of a folder, a tarball, a git or file spec, or another scope gets NO token and never calls aws', () => {
+  const cases = [
+    ['pack'],
+    ['pack', '--dry-run'],
+    ['pack', '.'],
+    ['pack', './sub'],
+    ['pack', 'probe-1.0.0.tgz'],
+    ['pack', 'lodash@4.17.21'],
+    ['pack', '@hillbombcreations/' + 'x@github:HillBombCreations/x'],
+    ['pack', '@hillbombcreations/' + 'x@file:../x'],
+    ['pack', 'github:HillBombCreations/' + 'site-renderer'],
+    ['pack', '@hillbombcreations/' + 'site-renderer@1.98.2', '.'],
+    ['pack', '--pack-destination', '@hillbombcreations/' + 'x'],
+  ];
+  for (const args of cases) {
+    const r = runWrapper(tokenRoot(NAMES), 'npm', args);
+    assert.equal(r.child && r.child.hasToken, false, `npm ${args.join(' ')} saw a token`);
+    assert.deepEqual(r.awsCalls, [], `npm ${args.join(' ')} called aws`);
+  }
+});
+
+test('REFUSE: npm publish never gets the READ token, even of an @hillbombcreations/ spec or when the read secret is all there is', () => {
+  const both = runWrapper(tokenRoot(NAMES), 'npm', ['publish']);
+  assert.notEqual(both.child && both.child.which, 'read');
+  assert.ok(!both.awsCalls.some((c) => c.includes(SECRET_NAME)), 'publish fetched the read secret');
+  const scoped = runWrapper(tokenRoot(NAMES), 'npm', ['publish', '@hillbombcreations/' + 'site-renderer@1.98.2']);
+  assert.equal(scoped.child, null, 'a publish of a registry spec ran npm');
+  assert.deepEqual(scoped.awsCalls, []);
+  const readOnly = runWrapper(tokenRoot({ packagesTokenSecret: SECRET_NAME }), 'npm', ['publish']);
+  assert.equal(readOnly.child && readOnly.child.hasToken, false, 'publish ran with the read token');
+  assert.deepEqual(readOnly.awsCalls, []);
+  for (const r of [both, scoped, readOnly]) neverLeaks(r);
 });
 
 test('REFUSE: build, test and npx next build children see NO token, and aws is never called', () => {
