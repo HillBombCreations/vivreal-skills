@@ -80,7 +80,9 @@ one (plan section 3), and never document Outreach (internal only).
 ## Step 1. Read the live article and the anchors it already has
 
 For an EXTEND or REWRITE article, fetch the live page with a plain GET of the public help URL
-(`https://help.vivreal.io/<section>/<slug>`) in a headless browser, read it SETTLED (wait until the
+(`https://help.vivreal.io/<section>/<slug>`) in a headless browser launched with `--mute-audio`
+(headless is not silent: on 2026-11-11 a test browser played a Studio sample video's sound on the
+owner's machine while he worked), read it SETTLED (wait until the
 page's text length stops growing; the server HTML is a streamed skeleton), and record every existing
 band's `id`. Read the current text from the live site, never from a repo.
 
@@ -131,7 +133,7 @@ checked.
   (`user/refresh`, or the session signs out and plan-gated blocks vanish; `get-media`, or tiles
   draw blank; `cart-quote` on a customer site), write scripts with the Write tool, and match
   `:visible` selectors.
-- **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
+- **Installed-app view first.** Open the portal with `launchPwaDevice({ url, extraArgs: ['--mute-audio'], ... })` from
   `vivreal-hq/packages/content-studio/src/pwa-device.ts` (default iPhone 390x797, insets 0/34,
   plain iOS status bar on top with no blue band; a blue band is a defect to report) and
   run `assertStandalone()` before every screen you rely on. If it cannot pass, that is a
