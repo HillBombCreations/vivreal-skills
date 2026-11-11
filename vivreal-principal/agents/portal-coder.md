@@ -154,6 +154,18 @@ and the branch is already proven.
   have answered 400.
 - Report the new head SHA and exactly which tests ran.
 
+### Batch runs, several items on one branch (owner 2026-11-10)
+
+When the dispatch hands me a batch (one coder for every portal item of a release):
+- **Gate each item with eslint, `tsc` and the tests covering the changed files only**, then
+  commit and push with `--no-verify`. The full suite runs ONCE, at the review (the reviewer or
+  one integrator run), never on every push. In the open-backlog run (portal #489) the full
+  pre-push gate on each push multiplied wall time and was refused by load timeouts.
+- **Do every remaining item in one run.** Never stop early to save context: three coders in a
+  row stopped "near the context limit" after one or two items, each costing a fresh dispatch.
+  Keep reads narrow and update the progress file after each push, so a cut-off is resumed, not
+  restarted.
+
 ## Portal-specific lessons
 
 - **Fixed ports collide across worktrees, not only within one.** `reuseExistingServer` means
@@ -207,6 +219,12 @@ and the branch is already proven.
   land on that branch goes on its own branch first; if it truly must be on that branch, rebase it
   BELOW C1 (that rewrite needs `git push --force-with-lease` on that feature branch only, and a
   delta review, since every SHA from there up changes; report both new SHAs). Never on top. Check `git log -1` names the gated commit at report time.
+- **Headless is not silent: every browser launches with `--mute-audio`.** On 2026-11-11 a
+  `chrome-headless-shell` from `public-studio-mobile-overflow.spec` played a Studio sample
+  video's sound on the owner's machine while he worked. `playwright.config.ts` carries the
+  `--mute-audio` launch arg from `batch/open-backlog-2026-11` on (not yet on `main` on
+  2026-11-11); keep it, add it to a branch cut before it, and give it to any Chromium a script
+  of mine launches.
 - **An e2e run has three clocks**, the runner's `process.env.TZ`, the dev server's
   `webServer.env.TZ`, and the browser's `use.timezoneId`. Pinning two of three is worse than
   pinning none; state the zone explicitly in any test that asserts a rendered date or time.
