@@ -84,6 +84,13 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
     `SIGINT`. Logs carry id prefixes and counts, never a business name, an email or content.
 16. **A run record** (JSON, beside the journal) names the actor, the script and lib sha256, the pin,
     each group's outcome and the final status, and is written on success, failure and `SIGINT`.
+17. **A checkout guard runs `git` with a clean environment.** A "this checkout is `origin/stable`"
+    check drops every `/^GIT_/i` key from the child env (then sets `GIT_TERMINAL_PROMPT=0`), uses
+    `status --porcelain --untracked-files=all`, and requires `rev-parse --show-prefix` to be empty, so
+    the folder is the repo root. On 2026-11-10 (review pass 31) a caller's `GIT_DIR` plus
+    `GIT_WORK_TREE` made an EMPTY folder pass and print the stable sha, `--untracked-files=no` passed
+    an untracked look-alike module, and an untracked subfolder passed because git found the parent
+    repo. Test it with those three planted.
 
 ## Site-affecting writes
 
@@ -149,4 +156,5 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
 - a positive control on a different query shape from the check;
 - a release rule resting on a premise the data contradicts (check the premise per group, and keep the
   evidence rows when it does not hold);
-- a red-proof harness written, run and then deleted.
+- a red-proof harness written, run and then deleted;
+- a checkout guard that runs `git` with the caller's `GIT_*` env, or ignores untracked files.

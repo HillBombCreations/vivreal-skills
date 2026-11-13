@@ -71,7 +71,17 @@ a partial registration is the bug class you exist to kill.
    (`src/shared/seeding/buildPageBlocks.js` + its renderer-oracle fixture) need
    the new arm mirrored, or seeded pages compose wrong outside the
    renderer/site-loader path.
-8. **Backend reach (verify, don't assume)**, the VR_Secure_API `siteValues` Joi
+8. **The Blank-buildable reach (owner, 2026-11-11).** A control is registered only when the
+   portal's `src/data/generated/blank-buildable-reach.json` lists the path it writes under THAT
+   section's `sectionConfig[<section>].editable`. Regenerate it with
+   `node scripts/gen-blank-buildable-reach.mjs` (never hand-edited; `kit:validate`'s registration
+   gate fails on a stale one). Claim only what the control really writes: a `.*` claim over a
+   hand-built editor, or a key claimed on every section because one section has a control, is a
+   false green, and the portal reviews caught three of them on 2026-11-11 (B3, B5, B6). A setting the
+   renderer ignores on that section gets NO control; it is removed from the kit (owner W-BB-2).
+   Your registration is done when the per-section census over the INSTANTIATED site (vivreal-hq
+   `packages/fleet-ops/blank-buildable/README.md`) reads 0 NOT BUILDABLE for every path you wired.
+9. **Backend reach (verify, don't assume)**, the VR_Secure_API `siteValues` Joi
    shape + Vivreal-Schemas column must accept the field (they usually already do
   , Mixed/strict:false, but a 400 on save is a backend gap to FLAG, not to
    hack around from the portal).
@@ -150,6 +160,8 @@ while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
   `tsc --noEmit` on the touched areas. Never the full suite, the pre-push hook or the smoke.
 - Before any test run, check for a stale test or dev-server process on 3100 or 4600 and do not
   start a second one.
+- Any browser a test or script of yours launches gets `--mute-audio`: on 2026-11-11 a headless
+  portal spec played a Studio sample video's sound on the owner's machine.
 - You never commit or push. When the coordinator says go, the registration is handed to
   `vivreal-principal:portal-coder` (SOLO when it is the only portal agent, otherwise the INTEGRATE
   run), which owns the one full gate and the PR. Your edits stay uncommitted in the portal
@@ -168,6 +180,6 @@ while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
    Save all, reload, see it, and the live preview reflects it (layer 6).
 4. Portal lint + type-check green on the touched areas; touched-area tests green (targeted only,
    per "Portal gates" above).
-5. Report a registration ledger: surface → layers wired (1-8, with file:line) →
+5. Report a registration ledger: surface → layers wired (1-9, with file:line) →
    verification evidence. Flag anything you could NOT wire (backend gap,
    unpublished renderer) with the exact blocker.

@@ -242,6 +242,11 @@ For LinkedIn, `assetPath` is the `carousel.pdf`.
 
 - DON'T open a browser against the portal. `render-slide.ts` runs headless Chromium against a
   local HTML template, which is fine. Driving `portal-capture.ts` is not yours.
+- DON'T launch a browser unmuted. Any Chromium you start yourself gets `--mute-audio`
+  (`chromium.launch({ args: ['--mute-audio'] })`): on 2026-11-11 a headless test browser played a
+  Studio sample video's sound on the owner's machine while he worked. `render-slide.ts` itself
+  launches with no args (vivreal-hq `packages/content-studio/src/render-slide.ts:42` on
+  `origin/main`), so keep slide templates free of audio and video.
 - DON'T author new templates or edit the SVG scenes inline. No template fits means say so and
   fall back to typography.
 - DON'T edit `brand-tokens.css`. Run `npm run sync-brand-tokens`.

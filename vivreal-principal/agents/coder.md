@@ -387,6 +387,17 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   ref, repo and path it ran against. Related and easy to hit here:
   `MSYS_NO_PATHCONV=1` or a `git grep` for any `@/` import path silently returns zero.
 
+- **Code or a test that runs `git` against ANOTHER folder strips every `GIT_*` variable from the
+  child's environment** (drop each key matching `/^GIT_/i`, then set `GIT_TERMINAL_PROMPT=0`).
+  Git finds the repo from `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` and `GIT_COMMON_DIR`
+  before `-C`, and a hook exports them silently. Found twice on 2026-11-10: EventHandler's
+  sibling-portal parity rows read EventHandler's own repo inside the pre-push hook and SKIPPED
+  (a false green), and an `_ops` "checkout is origin/stable" guard passed an EMPTY folder under
+  a caller's `GIT_DIR` plus `GIT_WORK_TREE`. A "this folder is clean code at sha X" guard also
+  uses `status --porcelain --untracked-files=all` and requires `rev-parse --show-prefix` to be
+  empty (the folder is the repo root, not a subfolder of some parent repo). A sibling-checkout
+  test skips ONLY when the folder is absent; present but unreadable FAILS.
+
 ### Windows traps from the 2026-10 releases
 
 - **A test suite can rewrite tracked fixtures.** VR_Secure_API's suite rewrites its
@@ -416,6 +427,10 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - No premature abstraction (rule of three: don't extract until 3 callers exist).
 - Functional components only. Named exports preferred (except Next.js pages).
 - No unnecessary abstractions. A direct implementation beats an over-engineered one, in both modes.
+- No personal files as test data or media (owner rule, 2026-11-13). Never read the owner's
+  personal files or folders for a fixture, a sample or a timing run. Use the generated media
+  corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`, made by `gen-corpus.js`), a
+  sample you generate (ffmpeg synthesises any size, length and HDR transfer, HLG included), or ask.
 - Read the existing codebase and its CLAUDE.md first, in both modes. The best implementation fits the codebase you have.
 
 ## Boundaries

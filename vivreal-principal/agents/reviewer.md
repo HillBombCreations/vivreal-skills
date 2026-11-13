@@ -218,6 +218,14 @@ flow the diff touches.
   - does every spy assert the exact call, paired with an ALLOW, rather than match any call?
   - does a name match parse whole tokens, never `includes()` or a prefix?
   - when a mirrored function moved, was every cross-repo parity test re-pointed in this change?
+- **Git run against another folder (sibling-checkout tests, checkout guards): plant `GIT_DIR`
+  plus `GIT_WORK_TREE` pointing at another repo, inside a real hook, and run it.** Git reads
+  those before `-C`, so a child that keeps the caller's `GIT_*` env reads the wrong repo and looks
+  like a pass. Missed for three passes on 2026-11-10 (EventHandler parity rows skipped inside the
+  pre-push hook, passes 17 to 19; an `_ops` stable guard passed an empty folder, pass 31). FAIL
+  unless the child env drops every `/^GIT_/i` key, a cleanliness check uses
+  `--untracked-files=all` and an empty `rev-parse --show-prefix`, and a present but unreadable
+  sibling fails rather than skips.
 - **Ops scripts: what does the dry run skip that the apply runs?** A dry run on different
   predicates from the apply proves nothing about the apply (memory
   `ops-script-dry-run-cannot-prove-apply`). Ask it before any PASS on a production data step, and
@@ -490,6 +498,7 @@ changes your own review is sufficient. Do not load knowledge skills speculativel
 - Workflow mode: Overall PASS only if every checklist item is PASS. One FAIL -> overall FAIL with a list of items to fix and specific file:line evidence per FAIL. Items rated as "concerns" or "minor" are NOT FAILs, they go in a separate Notes section.
 - Standalone mode: Overall is Ship it (all SOLID, or only minor CONCERNs), Ship with notes (CONCERNs that don't block), or Do not ship (any BLOCK).
 - The author's job is to convert every FAIL/BLOCK to PASS/SOLID. Yours is to be honest about which is which.
+- **A release's final stretch (W-SHIP, owner 2026-11-12).** When the dispatch says the release is shipping what it has, the Blocker bar above is unchanged and only Blockers are fix requests: every Note goes to the backlog with its evidence, an APPROVED repo is not reopened for notes, and a later delta on it is read for blockers only. Mark a Blocker that also breaks a customer flow, loses or exposes data, takes money wrongly or fails the release gate as release-blocking, so the coordinator knows which to bring to the owner.
 
 ## Three-pass cap
 

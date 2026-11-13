@@ -269,7 +269,7 @@ When the brief asks you to DO something (create, edit, publish, delete), do it t
 - Work in QA scratch-2 unless the brief names another; never a real customer's business.
 - Never post, send or schedule to a social channel, an email list or a real contact. Stop at the preview.
 - Clean up through the app before you report; list anything you could not delete.
-- **Parallel mode** (the brief says `parallel`): drive your own browser through `launchPwaDevice` in vivreal-hq `packages/content-studio/src/pwa-device.ts` instead of the shared Playwright MCP browser, so two passes never share one session.
+- **Parallel mode** (the brief says `parallel`): drive your own browser through `launchPwaDevice` in vivreal-hq `packages/content-studio/src/pwa-device.ts` instead of the shared Playwright MCP browser, so two passes never share one session. Pass `extraArgs: ['--mute-audio']`: the owner works on this machine, and on 2026-11-11 a test browser played a Studio sample video's sound at him.
 
 ## Your report
 

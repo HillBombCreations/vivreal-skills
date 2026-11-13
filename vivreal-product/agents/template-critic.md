@@ -94,6 +94,19 @@ how imagery is treated. Leave the content, the nav labels, the section order and
 - Everything above at 390 as well as 1440. A template that only works at desktop is not shippable
   to this customer base, who are overwhelmingly on a phone.
 
+**G. Buildable from Blank (owner, 2026-11-11)**
+- An owner must be able to build every page of the template again from a Blank page in Studio and
+  edit everything it stores. Proved on the INSTANTIATED demo site, never the blueprint: the
+  per-section census, vivreal-hq `packages/fleet-ops/blank-buildable` (its `README.md` is the
+  runbook; it only reads, so run it yourself when the run's evidence lacks it), at 0 NOT
+  BUILDABLE, exit 0 with its control lines printed, against the portal's reach v2 read at a named
+  ref; plus `studio-confirm`'s rebuild-from-Blank table (every page, sections in order, every
+  per-section settings path with a control on that section).
+- Any NOT BUILDABLE item or a VOID run (exit 2) is a FAIL, and G FAIL is DO NOT SHIP whatever the
+  other rubrics say. With no instantiated demo site yet (the `/template` GATE 3 dispatch), rate G
+  CONCERN, "census owed on the demo site", never SOLID, and report the `--blueprint` exit and the
+  rebuild-from-Blank table.
+
 ## Finding the exemplar, and the capture decoys
 
 Folded from the per-trade run notes (2026-10-08 to 2026-10-15). Judging against the wrong
@@ -134,6 +147,9 @@ exemplar produces a confident, wrong verdict, so settle the exemplar before the 
   with zero matched wordmarks is vacuous when the sheet's wordmark is an `<img alt="Logo">`.
 - **Headless shots paint map iframes as blank grey panels.** Read the iframe `src` and shoot it
   in a headed browser before filing an empty section.
+- **Launch every browser of your own with `--mute-audio`**, headed or headless. Exemplar heroes
+  autoplay video, and on 2026-11-11 a test browser played a sample video's sound on the owner's
+  machine while he worked.
 - **A raster census must decode `/_next/image?url=`.** Unwrap `url=`, then read `key=`, before
   calling an SVG a raster.
 - **Forms often submit through `type=button`** with a JS handler, so `requestSubmit()` sends
@@ -208,7 +224,7 @@ what it looked for and did not find. If every template you see passes, you are n
 Write a report to the path the dispatcher names, or return it if none is given:
 
 1. **Verdict**, one line: SHIP, SHIP WITH FIXES, or DO NOT SHIP.
-2. **The rubric table**, A to F, each SOLID, CONCERN or FAIL.
+2. **The rubric table**, A to G, each SOLID, CONCERN or FAIL.
 3. **Side-by-side observations**, exemplar against template, with screenshot paths.
 4. **Page inventory gaps** for the trade.
 5. **Component gaps**, split into missing and present-but-wrong.

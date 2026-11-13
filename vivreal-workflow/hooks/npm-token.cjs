@@ -4,8 +4,10 @@
 // and `npx` in the session's Bash as calls to this file: `node <this file> npm <args...>`.
 //
 // Which command gets which token (owners, 2026-11-04):
-//   - install and read commands (`ci`, `install`, `i`, `add`, `update`, `view`, `info`, `outdated`),
-//     and `npx` (or `npm exec`/`npm x`) only when an argument names `@hillbombcreations/`: the shared
+//   - install and read commands (`ci`, `install`, `i`, `add`, `update`, `view` and its aliases
+//     `info`, `show`, `v`, and `outdated`), `npm pack` only when every spec is an
+//     `@hillbombcreations/` registry name (a download, so no script runs; added 2026-11-11), and
+//     `npx` (or `npm exec`/`npm x`) only when an argument names `@hillbombcreations/`: the shared
 //     READ-ONLY token, from the secret named by key `packagesTokenSecret`;
 //   - `npm publish` ONLY: the WRITE token, from the secret named by key `packagesWriteTokenSecret`,
 //     and never to a lifecycle script: `prepublishOnly` (npm run) and `npm pack` (which runs prepack,
@@ -41,11 +43,15 @@ const TOOLS = new Set(['npm', 'npx']);
 const READ_KEY = 'packagesTokenSecret';
 const WRITE_KEY = 'packagesWriteTokenSecret';
 const VALUE_KEY = 'NODE_AUTH_TOKEN';
-const READ_COMMANDS = new Set(['ci', 'install', 'i', 'add', 'update', 'view', 'info', 'outdated']);
+// `show` and `v` are npm's own aliases of `view`.
+const READ_COMMANDS = new Set(['ci', 'install', 'i', 'add', 'update', 'view', 'info', 'show', 'v', 'outdated']);
 const EXEC_COMMANDS = new Set(['exec', 'x']);
 // npm options that take the next argument as their value, so it is not mistaken for the command.
 const VALUE_FLAGS = new Set(['--prefix', '-C', '--workspace', '-w', '--registry', '--cache', '--userconfig', '--loglevel', '--tag', '--access', '--otp']);
 const OUR_SCOPE = '@hillbombcreations/';
+// An @hillbombcreations/ registry name with an optional version, tag or range. No colon and no
+// slash after the name, so a git, file, alias or URL spec never matches.
+const OUR_REGISTRY_SPEC = /^@hillbombcreations\/[a-z0-9][a-z0-9._-]*(@[A-Za-z0-9.^~<>=*|+_-]+)?$/;
 // The Secrets Manager name alphabet, plus the colon of a full ARN. None of these is a shell
 // metacharacter, which matters because `aws` is spawned through a shell on Windows.
 const SECRET_ID_SHAPE = /^[A-Za-z0-9/_+=.@:-]{1,2048}$/;
@@ -65,6 +71,28 @@ function npmCommand(args) {
   return null;
 }
 
+/**
+ * True when `npm pack` only downloads published @hillbombcreations/ tarballs. A registry tarball
+ * is fetched, not built, so no lifecycle script runs (npm runs prepack and prepare only for a
+ * folder or a git spec). `npm pack` of the current folder, another folder, a tarball, a git or
+ * file spec, or any other scope runs scripts or needs no token, so it gets none. A reviewer
+ * proving registry bytes needs this read (two hit E401 on 2026-11-11 and fell back to the cache).
+ */
+function packsOnlyOurRegistrySpecs(args) {
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--') break;
+    if (a.startsWith('-')) {
+      if (VALUE_FLAGS.has(a) || a === '--pack-destination') i += 1;
+      continue;
+    }
+    positional.push(a);
+  }
+  const specs = positional.slice(1); // positional[0] is the command word, `pack`
+  return specs.length > 0 && specs.every((s) => OUR_REGISTRY_SPEC.test(s));
+}
+
 /** Which token this call gets: 'read', 'write' or 'none'. */
 function tokenKindFor(tool, args) {
   const namesOurScope = args.some((a) => a.includes(OUR_SCOPE));
@@ -72,6 +100,7 @@ function tokenKindFor(tool, args) {
   const cmd = npmCommand(args);
   if (cmd === 'publish') return 'write';
   if (cmd && READ_COMMANDS.has(cmd)) return 'read';
+  if (cmd === 'pack') return packsOnlyOurRegistrySpecs(args) ? 'read' : 'none';
   if (cmd && EXEC_COMMANDS.has(cmd)) return namesOurScope ? 'read' : 'none';
   return 'none';
 }
@@ -101,7 +130,7 @@ function resolvePackagesToken(env, kind) {
   const res = spawnSync(
     'aws',
     ['secretsmanager', 'get-secret-value', '--secret-id', id, '--query', 'SecretString', '--output', 'text'],
-    { encoding: 'utf8', shell: onWindows, env, stdio: ['ignore', 'pipe', 'pipe'] },
+    { encoding: 'utf8', shell: onWindows, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true },
   );
   if (res.error || res.status !== 0 || !res.stdout) {
     const err = String(res.stderr || '');
@@ -247,7 +276,9 @@ function runTool(tool, args, env, cwd) {
     process.stderr.write(`npm-token: ${tool} was not found on PATH.\n`);
     return 127;
   }
-  const child = spawnSync(cmd.file, cmd.argv, { stdio: 'inherit', env, cwd, shell: cmd.shell });
+  // windowsHide: no console window flashes up on the owner's desktop for every npm call; with
+  // stdio inherited, the output still reaches the caller.
+  const child = spawnSync(cmd.file, cmd.argv, { stdio: 'inherit', env, cwd, shell: cmd.shell, windowsHide: true });
   if (child.error) {
     process.stderr.write(`npm-token: could not start ${tool} (${child.error.code || 'error'}).\n`);
     return 1;

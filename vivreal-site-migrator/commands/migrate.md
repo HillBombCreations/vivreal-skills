@@ -254,6 +254,23 @@ per-surface walk, real edits, media clobber check, block re-add, dispatch the
 into that same walkthrough instead of re-walking the pages twice. Findings route: portal
 registration gaps → `studio-registrar` · renderer defects → `component-builder` · blueprint/
 loader defects → the owning migration agent. Re-run the gate after each handback.
+### B3. Blank-buildable gate (owner, 2026-11-11; every migrated site)
+The owner must be able to build every page of the migrated site again from a Blank page in
+Studio, and edit and customise it like every current template. Method, contract and fix routes:
+`vivreal-knowledge:vivreal-migrator-knowledge`, "The Blank-buildable gate"; runbook: vivreal-hq
+`packages/fleet-ops/blank-buildable/README.md`. Two halves:
+- **Before Gate 2, the rebuild from Blank** in `studio-confirm`'s walk (same harness as §B2):
+  every page rebuilt from a Blank page with Studio's own section picker, compared on sections in
+  order and every per-section settings path, each set through a control on that section. An
+  early census run over the shim's `/tenant/siteDetails` answer finds gaps sooner; it is not the
+  proof.
+- **After the load, the census on the INSTANTIATED site** (the `cutover` agent, Verify step 7):
+  0 NOT BUILDABLE, exit 0 with its control lines printed, against the portal's reach v2 read at a
+  named ref. Exit 2 is VOID, never a pass. The demo URL is not shared, and `--live` never runs,
+  until it passes.
+Fix by cause: a setting the renderer reads and Studio cannot set → `studio-registrar`; a setting
+the renderer ignores there → out of the parts (and off the stored site through a reviewed ops
+one-shot), never given a control; a `DEAD` key → the data cleanup.
 ### C. Post-deploy live gate (MANDATORY after every load/cutover deploy)
 `node commands/verify-live.js captures/<domain> --base https://<site>`, the
 browser-driven closing gate the Cutover agent also runs (cutover.md Verify #5).
@@ -273,7 +290,8 @@ Present: blueprint summary (pages, collections, integrations, theme) AND a
 **per-page parity diff** (live vs blueprint from the sweep), every delta listed
 as ✅ match / ⚠️ defect-to-fix / 🎨 styling-only-divergence, plus screenshots,
 AND the **Studio editability result** (§B2: STUDIO PASS + the studio-confirm
-classification ledger, or the routed findings still open).
+classification ledger, or the routed findings still open), AND the **Blank rebuild result**
+(§B3: every page matched, or the paths still without a control).
 The default expectation is ZERO data/structure defects; any that remain must be
 either fixed before cutover or explicitly waived by the user (recorded per-gap).
 Use AskUserQuestion: approve, request changes (re-dispatch an agent / hand-edit /
@@ -310,7 +328,9 @@ end and carries every live-run gotcha:
   chrome/footer correct; content edits post-deploy reach the site within the app's own
   `SITE_CACHE_TTL_SECONDS` (Templates code default 60; 300 on the four Amplify apps read
   2026-10-14; read the app's value), or at once through the signed `/api/revalidate` webhook,
-  which a Studio save fires by itself (see the cutover agent).
+  which a Studio save fires by itself (see the cutover agent),
+- the Blank-buildable census on the site it created (§B3), 0 NOT BUILDABLE before the demo URL
+  is shared.
 The run is resume-safe (`captures/<domain>/load-state.json`, gitignored),
 re-running after any failure continues without duplicates.
 The result is a **noindex demo**; the arc continues per the cutover agent's

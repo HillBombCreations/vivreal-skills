@@ -24,6 +24,21 @@ Before defining tasks, map which files are created/modified and what each is
 responsible for. Design units with clear boundaries; prefer small focused files;
 in existing repos follow established patterns.
 
+## Cross-repo plans: shared values and package consumers (REQUIRED)
+
+A plan that touches more than one repo carries both of these, so no builder waits on another:
+
+- **Shared values table (owner 2026-11-10).** Every word, constant, field shape and API contract
+  two repos share, with its FINAL value, in one table each repo's builder pins. Parity tests
+  compare against the planned value and tolerate a sibling only at its exact old value (skip by
+  name, fail on anything else). Sequence one repo after another only on a real runtime
+  dependency (a published package, a deployed API), never because a test reads the other
+  checkout: the open-backlog plan held EventHandler behind the portal for words already approved.
+- **Package consumer list (owner 2026-11-11).** A plan that publishes a shared
+  `@hillbombcreations/*` package lists EVERY consumer from a fleet pin sweep made while writing
+  the plan, with the version each moves to and the PR that moves it. Naming only Templates and
+  the portal for the renderer left Secure and Client API on 1.97.0 until the walk readiness check.
+
 ## Task right-sizing & bite-sized steps
 
 A task is the smallest unit that carries its own verification cycle and is worth a

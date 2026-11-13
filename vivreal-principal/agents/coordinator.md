@@ -71,7 +71,7 @@ The coordinator is dispatched with `--mode=<mode>`. Each mode controls which pha
 - **investigate** (feature/audit/migration), Dispatch `researcher` in principal stance to map the system area, constraints, and existing patterns. Output: `docs/projects/<slug>/investigation.md`.
 - **plan** (bug), Dispatch `architect` to convert research into a numbered, approvable change list with blast radius per change. Output: `docs/bugs/<slug>/plan.md` with approval checkboxes.
 - **design** (feature/migration), Dispatch `architect` to generate 2-3 options with explicit tradeoffs and a single recommendation. Output: `docs/projects/<slug>/design.md` with options + recommendation.
-- **implement**, Dispatch `coder` to apply the approved plan/design exactly, EXCEPT when the change is in `Vivreal_Portal_Mobile`, dispatch `portal-coder` instead (SOLO mode by default; only use PARALLEL plus a single INTEGRATE pass when you are deliberately running several portal-coders at once, per `fleet-concurrency`; FOLLOWUP mode, never SOLO, for a fix-up on a portal branch that already passed its full gate (SOLO forbids `--no-verify` and reruns the whole gate, owner 2026-10-06)). No scope creep, no adjacent fixes. Output: code changes per the approved plan/design.
+- **implement**, Dispatch `coder` to apply the approved plan/design exactly, EXCEPT when the change is in `Vivreal_Portal_Mobile`, dispatch `portal-coder` instead (SOLO mode by default; only use PARALLEL plus a single INTEGRATE pass when you are deliberately running several portal-coders at once, per `fleet-concurrency`; FOLLOWUP mode, never SOLO, for a fix-up on a portal branch that already passed its full gate (SOLO forbids `--no-verify` and reruns the whole gate, owner 2026-10-06); for a BATCH (every portal item of a release on one branch), SOLO with portal-coder's named batch overrides, stated in the dispatch: `--no-verify` on every push, the final one included; per item `tsc` on both configs, eslint on the changed files and the covering tests; push to the batch's existing PR, opening one only if none exists; the full suite once, at the review; every item in one run with the progress file kept current (owner 2026-11-10)). No scope creep, no adjacent fixes. Output: code changes per the approved plan/design.
 - **test**, Dispatch `tester` to add or extend regression coverage that fails on the broken code and passes on the fix. Tests must assert the CORRECT behavior the plan specifies, never a snapshot of current (possibly buggy) output. If implementing the fix makes a PRE-EXISTING test fail, that test is suspect: evaluate whether it was pinning the bug. Do NOT let `coder` or `tester` silently edit an assertion to go green, the change must either fix the code or correct a genuinely-wrong expectation with a stated reason. Output: passing test suite.
 - **review**, Dispatch `reviewer` for an adversarial pass against the diff. Output: `docs/bugs/<slug>/review-N.md` with PASS/FAIL per checklist item. Up to 3 passes; if still failing, escalate to user.
 - **document**, Dispatch `documenter` to produce the resolution write-up and PR body from artifacts. Output: `RESOLUTION.md` + PR description text.
@@ -107,6 +107,12 @@ most often decide a batch:
 - **Publish every pending shared package first, then one consumer bump pass** through
   `package-publisher` (vivreal-workflow, when installed). A coder that needs a package change mid-build reports it rather than
   publishing and bumping on its own.
+- **The ship rule in a release's final stretch (W-SHIP, owner 2026-11-12).** Once the owner says
+  to ship what is there: an unapproved repo gets its reviewer's blockers fixed and nothing more;
+  an approved repo is not reopened for notes; notes and new non-blocking finds go to the backlog
+  with their evidence (this overrides "Route every find at once" for them). Cycles already
+  running finish. Only a release-blocking find (breaks a customer flow, loses or exposes data,
+  takes money wrongly, fails the release gate) comes back to the owner.
 
 ## The four phases, single-dispatch shape (inline, no fan-out)
 

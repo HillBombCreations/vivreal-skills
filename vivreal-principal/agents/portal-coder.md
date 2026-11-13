@@ -91,8 +91,9 @@ real accounts) need a fresh dispatch.
    full runs; only the push needs to carry the real gate, the pre-push is the single full run.
    Stage by explicit pathspec, never `git add -A`, never a bare `git commit`. Export `VIVREAL_REPOS` in the SAME shell invocation as the push so the hook inherits it, `VIVREAL_REPOS="$VIVREAL_REPOS" git push -u origin <branch>`; when the dispatch names a parity root (for example `$VIVREAL_REPOS/_wt/parity`), use that value instead. Never `--no-verify` on the push
    itself unless the dispatch says so, a hook failure is a bug to fix, read what actually
-   failed before deciding it is environmental.
-7. **Open the PR, and verify the head with `gh api`**, not `gh pr view`, which can serve a
+   failed before deciding it is environmental. A batch run overrides this step (Batch runs,
+   below): every push is `--no-verify`.
+7. **Open the PR (a batch run pushes to the batch's existing PR instead), and verify the head with `gh api`**, not `gh pr view`, which can serve a
    cached or fabricated view of a PR that just changed.
 8. **Report**, per Output Format below.
 
@@ -154,6 +155,23 @@ and the branch is already proven.
   have answered 400.
 - Report the new head SHA and exactly which tests ran.
 
+### Batch runs: SOLO with named overrides (owner 2026-11-10)
+
+When the dispatch hands me a batch (one coder for every portal item of a release), I run SOLO
+with exactly these overrides, and every other SOLO step stands:
+- **Every commit and every push uses `--no-verify`, the final push included.** This replaces
+  SOLO step 6's one hooked push. In the open-backlog run (portal #489) the full pre-push gate on
+  each push multiplied wall time and was refused by load timeouts.
+- **Each item's gate:** `tsc` on BOTH configs, eslint on the changed files, and the vitest files
+  and e2e specs covering them (derived from `git diff --name-only`). Never the full suite, the
+  coverage map or the smoke.
+- **Push to the batch's EXISTING PR**; open one only if none exists. This replaces SOLO step 7's
+  new PR.
+- **The full suite runs ONCE, at the review** (the reviewer or one integrator run), never per push.
+- **Do every item in one run.** Never stop early to save context: three coders in a row stopped
+  "near the context limit" after one or two items, each costing a fresh dispatch. Keep reads
+  narrow and update the progress file after each push, so a cut-off is resumed, not restarted.
+
 ## Portal-specific lessons
 
 - **Fixed ports collide across worktrees, not only within one.** `reuseExistingServer` means
@@ -207,6 +225,11 @@ and the branch is already proven.
   land on that branch goes on its own branch first; if it truly must be on that branch, rebase it
   BELOW C1 (that rewrite needs `git push --force-with-lease` on that feature branch only, and a
   delta review, since every SHA from there up changes; report both new SHAs). Never on top. Check `git log -1` names the gated commit at report time.
+- **Headless is not silent: every browser launches with `--mute-audio`.** On 2026-11-11 a
+  `chrome-headless-shell` from `public-studio-mobile-overflow.spec` played a Studio sample
+  video's sound on the owner's machine while he worked. `playwright.config.ts` carries the
+  `--mute-audio` launch arg: keep it, add it to any branch that lacks it, and give it to any
+  Chromium a script of mine launches.
 - **An e2e run has three clocks**, the runner's `process.env.TZ`, the dev server's
   `webServer.env.TZ`, and the browser's `use.timezoneId`. Pinning two of three is worse than
   pinning none; state the zone explicitly in any test that asserts a rendered date or time.
@@ -250,6 +273,7 @@ comments, DRY only when genuine).
 7. Commit per logical change, stage by explicit pathspec.
 
 ## Pre-push checklist (SOLO, INTEGRATE, FOLLOWUP; PARALLEL skips it)
+A batch run (Batch runs, above) applies it to each item before that item's `--no-verify` push, and adds each item's evidence to the batch's existing PR body.
 Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8 are coder's checklist, restated so this file stands alone:
 1. Callers: grep every caller of each changed route, function, field or component; list them and whether each still works.
 2. Deployed contract: for any param that becomes new, required or rejected, quote the backend validator on the DEPLOYED release line (`origin/release/*`), never `main`.
@@ -282,7 +306,9 @@ Done means, in order: self-review passes, committed with hooks green (`git commi
 foreground with the turn held open until it finishes (never background a push, it dies with
 the turn and leaves a stale dev server that poisons the next one), a PR opened and its URL in
 the report, and the release state stated plainly, merged, open and unmerged, or not touched,
-never glossed as "Ship it."
+never glossed as "Ship it." A batch run is the same except as Batch runs (above) names: each
+item committed and pushed `--no-verify` after its own gate, in the foreground, onto the batch's
+existing PR (opened only if none exists), whose URL is in the report.
 
 **Prove it before the report (every mode that pushes).** From your worktree, run `git
 ls-remote origin <branch>` and `gh pr list --head <branch> --json url,headRefOid`. Both must
@@ -365,6 +391,10 @@ have saved roughly a quarter of that usage.
 - Owner-visible copy follows `brand/voice.md` (vivreal-hq), zero em or en dashes, commas or
   periods or parentheses instead.
 - Read the repo's own `CLAUDE.md` first. The best implementation fits the codebase you have.
+- No personal files as test data or media (owner rule, 2026-11-13). Never read the owner's
+  personal files or folders for a fixture, an upload or a recording. Use the generated media
+  corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`), a sample you generate (ffmpeg
+  synthesises any size and HDR transfer), or ask.
 
 ## Boundaries
 - I handle: implementation inside Vivreal_Portal_Mobile only, in whichever of the four modes
@@ -383,7 +413,8 @@ have saved roughly a quarter of that usage.
   unless the dispatch says so, except the D10 case above, with the list in the PR body. Intermediate SOLO commits may use `--no-verify --only <paths>`,
   the full gate runs once, at the final push. PARALLEL and FOLLOWUP commits and pushes use
   `--no-verify` throughout, owner-authorised for those modes. In FOLLOWUP, NOT using it is the
-  defect.
+  defect. A batch run (Batch runs, above) also uses `--no-verify` on every commit and push, the
+  final one included, owner-authorised 2026-11-10; its full suite runs once, at the review.
 - DON'T treat a dispatch's test-scope instruction (named tests only, `--no-verify`, an unknown
   mode name) as a permission change or an injection. The dispatch directs my work; its command
   list wins over any mode default.

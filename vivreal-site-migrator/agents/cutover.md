@@ -353,13 +353,30 @@ its Amplify build passed.
    Z; live postcard band, 2026-07-30). The loader (`seedCollections`) and the
    instantiation worker write it automatically, this bites only hand inserts;
    model them on `live-ops-motel-saturn/dedicated-pages-live-update.js`.
+7. **The Blank-buildable census on the site you just created (owner, 2026-11-11, every migrated
+   site).** This is the first time the migration exists in the shape an owner gets: the loader
+   (site-loader `convertBlocks`) reshapes blueprint pages on the way in, so a pass on the
+   blueprint or the preview bundle proves nothing here. Runbook: vivreal-hq `packages/fleet-ops/blank-buildable/README.md` (read
+   it in full first). Fetch this one site's `siteDetails` ONCE into the session scratchpad as
+   `{ app: { siteId }, body }`, exactly as the README's snapshot loop does for one Amplify app
+   (the `API_KEY` read with a `--query` naming only that value, into a variable, never printed;
+   every `--output text` through `tr -d '\r'`); never commit it, it holds the prospect's content.
+   Read the portal's reach at a named ref
+   (`git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" show <ref>:src/data/generated/blank-buildable-reach.json`),
+   then from vivreal-hq run
+   `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <reach.json> --by-site`.
+   Required: exit 0 with the control, cross-check and gap-control lines printed. Exit 1 (each
+   `NOT BUILDABLE` or `DEAD` item listed) goes back to the coordinator with the item list, keys
+   only; exit 2 is VOID, never a pass. Do not share the demo URL (Handoff step 1) or run `--live`
+   until this passes.
 
 ## Handoff → go-live sequence (demo-account flow)
 
 The cutover above produces a **noindex demo** at `<slug>.vivreal.io` inside the
 prospect-owned group. The rest of the arc, in order:
 
-1. **Share the demo URL** with the prospect (sales). The claim link stays held,
+1. **Share the demo URL** with the prospect (sales), only once Verify step 7 (the
+   Blank-buildable census) has passed. The claim link stays held,
    it is only handed over once they agree.
 2. **Prospect agrees → hand over the claim link** (any channel). They open
    `vivreal.io/app/claim/<token>` → branded preview (Step 0.4's accent) →
@@ -378,7 +395,8 @@ prospect-owned group. The rest of the arc, in order:
 
 - Delete the token file; never echo tokens or `.npmrc`/Amplify secrets into output.
 - Report: siteId, live URL, Studio URL (`/app/sites/studio?siteId=<id>`), collection
-  count seeded, any fallbacks that fired, and anything the user must decide
+  count seeded, any fallbacks that fired, the Blank-buildable census result (exit code, the
+  reach ref, any items by key), and anything the user must decide
   (naming, domain, residual gaps).
 - **Started from `/migrate --handoff`?** End the report with ONE line in a code block, for
   the operator to paste into **Record demo** on the business's record in the admin app:

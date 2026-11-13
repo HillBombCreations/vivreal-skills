@@ -22,6 +22,14 @@ site's pages, labels and search indexes (the site document), and media uploads s
 main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`). Never `POST /api/revalidate`,
 and never re-run the help site's site loader or any other loader.
 
+**A NEW help or vivreal.io page is a site-document write, so PUBLISH mode cannot make it.** An
+article with no live address yet needs its own reviewed one-shot (its page, its lists, its index
+card), built, dry-run, reviewed and applied by the main session under a GO before PUBLISH mode can
+fill it. Say so on the FIRST line of your report the moment a dispatch names a new article, so
+the one-shot is planned beside the draft, not after approval: precedents
+`${VIVREAL_REPOS}/_ops/help-new-pages-2026-11-03` and
+`${VIVREAL_REPOS}/_ops/open-backlog-2026-11-help-pages` (26 new pages in the 2026-11 release).
+
 **What publishing does to the content, and how to read the live site after it**, lives in one
 place: `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md` (the CMS
 sorts `mediaKeys` and keys `mediaFields` by file name, rows share a band, the sitemap leaves out
@@ -80,7 +88,9 @@ one (plan section 3), and never document Outreach (internal only).
 ## Step 1. Read the live article and the anchors it already has
 
 For an EXTEND or REWRITE article, fetch the live page with a plain GET of the public help URL
-(`https://help.vivreal.io/<section>/<slug>`) in a headless browser, read it SETTLED (wait until the
+(`https://help.vivreal.io/<section>/<slug>`) in a headless browser launched with `--mute-audio`
+(headless is not silent: on 2026-11-11 a test browser played a Studio sample video's sound on the
+owner's machine while he worked), read it SETTLED (wait until the
 page's text length stops growing; the server HTML is a streamed skeleton), and record every existing
 band's `id`. Read the current text from the live site, never from a repo.
 
@@ -131,7 +141,7 @@ checked.
   (`user/refresh`, or the session signs out and plan-gated blocks vanish; `get-media`, or tiles
   draw blank; `cart-quote` on a customer site), write scripts with the Write tool, and match
   `:visible` selectors.
-- **Installed-app view first.** Open the portal with `launchPwaDevice({ url, ... })` from
+- **Installed-app view first.** Open the portal with `launchPwaDevice({ url, extraArgs: ['--mute-audio'], ... })` from
   `vivreal-hq/packages/content-studio/src/pwa-device.ts` (default iPhone 390x797, insets 0/34,
   plain iOS status bar on top with no blue band; a blue band is a defect to report) and
   run `assertStandalone()` before every screen you rely on. If it cannot pass, that is a
@@ -423,7 +433,8 @@ group id live after the switch for `--business`. Delete the session file at the 
 3. Run the README's `plan` command. It resolves each change by exact text, keys it by the document
    id, proves the session reads the target business, writes `publish-plan.json` and prints its
    sha256. A change it stops (zero or two matching rows) is reported, never forced.
-4. List what this mode will not do (new lists, site document writes, media) for the main session.
+4. List what this mode will not do (new pages, new lists, site document writes, media) for the
+   main session. A change aimed at a page that does not exist yet waits for that page's one-shot.
 5. Report the plan path and the sha256 the tool printed, ending
    `Needs: vivreal-principal:reviewer on <plan path>`.
 
@@ -456,3 +467,5 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 - Press Post, Publish, Schedule, Connect, Delete or Save on a real account.
 - Print, log or store the walk account's credentials.
 - Draft more than one article in a run.
+- Read the owner's personal files or folders for a screenshot, an upload or a test (owner rule,
+  2026-11-13). Use the business's own library media, a generated sample, or ask.

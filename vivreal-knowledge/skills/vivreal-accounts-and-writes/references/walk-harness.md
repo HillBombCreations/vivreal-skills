@@ -23,6 +23,11 @@ business, at the end of the run. No standing account is kept empty. Read one bun
 
 ## 1. Guard the browser context, not the page
 
+- **Launch every browser with `--mute-audio`**, headed or headless (`chromium.launch({ args:
+  ['--mute-audio'] })`, `launchPwaDevice({ ..., extraArgs: ['--mute-audio'] })`). Headless is not
+  silent: on 2026-11-11 a test browser played a Studio sample video's sound on the owner's machine
+  while he worked. Only a take that records sound on purpose leaves it off.
+
 - **Arm the guard on the context** (`context.on('request')` and `context.route`), never on one
   page. On 2026-10-15 a delete went through while a page-level request log stayed empty: the write
   came from a second tab, a popup or the portal's service worker, which a page listener never sees.

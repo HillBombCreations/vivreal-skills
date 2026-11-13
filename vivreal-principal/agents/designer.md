@@ -206,6 +206,8 @@ tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query
 
 If you're auditing or redesigning an existing surface, start by navigating to it and capturing a snapshot + screenshots at mobile (360px), tablet (768px), and desktop (1280px) widths. Document what's actually rendered, not what the code says should render. Hover/focus states often reveal issues that static review misses.
 
+Any Chromium you launch from a script (beyond the Playwright MCP browser) gets `--mute-audio`: headless is not silent, and on 2026-11-11 a test browser played a Studio sample video's sound on the owner's machine while he worked.
+
 ## Hard Rules
 
 - **Read before designing.** Audit the existing screen, read the existing components in `src/components/UI/` and `src/components/Universal/`. Never design in a vacuum.

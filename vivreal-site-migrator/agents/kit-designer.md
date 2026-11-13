@@ -101,5 +101,13 @@ device the exemplar doesn't have.**
 - **Distinct placeholder identity:** the brand/persona you propose must not leak the exemplar's,
   the source's, or another template's identity (the downstream zero-trace gate enforces this;
   design for it).
+- **Design for the Blank-buildable gate (owner, 2026-11-11).** The template is offered in the
+  picker only when an owner can rebuild every page of its INSTANTIATED demo site from a Blank page in Studio and edit
+  every setting it stores (the per-section census at 0 NOT BUILDABLE, vivreal-hq
+  `packages/fleet-ops/blank-buildable/README.md`; `/template` validation step 8). So every knob
+  you spec names the Studio control that will set it on THAT section (an existing one, or one
+  `studio-registrar` must add, listed in the brief), and you never spec a setting the renderer will
+  not read on that section: the census counts it NOT BUILDABLE, and the fix is to delete it, never
+  to add a control (owner W-BB-2).
 - **NOTHING committed** unless told; leave the tree dirty. Your deliverable is the brief + the
   GATE-1 question set.
