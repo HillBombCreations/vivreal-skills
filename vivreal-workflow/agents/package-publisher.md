@@ -234,8 +234,8 @@ and tarball checks, the surgical lockfile moves, each consumer's own pre-push te
 capability regeneration.
 
 **Any code change keeps the full fleet build and render diff,** started only when no other heavy
-run is going (`vivreal-workflow:fleet-concurrency`: at most two heavy local runs at once; sample
-the CPU first).
+run is going (stricter than `vivreal-workflow:fleet-concurrency`'s general cap of two: the fleet
+build and render diff run alone; sample the CPU first).
 
 **The Blank-buildable proof rides every renderer publish (owner, 2026-11-11), and every
 site-loader publish,** because the two packages decide what an instantiated site holds and what

@@ -232,13 +232,11 @@ and 2, vivreal-hq `docs/projects/release-plan-open-backlog/release-runbook-2026-
 - In a shared release state file, wait on the step-id and result FIELDS, never a substring, and a
   wait that times out ends as `WAITING on <step>` for a re-dispatch, not a failure.
 
-**Never read the owner's personal files as test data or media (owner, 2026-11-13).** No OneDrive
-personal photos folder, no personal folder of any kind, however useful a real clip looks. Use the
-generated media corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`, made by
-`gen-corpus.js`), a sample you generate (ffmpeg synthesises any size, length and HDR transfer,
-HLG included: the corpus's `hevc-hlg-aac.mov` recipe at the size and length you need), or ask the
-owner for a file. On 2026-11-13 an agent used a family video as a test clip; it was deleted and the
-owner was told.
+**Never read the owner's personal files or folders as test data or media (owner rule,
+2026-11-13),** however useful a real clip looks. Use the generated media corpus (vivreal-hq
+`packages/fleet-ops/layers/ffmpeg/corpus.js`, made by `gen-corpus.js`), a sample you generate
+(ffmpeg synthesises any size, length and HDR transfer, HLG included: the corpus's
+`hevc-hlg-aac.mov` recipe at the size and length you need), or ask the owner for a file.
 
 ## Live-state tooling (read before, and read again after)
 

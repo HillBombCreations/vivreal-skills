@@ -457,11 +457,10 @@ can affect.** List them (names and ids, projected fields only) into the walk fol
 v7 final retest a "Clear the examples" press deleted 18 scratch items, and putting them back
 needed a reviewed restore script built from what could still be read.
 
-**Never read the owner's personal files for an upload or a test (owner, 2026-11-13):** no
-OneDrive personal photos folder, no personal folder of any kind. Use the business's own library
-media, the generated media corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`), a
-sample you generate (ffmpeg synthesises any size and HDR transfer), or ask. On 2026-11-13 an agent
-used a family video; it was deleted and the owner was told.
+**Never read the owner's personal files or folders for an upload or a test (owner rule,
+2026-11-13).** Use the business's own library media, the generated media corpus (vivreal-hq
+`packages/fleet-ops/layers/ffmpeg/corpus.js`), a sample you generate (ffmpeg synthesises any size
+and HDR transfer), or ask.
 
 ---
 

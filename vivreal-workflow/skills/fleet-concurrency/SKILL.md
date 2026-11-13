@@ -142,7 +142,8 @@ count.** Heavy: a full suite, a red proof, a fleet build, a render diff,
 `kit:validate`. Before starting one, sample the CPU over an interval (on Windows
 `Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 5 -MaxSamples 6`,
 never one `LoadPercentage` read); if two heavy runs are already going, queue it or
-do light work first. **Stop a walk's local stack as soon as nothing uses it**, and
+do light work first. A renderer fleet build and render diff run alone (W-FASTPUB,
+owner 2026-11-12). **Stop a walk's local stack as soon as nothing uses it**, and
 start it again for the next walk: an idle walk stack beside a portal review, a red
 proof, real-mongod tests and a renderer suite pinned the CPU for minutes on
 2026-11-12, and a coder's run took over two hours. **A timeout under load is a load

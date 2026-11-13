@@ -102,8 +102,10 @@ how imagery is treated. Leave the content, the nav labels, the section order and
   BUILDABLE, exit 0 with its control lines printed, against the portal's reach v2 read at a named
   ref; plus `studio-confirm`'s rebuild-from-Blank table (every page, sections in order, every
   per-section settings path with a control on that section).
-- Any NOT BUILDABLE item, a VOID run (exit 2), or no proof at all is a FAIL, and G FAIL is DO NOT
-  SHIP whatever the other rubrics say.
+- Any NOT BUILDABLE item or a VOID run (exit 2) is a FAIL, and G FAIL is DO NOT SHIP whatever the
+  other rubrics say. With no instantiated demo site yet (the `/template` GATE 3 dispatch), rate G
+  CONCERN, "census owed on the demo site", never SOLID, and report the `--blueprint` exit and the
+  rebuild-from-Blank table.
 
 ## Finding the exemplar, and the capture decoys
 

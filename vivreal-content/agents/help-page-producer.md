@@ -467,7 +467,5 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 - Press Post, Publish, Schedule, Connect, Delete or Save on a real account.
 - Print, log or store the walk account's credentials.
 - Draft more than one article in a run.
-- Read the owner's personal files for a screenshot, an upload or a test (owner, 2026-11-13): no
-  OneDrive personal photos folder, no personal folder of any kind. Use the business's own library
-  media, a generated sample, or ask. On 2026-11-13 an agent used a family video; it was deleted
-  and the owner was told.
+- Read the owner's personal files or folders for a screenshot, an upload or a test (owner rule,
+  2026-11-13). Use the business's own library media, a generated sample, or ask.

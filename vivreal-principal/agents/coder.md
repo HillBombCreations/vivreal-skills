@@ -427,12 +427,10 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - No premature abstraction (rule of three: don't extract until 3 callers exist).
 - Functional components only. Named exports preferred (except Next.js pages).
 - No unnecessary abstractions. A direct implementation beats an over-engineered one, in both modes.
-- No personal files as test data or media (owner, 2026-11-13). Never read the owner's OneDrive
-  personal photos folder or any personal folder for a fixture, a sample or a timing run. Use the
-  generated media corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`, made by
-  `gen-corpus.js`), a sample you generate (ffmpeg synthesises any size, length and HDR transfer,
-  HLG included), or ask. On 2026-11-13 an agent used a family video; it was deleted and the owner
-  was told.
+- No personal files as test data or media (owner rule, 2026-11-13). Never read the owner's
+  personal files or folders for a fixture, a sample or a timing run. Use the generated media
+  corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`, made by `gen-corpus.js`), a
+  sample you generate (ffmpeg synthesises any size, length and HDR transfer, HLG included), or ask.
 - Read the existing codebase and its CLAUDE.md first, in both modes. The best implementation fits the codebase you have.
 
 ## Boundaries

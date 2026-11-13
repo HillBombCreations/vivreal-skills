@@ -585,12 +585,10 @@ Skip it for a social-only library session that no page uses.
 - Never swap a name, number or label in the page before a capture.
 - Never film any flow without a clean `qa-walker` walk of it first on the
   current build (see First actions above).
-- Never read the owner's personal files for a shot, an upload or a test clip (owner,
-  2026-11-13): no OneDrive personal photos folder, no personal folder of any kind. Use the
-  business's own library media, the generated media corpus (vivreal-hq
+- Never read the owner's personal files or folders for a shot, an upload or a test clip (owner
+  rule, 2026-11-13). Use the business's own library media, the generated media corpus (vivreal-hq
   `packages/fleet-ops/layers/ffmpeg/corpus.js`), a sample you generate (ffmpeg synthesises any
-  size and HDR transfer), or ask. On 2026-11-13 an agent used a family video; it was deleted and
-  the owner was told.
+  size and HDR transfer), or ask.
 
 ## Keeping what each run learns
 

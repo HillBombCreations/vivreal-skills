@@ -199,8 +199,8 @@ the row file also ships `previewImageKey: null`. A kit is registered only when a
 the portal's CSS vignette, which is a registration gap, not a done state.
 **A look is offered only after its instantiated demo site passes the Blank-buildable census**
 (validation step 8, 0 NOT BUILDABLE): stand up the demo site, run the census on it, and insert the
-`site_templates` row only on a pass. A template nobody can rebuild from Blank is not shipped,
-however it renders.
+`site_templates` row only on a pass. A template nobody can rebuild from Blank is not offered in
+the picker, however it renders.
 **Template sites live on the Vivreal Content group:** any site instantiated from a template for
 validation, demo, smoke, or showcase purposes is created on **Vivreal Content**
 (`groupName "Vivreal Content"`, key `vivrealcontent`, `_id <look up by key vivrealcontent>`,
