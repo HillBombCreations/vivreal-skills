@@ -202,6 +202,52 @@ a visual judgement of a built template against its exemplar.)
    not, the owner's words, name and ISO time).
 6. Record each run on the renderer PR before the next one ("Run records, one per step" below).
 
+## Before a renderer publish: the fleet check, or the words-only fast path (W-FASTPUB, owner 2026-11-12)
+
+A renderer publish is checked against the live fleet before it ships: the fleet build and the
+render diff (`vivreal-knowledge:vivreal-renderer-knowledge`, "The pre-publish real-data compose
+diff"). In the 2026-11 release that took about 40 minutes of a 75 to 86 minute publish on a pinned
+CPU, so the owner set a fast path for a publish that changes only words.
+
+**Words only is decided by machine, with a control.**
+1. Pack both versions: the last published one (`npm pack @hillbombcreations/site-renderer@<last>`)
+   and the candidate (`npm pack` at the approved head). The file lists must match; an added or
+   removed file is a code change.
+2. In every `.js` file of both, replace each string literal, and each template literal's static
+   text, with one placeholder, using a JavaScript tokenizer (acorn's, or TypeScript's scanner),
+   never a regex: a regex mask can swallow the code between two quotes and hide a real change.
+   Compare every other file whole (`.d.ts`, CSS, `package.json` apart from `version`), except
+   source maps, which change with any edit and run nothing.
+3. The masked diff must be EMPTY, and the unmasked one must not be.
+4. **The control:** plant one code change (flip one operator) in a copy of the candidate; the
+   masked diff must then fire. A check that cannot fire proves nothing.
+5. **List every changed literal, old and new.** Each must be words a person reads (a label, a
+   heading, a description, an `aria-label`, an empty-state line). A changed literal that is a key,
+   an enum value, a dispatch id, a CSS class, a path or a URL changes behaviour: a code change.
+
+**Words only: skip the fleet build and the render diff.** Instead, count from stored site data
+where each changed word shows: name the component each literal lives in, and count the stored
+sites and pages whose sections use it (keys and counts only, from the throttled, fetch-once
+snapshot the compose diff reads, never site content), noting those that store their own words for
+it and so keep them. Everything else stays: the reviewer PASS at the SHA you publish, the registry
+and tarball checks, the surgical lockfile moves, each consumer's own pre-push tests, and Secure's
+capability regeneration.
+
+**Any code change keeps the full fleet build and render diff,** started only when no other heavy
+run is going (`vivreal-workflow:fleet-concurrency`: at most two heavy local runs at once; sample
+the CPU first).
+
+**The Blank-buildable proof rides every renderer publish (owner, 2026-11-11), and every
+site-loader publish,** because the two packages decide what an instantiated site holds and what
+Studio can set. Run the per-section census, vivreal-hq `packages/fleet-ops/blank-buildable` (its
+`README.md`, "The two snapshots", is the runbook), over the template demo sites AND the live fleet,
+with the reach generated at the portal head that will consume the version
+(`git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" show <ref>:src/data/generated/blank-buildable-reach.json`).
+Both must exit 0 with every control line printed; exit 1 (NOT BUILDABLE or DEAD) or exit 2
+(VOID) stops the publish. It reads only stored `siteDetails` (fetch once, for both the census and
+the fast path's count), and builds nothing, so a words-only publish runs it too. A new kit riding the publish is offered in the picker only once its own
+instantiated demo site passes (`vivreal-site-migrator`'s `/template`, validation step 8).
+
 ## Registry auth and consumers
 
 **Registry auth.** Every consumer's tracked `.npmrc` reads `${NODE_AUTH_TOKEN}`. For installs that variable holds a token with `read:packages` only (owner, 2026-10-28), never `gh auth token`, which carries the person's whole GitHub access and which any install script could read from npm's environment. Since 2026-11-04 both tokens live in AWS Secrets Manager: in an agent's Bash, `npm` and `npx` run through the vivreal-workflow SessionStart hook's wrapper, which gives the shared READ token only to install and read commands, the WRITE token (`write:packages`) only to the upload step of `npm publish`, and no token to anything else (a build or test child never sees one). **How a publish runs through it:** first `prepublishOnly` (`npm run`) and `npm pack` (which runs `prepack`, `prepare` and `postpack` itself, as npm would) with NO token; then `npm publish <that tarball> --ignore-scripts` is the one process given the write token, because a tarball publish runs no lifecycle script while a folder publish in npm 10 runs `prepare` even with `--ignore-scripts`; then `publish` and `postpublish` run with NO token. A failed step before the upload publishes nothing. Your own `--ignore-scripts` skips `prepublishOnly` and the after-upload scripts and is passed to the pack. A tarball you name is published as is; a publish of another folder or a workspace is refused, so pack it first and publish the tarball. Lifecycle scripts usually build, and a build cache writes environment values to disk, which is why none of them ever sees the write token. The secret names are keys `packagesTokenSecret` and `packagesWriteTokenSecret` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, read with the user's own AWS sign-in at the moment npm runs; the wrapper never prints a token or writes one to a file. A 401 means the token is missing or under-scoped; the wrapper's stderr line names which part is missing. To prove registry bytes, `npm view` (and `show`, `v`) and `npm pack @hillbombcreations/<pkg>@<version>` get the READ token (since 2026-11-11; before that a reviewer's pack hit E401 and fell back to the local cache, which proves nothing about the registry). `npm pack` of a folder, a tarball or a git spec still gets none.

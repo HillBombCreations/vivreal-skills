@@ -22,6 +22,14 @@ site's pages, labels and search indexes (the site document), and media uploads s
 main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`). Never `POST /api/revalidate`,
 and never re-run the help site's site loader or any other loader.
 
+**A NEW help or vivreal.io page is a site-document write, so PUBLISH mode cannot make it.** An
+article with no live address yet needs its own reviewed one-shot (its page, its lists, its index
+card), built, dry-run, reviewed and applied by the main session under a GO before PUBLISH mode can
+fill it. Say so on the FIRST line of your report the moment a dispatch names a new article, so
+the one-shot is planned beside the draft, not after approval: precedents
+`${VIVREAL_REPOS}/_ops/help-new-pages-2026-11-03` and
+`${VIVREAL_REPOS}/_ops/open-backlog-2026-11-help-pages` (26 new pages in the 2026-11 release).
+
 **What publishing does to the content, and how to read the live site after it**, lives in one
 place: `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md` (the CMS
 sorts `mediaKeys` and keys `mediaFields` by file name, rows share a band, the sitemap leaves out
@@ -425,7 +433,8 @@ group id live after the switch for `--business`. Delete the session file at the 
 3. Run the README's `plan` command. It resolves each change by exact text, keys it by the document
    id, proves the session reads the target business, writes `publish-plan.json` and prints its
    sha256. A change it stops (zero or two matching rows) is reported, never forced.
-4. List what this mode will not do (new lists, site document writes, media) for the main session.
+4. List what this mode will not do (new pages, new lists, site document writes, media) for the
+   main session. A change aimed at a page that does not exist yet waits for that page's one-shot.
 5. Report the plan path and the sha256 the tool printed, ending
    `Needs: vivreal-principal:reviewer on <plan path>`.
 
@@ -458,3 +467,7 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 - Press Post, Publish, Schedule, Connect, Delete or Save on a real account.
 - Print, log or store the walk account's credentials.
 - Draft more than one article in a run.
+- Read the owner's personal files for a screenshot, an upload or a test (owner, 2026-11-13): no
+  OneDrive personal photos folder, no personal folder of any kind. Use the business's own library
+  media, a generated sample, or ask. On 2026-11-13 an agent used a family video; it was deleted
+  and the owner was told.

@@ -292,6 +292,40 @@ Each of these was a real STOP or correction in the v7 window (vivreal-hq
 
 On a change-set mismatch, report the extra or missing rows as a table plus a one-line runbook amendment the dispatcher can approve, then delete the preview. Do not execute.
 
+## Change sets, shared state and gates (open-backlog release, 2026-11-13)
+
+Each was a lane STOP or a false proceed in that window, settled by runbook amendments 1 to 3
+(vivreal-hq `docs/projects/release-plan-open-backlog/release-runbook-2026-11-13.md`).
+
+- **(a) A SAM API deployment swap is not a STOP.** A Remove of `<Api>Deployment<hash>` is how SAM
+  publishes a new route, when the SAME preview also Adds the new `<Api>Deployment<hash>`, Modifies
+  `<Api>prodStage` (DeploymentId) and `<Api>` (Body), and the approved diff adds or changes a
+  route. Any other Remove, and any Replacement True, is still a STOP.
+- **(b) The expected set is the preview MINUS a control.** Make a second preview the same way from
+  the DEPLOYED commit's own template; a row that also appears in the control is not part of the
+  release. Compare the remainder with the runbook's expected rows.
+- **(c) Two row classes pass only with a physical-id proof.** Replacement **Conditional** rows from
+  a dynamic re-evaluation (a function's `Role`, a rule's `Targets`, a permission's `SourceArn`) and
+  the deploy script's own stack-tag Modifies (only the commit tag moved) are accepted when every
+  resource's PhysicalResourceId reads the same before and after
+  (`describe-stack-resources --query 'StackResources[].[LogicalResourceId,PhysicalResourceId]'`),
+  besides the step's own proofs. A changed id, or Replacement True, is a STOP: roll back to the
+  previous template.
+- **(d) Read a shared state file by field, never by free text.** A line is
+  `<time> <step-id> <result> <text>`; a wait proceeds only on field 2 equal to the step id and
+  field 3 equal to `PROVEN` (`awk '$2=="<step>" && $3=="PROVEN"'`). In your own text, never write
+  another step's id followed by `PROVEN` ("waits for the Secure step's proof", not "waits for
+  <step> PROVEN"): on 2026-11-13 one step's prose fooled two bare-substring waits, and one of
+  them wrote a false proceed line that had to be voided.
+- **(e) A WAIT that times out STOPs as `WAITING on <step>`.** Write that line, name what the wait
+  last read, and end; the dispatcher re-dispatches from that wait. It is not a FAIL, and never a
+  reason to proceed.
+- **(f) A Templates render gate measures build output size too.** For every site it builds, sum
+  the bytes under `.next` excluding `.next/cache`, built with `NEXT_PRIVATE_STANDALONE=true` so
+  `.next/standalone` counts, as Amplify does, against Amplify's 230,686,720-byte cap. STOP above
+  90 percent for any site. On 2026-11-13 a Templates head passed every render check while two
+  sites sat at 98 percent of the cap (server source maps the stored build spec did not delete).
+
 ## Mechanical traps from the v6 release (2026-10-14)
 
 Each of these cost a correction to the runbook mid-release. None is about the change being

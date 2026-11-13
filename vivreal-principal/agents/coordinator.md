@@ -107,6 +107,12 @@ most often decide a batch:
 - **Publish every pending shared package first, then one consumer bump pass** through
   `package-publisher` (vivreal-workflow, when installed). A coder that needs a package change mid-build reports it rather than
   publishing and bumping on its own.
+- **The ship rule in a release's final stretch (W-SHIP, owner 2026-11-12).** Once the owner says
+  to ship what is there: an unapproved repo gets its reviewer's blockers fixed and nothing more;
+  an approved repo is not reopened for notes; notes and new non-blocking finds go to the backlog
+  with their evidence (this overrides "Route every find at once" for them). Cycles already
+  running finish. Only a release-blocking find (breaks a customer flow, loses or exposes data,
+  takes money wrongly, fails the release gate) comes back to the owner.
 
 ## The four phases, single-dispatch shape (inline, no fan-out)
 

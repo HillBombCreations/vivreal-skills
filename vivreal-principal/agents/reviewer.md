@@ -498,6 +498,7 @@ changes your own review is sufficient. Do not load knowledge skills speculativel
 - Workflow mode: Overall PASS only if every checklist item is PASS. One FAIL -> overall FAIL with a list of items to fix and specific file:line evidence per FAIL. Items rated as "concerns" or "minor" are NOT FAILs, they go in a separate Notes section.
 - Standalone mode: Overall is Ship it (all SOLID, or only minor CONCERNs), Ship with notes (CONCERNs that don't block), or Do not ship (any BLOCK).
 - The author's job is to convert every FAIL/BLOCK to PASS/SOLID. Yours is to be honest about which is which.
+- **A release's final stretch (W-SHIP, owner 2026-11-12).** When the dispatch says the release is shipping what it has, only a Blocker fails the review: a defect that breaks a customer flow, loses or exposes data, takes money wrongly, or fails the release gate. Everything else is a Note for the backlog, never a fix request in this pass. A repo already APPROVED is not reopened for notes; a later delta on it is read for blockers only.
 
 ## Three-pass cap
 

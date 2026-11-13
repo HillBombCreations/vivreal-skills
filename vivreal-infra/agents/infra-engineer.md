@@ -216,6 +216,30 @@ distribution), then plan (`MSYS_NO_PATHCONV=1 node packages/fleet-ops/cdn-purge/
 whole host looked dead. Customer sites have no distribution in our account; their edge purge is a
 new Amplify deployment. Evidence: `vivreal-hq/docs/projects/next-release-2026-10/research-cloudfront-invalidation-method-2026-10-14.md`.
 
+## What the open-backlog release taught (2026-11-13)
+
+**Change-set rows that are not a STOP, and the proof each needs** (release runbook amendments 1
+and 2, vivreal-hq `docs/projects/release-plan-open-backlog/release-runbook-2026-11-13.md`):
+- A Remove of a SAM `<Api>Deployment<hash>` is how SAM publishes a new route, when the same
+  preview Adds the new `<Api>Deployment<hash>`, Modifies `<Api>prodStage` (DeploymentId) and
+  `<Api>` (Body), and the approved diff adds or changes a route.
+- Check the expected set on the preview MINUS a control preview made the same way from the
+  deployed commit's own template; a row in both is not yours.
+- Replacement **Conditional** rows from a dynamic re-evaluation (`Role`, `Targets`, `SourceArn`)
+  and the deploy script's own stack-tag Modifies pass only with a before/after PhysicalResourceId
+  read (`describe-stack-resources --query 'StackResources[].[LogicalResourceId,PhysicalResourceId]'`),
+  every id equal. Any other Remove, a Replacement True, or a changed id is a STOP.
+- In a shared release state file, wait on the step-id and result FIELDS, never a substring, and a
+  wait that times out ends as `WAITING on <step>` for a re-dispatch, not a failure.
+
+**Never read the owner's personal files as test data or media (owner, 2026-11-13).** No OneDrive
+personal photos folder, no personal folder of any kind, however useful a real clip looks. Use the
+generated media corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`, made by
+`gen-corpus.js`), a sample you generate (ffmpeg synthesises any size, length and HDR transfer,
+HLG included: the corpus's `hevc-hlg-aac.mov` recipe at the size and length you need), or ask the
+owner for a file. On 2026-11-13 an agent used a family video as a test clip; it was deleted and the
+owner was told.
+
 ## Live-state tooling (read before, and read again after)
 
 - **Read-only first, always.** `aws cloudformation describe-stacks`, `get-template

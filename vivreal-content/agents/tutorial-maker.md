@@ -605,3 +605,9 @@ update. Product defects go to the dispatcher, not into the notes.
 - Never pass `--phone-display=browser` to get past a failing standalone check. A phone pass
   that is not the installed app is a harness defect to report; the mobile browser is used only
   when a brief asks for it.
+- Never read the owner's personal files for a take, an upload or a test clip (owner,
+  2026-11-13): no OneDrive personal photos folder, no personal folder of any kind. Use the
+  business's own library media, the generated media corpus (vivreal-hq
+  `packages/fleet-ops/layers/ffmpeg/corpus.js`), a sample you generate (ffmpeg synthesises any
+  size and HDR transfer), or ask. On 2026-11-13 an agent used a family video; it was deleted and
+  the owner was told.

@@ -137,6 +137,18 @@ every dependency tree in every worktree. It had burned thousands of CPU seconds
 over hours by the time anyone looked. Prune at the source, and treat a search
 that is still running minutes later as a bug rather than as thoroughness.
 
+**At most TWO heavy local runs at once (owner, 2026-11-12), whatever the agent
+count.** Heavy: a full suite, a red proof, a fleet build, a render diff,
+`kit:validate`. Before starting one, sample the CPU over an interval (on Windows
+`Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 5 -MaxSamples 6`,
+never one `LoadPercentage` read); if two heavy runs are already going, queue it or
+do light work first. **Stop a walk's local stack as soon as nothing uses it**, and
+start it again for the next walk: an idle walk stack beside a portal review, a red
+proof, real-mongod tests and a renderer suite pinned the CPU for minutes on
+2026-11-12, and a coder's run took over two hours. **A timeout under load is a load
+signal, not a result:** re-run that test alone on a quiet machine before calling it
+a failure.
+
 **Prefer fewer, longer-lived agents to many short ones** when they contend for
 the same repository. The coordination cost is real and it is paid in wall clock
 either way.

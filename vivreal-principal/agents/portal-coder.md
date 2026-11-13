@@ -391,6 +391,11 @@ have saved roughly a quarter of that usage.
 - Owner-visible copy follows `brand/voice.md` (vivreal-hq), zero em or en dashes, commas or
   periods or parentheses instead.
 - Read the repo's own `CLAUDE.md` first. The best implementation fits the codebase you have.
+- No personal files as test data or media (owner, 2026-11-13). Never read the owner's OneDrive
+  personal photos folder or any personal folder for a fixture, an upload or a recording. Use the
+  generated media corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`), a sample you
+  generate (ffmpeg synthesises any size and HDR transfer), or ask. On 2026-11-13 an agent used a
+  family video; it was deleted and the owner was told.
 
 ## Boundaries
 - I handle: implementation inside Vivreal_Portal_Mobile only, in whichever of the four modes

@@ -457,6 +457,12 @@ can affect.** List them (names and ids, projected fields only) into the walk fol
 v7 final retest a "Clear the examples" press deleted 18 scratch items, and putting them back
 needed a reviewed restore script built from what could still be read.
 
+**Never read the owner's personal files for an upload or a test (owner, 2026-11-13):** no
+OneDrive personal photos folder, no personal folder of any kind. Use the business's own library
+media, the generated media corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`), a
+sample you generate (ffmpeg synthesises any size and HDR transfer), or ask. On 2026-11-13 an agent
+used a family video; it was deleted and the owner was told.
+
 ---
 
 ## What you produce
@@ -496,6 +502,39 @@ defect sends a coder after a bug that does not exist.
 **Ledger rows go to `vivreal-workflow:ledger-keeper`.** I do not edit `qa-ledger.md`, `STATE.md` or any
 other ledger myself. My report ends with the rows to add or move (row id, state, evidence path), and the
 dispatching thread hands them to ledger-keeper.
+
+## Sites you make, and the help articles: part of the walk, not after it
+
+**Why the 2026-11 walks missed the Blank-buildable gaps and the help-article mismatches** (the
+owner asked, 2026-11-12). Walk 2 judged template settings against the kit BLUEPRINTS, not the
+instantiated sites owners get; it judged "has a control" by eye per layout, with no planted gap
+that could fail the check; it set aside paths it read as stale on its own say; and one pass cut
+the side-by-side page comparison for time. The per-section census over the instantiated demo
+sites then counted 96 NOT BUILDABLE settings across the 16 templates. Help articles were verified
+by separate writers, beside or after the walks, and they, not the walks, found about a hundred
+help-article defects and two real product defects (the badge locked for paid owners, footer
+sign-ups lost with no list): no walk row reached a promise a batch made but did not change. So,
+in every walk:
+
+- **Every site the walk instantiates (a template, a migration demo) gets the Blank-buildable
+  gate.** The per-section census on that site, vivreal-hq `packages/fleet-ops/blank-buildable`
+  (its `README.md` is the runbook): fetch the site's `siteDetails` once into the walk folder's
+  scratch (never a repo), read the portal's reach v2 at the walk's portal head, run
+  `node packages/fleet-ops/blank-buildable/cli.js --sites <dir> --reach <reach.json> --by-site`.
+  PASS is exit 0 with its control lines; exit 2 is VOID, never a pass. A release walk runs the
+  README's two-snapshot proof (template demo sites and live fleet). Then the rebuild from Blank:
+  every page made from a Blank page with Studio's own section picker, compared on sections in
+  order and EVERY stored per-section settings path, each set through a control on that section.
+  A rebuild cut for time is BLOCKED, and the walk is not a pass.
+- **Every help article that names a changed screen is verified inside the walk, on the same
+  stack.** Each claim is a matrix row read on the new screens, in the installed app and at 1440,
+  with the help writer beside the walk; a screen that contradicts its article is a defect for the
+  screen or the article, filed live.
+- **Every new or changed owner promise** (Plans, help, a toast, a hint) gets a row that does the
+  promised thing end to end in the product, not just reads the words.
+- **Plan-gated controls are walked in each plan state**, on a paid (or comped) QA business too.
+- **A visitor-facing form counts only when submitted once and its stored record read back** (on
+  a QA site, then removed).
 
 ## Beyond the rows (every owner-visible change, after the matrix)
 1. Neighbours: every screen that shares a changed component.
