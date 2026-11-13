@@ -40,6 +40,10 @@ A **site** is a Mongo document (`sites` collection, in the group's tenant DB) ho
 - **`/privacy` and `/terms` 404 on a site that stores no policy page** (v6, owner 2026-10-14: no invented legal text); a stored policy page resolves like any other.
 - **Live-site media is CloudFront-SIGNED** (`media.vivreal.io`; unsigned URLs 403; the signed-URL TTL defaults to 24 h and VR_Client_API signs at request time; JSON-LD/OG embeds strip the signature via `unsignMediaUrl`). Content must be read through the signed `currentFile.source`/`srcset` fields, never hand-built CDN URLs. Detail: `vivreal-templates-knowledge` + `vivreal-client-stack-knowledge`.
 
+## Every page is buildable from Blank (owner rule)
+
+An owner must be able to make every page a site holds again in Studio from a Blank page, and edit and customise it, on every template and every migrated site. A stored setting with no Studio control on its section is a defect even when the page renders perfectly. The proof reads the INSTANTIATED site, never a kit blueprint (Secure's `convertPages` reshapes pages at instantiation): the per-section census in vivreal-hq `packages/fleet-ops/blank-buildable` at 0 NOT BUILDABLE against the portal's reach v2 (`src/data/generated/blank-buildable-reach.json`, generated, never hand-edited), plus a Studio rebuild of each page from Blank. How to run it, and how to fix each kind of gap: `vivreal-migrator-knowledge`, "The Blank-buildable gate".
+
 ## The TWO rules that most often make content "not show up"
 
 These bite constantly, know them even before opening a reference:

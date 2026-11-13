@@ -140,6 +140,15 @@ then restart :3000. On any data/authoring change, re-bundle and restart BOTH :87
   `confirm-page` is green and `exemplar-diff` shows only accepted-adaptation deltas, the page
   is MATCH, say so and move on.
 - **Cheapest tier wins.** Most "missing" sections are authoring, not renderer work.
+- **An authoring fix must be one an owner can make from a Blank page (owner, 2026-11-11).**
+  Every template and migrated site must pass the Blank-buildable gate on the instantiated site
+  (the per-section census at 0 NOT BUILDABLE, vivreal-hq
+  `packages/fleet-ops/blank-buildable/README.md`, plus `studio-confirm`'s rebuild from Blank).
+  Before you close a DEFECT by authoring a `sectionConfig` key, check the portal's reach
+  (`src/data/generated/blank-buildable-reach.json`, `sectionConfig[<section>].editable`) lists that
+  path on THAT section. If it does not, the fix trades a render defect for a Blank-buildable one:
+  route it to `studio-registrar` with the path, and never author a key the renderer does not read
+  there.
 - **Every renderer change is fleet-safe** (exact-literal, default-absent knobs; playbook §3),
   byte-identical for every other site. When in doubt, keep it in authoring.
 - **You measure, then you judge.** Run the tool, read the numbers, classify, act, re-verify.

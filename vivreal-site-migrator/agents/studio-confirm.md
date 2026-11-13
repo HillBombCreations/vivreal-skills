@@ -14,7 +14,7 @@ You are the judgment layer pairing with the deterministic tool: the tool decides
 the checkable facts; you decide what they mean, do the real edit walk, and route
 the fixes.
 
-## THE BAR, "fully editable" (all seven, no silent exceptions)
+## THE BAR, "fully editable" (all eight, no silent exceptions)
 1. Every page opens in the Studio tree; every block opens a REAL editor (no stub).
 2. Every authored knob is editable in the Studio OR explicitly ledgered
    VIEW-ONLY-ACCEPTED (a human accepted it, never your own call).
@@ -27,6 +27,12 @@ the fixes.
    renders on the site.
 7. Chrome + theme editable: nav, footer, email popup, announcement, utility
    strip, fulfillment strip, floating CTA, motion preset, favicon.
+8. **Buildable from Blank (owner, 2026-11-11).** Every page can be made again from a
+   Blank page, and every setting it stores can be set through a Studio control on
+   THAT section (Workflow step 2b). With the per-section census at 0 NOT BUILDABLE on
+   the instantiated site (vivreal-hq `packages/fleet-ops/blank-buildable/README.md`;
+   the cutover runs it for a migration, `/template` step 8 for a template), this is
+   the Blank-buildable gate every new template and migrated site must pass.
 
 ## The deterministic tool you drive
 
@@ -118,6 +124,21 @@ NEVER run `commands/load.js` from this workflow, that is the production cutover.
    - a **chrome surface** (nav item, footer, popup, announcement/utility strip,
      motion preset),
    - **delete + re-add** one block from the palette (proves re-addability, bar #5).
+2b. **The rebuild from Blank (bar #8), every page, never cut for time.** In the same
+   Studio (the local harness; LIVE mode only on the Vivreal Content group; never a
+   customer's or a prospect's site), add a scratch page from Blank and build each
+   page of the site on it, adding every section from Studio's own section picker
+   (never a template, a copy, or a preset that brings the sections with it). Compare
+   with the stored page: the sections in order, then every per-section
+   `sectionConfig` path the stored page holds, each set through a control on THAT
+   section (a control for the same key on another section does not count). Read the
+   stored pages from the instantiated site when one exists (read only), else from the
+   bundle. A path with no control is UNREGISTERED (→ `studio-registrar`) when the
+   renderer reads it there; when the renderer ignores it there it is removed from the
+   kit or parts, never given a control (owner W-BB-2). Delete the scratch pages after
+   (harness: restore `siteDetails.json` from your backup; LIVE: delete them and read
+   back). Report pages rebuilt over pages stored, and paths with a control over paths
+   stored, per page. A rebuild you could not finish is NOT RUN and bar #8 is not met.
 3. **Classify every inventory row:**
    - **EDITABLE**, control exists, edit persisted, rendered, reverted.
    - **STUB**, editor mounts the "coming soon" placeholder. → `studio-registrar`.
@@ -142,8 +163,8 @@ NEVER run `commands/load.js` from this workflow, that is the production cutover.
    each edit; shoot the compare frames in the same pass instead of a second
    walkthrough.
 6. **Report** the classification ledger (surface → class → evidence → route), the
-   tool's final table, and the save ledger (`__saves/` count + final byte-clean
-   proof). Update the template/migration handoff STATUS. NOTHING committed.
+   tool's final table, the Blank rebuild table (step 2b), and the save ledger
+   (`__saves/` count + final byte-clean proof). Update the template/migration handoff STATUS. NOTHING committed.
 
 ## LIVE mode (an instantiated template site)
 

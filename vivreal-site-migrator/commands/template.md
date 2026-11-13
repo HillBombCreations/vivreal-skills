@@ -145,6 +145,27 @@ authoring). Record the verdict into the brief STATUS.
    STUB/UNREGISTERED/DROPPED/PREVIEW-BLIND findings go back to `studio-registrar` (or
    `component-builder` for renderer defects); re-run the gate after each handback. A template a
    customer can't edit has NOT met the standard, no matter how it renders.
+8. **BLANK-BUILDABLE gate (owner, 2026-11-11; every new template).** An owner must be able to
+   build every page of the template again from a Blank page in Studio. Proved on the
+   INSTANTIATED site, never the blueprint (Secure's `convertPages` reshapes pages at
+   instantiation). The method, the contract and the fix routes are
+   `vivreal-knowledge:vivreal-migrator-knowledge`, "The Blank-buildable gate"; the runbook is
+   vivreal-hq `packages/fleet-ops/blank-buildable/README.md`. Here:
+   - **Now, on the kit:** from vivreal-hq,
+     `node packages/fleet-ops/blank-buildable/cli.js --blueprint "$VIVREAL_REPOS/Vivreal_Site_Migrator/captures/<kit>/blueprint.json"`
+     must exit 0 (no dead key seeded). Early check only.
+   - **The rebuild from Blank,** in `studio-confirm`'s walk: every page rebuilt from a Blank page
+     with Studio's own section picker, compared on sections in order and every per-section
+     settings path, each set through a control on that section.
+   - **On the instantiated demo site** (Vivreal Content, see "Template sites" below), before the
+     look's `site_templates` row is inserted: the per-section census at 0 NOT BUILDABLE, exit 0
+     with its control lines printed, against the portal's reach v2 read at a named ref
+     (`git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" show <ref>:src/data/generated/blank-buildable-reach.json`),
+     `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <reach.json> --by-site`.
+     Exit 2 is VOID, never a pass.
+   Fix by cause: a setting the renderer reads and Studio cannot set → `studio-registrar` (control
+   plus regenerated reach); a setting the renderer ignores there → removed from the kit, never
+   given a control; a `DEAD` key → removed, never a remainder entry. Re-run after each fix.
 
 ## GATE 3, SHIP the template (USER-GATED)
 Before presenting, run two more checks:
@@ -158,7 +179,8 @@ Before presenting, run two more checks:
 Present the DoD: confirm-site SITE PASS · every page ✅ CONFIRM PASS · 0 dead external links ·
 kit:validate green · template-critic B not FAIL ·
 agent exemplar-diff done with defects closed + adaptations flagged · **STUDIO PASS + the
-studio-confirm classification ledger (no un-waived non-EDITABLE rows)** · **quota met** (the kit
+studio-confirm classification ledger (no un-waived non-EDITABLE rows)** · **the Blank rebuild of
+every page matched, and `--blueprint` exit 0** (validation step 8) · **quota met** (the kit
 checklist: nav / header-hero / ≥3 landing comps / motion preset / page type) · renderer + migrator
 suites green if `src/` touched · nothing committed. On explicit approval, the template is shipped
 as a validated kit. **Downstream (optional, separately gated like migrate's cutover):** register
@@ -175,6 +197,10 @@ the row file also ships `previewImageKey: null`. A kit is registered only when a
 `site_templates` returns it: count before and after. See
 `docs/template-flow.md` §6b leg (3b). A registered look with no real screenshot falls back to
 the portal's CSS vignette, which is a registration gap, not a done state.
+**A look is offered only after its instantiated demo site passes the Blank-buildable census**
+(validation step 8, 0 NOT BUILDABLE): stand up the demo site, run the census on it, and insert the
+`site_templates` row only on a pass. A template nobody can rebuild from Blank is not shipped,
+however it renders.
 **Template sites live on the Vivreal Content group:** any site instantiated from a template for
 validation, demo, smoke, or showcase purposes is created on **Vivreal Content**
 (`groupName "Vivreal Content"`, key `vivrealcontent`, `_id <look up by key vivrealcontent>`,
