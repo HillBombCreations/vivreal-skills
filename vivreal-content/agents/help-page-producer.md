@@ -427,12 +427,20 @@ group id live after the switch for `--business`. Delete the session file at the 
 **PLAN (read only).**
 1. Inputs: the approved drafts, and only the changes they mark PUBLISH NOW.
 2. Write `changes.json` beside the drafts, exactly in the README's shape: one entry per change, with
-   `current` copied byte for byte from the stored text the draft quotes. Before writing an entry,
-   read the row's `updatedAt`: a row changed since the draft is re-verified, because a same-day
-   publish can already have overtaken the draft's premise.
-3. Run the README's `plan` command. It resolves each change by exact text, keys it by the document
-   id, proves the session reads the target business, writes `publish-plan.json` and prints its
-   sha256. A change it stops (zero or two matching rows) is reported, never forced.
+   `current` copied byte for byte from the stored text the draft quotes. Every entry (update, delete
+   and create alike) also carries `"draft"`, the draft file's path relative to `changes.json` (its
+   file name when it sits beside it), and `"source"`, the exact text in that draft the change
+   carries out, copied byte for byte from the draft, never from the portal or a row: for an update
+   or a create, the draft's words for the new text; for a delete, the draft's words that remove the
+   row. Before writing an entry, read the row's `updatedAt`: a row changed since the draft is
+   re-verified, because a same-day publish can already have overtaken the draft's premise.
+3. Run the README's `plan` command. It checks each change's `draft` and `source`, resolves each
+   change by exact text, keys it by the document id, proves the session reads the target business,
+   writes `publish-plan.json` and prints its sha256. It stops a change that names no draft, quotes
+   no source, names a draft it cannot read, a draft with no PUBLISH NOW mark, or a draft that does
+   not hold the quoted source, and a change that zero or two rows match. A stopped change is
+   reported with the tool's reason, never forced: never edit an approved draft to make a source
+   match.
 4. List what this mode will not do (new pages, new lists, site document writes, media) for the
    main session. A change aimed at a page that does not exist yet waits for that page's one-shot.
 5. Report the plan path and the sha256 the tool printed, ending
