@@ -97,7 +97,7 @@ three searches returned three different incomplete answers.
 | `useAuth()` in app layout, hydration, SSR | [references/portal.md](references/portal.md): "Hydration & SSR rules" |
 | Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + dev docs `05-reference/aws-estate.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
-| AWS or Amplify reads (`get-app`, `get-function-configuration`, `get-secret-value`, `ssm get-parameter`), env vars, secrets | "Security non-negotiables" |
+| Any AWS CLI command (its `--profile`), AWS or Amplify reads (`get-app`, `get-function-configuration`, `get-secret-value`, `ssm get-parameter`), env vars, secrets | "Security non-negotiables" |
 | Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
 | Integration manifests (`src/data/manifests/`), portal component patterns, shared sheet/dialog renderers | [references/portal.md](references/portal.md): "Conventions you'll see" + "Default-renderer fallbacks" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
@@ -178,6 +178,16 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   `basicAuthCredentials` (base64 `user:password`); for a key list ask for names only (`keys(Environment.Variables)`,
   `keys(app.environmentVariables)`). Every Bash-capable agent in vivreal-principal, vivreal-workflow, vivreal-infra and vivreal-ops
   carries this as a DON'T.
+- **AWS commands name the agent profile.** When `VIVREAL_AGENT_PROFILES` is set (`printenv
+  VIVREAL_AGENT_PROFILES` lists profile names, which are not secrets), the agent roles are live:
+  every AWS CLI command names one of those profiles with `--profile <name>`, spelled out, the
+  read-only one (its name ends `-ro`) unless the task writes infrastructure, and never any other
+  profile. Never set, export or unset `AWS_PROFILE` or `AWS_DEFAULT_PROFILE` in a command, and never
+  put credentials in one: each reaches the operator's own administrator access, and the
+  vivreal-infra env guard hook refuses only a `--profile` outside the list, so for those forms this
+  rule is the only net. An `AccessDenied` under an agent profile is the boundary working (it denies
+  the secret-value reads above on purpose): report it, never retry under another profile. While the
+  variable is unset (the roles not yet proven live), commands run as they did before.
 - **Redact on the VALUE, not on the variable name.** A name-based allowlist missed 8 of 18 real
   leaks here, because the leaking fields were called `to`, `subject`, `admin` and `route`. Also
   **decode before you judge**: an unsubscribe token was base64 of the email address, so the

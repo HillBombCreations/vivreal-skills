@@ -2,7 +2,10 @@
 // ALLOW and REFUSE controls for lambda-env-guard.cjs, for the four false positives in the
 // November release plan (T2): log reads that name /aws/lambda/, PowerShell backticks,
 // $VAR inside a quoted value, and scripts that use the word lambda beside a brace. Each
-// spawns the real hook with a real stdin payload, as Claude Code runs it.
+// spawns the real hook with a real stdin payload, as Claude Code runs it. The last block is
+// the agent profile check (release A, K-3, backlog T3): REFUSE and ALLOW with
+// VIVREAL_AGENT_PROFILES set, and every REFUSE command again with it unset, where the hook
+// must judge exactly as it did before the check existed.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
@@ -29,6 +32,7 @@ fs.writeFileSync(path.join(aliasHome, '.aws', 'cli', 'alias'), [
   '  }; f',
   '',
   'leakfc = lambda get-function-configuration --profile ALIASBODYMARKER',
+  'adminls = s3 ls --profile ALIASPROFILEMARKER',
   '',
   '[command lambda]',
   'fc = get-function-configuration',
@@ -38,16 +42,22 @@ fs.writeFileSync(path.join(aliasHome, '.aws', 'cli', 'alias'), [
   '',
 ].join('\n'));
 const ALIAS_BODY_MARKER = 'ALIASBODYMARKER';
+const ALIAS_PROFILE_MARKER = 'ALIASPROFILEMARKER';
 test.after(() => {
   fs.rmSync(emptyHome, { recursive: true, force: true });
   fs.rmSync(aliasHome, { recursive: true, force: true });
 });
 
-function verdict(tool, command, home = emptyHome) {
+// `profiles` is the hook's VIVREAL_AGENT_PROFILES. Undefined removes it, so the runner's own
+// setting (an operator turns it on after the agent roles are proven) never decides a case.
+function verdict(tool, command, home = emptyHome, profiles = undefined) {
+  const env = { ...process.env, HOME: home, USERPROFILE: home };
+  delete env.VIVREAL_AGENT_PROFILES;
+  if (profiles !== undefined) env.VIVREAL_AGENT_PROFILES = profiles;
   const res = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ tool_name: tool, tool_input: { command } }),
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, USERPROFILE: home },
+    env,
   });
   if (res.status === 0) return { refused: false, why: '' };
   assert.equal(res.status, 2, 'the hook exits 0 (allow) or 2 (refuse), got ' + res.status + ': ' + res.stderr);
@@ -271,3 +281,123 @@ test('the header states that the hook is not a security boundary and the SDK is 
   assert.match(header, /IAM deny on lambda:GetFunctionConfiguration/);
   assert.match(header, /docs\/agent-permissions-boundary\.md/);
 });
+
+// Release A, K-3 (backlog T3): once the agent roles are proven live, the operator sets
+// VIVREAL_AGENT_PROFILES, and an AWS CLI command may then name only those profiles.
+const AGENT_PROFILES = 'vivreal-agent-ro,vivreal-agent-infra';
+
+const PROFILE_REFUSE = [
+  ['Bash', 'aws s3 ls --profile admin'],
+  ['PowerShell', 'aws s3 ls --profile admin'],
+  ['Bash', 'aws --profile admin sts get-caller-identity'],
+  ['Bash', 'aws sts get-caller-identity --profile=admin'],
+  ['PowerShell', "aws sts get-caller-identity --profile='admin'"],
+  // argparse takes an unambiguous prefix of --profile (no other global option starts --p).
+  ['Bash', 'aws --prof admin sts get-caller-identity'],
+  ['Bash', 'aws sts get-caller-identity --p admin'],
+  ['Bash', 'aws --pro=admin s3 ls'],
+  // A profile name spelled wrong is another profile: mixed case, padded, empty, missing.
+  ['Bash', 'aws s3 ls --profile Vivreal-Agent-RO'],
+  ['Bash', "aws s3 ls --profile ' vivreal-agent-ro'"],
+  ['Bash', 'aws s3 ls --profile ""'],
+  ['Bash', 'aws s3 ls --profile'],
+  // The CLI keeps the last --profile, so an agent profile first proves nothing.
+  ['Bash', 'aws s3 ls --profile vivreal-agent-ro --profile admin'],
+  // A value this hook cannot read is refused, never guessed.
+  ['Bash', 'aws s3 ls --profile "$P"'],
+  ['Bash', 'aws s3 ls --profile $P'],
+  ['PowerShell', 'aws s3 ls --profile $env:P'],
+  ['Bash', 'aws s3 ls --profile "$(cat p.txt)"'],
+  // Words the shell rewrites into --profile.
+  ['Bash', 'aws s3 ls --prof' + BS + 'ile admin'],
+  ['Bash', 'aws s3 ls --pro{file,x} admin'],
+  // However the CLI is reached.
+  ['Bash', 'aws.exe s3 ls --profile admin'],
+  ['Bash', 'python -m awscli s3 ls --profile admin'],
+  ['Bash', 'bash -c "aws s3 ls --profile admin"'],
+  ['PowerShell', 'powershell -Command "aws s3 ls --profile admin"'],
+  ['Bash', 'aws sts get-caller-identity --profile vivreal-agent-ro && aws s3 ls --profile admin'],
+  ['PowerShell', "& 'C:/Program Files/Amazon/AWSCLIV2/aws.exe' s3 ls --profile admin"],
+];
+
+const PROFILE_ALLOW = [
+  ['Bash', 'aws s3 ls --profile vivreal-agent-ro'],
+  ['PowerShell', 'aws s3 ls --profile vivreal-agent-ro'],
+  ['Bash', 'aws --profile=vivreal-agent-infra cloudformation describe-stacks --stack-name x'],
+  ['PowerShell', "aws sts get-caller-identity --profile 'vivreal-agent-infra'"],
+  ['Bash', 'aws --prof vivreal-agent-ro sts get-caller-identity'],
+  ['Bash', 'aws s3 ls --profile vivreal-agent-ro --region us-east-1'],
+  ['Bash', "aws lambda get-function-configuration --function-name f --query LastModified --profile vivreal-agent-ro"],
+  // The check refuses a NAMED profile outside the list; a command naming none is not judged here.
+  ['Bash', 'aws sts get-caller-identity'],
+  // Not the AWS CLI.
+  ['Bash', 'docker compose --profile dev up'],
+  // A doc append is data written to a file, whatever its text says.
+  ['Bash', "cat >> notes.md <<'EOF'\naws s3 ls --profile admin\nEOF"],
+];
+
+for (const [tool, command] of PROFILE_REFUSE) {
+  test('REFUSE profile [' + tool + '] ' + JSON.stringify(command), () => {
+    const { refused } = verdict(tool, command, emptyHome, AGENT_PROFILES);
+    assert.equal(refused, true, 'permitted an AWS CLI --profile outside VIVREAL_AGENT_PROFILES');
+  });
+  // The control that makes "unset means today" a measured claim: the same command, the variable
+  // removed, is judged as before the check existed (none of these is a lambda read).
+  test('ALLOW profile, variable unset [' + tool + '] ' + JSON.stringify(command), () => {
+    const { refused, why } = verdict(tool, command, emptyHome, undefined);
+    assert.equal(refused, false, 'with VIVREAL_AGENT_PROFILES unset the hook must behave as before:\n' + why);
+  });
+}
+
+for (const [tool, command] of PROFILE_ALLOW) {
+  test('ALLOW profile [' + tool + '] ' + JSON.stringify(command), () => {
+    const { refused, why } = verdict(tool, command, emptyHome, AGENT_PROFILES);
+    assert.equal(refused, false, 'refused an agent profile or a command that names none:\n' + why);
+  });
+}
+
+test('the profile list is read as trimmed, comma separated, exact names', () => {
+  const padded = ' vivreal-agent-ro , vivreal-agent-infra ,';
+  assert.equal(verdict('Bash', 'aws s3 ls --profile vivreal-agent-infra', emptyHome, padded).refused, false);
+  assert.equal(verdict('Bash', 'aws s3 ls --profile admin', emptyHome, padded).refused, true);
+});
+
+test('a variable set to nothing allows no --profile at all (fail closed), and leaves other commands alone', () => {
+  assert.equal(verdict('Bash', 'aws s3 ls --profile vivreal-agent-ro', emptyHome, '').refused, true);
+  assert.equal(verdict('Bash', 'aws s3 ls', emptyHome, '').refused, false);
+});
+
+test('an agent profile does not exempt a lambda read from the env check', () => {
+  const { refused } = verdict('Bash', 'aws lambda get-function --function-name f --profile vivreal-agent-ro', emptyHome, AGENT_PROFILES);
+  assert.equal(refused, true, 'permitted an unprojected lambda read under an agent profile');
+});
+
+test('the refusal names the profile and the allowed list, with the profile guidance only', () => {
+  const { refused, why } = verdict('Bash', 'aws s3 ls --profile admin', emptyHome, AGENT_PROFILES);
+  assert.equal(refused, true);
+  assert.match(why, /"admin"/);
+  assert.match(why, /VIVREAL_AGENT_PROFILES/);
+  assert.match(why, /vivreal-agent-ro, vivreal-agent-infra/);
+  assert.match(why, /never retry under another profile/);
+  assert.ok(!why.includes('Permitted (an allowlist'), 'a profile refusal printed the lambda query guidance:\n' + why);
+});
+
+test('unset, a lambda refusal reads exactly as before: no profile guidance', () => {
+  const read = 'aws lambda get-function --function-name f';
+  const off = verdict('Bash', read, emptyHome, undefined);
+  assert.equal(off.refused, true);
+  assert.ok(off.why.includes('Permitted (an allowlist'));
+  assert.ok(!off.why.includes('Agent profiles'), 'the profile guidance printed with the check off:\n' + off.why);
+  const on = verdict('Bash', read, emptyHome, AGENT_PROFILES);
+  assert.ok(on.why.includes('Permitted (an allowlist') && on.why.includes('Agent profiles'));
+});
+
+for (const tool of ['Bash', 'PowerShell']) {
+  test('a CLI alias that names another profile is refused, and its body is never printed [' + tool + ']', () => {
+    const { refused, why } = verdict(tool, 'aws adminls', aliasHome, AGENT_PROFILES);
+    assert.equal(refused, true, 'permitted an alias that runs under a profile outside the list');
+    assert.ok(why.includes('adminls'), 'the refusal should name the alias');
+    assert.ok(!why.includes(ALIAS_PROFILE_MARKER), 'the refusal printed the alias body:\n' + why);
+    assert.equal(verdict(tool, 'aws adminls', aliasHome, undefined).refused, false, 'unset, the alias is judged as before');
+  });
+}

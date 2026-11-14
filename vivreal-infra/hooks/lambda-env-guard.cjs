@@ -11,9 +11,26 @@
  * reads command TEXT, and no pattern list can follow arbitrary code. The real control is
  * an IAM deny on lambda:GetFunctionConfiguration (and the other reads listed below) for
  * agent roles, designed in this repository's docs/agent-permissions-boundary.md and not
- * yet built (backlog T3). The
+ * yet live (backlog T3). The
  * heredoc exemption below is the same: an interpreter this hook does not know can
  * still run a file a heredoc wrote.
+ *
+ * THE AGENT PROFILE CHECK (backlog T3, release A K-3), OFF UNLESS VIVREAL_AGENT_PROFILES IS SET.
+ * Once the agent roles are proven live, the operator sets VIVREAL_AGENT_PROFILES in the
+ * environment Claude Code starts with (comma separated profile names; entries are trimmed and
+ * compared exactly, as the CLI compares them). From then on an AWS CLI command (`aws`, `aws.exe`,
+ * `python -m awscli`, also inside `bash -c`, `powershell -Command` or a CLI alias) whose
+ * `--profile` names anything outside that list is refused, in every spelling argparse accepts:
+ * `--profile x`, `--profile=x`, an unambiguous prefix (`--prof x`; no other global option starts
+ * `--p`), a backslash or brace the shell turns into one, and the last of several (the CLI keeps
+ * the last). A value this hook cannot read (`$P`, `"$P"`, `$(...)`, `%P%`) is refused too. A
+ * variable set to nothing allows no `--profile` at all. UNSET, the check returns before it reads
+ * a word and adds nothing to a refusal's text, so the hook judges every command exactly as it did
+ * before the check existed. It is an accident net like the rest of this file: it does not see
+ * `AWS_PROFILE` or `AWS_DEFAULT_PROFILE` set, exported or unset in a command, credentials in the
+ * environment, a program named by an expansion, a command that names no profile while the session
+ * defaults to the operator's own credentials, or any SDK program. Removing the operator's
+ * administrator keys from the machine agents run on (the design's option D) closes those.
  *
  * Moved from vivreal-hq 2026-10 so it fires in every repo where releases run.
  *
@@ -732,6 +749,55 @@ const GLOBAL_BOOLEAN_OPTIONS = [
   '--cli-auto-prompt', '--no-cli-auto-prompt', '--version',
 ];
 
+/**
+ * The AWS CLI profiles an agent may name, from VIVREAL_AGENT_PROFILES, or null when the variable
+ * is unset. Null switches the profile check off (see the header). Assigned again only by the
+ * self-test, so the runner's own setting never decides a self-test case.
+ */
+function parseAgentProfiles(value) {
+  if (value === undefined) return null;
+  return new Set(String(value).split(',').map((p) => p.trim()).filter(Boolean));
+}
+// Every profile refusal names the variable, which is also how the handler picks its guidance.
+const PROFILE_VAR = 'VIVREAL_AGENT_PROFILES';
+let agentProfiles = parseAgentProfiles(process.env[PROFILE_VAR]);
+
+// argparse accepts an unambiguous prefix of a long option, and `--profile` is the only AWS CLI
+// global option that starts `--p`, so `--p`, `--pro` and `--prof` all name it.
+const PROFILE_FLAG = /^--p(r(o(f(i(l(e)?)?)?)?)?)?(=|$)/i;
+
+/** Why this segment's --profile must be refused, or null. Null at once when the check is off. */
+function profileRefusal(ws, dialect) {
+  if (agentProfiles === null) return null;
+  const starts = awsProgramStarts(ws);
+  if (starts.length === 0) return null;
+  const allowed = agentProfiles.size ? [...agentProfiles].join(', ') : 'no profile at all';
+  for (let k = Math.min(...starts); k < ws.length; k += 1) {
+    const w = ws[k];
+    // Bash expands `--pro{file,x}` or `{--profile,x}` into words this hook never sees as written.
+    if (dialect === 'bash' && w.raw.includes('{')) {
+      const spelled = braceExpand(w.raw);
+      if (spelled === null || spelled.some((t) => PROFILE_FLAG.test(t.replace(/['"]/g, '')))) {
+        return 'a brace expansion (' + w.raw + ') can spell --profile, which this hook cannot check against ' +
+          PROFILE_VAR + '. Spell it out.';
+      }
+    }
+    if (!PROFILE_FLAG.test(w.value)) continue;
+    const eq = w.value.indexOf('=');
+    const value = eq === -1 ? ws[k + 1] : { raw: w.raw.slice(w.raw.indexOf('=') + 1), value: w.value.slice(eq + 1) };
+    if (!value) return '--profile has no value, and ' + PROFILE_VAR + ' is set.';
+    if (/[$`%]|^@/.test(value.raw) && !/^'[^']*'$/.test(value.raw)) {
+      return 'the --profile value (' + value.raw + ') is an expansion this hook cannot check against ' +
+        PROFILE_VAR + '; spell the profile name out.';
+    }
+    if (!agentProfiles.has(value.value)) {
+      return '--profile "' + value.value + '" is not an agent profile. ' + PROFILE_VAR + ' allows ' + allowed + '.';
+    }
+    if (eq === -1) k += 1; // the value word was judged; never read it again as a flag
+  }
+  return null;
+}
+
 /** Where the AWS CLI program's own arguments start: after `aws`, `aws.exe`, or `-m awscli`. */
 function awsProgramStarts(ws) {
   const starts = [];
@@ -852,6 +918,9 @@ function refusalFor(segment, dialect, depth, isLast = true) {
     }
   }
 
+  const profile = profileRefusal(ws, dialect);
+  if (profile) return profile;
+
   const cc = cloudControlRefusal(ws);
   if (cc) return cc;
 
@@ -937,6 +1006,20 @@ const GUIDANCE = [
   'The only safe existence probe for a variable is ${VAR:+set} ALONE, with no :- default:',
   'the second expansion of a compound probe prints the value.',
 ].join('\n');
+
+// Printed only while the profile check is on, so a refusal with it off reads as it always did:
+// alone after a profile refusal, after GUIDANCE after any other.
+const PROFILE_GUIDANCE = [
+  '',
+  'Agent profiles (' + PROFILE_VAR + ' is set): name one of its profiles with --profile, spelled',
+  'out, on every AWS command. An AccessDenied under an agent profile is the boundary working: report',
+  'it, never retry under another profile.',
+].join('\n');
+
+function guidanceFor(why) {
+  if (agentProfiles === null) return GUIDANCE;
+  return why.includes(PROFILE_VAR) ? PROFILE_GUIDANCE : GUIDANCE + '\n' + PROFILE_GUIDANCE;
+}
 
 
 // Anything that can run code: a shell, an interpreter, eval or source, or a wrapper that runs
@@ -1285,8 +1368,24 @@ const CASES = [
   ['allow', "& \"C:" + BS + "Program Files" + BS + "Amazon" + BS + "AWSCLIV2" + BS + "aws.exe\" lambda get-function-configuration --function-name f --query 'keys(Environment.Variables)'", 'PowerShell'],
 ];
 
+// The agent profile check, judged under a fixed list. Every case is judged again with the check
+// off, where each must be permitted: none is a lambda read, so off means as before the check.
+const PROFILE_LIST = 'vivreal-agent-ro,vivreal-agent-infra';
+const PROFILE_CASES = [
+  ['block', 'aws s3 ls --profile admin'],
+  ['block', 'aws --profile=admin sts get-caller-identity'],
+  ['block', 'aws --prof admin sts get-caller-identity'],
+  ['block', 'aws s3 ls --profile "$P"'],
+  ['block', 'aws s3 ls --profile vivreal-agent-ro --profile admin'],
+  ['block', 'bash -c "aws s3 ls --profile admin"'],
+  ['allow', 'aws s3 ls --profile vivreal-agent-ro'],
+  ['allow', 'aws --profile=vivreal-agent-infra sts get-caller-identity'],
+  ['allow', 'aws sts get-caller-identity'],
+];
+
 function selfTest() {
   let failed = 0;
+  agentProfiles = null; // the runner's own VIVREAL_AGENT_PROFILES never decides a case
   for (const [expected, command, tool = 'Bash'] of CASES) {
     const why = decide(tool, command);
     const actual = why ? 'block' : 'allow';
@@ -1294,6 +1393,23 @@ function selfTest() {
       failed += 1;
       console.error('FAIL expected ' + expected + ' got ' + actual + ': ' + command + (why ? '\n  ' + why : ''));
     }
+  }
+  for (const [expected, command] of PROFILE_CASES) {
+    for (const [list, want] of [[PROFILE_LIST, expected], [undefined, 'allow']]) {
+      agentProfiles = parseAgentProfiles(list);
+      const why = decide('Bash', command);
+      const actual = why ? 'block' : 'allow';
+      if (actual !== want) {
+        failed += 1;
+        console.error('FAIL expected ' + want + ' got ' + actual + ' with VIVREAL_AGENT_PROFILES ' +
+          (list === undefined ? 'unset' : 'set') + ': ' + command + (why ? '\n  ' + why : ''));
+      }
+    }
+  }
+  agentProfiles = null;
+  if (!PROFILE_CASES.some((c) => c[0] === 'block') || !PROFILE_CASES.some((c) => c[0] === 'allow')) {
+    failed += 1;
+    console.error('FAIL the profile case set is one sided');
   }
   // A control on the harness: the suite must contain both verdicts, or a
   // matcher that said "allow" to everything would pass a one sided set.
@@ -1319,7 +1435,8 @@ function selfTest() {
     console.error('\n' + failed + ' self-test failure(s).');
     process.exit(1);
   }
-  console.log('self-test OK: ' + blocks + ' refused, ' + allows + ' permitted, controls pass.');
+  console.log('self-test OK: ' + blocks + ' refused, ' + allows + ' permitted, ' + PROFILE_CASES.length +
+    ' profile cases set and unset, controls pass.');
   process.exit(0);
 }
 
@@ -1339,6 +1456,6 @@ process.stdin.on('end', () => {
   }
   const why = decide(payload.tool_name, (payload.tool_input || {}).command || '');
   if (!why) process.exit(0);
-  console.error('REFUSED by vivreal-infra lambda-env-guard: ' + why + '\n' + GUIDANCE);
+  console.error('REFUSED by vivreal-infra lambda-env-guard: ' + why + '\n' + guidanceFor(why));
   process.exit(2);
 });

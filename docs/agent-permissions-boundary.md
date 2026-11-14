@@ -1,8 +1,13 @@
 # AWS permissions boundary for agent roles (design only)
 
 Status: DESIGN ONLY, for the November 2026 release (plan item K3, backlog T3, owner decision Q7:
-"design only this release, build next release after the owners choose the role split"). Nothing in
-this document has been built. No IAM policy, role, user, profile or setting was changed to write it.
+"design only this release, build next release after the owners choose the role split"). When it was
+written nothing in it had been built. No IAM policy, role, user, profile or setting was changed to write it.
+
+Update, release A (November 2026): the owners chose two roles (section 5). The roles and their
+boundary are a vivreal-hq template, live only once that stack is deployed and proven. Section 4
+item 3 is built: `vivreal-infra/hooks/lambda-env-guard.cjs` refuses an AWS CLI `--profile` outside
+`VIVREAL_AGENT_PROFILES` once the operator sets that variable, and adds nothing while it is unset.
 
 ## 1. Why
 
