@@ -775,9 +775,17 @@ function profileRefusal(ws, dialect) {
   for (let k = Math.min(...starts); k < ws.length; k += 1) {
     const w = ws[k];
     // Bash expands `--pro{file,x}` or `{--profile,x}` into words this hook never sees as written.
+    // Quoted braces and commas are literal (a `--query '{a:b,c:d}'`), so, as in rewritesWords,
+    // they become spaces before expanding, and every piece of every result is tested.
+    let flat = '';
     if (dialect === 'bash' && w.raw.includes('{')) {
-      const spelled = braceExpand(w.raw);
-      if (spelled === null || spelled.some((t) => PROFILE_FLAG.test(t.replace(/['"]/g, '')))) {
+      walk(w.raw, dialect, (ch, quoted) => {
+        flat += quoted && /[{},]/.test(ch) ? ' ' : ch;
+      });
+    }
+    if (flat.includes('{')) {
+      const spelled = braceExpand(flat);
+      if (spelled === null || spelled.some((t) => t.split(/\s+/).some((p) => PROFILE_FLAG.test(p)))) {
         return 'a brace expansion (' + w.raw + ') can spell --profile, which this hook cannot check against ' +
           PROFILE_VAR + '. Spell it out.';
       }

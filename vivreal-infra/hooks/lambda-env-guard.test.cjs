@@ -311,6 +311,7 @@ const PROFILE_REFUSE = [
   // Words the shell rewrites into --profile.
   ['Bash', 'aws s3 ls --prof' + BS + 'ile admin'],
   ['Bash', 'aws s3 ls --pro{file,x} admin'],
+  ['Bash', 'aws s3 ls "--pro"{file,x} admin'],
   // However the CLI is reached.
   ['Bash', 'aws.exe s3 ls --profile admin'],
   ['Bash', 'python -m awscli s3 ls --profile admin'],
@@ -328,6 +329,10 @@ const PROFILE_ALLOW = [
   ['Bash', 'aws --prof vivreal-agent-ro sts get-caller-identity'],
   ['Bash', 'aws s3 ls --profile vivreal-agent-ro --region us-east-1'],
   ['Bash', "aws lambda get-function-configuration --function-name f --query LastModified --profile vivreal-agent-ro"],
+  // Quoted braces are literal: a projected selection is not a brace expansion.
+  ['Bash', "aws lambda get-function --function-name f --query 'Configuration.{Name:FunctionName,Sha:CodeSha256}' --profile vivreal-agent-ro"],
+  ['Bash', "aws lambda list-functions --query 'Functions[].{" +
+    Array.from({ length: 70 }, (_, i) => 'f' + i + ':FunctionName').join(',') + "}' --profile vivreal-agent-ro"],
   // The check refuses a NAMED profile outside the list; a command naming none is not judged here.
   ['Bash', 'aws sts get-caller-identity'],
   // Not the AWS CLI.
