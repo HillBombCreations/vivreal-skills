@@ -61,8 +61,12 @@ For each repo in the dispatch:
    deployed by manual dispatch runs the SHA of its last successful deploy run, not its line's tip:
    read that run's `headSha` with `gh run list`.
 2. **Every manifest at that SHA.** List them with
-   `git ls-tree -r --name-only <sha> | grep -E '(^|/)(package-lock\.json|package\.json|requirements[^/]*\.txt|pyproject\.toml|Dockerfile)$'`,
-   and require the root `package.json` in the list when the repo has one (the control). Check each
+   `git ls-tree -r --name-only <sha> | grep -i -E '(^|/)(package-lock\.json|package\.json|requirements[^/]*\.txt|pyproject\.toml|([^/]*\.)?dockerfile(\.[^/]*)?|containerfile)$'`
+   (case-insensitive, so a named container file such as `docker/siteThumbnail.Dockerfile` or
+   `Dockerfile.prod` is listed, not only a bare `Dockerfile`). The control: the list must hold
+   every manifest and container file the repo's registry row names, plus the root `package.json`
+   when the repo has one. A named file missing from the list STOPs that repo, because a pattern
+   that misses a file kind reads exactly like a repo without one. Check each
    path with `git cat-file -e <sha>:<path>` before `git show <sha>:<path>`, because a missing path
    can read as empty output. On Windows export `MSYS_NO_PATHCONV=1` for the block, or MSYS rewrites
    the `<sha>:<path>` argument. Read a repo with several lockfiles (a Lambda subfolder with its own,

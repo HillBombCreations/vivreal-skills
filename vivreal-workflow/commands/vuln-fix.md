@@ -22,17 +22,19 @@ disable-model-invocation: true
 
 Every live Vivreal repo, and the line its deployed code comes from. The scan confirms each row
 before trusting it (`git ls-remote --symref origin HEAD`, and the repo's own deploy workflows); a
-row that disagrees with its repo is reported and corrected here, never guessed around.
+row that disagrees with its repo is reported and corrected here, never guessed around. A file a row
+names by path must appear in that repo's manifest list at the deployed SHA (`vuln` scan step 2), or
+the scan STOPs that repo: it is the control that a file kind was not missed.
 
 | Repo | Path | Deployed line | What ships |
 |---|---|---|---|
 | Vivreal_Portal_Mobile | `${VIVREAL_REPOS}/Vivreal_Portal_Mobile` | `stable` | the portal (Amplify) |
-| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API` | `stable` | Lambdas; the root lock and the `websocket/` lock |
+| VR_Secure_API | `${VIVREAL_REPOS}/VR_Secure_API` | `stable` | Lambdas; the root lock and `websocket/package-lock.json` |
 | VR_CMS_API | `${VIVREAL_REPOS}/VR_CMS_API` | `stable` | Lambdas |
 | VR_Client_API | `${VIVREAL_REPOS}/VR_Client_API` | `stable` | Lambdas, the public content API |
 | VR_Main_API | `${VIVREAL_REPOS}/VR_Main_API` | `stable` | Lambdas |
 | Vivreal_Templates | `${VIVREAL_REPOS}/Vivreal_Templates` | `stable` | every customer site (Amplify) |
-| Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler` | `main` | Lambdas and Step Functions, and one container image |
+| Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler` | `main` | Lambdas and Step Functions, and one container image built from `docker/siteThumbnail.Dockerfile` |
 | VR-MCP-Server | `${VIVREAL_REPOS}/VR-MCP-Server` | `main` | Lambda |
 | VR-Outreach-MCP-Server | `${VIVREAL_REPOS}/VR-Outreach-MCP-Server` | `main` | Lambda |
 | VR_Outreach_API | `${VIVREAL_REPOS}/VR_Outreach_API` | `main` | Lambdas |
@@ -92,7 +94,7 @@ agents at once than the fleet's cap (`vivreal-workflow:fleet-concurrency`):
 ```
 description: Scan <repo names> at their deployed lines
 subagent_type: vuln
-prompt: --phase=scan. Slug <slug>, folder ${VIVREAL_REPOS}/vivreal-hq/docs/projects/<slug>/. Repos, from the registry: <name, path, deployed line, what ships, one per line>. For each: prove the deployed ref, read every manifest at its SHA, confirm Dependabot alerts are on, read the open and closed alerts with their controls, test each alert against the deployed lock, run the gap check, read the non-npm kinds. Write scan-<repo>.md for each.
+prompt: --phase=scan. Slug <slug>, folder ${VIVREAL_REPOS}/vivreal-hq/docs/projects/<slug>/. Repos, from the registry: <name, path, deployed line, what ships, one per line>. For each: prove the deployed ref, read every manifest at its SHA (the list must hold every file its registry row names), confirm Dependabot alerts are on, read the open and closed alerts with their controls, test each alert against the deployed lock, run the gap check, read the non-npm kinds. Write scan-<repo>.md for each.
 ```
 
 Wait for completion. Verify each `scan-<repo>.md` exists. A repo whose scan STOPped (ref not
