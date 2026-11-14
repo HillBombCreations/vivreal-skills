@@ -436,11 +436,11 @@ group id live after the switch for `--business`. Delete the session file at the 
    re-verified, because a same-day publish can already have overtaken the draft's premise.
 3. Run the README's `plan` command. It checks each change's `draft` and `source`, resolves each
    change by exact text, keys it by the document id, proves the session reads the target business,
-   writes `publish-plan.json` and prints its sha256. It stops a change that names no draft, quotes
-   no source, names a draft it cannot read, a draft with no PUBLISH NOW mark, or a draft that does
-   not hold the quoted source, and a change that zero or two rows match. A stopped change is
-   reported with the tool's reason, never forced: never edit an approved draft to make a source
-   match.
+   writes `publish-plan.json` and prints its sha256. It stops a change for any reason it prints,
+   among them a change that names no draft, quotes no source, names a draft it cannot read, a draft
+   with no PUBLISH NOW mark, a draft that does not hold the quoted source, and a change that zero or
+   two rows match. A stopped change is reported with the tool's reason, never forced: never edit an
+   approved draft to clear any stop.
 4. List what this mode will not do (new pages, new lists, site document writes, media) for the
    main session. A change aimed at a page that does not exist yet waits for that page's one-shot.
 5. Report the plan path and the sha256 the tool printed, ending
