@@ -131,14 +131,16 @@ Playwright; `regular-user` adds the naive-owner pass. "Read-only, don't redesign
 
 ## 10. Dependency vulnerability / shared-package bump
 
-> **[Vuln fix:]** Scan for vulnerable dependencies in **[repo]**, research each, propose a fix plan for my approval, then patch until the scan is clean (0 vulns).
+> **[Vuln triage:]** Find what is vulnerable in what **[repo, or all]** actually deploys, check whether each advisory can reach a customer, and give me release items for each repo's next batch plus anything to accept, for my approval. After the release, gate it: the open alerts must equal the accepted set.
 >
 > **, or, **
 >
 > **[Package bump:]** Bump **[@hillbombcreations/____]** to **[version]** across every consumer repo, detect version skew, patch each lockfile surgically and verify with `npm ci`, build/test each, and open PRs.
 
-Map 1:1 to **`/vuln-fix`** and **`/bump-package`**, which already encode the multi-repo discovery +
-patch each lockfile surgically and verify with `npm ci` + PR steps.
+Map 1:1 to **`/vuln-fix`** and **`/bump-package`**. `/vuln-fix` reads every live repo at its
+deployed line and ends in release items that each repo's coder builds in its own batch (it never
+fixes); `/bump-package` encodes the multi-repo discovery, the surgical lockfile patch verified with
+`npm ci`, and the PR steps.
 
 ---
 
@@ -224,7 +226,7 @@ knowledge-base map (strategy, posting playbook, earned media, niche verticals).
 | `/implement` | Principal-level implementation of an approved plan |
 | `/reviewer [slug]` | Final adversarial review gate; a slug runs the 13-point bug-fix review |
 | `/test` | Regression / e2e tests (the tester holds the test quality rules) |
-| `/vuln-fix` | Dependency vulnerability resolution (0-vuln gate) |
+| `/vuln-fix` | Dependency vulnerability triage at the deployed line into release items (gate: the open alerts equal the accepted set) |
 | `/bump-package` | Bump a shared dep across all consumer repos |
 | `/db-query` / `/db-schema` | Safe tenant-scoped MongoDB query / schema lookup |
 | `/sentry-trace [--aws]` | Telemetry tracing; `--aws` chains into live AWS/Atlas metrics |
