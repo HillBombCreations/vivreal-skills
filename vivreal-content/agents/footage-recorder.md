@@ -1,6 +1,6 @@
 ---
 name: footage-recorder
-description: Captures Vivreal portal screen footage into the shared footage library (content/footage/). Plans a segmented shot list from a topic, dry-run validates it, records via src/portal-capture.ts against the prod demo tenant, splits into labeled clips, and writes/merges footage-manifest.json. Library builder, not a per-post asset maker. Also shoots help.vivreal.io article stills (own Playwright scripts allowed, installed-app check and an automatic text scan per frame). Read-only by default; any write follows one owner-approved protocol (snapshot, write, fresh read-back, restore, read-back, manifest entry).
+description: Captures Vivreal portal screen footage into the shared footage library (content/footage/). Plans a segmented shot list from a topic, dry-run validates it, records via src/portal-capture.ts against the prod demo tenant, splits into labeled clips, and writes/merges footage-manifest.json. Library builder, not a per-post asset maker. Also shoots help centre (vivreal.io/help) article stills (own Playwright scripts allowed, installed-app check and an automatic text scan per frame). Read-only by default; any write follows one owner-approved protocol (snapshot, write, fresh read-back, restore, read-back, manifest entry).
 tools: Read, Write, Edit, Bash, Glob, Grep
 skills:
   - vivreal-knowledge:vivreal-accounts-and-writes
@@ -16,7 +16,7 @@ color: green
   recorded browser pass, split clips, and a manifest.
 - You never edit or render videos. You never write files outside
   `content/footage/`, `.agent-cache/`, the tracker cell and your run notes (see DON'Ts).
-- You also shoot **help-article stills** for help.vivreal.io (see "Help-article stills mode").
+- You also shoot **help-article stills** for the help centre at vivreal.io/help (see "Help-article stills mode").
 
 ## First actions every run
 
@@ -482,7 +482,7 @@ or to stop, never a reason to fake the state.
 
 ### Help-article stills mode
 
-Help stills for help.vivreal.io are a mode of this agent, not a separate tool.
+Help stills for the help centre at vivreal.io/help are a mode of this agent, not a separate tool.
 
 - **Owner rule (2026-10-08): help and owner tutorials are the opposite of Meta App Review takes.**
   Plain everyday owner language, no API calls, permission names or endpoints in any caption or

@@ -132,7 +132,7 @@ test('REFUSE: a dispatch on the legacy Task tool name is still judged', () => {
 test('ALLOW: publishing site content is not a package publish', () => {
   for (const description of [
     'Publish the site content corrections',
-    'Publish the help page edits to help.vivreal.io',
+    'Publish the help page edits to vivreal.io/help',
     'Publish the conversion page',
     'Publish the conversion tracking page',
     'Publish the new version of the help page',

@@ -19,7 +19,7 @@ it. "Secure" means VR_Secure_API through `src/lib/upstream` (admin pool bearer p
 | `/outreach/import` Import leads | the leadgen `--emit` seed file, parsed in the page and again on the server | `api/outreach/import` (businesses, then people; a non-seed file is refused) |
 | `/outreach/suppressions` | Outreach suppressions (`src/lib/upstream/outreach/suppressions.ts`) | `api/outreach/suppressions` (add is `manual` only; remove needs `confirm: true`) |
 | `/suppressions` | none: a permanent redirect to `/outreach/suppressions`, query string kept | none |
-| `/inbound` | VR_Outreach_API `GET /inbound` as `/admin/inbound` through `callOutreach` (vivreal.io /contact and /migrate, help.vivreal.io /contact) | none |
+| `/inbound` | VR_Outreach_API `GET /inbound` as `/admin/inbound` through `callOutreach` (vivreal.io /contact and /migrate, vivreal.io/help/contact) | none |
 | `/marketing` | Secure `GET /api/admin/marketing/funnel` (`src/lib/upstream/marketing.ts`), global admin only | none |
 | `/monitoring` | Ops-read `overview` (alarms, stuck alarms, metrics, subscriptions, budgets) and `featureSignals`; the CDN target list | `api/opsWrite/runAuditor`, `sendTestAlert`, `purgeCdn` (VR-Ops-Write); `api/writeLog` reads its audit back |
 | `/errors` | Ops-read `sentryIssues` | none |

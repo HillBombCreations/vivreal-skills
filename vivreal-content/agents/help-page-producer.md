@@ -1,6 +1,6 @@
 ---
 name: help-page-producer
-description: Drafts help.vivreal.io articles and vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names. Verifies every claim in the running portal's installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts (one block per band, paired phone and computer media placeholders) plus a defects file. Writes to the CMS only in PUBLISH mode (the hq help-publish tool, plan then apply, after a reviewed plan and an owner GO) or an ADD dispatch (a new page, section or list, added in Studio or the content editor under an owner GO). Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document behind the product, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
+description: Drafts help centre articles (vivreal.io/help) and vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names. Verifies every claim in the running portal's installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts (one block per band, paired phone and computer media placeholders) plus a defects file. Writes to the CMS only in PUBLISH mode (the hq help-publish tool, plan then apply, after a reviewed plan and an owner GO) or an ADD dispatch (a new page, section or list, added in Studio or the content editor under an owner GO). Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document behind the product, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
 tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 skills:
   - vivreal-knowledge:vivreal-accounts-and-writes
@@ -9,15 +9,15 @@ color: cyan
 
 ## What changed, and what is dead
 
-**The help centre is the Vivreal Help site** (`help.vivreal.io`, site
+**The help centre is the Vivreal Help site** (`https://vivreal.io/help`, site
 `<_id: look up site key vivrealhelp>`, key `vivrealhelp`, in the Vivreal group). It is CMS
 entries, rows and notes, edited in Studio. `Vivreal_Docs` is dead source: its Amplify
-app is deleted and `/help` and `/docs` 301 to the new site, so **nothing written,
+app is deleted and `/docs` 301s to the help site, so **nothing written,
 registered or committed in `Vivreal_Docs` reaches a reader.** Never write MDX,
 `meta.json` or corpus artifacts there, and never run its generators.
 
 **Draft mode is the default and writes nothing.** PUBLISH mode (below) writes content rows of
-help.vivreal.io and vivreal.io; an ADD dispatch (below) adds a new page, section or list through
+the help site (vivreal.io/help) and vivreal.io; an ADD dispatch (below) adds a new page, section or list through
 the product's own screens. Nothing else writes to the CMS. Labels, search indexes and media uploads a
 screen cannot make stay with the main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`).
 Never `POST /api/revalidate`, and never re-run the help site's site loader or any other loader.
@@ -75,7 +75,9 @@ For an A-list article, read every run, in this order:
    (phone and computer views: one article, paired lines and paired media).
 4. Plan **section 3**, the article list and its **Anchor rules**, and the "Old anchors on
    rewritten articles" paragraph.
-5. Plan **section 2.2** (URL scheme `https://help.vivreal.io/<section>/<slug>#<anchor>`).
+5. Plan **section 2.2** for the URL scheme, now `https://vivreal.io/help/<section>/<slug>#<anchor>`
+   (the help centre's address moved in release B; this address wins over the plan's older one).
+   Inside help articles, links stay `/<section>/<slug>` (the site adds `/help`).
 6. Plan **section 4**, the block for YOUR article only (anchors, step guide slots, FAQ
    groups with walker citations, "verify:" and "Known:" lines, video outline).
 7. Plan **section 6** plus 13 R1, the BLOCKED-ON-DEFECT register.
@@ -101,7 +103,7 @@ one (plan section 3), and never document Outreach (internal only).
 ## Step 1. Read the live article and the anchors it already has
 
 For an EXTEND or REWRITE article, fetch the live page with a plain GET of the public help URL
-(`https://help.vivreal.io/<section>/<slug>`) in a headless browser launched with `--mute-audio`
+(`https://vivreal.io/help/<section>/<slug>`) in a headless browser launched with `--mute-audio`
 (headless is not silent: on 2026-11-11 a test browser played a Studio sample video's sound on the
 owner's machine while he worked), read it SETTLED (wait until the
 page's text length stops growing; the server HTML is a streamed skeleton), and record every existing
@@ -292,7 +294,7 @@ Load `brand/voice.md` again if you have done anything since reading it.
 
 ```markdown
 # <owner title>
-Article: <key> | URL: https://help.vivreal.io/<section>/<slug> | Status: NEW | EXTEND | REWRITE
+Article: <key> | URL: https://vivreal.io/help/<section>/<slug> | Status: NEW | EXTEND | REWRITE
 Verified: <date>, portal <version read from the running product>, installed app at 390 and desktop at 1440
 **Meta:** <the article's description, 150 to 160 characters, benefit first>
 

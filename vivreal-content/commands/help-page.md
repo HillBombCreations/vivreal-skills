@@ -1,5 +1,5 @@
 ---
-description: Draft one help.vivreal.io article, verify-first, filing every disagreement between the product and the plan as a defect
+description: Draft one help centre article (vivreal.io/help), verify-first, filing every disagreement between the product and the plan as a defect
 argument-hint: the article key (A1 to A29) or a site-refresh plan or tracker row, for example A3, or "3.1 selling with Stripe"
 ---
 

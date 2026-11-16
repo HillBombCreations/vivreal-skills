@@ -1,7 +1,7 @@
 # Publishing to vivreal.io and the help site
 
 The one home for what a script, a runner or an agent needs to know before it writes content,
-images or captures into vivreal.io or help.vivreal.io (both are Vivreal sites built from
+images or captures into vivreal.io or the help centre at vivreal.io/help (both are Vivreal sites built from
 Templates, with content in the CMS). Learned on the v6 help publishing batches and the
 vivreal.io screenshot swap, 2026-10-15. `help-page-producer`, `footage-recorder` and the
 marketing agents point here rather than keeping their own copy.
