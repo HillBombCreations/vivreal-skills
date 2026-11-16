@@ -41,7 +41,13 @@ test('a package.json edit gets the surgical-lockfile advice', (t) => {
   assert.doesNotMatch(msg, /vivreal-package-update/);
   assert.match(msg, /surgically/);
   assert.match(msg, /`npm ci`/);
-  assert.match(msg, /npx -y npm@10 ci --dry-run/);
+  // The same two-command gate as shared-standards "Dependencies, lockfiles and the CI runner".
+  assert.ok(
+    msg.includes('`npx -y npm@10 ci --dry-run --ignore-scripts && npx -y npm@11 ci --dry-run --ignore-scripts`'),
+    'the lockfile gate is not the shared-standards two-command gate',
+  );
+  // Without the flag a dry run exits 127 on a clean checkout's `prepare` script (br-02 G1).
+  assert.doesNotMatch(msg, /ci --dry-run(?! --ignore-scripts)/);
   assert.match(msg, /Never delete `package-lock\.json`/);
 });
 
