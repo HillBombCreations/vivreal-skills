@@ -301,15 +301,19 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 
 ## Dependencies, lockfiles and the CI runner
 
-- **The runner and your machine do not agree about peer dependencies.** CI runs **node 20
-  (npm 10)**; dev machines here run **node 22 (npm 11)**. npm 11 and npm 10 resolve peer
+- **The runner and your machine do not agree about peer dependencies.** CI runs the
+  `node-version` in each repo's own workflow on its deployed line: **node 20 or 22 (npm 10)**
+  until that repo's runtime row ships, then **node 24 (npm 11)** (the nodejs24.x move, plan
+  vivreal-hq `docs/projects/runtime-nodejs24/plan.md` on branch `docs/runtime-nodejs24-plan`);
+  dev machines here run **node 22 (npm 11)**. npm 11 and npm 10 resolve peer
   dependencies differently, so **a lockfile written by npm 11 can be REFUSED by npm 10**.
   The consequence that matters: **`npm ci --dry-run` passing locally proves nothing about
-  CI**, because it is npm 11 validating npm 11's own output. Verify against the runner's
-  major instead:
+  CI**, because it is npm 11 validating npm 11's own output. Verify against both runner
+  majors instead, because until the runtime close the fleet's CI runs both:
   ```bash
-  npx -y npm@10 ci --dry-run
+  npx -y npm@10 ci --dry-run --ignore-scripts && npx -y npm@11 ci --dry-run --ignore-scripts
   ```
+  `--ignore-scripts` is required, not optional: `npm ci --dry-run` installs nothing but still runs the root package's `prepare` script (`husky`, or a `tsc` build), which exits 127 on a clean checkout, so without the flag the gate fails for a reason that has nothing to do with the lockfile. The flag does not weaken the check: a `package.json` and lockfile out of sync still exits 1 (`EUSAGE`) under both npm 10 and npm 11.
   Treat that, not the local run, as the gate before pushing a lockfile change.
 - **`npm install` on Windows writes a lockfile that `npm ci` REFUSES.** It prunes packages
   that other packages still require (the optional-dependency platform pruning is the usual
@@ -317,7 +321,7 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   platform-specific. `npm install` is happy with it; `npm ci` refuses it outright, so the
   break lands in CI and in any build that uses `npm ci`. This **nearly took down all six
   customer site builds** in one session. After any `npm install` on Windows, check the
-  lockfile diff for removed entries, and validate with the `npm@10 ci --dry-run` above before
+  lockfile diff for removed entries, and validate with the dry-run gate above before
   it leaves the machine.
 - **A bare `npm view @hillbombcreations/<pkg>` against public npm answers a misleading E404.**
   The packages live on GitHub Packages; query through the scope registry with the token (in an
