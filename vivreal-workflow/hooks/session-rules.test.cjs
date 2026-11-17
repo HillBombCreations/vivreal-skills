@@ -184,6 +184,52 @@ test('no hq clone prints one line that says so', () => {
   assert.match(lines[0], /SETUP\.md step 3/);
 });
 
+// F452: an hq clone whose origin/main predates the shared rules, with none in its working tree,
+// printed "the index below is hq origin/main's and wins" and then no index.
+const NO_INDEX_DIR = '/clones/vivreal-hq';
+const NO_INDEX_START = "Vivreal shared rules, printed by the vivreal-workflow plugin's session-rules hook: no rules index could be read";
+
+test('REFUSE (F452): no index anywhere prints one fetch line naming the hq checkout, never "the index below"', () => {
+  const cases = {
+    'the stale hq checkout itself': facts({ repo: 'vivreal-hq', live: null, index: null, importPresent: false, hqDir: NO_INDEX_DIR }),
+    'another repo reading that clone': facts({ live: null, index: null, hqDir: NO_INDEX_DIR }),
+    'an hq whose CLAUDE.md imports a file that is not there': facts({ repo: 'vivreal-hq', index: null, importPresent: true, hqDir: NO_INDEX_DIR }),
+    'an empty index file': facts({ index: ' \n', hqDir: NO_INDEX_DIR }),
+    'no origin/main ref at all': facts({ index: null, sha: null, source: 'worktree', hqDir: NO_INDEX_DIR }),
+  };
+  for (const [name, f] of Object.entries(cases)) {
+    const out = lib().buildOutput(f);
+    assert.doesNotMatch(out, /index below/, `${name}: promised an index`);
+    const lines = out.trim().split('\n');
+    assert.equal(lines.length, 1, `${name}: printed ${lines.length} lines`);
+    assert.ok(lines[0].startsWith(NO_INDEX_START), `${name}: ${lines[0]}`);
+    assert.ok(lines[0].includes(`git -C "${NO_INDEX_DIR}" fetch origin`), `${name}: no fetch command naming the checkout`);
+    assert.doesNotMatch(out, /^- (P-|agent-cap:)/m, `${name}: printed a rule or a live value`);
+  }
+  assert.match(lib().buildOutput(cases['no origin/main ref at all']), /it has no origin\/main ref/);
+  assert.match(lib().buildOutput(cases['the stale hq checkout itself']), new RegExp(`origin/main@${SHA.slice(0, 7)}`));
+});
+
+test('REFUSE (F452): on SubagentStart the fetch line is the whole additionalContext, a current hq included', () => {
+  for (const f of [
+    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', index: null, hqDir: NO_INDEX_DIR }),
+    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', repo: 'vivreal-hq', importPresent: true, index: null, hqDir: NO_INDEX_DIR }),
+  ]) {
+    const raw = lib().buildOutput(f);
+    assert.notEqual(raw, '', `${f.repo}: printed nothing`);
+    const ctx = contextOf(raw);
+    assert.equal(ctx.split('\n').length, 1);
+    assert.ok(ctx.startsWith(NO_INDEX_START));
+    assert.ok(ctx.includes(`git -C "${NO_INDEX_DIR}" fetch origin`));
+  }
+});
+
+test('ALLOW (F452): an index read from the working tree alone still prints, with no fetch line', () => {
+  const out = lib().buildOutput(facts({ source: 'worktree', hqDir: NO_INDEX_DIR }));
+  assert.match(out, /^- P-cap:/m);
+  assert.ok(!out.includes(NO_INDEX_START));
+});
+
 // ---------------------------------------------------------------- SubagentStart, pure builder
 
 test('ALLOW: SubagentStart in another repo returns one JSON object with the live lines and the index', () => {
@@ -264,7 +310,7 @@ test('REFUSE: the import line in backticks or in a code fence does not count', (
 
 // ---------------------------------------------------------------- gather, injected git
 
-function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = INDEX, showFails = false } = {}) {
+function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = INDEX, showFails = false, gitPath = '.git/FETCH_HEAD' } = {}) {
   const calls = [];
   const defaultTree = [
     `100644 blob aaaa\tdocs/standards/INDEX.md`,
@@ -274,7 +320,12 @@ function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = IND
     calls.push({ dir, args, env, input });
     const [cmd] = args;
     if (cmd === 'rev-parse' && args.includes('--show-toplevel')) return { status: 0, stdout: dir + '\n' };
-    if (cmd === 'rev-parse' && args.includes('--git-common-dir')) return { status: 0, stdout: '.git\n' };
+    // One line per option asked, in order, as git prints them.
+    if (cmd === 'rev-parse' && args.includes('--git-common-dir')) {
+      const lines = ['.git'];
+      if (args.includes('--git-path')) lines.push(gitPath);
+      return { status: 0, stdout: lines.join('\n') + '\n' };
+    }
     if (cmd === 'rev-parse') return sha ? { status: 0, stdout: sha + '\n' } : { status: 1, stdout: '' };
     if (cmd === 'show') {
       if (showFails) return { status: 128, stdout: '' };
@@ -400,6 +451,32 @@ test('outside hq, the rules are read from the clone root, and a missing hq clone
   assert.match(missing.out.hqMissing, /no clone root/);
 });
 
+test('gather names the hq checkout for the fetch line, in forward slashes', () => {
+  assert.equal(gatherWith().out.hqDir, '/hq');
+  const other = gatherWith({ repo: 'VR_Client_Auth' }).out.hqDir;
+  assert.ok(!other.includes('\\'), `backslash in ${other}`);
+  assert.match(other, /\/root\/vivreal-hq$/);
+});
+
+// F443 note 1: each linked worktree has its own FETCH_HEAD, so the common dir's alone can read old.
+test('REFUSE (F443): fetch age is the newest of the shared FETCH_HEAD, the worktree FETCH_HEAD and the origin/main reflog', () => {
+  const now = Date.now();
+  const ago = (h) => now - h * 3600 * 1000;
+  // `git rev-parse --git-path FETCH_HEAD` prints an absolute path from a linked worktree.
+  const own = '/hq/.git/worktrees/w/FETCH_HEAD';
+  const shared = path.resolve('/hq', '.git', 'FETCH_HEAD');
+  const reflog = path.resolve('/hq', '.git', 'logs', 'refs', 'remotes', 'origin', 'main');
+  const ageWith = (times) =>
+    gatherWith({ inject: { now, mtimeMs: (p) => (path.resolve(p) in times ? times[path.resolve(p)] : null) } }, { gitPath: own }).out
+      .fetchAgeHours;
+  const near = (got, want, name) =>
+    assert.ok(typeof got === 'number' && Math.abs(got - want) < 0.1, `${name}: read ${got}, want ${want}`);
+  near(ageWith({ [shared]: ago(30), [reflog]: ago(40), [path.resolve(own)]: ago(2) }), 2, 'a fetch made in the worktree');
+  near(ageWith({ [shared]: ago(3), [reflog]: ago(40), [path.resolve(own)]: ago(30) }), 3, 'a fetch made in the main checkout');
+  near(ageWith({ [reflog]: ago(5) }), 5, 'a clone with only the reflog');
+  assert.equal(ageWith({}), null, 'no file at all is an unknown age');
+});
+
 // ---------------------------------------------------------------- the wiring
 
 test('hooks.json runs this hook on SessionStart and on every SubagentStart (no matcher)', () => {
@@ -444,8 +521,12 @@ const stale = path.join(root, '_wt', 'hq-stale');
 const other = path.join(root, 'VR_Client_Auth');
 const nowhere = fs.mkdtempSync(path.join(os.tmpdir(), 'not-vivreal-'));
 const noHqRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-no-hq-'));
+// F452: a clone root whose hq origin/main was last fetched before the shared rules existed.
+const oldRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-old-hq-'));
+const hqOld = path.join(oldRoot, 'vivreal-hq');
+const otherOld = path.join(oldRoot, 'VR_Client_Auth');
 test.after(() => {
-  for (const d of [root, nowhere, noHqRoot]) fs.rmSync(d, { recursive: true, force: true });
+  for (const d of [root, nowhere, noHqRoot, oldRoot]) fs.rmSync(d, { recursive: true, force: true });
 });
 
 fs.mkdirSync(seed, { recursive: true });
@@ -472,6 +553,13 @@ git(other, 'remote', 'add', 'origin', 'https://github.com/HillBombCreations/VR_C
 fs.mkdirSync(path.join(noHqRoot, 'VR_Client_Auth'), { recursive: true });
 git(path.join(noHqRoot, 'VR_Client_Auth'), 'init', '-q');
 git(path.join(noHqRoot, 'VR_Client_Auth'), 'remote', 'add', 'origin', 'https://github.com/HillBombCreations/VR_Client_Auth.git');
+git(oldRoot, 'clone', '-q', bare, hqOld);
+git(hqOld, 'remote', 'set-url', 'origin', 'https://github.com/HillBombCreations/vivreal-hq.git');
+git(hqOld, 'update-ref', 'refs/remotes/origin/main', staleSha);
+git(hqOld, 'reset', '-q', '--hard', staleSha);
+fs.mkdirSync(otherOld, { recursive: true });
+git(otherOld, 'init', '-q');
+git(otherOld, 'remote', 'add', 'origin', 'https://github.com/HillBombCreations/VR_Client_Auth.git');
 
 const REAL_FIRST = `Vivreal shared rules from hq origin/main@${currentSha.slice(0, 7)}, printed by the vivreal-workflow plugin's session-rules hook:`;
 
@@ -546,4 +634,54 @@ test('REFUSE of a write: a stat-dirty checkout is read as current and its .git/i
   // Positive control: the checkout really was stat-dirty, so a refreshing command does rewrite it.
   git(hq, 'status', '--porcelain');
   assert.ok(!fs.readFileSync(indexFile).equals(before), 'control: git status did not refresh, so the check above proved nothing');
+});
+
+const sameDir = (a, b) => fs.realpathSync.native(a).toLowerCase() === fs.realpathSync.native(b).toLowerCase();
+
+test('REFUSE (F452), real hook: an hq clone whose origin/main predates the rules prints one fetch line naming it', () => {
+  // Preconditions, each with a control the same command passes on.
+  const has = (ref) => spawnSync('git', ['-C', hqOld, 'cat-file', '-e', ref], { env: cleanEnv() }).status === 0;
+  assert.ok(!has('origin/main:docs/standards/INDEX.md'), 'origin/main holds the index');
+  assert.ok(has('origin/main:CLAUDE.md'), 'control: cat-file -e cannot see origin/main at all');
+  assert.ok(!fs.existsSync(path.join(hqOld, 'docs', 'standards', 'INDEX.md')), 'the working tree holds the index');
+  assert.ok(fs.existsSync(path.join(hqOld, 'CLAUDE.md')), 'control: the working tree is not checked out');
+  for (const cwd of [hqOld, otherOld]) {
+    for (const payload of [
+      { hook_event_name: 'SessionStart', cwd },
+      { hook_event_name: 'SubagentStart', cwd, agent_type: 'vivreal-principal:coder' },
+    ]) {
+      const name = `${path.basename(cwd)} ${payload.hook_event_name}`;
+      const raw = runHook(payload, oldRoot);
+      const text = payload.hook_event_name === 'SubagentStart' ? contextOf(raw) : raw;
+      assert.doesNotMatch(text, /index below/, `${name}: promised an index`);
+      const lines = text.trim().split('\n');
+      assert.equal(lines.length, 1, `${name}: printed ${lines.length} lines`);
+      assert.ok(lines[0].startsWith(NO_INDEX_START), `${name}: ${lines[0]}`);
+      const m = lines[0].match(/git -C "([^"]+)" fetch origin/);
+      assert.ok(m, `${name}: no fetch command`);
+      assert.ok(sameDir(m[1], hqOld), `${name}: the fetch names ${m[1]}, not the hq clone`);
+    }
+  }
+});
+
+test('REFUSE (F443), real hook: a fetch made in a linked worktree counts, though the shared FETCH_HEAD is old', () => {
+  // `git fetch <path>` with no refspec writes FETCH_HEAD only: origin/main and its reflog stay put.
+  git(hq, 'fetch', '-q', bare);
+  git(stale, 'fetch', '-q', bare);
+  const shared = path.join(hq, '.git', 'FETCH_HEAD');
+  const own = path.resolve(stale, git(stale, 'rev-parse', '--git-path', 'FETCH_HEAD'));
+  assert.ok(fs.existsSync(shared), 'the main checkout wrote no FETCH_HEAD');
+  assert.ok(fs.existsSync(own), 'the worktree wrote no FETCH_HEAD of its own');
+  assert.ok(!sameDir(own, shared), 'control: the worktree shares the main FETCH_HEAD, so this proves nothing');
+  const kept = fs.statSync(shared);
+  const old = new Date(Date.now() - 48 * 3600 * 1000);
+  fs.utimesSync(shared, old, old);
+  try {
+    // Control: the main checkout reads the old shared FETCH_HEAD, so the note can print.
+    assert.match(runHook({ hook_event_name: 'SessionStart', cwd: hq }), /hq origin\/main was last fetched 48 hours ago/);
+    const out = runHook({ hook_event_name: 'SessionStart', cwd: stale });
+    assert.doesNotMatch(out, /last fetched/, "the worktree's own fresh fetch was ignored");
+  } finally {
+    fs.utimesSync(shared, kept.atime, kept.mtime);
+  }
 });

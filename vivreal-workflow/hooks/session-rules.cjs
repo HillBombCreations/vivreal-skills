@@ -16,6 +16,10 @@
 // tracked docs/standards/ files equal origin/main's. A checkout that fails either gets a stale
 // line naming why, then origin/main's index, which wins.
 //
+// When the index cannot be read anywhere (an hq clone whose origin/main predates the shared rules
+// and whose working tree has none), either event prints ONE line saying so and naming the fetch,
+// never a promise of an index below.
+//
 // It reads, never writes: every git call runs with GIT_OPTIONAL_LOCKS=0 and with every inherited
 // GIT_* variable dropped, it never fetches, and it compares docs/standards by blob hash
 // (ls-tree, ls-files, hash-object without -w), because `git diff` refreshes and rewrites
@@ -125,6 +129,17 @@ function firstLine(sha, source) {
   return `Vivreal shared rules from the hq working tree (${why}), ${BY}`;
 }
 
+/** The whole output when no index could be read from origin/main or the working tree. */
+function noIndexLine(f) {
+  const dir = f.hqDir || '$VIVREAL_REPOS/vivreal-hq';
+  const where = f.sha ? `hq origin/main@${f.sha.slice(0, 7)}` : 'hq (it has no origin/main ref)';
+  return (
+    `Vivreal shared rules, ${BY} no rules index could be read from ${where} or from its working tree, ` +
+    `so none is printed. Run git -C "${dir}" fetch origin, then read ${LIVE_PATH} and ${INDEX_PATH} ` +
+    `with git -C "${dir}" show origin/main:<path> before the first dispatch.`
+  );
+}
+
 /**
  * The exact output for one event, from facts alone. '' means print nothing.
  * @param {object} f
@@ -139,6 +154,7 @@ function firstLine(sha, source) {
  * @param {boolean} [f.importPresent]  hq only
  * @param {boolean} [f.standardsDiffer]  hq only
  * @param {string} [f.hqMissing]  why no hq clone was found
+ * @param {string} [f.hqDir]  the hq checkout the rules were read from, for the fetch line
  */
 function buildOutput(f) {
   if (!f || !f.repo) return '';
@@ -154,6 +170,10 @@ function buildOutput(f) {
         'Clone it (SETUP.md step 3) before any dispatch; the owner rules live there.',
     );
   }
+
+  // Checked before the current-hq skip below: a CLAUDE.md import of a file that is not there
+  // gives the session nothing either.
+  if (typeof f.index !== 'string' || !f.index.trim()) return wrap(noIndexLine(f));
 
   const isHq = String(f.repo).toLowerCase() === HQ;
   const reasons = [];
@@ -186,16 +206,12 @@ function buildOutput(f) {
 
   let text = lines.join('\n');
   if (needsIndex) {
-    if (typeof f.index === 'string' && f.index.trim()) {
-      const withIndex = `${text}\n\n${stripIndex(f.index)}`;
-      if (withIndex.length <= OUTPUT_BUDGET) text = withIndex;
-      else {
-        text +=
-          `\nThe rules index is too long to print here (${withIndex.length} characters, budget ${OUTPUT_BUDGET}); ` +
-          `read it now with ${HQ_SHOW}${INDEX_PATH}`;
-      }
-    } else {
-      text += `\nThe rules index is unreadable here; read it now with ${HQ_SHOW}${INDEX_PATH}`;
+    const withIndex = `${text}\n\n${stripIndex(f.index)}`;
+    if (withIndex.length <= OUTPUT_BUDGET) text = withIndex;
+    else {
+      text +=
+        `\nThe rules index is too long to print here (${withIndex.length} characters, budget ${OUTPUT_BUDGET}); ` +
+        `read it now with ${HQ_SHOW}${INDEX_PATH}`;
     }
   }
   return wrap(text);
@@ -269,17 +285,21 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
   const index = read(INDEX_PATH);
 
   let fetchAgeHours = null;
-  const common = git(hqDir, ['rev-parse', '--git-common-dir'], genv);
-  if (common.status === 0 && common.stdout.trim()) {
-    const dir = path.resolve(hqDir, common.stdout.trim());
-    // FETCH_HEAD moves on every fetch; a clone writes none, so its origin/main reflog stands in.
-    for (const p of [path.join(dir, 'FETCH_HEAD'), path.join(dir, 'logs', 'refs', 'remotes', 'origin', 'main')]) {
-      const m = mtimeMs(p);
-      if (typeof m === 'number') {
-        fetchAgeHours = Math.max(0, (now - m) / 3600000);
-        break;
-      }
+  // FETCH_HEAD moves on every fetch, but each linked worktree writes its own (in its own git dir,
+  // measured on git 2.51), while the main checkout's FETCH_HEAD and the origin/main reflog live in
+  // the common dir; the reflog moves only when origin/main does, and a clone writes neither. So
+  // the newest of the three is the last fetch. Both paths print relative to hqDir or absolute.
+  const paths = git(hqDir, ['rev-parse', '--git-common-dir', '--git-path', 'FETCH_HEAD'], genv);
+  if (paths.status === 0) {
+    const [common, ownFetchHead] = paths.stdout.split('\n').map((s) => s.trim());
+    const candidates = [];
+    if (common) {
+      const dir = path.resolve(hqDir, common);
+      candidates.push(path.join(dir, 'FETCH_HEAD'), path.join(dir, 'logs', 'refs', 'remotes', 'origin', 'main'));
     }
+    if (ownFetchHead) candidates.push(path.resolve(hqDir, ownFetchHead));
+    const times = candidates.map((p) => mtimeMs(p)).filter((m) => typeof m === 'number');
+    if (times.length) fetchAgeHours = Math.max(0, (now - Math.max(...times)) / 3600000);
   }
 
   const out = {
@@ -291,6 +311,8 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
     sha,
     source: fromWorktree ? 'worktree' : 'origin',
     fetchAgeHours,
+    // Printed inside a Bash command, where a Windows backslash path would need escaping.
+    hqDir: path.sep === '\\' ? hqDir.replace(/\\/g, '/') : hqDir,
   };
   if (isHq) {
     let claudeMd = null;

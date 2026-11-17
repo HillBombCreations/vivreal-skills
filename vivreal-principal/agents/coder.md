@@ -440,9 +440,16 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   `wsl` starts in the calling shell's folder, and every Bash call of mine starts in the session's
   folder, often the owner's checkout: a coder's WSL probe rewrote an owner's root `package.json`,
   lockfile and `node_modules`, and an `npm ci` ran on a Windows-mounted worktree. So each step is
-  `wsl.exe bash -c 'cd "<my worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  `wsl.exe bash -lc 'cd "<my worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
   stop if `pwd` is not my worktree. Installs and packs run on WSL's own disk from a `git archive`
   of the head, never on `/mnt/<drive>` (`vivreal-workflow:shared-standards`, "Cross-platform note").
+- **A WSL step is a login shell, `bash -lc`, never `bash -c`** (release B, 2026-11-17). A plain
+  `bash -c` loads no profile, so nvm never starts and `npm` is the Windows npm under `/mnt/`. Before
+  any install or test, one call `wsl.exe bash -lc 'cd "<my worktree>" && pwd && command -v node npm'`
+  must print my worktree and two paths, neither under `/mnt/` (read them: `command -v` exits 0 with
+  one name missing). Anything holding a `$` goes in a script file run with `bash <file>`, because
+  the shell `wsl.exe` starts expands `$` first. A long-running process starts with `setsid -f`,
+  never `nohup ... &`, which dies when `wsl.exe` returns.
 
 ## Hard rules
 

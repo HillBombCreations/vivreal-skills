@@ -86,7 +86,12 @@ For each repo in the dispatch:
    deployed line. Test every installed copy of the alert's package, in that manifest's lock at the
    deployed SHA, against the alert's vulnerable range with a real semver matcher (prereleases
    included), never by eye. Control: an alert GitHub marks fixed must evaluate clean with the same
-   code.
+   code. **GitHub writes a range with commas** (`>= 7.0.0, < 11.0.1`), which node-semver reads as
+   invalid, so `satisfies` answers false for every version, a false "not affected" (release B,
+   2026-11-17). Replace each comma with a space before matching, STOP for any alert whose range
+   `semver.validRange` still returns null for, and add a second control: the lowest version the
+   vulnerable range holds once its commas are swapped, `semver.minVersion(<range with commas
+   replaced>)`, must evaluate affected.
 6. **What Dependabot cannot see.** A name@version present at the deployed SHA but not on the
    default branch raises no alert. Query each one in the global advisory database,
    `gh api "advisories?ecosystem=npm&affects=<name>@<version>"`, with a known-vulnerable

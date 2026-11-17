@@ -97,6 +97,13 @@ Shapes met since, each a clean answer that only a control can tell from a wrong 
   items never checked. Verify a list in a program, or give git `</dev/null`.
 - **Never `.strip()` `git status --porcelain` output.** It eats the first line's status column
   and shifts that path by one character. Strip line endings only.
+- **GitHub's comma-joined advisory ranges are invalid to node-semver** (release B, 2026-11-17).
+  GitHub writes a vulnerable range as `>= 7.0.0, < 11.0.1`; node-semver (6 and 7 alike, measured)
+  returns null from `validRange` for that string, and `satisfies` answers false for every version,
+  a clean "not affected". Replace each comma with a space before matching, refuse any range
+  `validRange` still rejects, and run the lowest version the vulnerable range holds
+  once its commas are swapped (`minVersion(<range with commas replaced>)`) through the same code as
+  the control: it must come back affected.
 
 ---
 

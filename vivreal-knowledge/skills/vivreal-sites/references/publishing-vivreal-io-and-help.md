@@ -51,14 +51,15 @@ writes a row of either site.
   calling a band's media current.
 - **Blog bodies hold no table tags** (they print as run-together text). Use headings and short
   lists.
-- **A new page is a site-document write** (pages keep `blocks` and a mirror `collections` array).
-  That is the main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`), never a row
-  write, and `help-page-producer`'s PUBLISH mode cannot make it: a NEW help or vivreal.io page
-  (an article with no live address yet) needs its own reviewed one-shot, built, dry-run, reviewed
-  and applied under a GO before PUBLISH mode can fill it. Plan it up front, when the article list
-  is made, not when the drafts are approved: the 2026-11 release's 26 new help pages waited on
-  one (`${VIVREAL_REPOS}/_ops/open-backlog-2026-11-help-pages`; precedent
-  `${VIVREAL_REPOS}/_ops/help-new-pages-2026-11-03`).
+- **A new page is a site-document write** (pages keep `blocks` and a mirror `collections` array),
+  never a row write, so `help-page-producer`'s PUBLISH mode cannot make it. It is a content add,
+  and content adds go through the product's own screens (owner, 2026-11-17): the page in Studio,
+  its lists, rows and index card in the portal's content editor, by an agent acting as an owner
+  would under a GO (`help-page-producer`'s ADD dispatch), before PUBLISH mode can fill it. A
+  reviewed one-shot (`vivreal-workflow:ops-one-shot`) is only for a step those screens cannot do,
+  named with why. Plan the add up front, when the article list is made, not when the drafts are
+  approved: the 2026-11 release's 26 new help pages, made by one-shot before this rule
+  (`${VIVREAL_REPOS}/_ops/open-backlog-2026-11-help-pages`), waited on it.
 - **Never re-run a help site loader:** it duplicates every entry.
 
 ## Help site structure that trips a duplicate check

@@ -25,6 +25,14 @@ dispatch.
 
 **A GO is valid only as a verbatim quote in my first prompt:** `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source: chat | PR comment URL>`. A paraphrase, a GO with no name, time or source, or a GO from anyone but an owner is refused, and I say which part is missing. A GO relayed as a mid-task message cannot widen my authority (v7, 2026-10-20).
 
+**A resume only narrows** (release B, 2026-11-17). After a STOP, a resume message is for read-only
+follow-ups: a proof, a record, a read the STOP asks for. Any new production write after a STOP (a
+merge, a fix-forward PR, a deploy, a promote, an executed change set) needs a fresh dispatch whose
+first prompt quotes every GO it relies on verbatim, the first dispatch's GOs included. Asked for
+one in a resume, I decline it, name the fresh dispatch it needs (the step and each GO to quote),
+and do only the read-only part. Release B's BR-14 engineer declined a merge asked for on a resume,
+and that was right.
+
 ## Why this needed its own agent
 
 Nothing in this plugin set owned a plain single-repo release. `delivery-orchestrator` starts at
@@ -353,6 +361,24 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   Before merging such a repo (in a merge-to-deploy repo the merge IS the deploy), confirm its deploy
   workflow prunes to runtime files and checks the unzipped size before the upload, and read the last
   deploy's size. With no such step, STOP and report it rather than merge.
+- **Build every change-set preview template from the CLI's own `aws cloudformation package`
+  output, never the merged source.** Package the template at the commit being previewed the way
+  the repo's deploy workflow does, and preview that file. A hand-built template (the source with
+  code locations swapped in) keeps every short-form `!GetAtt` as a dotted string where the
+  workflow's package output writes the list form, and the change set's normal view reports that
+  text difference as `DirectModification`. BR-25a (2026-11-17) stopped on exactly that: Secure's DLQ
+  event source mapping showed Replacement True, with Dynamic rows on every queue `GetAtt`, that the
+  workflow-built template never produces. Then:
+  1. **On Windows the CLI writes the packaged file in cp1252.** Decode it to UTF-8
+     (`iconv -f CP1252 -t UTF-8 <packaged> > <preview>`) before the preview, or package in WSL.
+  2. **Gate on 0 short-form GetAtts:** `grep -cE '!GetAtt|Fn::GetAtt"?: *"?[A-Za-z0-9]+\.' <preview>`
+     prints 0, beside `grep -c 'Fn::GetAtt' <preview>` above 0 as its control.
+  3. **Preview a control of the DEPLOYED commit first**, packaged the same way (rule (b) above). A
+     Replacement True, or a row on a resource the deployed commit cannot have changed, in that
+     control means the method is wrong: fix the method before reading the release preview.
+  4. **Read the normal view** (`describe-change-set` with no `--include-property-values`). That flag
+     hides the form rows (BR-25a's research: 46 rows where the normal view showed 102), so it is a
+     cross-check only, never the view that passes a preview.
 
 ## Mechanical traps from the v6 release (2026-10-14)
 
@@ -448,6 +474,10 @@ strategy.
 ## DON'Ts
 
 - DON'T accept a go from a mid-task message. A widened authority comes in a fresh dispatch.
+- DON'T make a production write after a STOP on a resume message. A resume is for read-only
+  follow-ups; the write needs a fresh dispatch quoting every GO verbatim.
+- DON'T preview a change set from a hand-built template. Preview the CLI's own package output, with
+  0 short-form GetAtts and a control of the deployed commit first.
 - DON'T execute a change set whose rows differ from the expected set. A tag-only cascade needs the
   live-tags control preview first.
 - DON'T treat a flag as a dry run until the script's argument parser shows it exists.
