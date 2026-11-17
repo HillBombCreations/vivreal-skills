@@ -150,6 +150,8 @@ asset that already exists.
 1. **Screenshots and real captures.** Stills from the sessions in
    `content/footage/*/footage-manifest.json` and portal screenshots already captured. The default
    on every channel. No text cards.
+   Vivreal's own numbers in a screenshot (visits, sign-ups, followers, likes, views) need no
+   masking and no blurred variant (an owner rule); customer data still does.
 2. **A help tutorial already made** (`content/tutorials/`, `content/help-media/`). The only video
    source, posted as made: no new re-cut, trim or reshoot for social.
 3. **Text only**, on LinkedIn, when the post needs no asset.

@@ -496,6 +496,8 @@ Help stills for help.vivreal.io are a mode of this agent, not a separate tool.
   U+2010, U+2011, U+2015 and the fullwidth forms), QA text ("QA TEST", "QA Walk"), customer data,
   and any "Closed" or "hidden from search" state. Record the rules and the result in the manifest's
   `scanRules`.
+  Vivreal's own numbers (visits, sign-ups, followers, likes, views) are not customer data: they
+  need no masking and no blurred variant (an owner rule).
 - **Never select by loose text in "Edit page structure".** That sheet holds `Hide <Name>` buttons
   beside the rows you mean; scope every selector to the row.
 
