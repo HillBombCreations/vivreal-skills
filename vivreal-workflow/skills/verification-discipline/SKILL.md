@@ -318,6 +318,39 @@ review, the renderer 1.88.2 review, and the release runbook.
 
 ---
 
+## A live proof that passes on a broken query (release B reviews, 2026-11-16)
+
+Four shapes, each a NEW CLASS blocker a review caught before the proof ran. In each, the proof as
+written would have passed with the query or the write it checks broken.
+
+1. **An expected bucket a broken query fills.** A proof split cold starts into served and
+   never-served, with never-served expected and counted. If the served match returns nothing (a wrong
+   pattern, a wrong log group, a window that starts before the deploy), every start-up lands in
+   never-served and the proof passes. **Rule:** every bucket a result can fall into proves itself:
+   the buckets sum to the total, the bucket that shows the thing working is non-empty, and a planted
+   case must land in each.
+2. **A control pinned to a number the source never recorded.** A control required a query to
+   reproduce "10 start-ups and 6 lines", which matched neither service's record (12 with 10, and 7
+   with 6), so a correct query fails it, or the query gets tuned until it passes. A number over a
+   window the record does not bound fails the same way, and so does a match key the data does not
+   carry (a "same function" rule on a line that names only its service). **Rule:** copy a control's
+   number from the record it cites, with the citation and over the window that record states, and
+   confirm every match key exists in the data before writing it.
+3. **A match rule that excludes on one side only.** "Each line matches one start-up, and a used line
+   cannot match again" stops one line covering two start-ups, but not one start-up taking several
+   lines, so a burst of concurrent cold starts collapses onto the last and the others read as missing.
+   **Rule:** state the matching from both sides, or match by group, and plant a burst in the control.
+4. **A write that lands on whichever account is listed first.** A proof step read "the platform's
+   test-mode connected accounts" and wrote to the one it read, from a list that can hold accounts we
+   do not own. **Rule:** a proof's write target is named in advance, by id, from what we own, and read
+   back before the write; a step that would pick from a list stops instead.
+
+Sources, all in vivreal-hq `docs/projects/next-release-B/`: `review-billing-key-delta.md` (B2, B3,
+B4), `review-lf322-cell.md` (C1, C2) and `review-plan-delta-2026-11-16b.md` (B2). The Logs Insights
+forms of 1 to 3 are in `vivreal-infra:vivreal-lambda-logs`.
+
+---
+
 ## Two more shapes worth naming
 
 - **A signed-out check cannot validate a credential.** The anonymous response is correct
