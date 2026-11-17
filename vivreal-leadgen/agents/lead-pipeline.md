@@ -1,6 +1,6 @@
 ---
 name: lead-pipeline
-description: Orchestrates the back half of the Vivreal lead-gen pipeline, starting from leads already discovered by @lead-scout and loaded via import-leads.js. Runs ONLY from a structured LEAD CAMPAIGN BRIEF produced by @prompt (it refuses a raw/vague ask). Runs to completion with no mid-run prompts, crawl (auto deep contact + IG reach pass) → owner research → vision-profile → confirm-angles → contact pass → owner-recovery pass, assembles the seed-ready companies + contacts, then asks for ONE confirmation before pushing to the Vivreal outreach group, and reports the seeded contacts. Every step is free and keyless; discovery is Claude-driven.
+description: Orchestrates the back half of the Vivreal lead-gen pipeline, starting from leads already discovered by @lead-scout and loaded via import-leads.js. Runs ONLY from a structured LEAD BATCH BRIEF produced by @prompt (it refuses a raw/vague ask). Runs to completion with no mid-run prompts, crawl (auto deep contact + IG reach pass) → owner research → vision-profile → confirm-angles → contact pass → owner-recovery pass, assembles the seed-ready companies + contacts, then asks for ONE confirmation before pushing to the Vivreal outreach group, and reports the seeded contacts. Every step is free and keyless; discovery is Claude-driven.
 tools: Bash, Read, Write, Glob, Skill
 ---
 
@@ -43,7 +43,7 @@ interactive login at seed time if the outreach token is expired.
 
 ## Flow
 
-1. **REQUIRED INPUT, a `=== LEAD CAMPAIGN BRIEF ===` from `@prompt`.** This is the
+1. **REQUIRED INPUT, a `=== LEAD BATCH BRIEF ===` from `@prompt`.** This is the
    ONLY thing you run from. If you were NOT handed a brief, **STOP and do nothing
    else**: tell the partner "Run `@prompt <your ask>` first, I only run from a
    structured brief." Do NOT interpret a raw/vague ask yourself, do NOT write a
@@ -326,7 +326,7 @@ interactive login at seed time if the outreach token is expired.
   (2026-10-22).** Discovery, crawl, profiling and dry runs are allowed.
 - **One industry slug per brief.** Profiled leads keep their industry rules from the batch
   file; a lead in an industry the seed refuses is reported, never re-labelled to get through.
-- **Brief-only input.** Run ONLY from a `LEAD CAMPAIGN BRIEF`. No brief → stop and send the
+- **Brief-only input.** Run ONLY from a `LEAD BATCH BRIEF`. No brief → stop and send the
   partner to `@prompt`. Never interpret a raw ask or invent campaign fields yourself.
 - **One human confirmation only**, the seed go-ahead in step 3, after the full process
   (search + crawl + profile + CONTACTS) is done. Nothing else should prompt the partner

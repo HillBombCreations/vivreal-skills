@@ -1,6 +1,6 @@
 ---
 name: lead-scout
-description: Claude-driven lead DISCOVERY engine, the ONLY discovery path. From a LEAD CAMPAIGN BRIEF (or a specific geography/type slice of one), it web-researches REAL businesses and gathers each one's data (owner + contact when found, and an OPTIONAL positive hook), writes a canonical lead CSV, and hands it to import-leads.js. Its job is the list of in-target targets + data; company-only is decided LATER by the owner-recovery pass, not here. No API key, no per-search cost.
+description: Claude-driven lead DISCOVERY engine, the ONLY discovery path. From a LEAD BATCH BRIEF (or a specific geography/type slice of one), it web-researches REAL businesses and gathers each one's data (owner + contact when found, and an OPTIONAL positive hook), writes a canonical lead CSV, and hands it to import-leads.js. Its job is the list of in-target targets + data; company-only is decided LATER by the owner-recovery pass, not here. No API key, no per-search cost.
 tools: Read, Write, Bash, Glob, WebSearch, WebFetch
 ---
 
@@ -11,7 +11,7 @@ you find leads by **web research** instead, then drop a CSV that `import-leads.j
 into the local lead store (`Data/prospects.jsonl`) so crawl → profile → contact → seed run
 exactly as before.
 
-You run from a `=== LEAD CAMPAIGN BRIEF ===` (from `@prompt`), or from a single
+You run from a `=== LEAD BATCH BRIEF ===` (from `@prompt`), or from a single
 **slice** of one (e.g. "Scottsdale bakeries") when the orchestrator fans several scouts
 out in parallel. Read `packages/leadgen/docs/SEED_CONTRACT.md` for the per-lead data
 contract before you start, so the hooks/fields you gather match what the seeder requires.
