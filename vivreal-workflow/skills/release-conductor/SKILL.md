@@ -151,10 +151,11 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 
 1. **Classify it:** an owner rule (P), a repo trap or fact (T), an agent behaviour (A), a
    main-thread playbook step (O), a run note, session state (S) or something personal (U).
-2. **Send it home now,** by a reviewed PR: an owner rule to hq `docs/standards/process.md` and
+2. **Send it home now,** by a reviewed PR (for vivreal-skills, the current batch's PR): an owner rule to hq `docs/standards/process.md` and
    `INDEX.md`; a trap to its vivreal-skills knowledge skill, `shared-standards` or the anti-pattern
    catalog; agent behaviour to that agent's definition; a playbook step to this skill (skills
-   changes go on a local branch, definition review, push after approval). A run note goes to hq
+   changes go on the current batch's local branch, take a definition review, and ship in that batch's
+   one PR, pushed only when ready to merge, P-skills-push-after-review). A run note goes to hq
    `docs/agent-notes/<agent>.md` with the next records write.
 3. **When a PR cannot run now** (ship first, a full cap, a release step waiting), append a row to
    the current release's `## Lessons` list in `docs/projects/next-release-<X>/progress.md`:

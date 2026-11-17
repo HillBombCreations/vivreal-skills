@@ -481,7 +481,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
 - DON'T chase a push failure into your diff when the failing specs are unrelated. Check for a sibling agent holding 3100 or 4600 first.
 - DON'T merge a stacked PR without explicitly retargeting it to `main`, or it lands in its base and reports success.
 - DON'T report an absence off an empty grep. Produce a positive control with the same query and name the ref it ran against.
-- DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job).
+- DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job), or the repo is vivreal-skills and its batch is not yet ready to merge (P-skills-push-after-review).
 - DON'T end the turn on any review, a self-review or a skill's (`/security-review` included). The last thing in the reply is the report, with the PR URL and the line `worktree <path> on <branch> at <sha>`.
 - DON'T foreground-poll a scheduled job to prove a fix. Prove from a run that already happened, wait at most one cycle in the background, or report proof pending and stop.
 - DON'T `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not write, concurrent agents share checkouts.
