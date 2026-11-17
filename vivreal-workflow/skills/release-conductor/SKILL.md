@@ -63,7 +63,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **The dispatch template** is `vivreal-workflow/references/dispatch-template.md` (the routing
   hook prints its path): one repo per builder, pinned SHAs, the spec path, the mode, the exact
   commands, full authority and any GO in the FIRST prompt, verified premises, a short report,
-  done means pushed. Pass the live `model` on every dispatch (P-model).
+  done means pushed (vivreal-skills: committed on a local branch, pushed only after definition
+  review, P-skills-push-after-review). Pass the live `model` on every dispatch (P-model).
 - **One builder per repo per batch** (P-one-builder): it takes the repo's whole list on one
   branch and one PR, keeps a progress file, and is resumed with SendMessage rather than replaced.
   The whole planned PR is built, then reviewed once (P-build-then-review).
