@@ -175,14 +175,15 @@ Every item is required in the PR body, with evidence, not a bare assertion:
 10. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a
    contract the repo's `CLAUDE.md` (or its `README.md`, `GEMINI.md` or another guide file) states
    updates that line in the same PR. Grep the guide files for the old value, with a positive
-   control, and paste both counts. Release B shipped a runtime move with the repo's `CLAUDE.md`
-   still naming the old runtime, and a plan-gate change with `CLAUDE.md` still describing the old
-   gate; the knowledge skills read that file at the deployed line, so the stale line spreads.
+   control, and paste both counts. Release B reviews caught a runtime move with the repo's
+   `CLAUDE.md` still naming the old runtime, and a plan-gate change with `CLAUDE.md` still
+   describing the old gate; the knowledge skills read that file at the deployed line, so a stale
+   line spreads.
 11. **A limit that can reach zero.** Where a cap, a remaining stock or an allowance can reach 0,
    the code refuses the action or removes the line; it never writes 0 as an item's quantity. A
    REFUSE test per write path (add, increase, set) at a cap of 0 asserts the refusal and the stored
-   quantity unchanged. Release B's cart wrote `quantity: 0` when the cap reached 0, which its own
-   checkout route then refused and its quote counted as 1.
+   quantity unchanged. A release B review caught a cart that wrote `quantity: 0` when the cap
+   reached 0, which its own checkout route refused and its quote counted as 1.
 
 **Exception, a command owns the gate:** if my dispatch prompt says I'm running
 inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP
