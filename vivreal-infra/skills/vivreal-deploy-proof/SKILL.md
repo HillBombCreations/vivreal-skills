@@ -1,6 +1,6 @@
 ---
 name: vivreal-deploy-proof
-description: 'Use to PROVE that a backend release or infrastructure change is actually running in production, a VR_CMS_API / VR_Secure_API / VR_Main_API / VR_Client_API / VR_Outreach_API / EventHandler deploy, a release-train promote or backport, a deploy-role IAM grant, or any CloudFormation stack update, and to diagnose one that went green and shipped nothing. Teaches the baseline-then-moved-and-terminal stack check, why UPDATE_ROLLBACK_COMPLETE passes every naive check, the failures that leave no stack events, proving the running code by health SHA, alias and downloaded artifact, and where a deploy-role refusal is fixed. For a customer SITE deploy (Step Functions + Amplify) use vivreal-deploy-tracker instead. Triggers on: did it deploy, is it live, prove the deploy, verify the release, promote went green, stack status, UPDATE_ROLLBACK_COMPLETE, LastUpdatedTime, deploy failed, not authorized to perform, deploy role, health release sha, which version is running, lambda_api.yml, CodeSha256, live alias.'
+description: 'Use to PROVE that a backend release or infrastructure change is actually running in production, a VR_CMS_API / VR_Secure_API / VR_Main_API / VR_Client_API / VR_Outreach_API / EventHandler deploy, a release-train promote or backport, a deploy-role IAM grant, or any CloudFormation stack update, and to diagnose one that went green and shipped nothing. Teaches the baseline-then-moved-and-terminal stack check, why UPDATE_ROLLBACK_COMPLETE passes every naive check, the failures that leave no stack events, proving the running code by health SHA, alias and downloaded artifact, and where a deploy-role refusal is fixed. For a customer SITE deploy (Step Functions + Amplify) use vivreal-deploy-tracker instead. Triggers on: did it deploy, is it live, prove the deploy, verify the release, promote went green, stack status, UPDATE_ROLLBACK_COMPLETE, LastUpdatedTime, deploy failed, not authorized to perform, deploy role, health release sha, which version is running, lambda_api.yml, CodeSha256, live alias, change-set preview.'
 ---
 
 # Proving a backend deploy landed
@@ -139,6 +139,26 @@ Send `X-App-Source: vivreal` on every direct Secure, CMS or Main call (curl, fet
 the portal does: without it Secure refuses the request and files the refusal in Sentry as a new
 issue, so a proof turns into an error report. Never send a deliberately malformed request to
 production; a malformed probe has reopened a resolved issue.
+
+## Before the deploy: a change-set preview that reads true
+
+A preview's rows are only as true as the template it was made from. Build every preview template
+from the CLI's own `aws cloudformation package` output, as the repo's deploy workflow does, never
+from the merged source with code locations swapped in. The source's short-form `!GetAtt` stays a
+dotted string in a hand-built file, the package output writes the list form, and the change set's
+normal view reports that text difference as `DirectModification`. BR-25a (Secure, 2026-11-17)
+stopped on a DLQ event source mapping shown as Replacement True, plus Dynamic rows on every queue
+`GetAtt`, that only the hand-built file produced; nothing was deployed.
+
+1. **Windows:** the CLI writes the packaged file in cp1252. Decode it to UTF-8
+   (`iconv -f CP1252 -t UTF-8`) before the preview, or package in WSL.
+2. **Gate on 0 short-form GetAtts:** `grep -cE '!GetAtt|Fn::GetAtt"?: *"?[A-Za-z0-9]+\.' <template>`
+   prints 0, with `grep -c 'Fn::GetAtt' <template>` above 0 as the control.
+3. **Preview a control of the deployed commit first,** packaged the same way. The release's rows
+   are the preview minus the control; a Replacement True, or a row on a resource the deployed
+   commit cannot have changed, in the control means the method is wrong, so fix the method first.
+4. **Read the normal view** of `describe-change-set`. `--include-property-values` hides the form
+   rows (46 rows where the normal view showed 102), so it is a cross-check only.
 
 ## Release-train traps that look like deploy failures
 

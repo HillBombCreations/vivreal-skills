@@ -27,7 +27,9 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
    git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:docs/standards/INDEX.md
    ```
    A line `This checkout cannot load the current rules (...)` means the hq checkout the session
-   started in is stale: the `origin/main` index printed under it is the one that holds.
+   started in is stale: the `origin/main` index printed under it is the one that holds. A single
+   line saying `no rules index could be read` means that hq clone's `origin/main` predates the
+   shared rules and no rule was printed: run the fetch it names, then the two `show` commands above.
 2. **Read the release state** on the branch the live value `release-state` names, never on `main`:
    fetch, then read `docs/projects/next-release-<X>/progress.md` at `origin/<that branch>`.
 3. **Open the sheet** (section 6, `references/sheet.md`) and see what is claimed in Assigned to.
@@ -76,6 +78,13 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
+- **Content adds go through the product's own screens** (owner, 2026-11-17). A new help page, a
+  blog post or a collection item is added in Studio or the portal's content editor by an agent
+  acting as an owner would, signed in as `vivreal-knowledge:vivreal-accounts-and-writes` says, under
+  the owner's GO quoted in its dispatch; for a help or vivreal.io page that agent is
+  `vivreal-content:help-page-producer`. Brief a one-off database script
+  (`vivreal-workflow:ops-one-shot`) only for a step those screens cannot do, and name that step and
+  why in the brief.
 - **Every WSL step in a brief starts by changing into the worktree** inside one quoted command,
   `wsl bash -c 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...` runs in
   the folder the Bash call reset to, which is often an owner's own checkout.
@@ -133,6 +142,11 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **Resume a rate-limited agent with SendMessage**, never a duplicate dispatch. An agent cut off
   by a usage limit while the live `model` changed is re-dispatched fresh on the current model from
   its progress file (P-model).
+- **A resumed release engineer only narrows.** After a STOP, resume it with SendMessage only for
+  read-only follow-ups (a proof, a record, a read the STOP asks for). Any new production write
+  after a STOP (a merge, a fix-forward PR, a deploy, a promote) is a FRESH dispatch whose first
+  prompt quotes every GO it relies on verbatim (P-go-form), including the GOs of the first
+  dispatch; a release engineer declines a write asked for in a resume message, rightly.
 
 ## 8. Close-out
 
@@ -181,6 +195,7 @@ have no dependencies.
 export MSYS_NO_PATHCONV=1
 W="$VIVREAL_REPOS/_wt/hq-live-values"
 test -e "$W/.git" || git -C "$VIVREAL_REPOS/vivreal-hq" worktree add --detach "$W" origin/main
+S=$(git -C "$W" status --porcelain) && test -z "$S"   # must exit 0: the worktree starts clean
 cd "$W" && git fetch origin && git checkout --detach origin/main
 # Edit the ONE line of that key inside the live-values markers, keeping `- <key>: <value> | <source>`.
 npm run standards:lint
@@ -188,9 +203,16 @@ node --test "packages/fleet-ops/standards-lint/test/**/*.test.js"
 git diff --numstat origin/main
 ```
 
+**The worktree starts clean.** The `status --porcelain` line exits non-zero when `$W` holds any
+change: another session's flip in flight, or a STOP that was never restored. STOP there, leave
+the file alone (P-shared-checkout), and tell the owner what `git -C "$W" status --porcelain` printed.
+
 The last command must print exactly one line, `1<TAB>1<TAB>docs/standards/live-values.md`.
 **STOP on a non-zero exit or any other diff output, and do not commit:** tell the owner which check
-failed. This session keeps the new value meanwhile. Otherwise commit with the subject
+failed. This session keeps the new value meanwhile. Then restore the file you edited,
+`git -C "$W" checkout -- docs/standards/live-values.md`, and confirm `git -C "$W" status --porcelain`
+prints nothing, so the kept worktree does not block the next flip; only the session that made the
+edit restores it (P-shared-checkout). Otherwise commit with the subject
 `live-values: <key> <new value>` and the body `Owner: "<exact words>", <Justin|Hunter>, <ISO time>`,
 push with `git push origin HEAD:main`, and prove it: `git ls-remote origin refs/heads/main` equals
 `git rev-parse HEAD`. A rejected push: fetch, check out `origin/main` again, re-apply the line,
