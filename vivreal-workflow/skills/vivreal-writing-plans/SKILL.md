@@ -39,6 +39,20 @@ A plan that touches more than one repo carries both of these, so no builder wait
   the plan, with the version each moves to and the PR that moves it. Naming only Templates and
   the portal for the renderer left Secure and Client API on 1.97.0 until the walk readiness check.
 
+## Runbook commands and STOP conditions (REQUIRED in a release plan)
+
+- **Every command carries every argument its script needs**, checked against the script's own
+  argument parser, cited by file and line beside the command. Name every value (an item id, a
+  journal, a run folder) or the step that produces it; a builder or release engineer must never
+  supply one from memory. A release B walk row left out the item id its script's parser requires.
+- **A STOP on "a new alarm" lists the known baseline alarms with their history**, so a quiet-week
+  alarm (one that breaches on most quiet days) is classified against its own record instead of
+  halting a correct step, and any alarm on a resource the step changes stays a STOP.
+- **A merge that deploys a whole-repository package names its size check.** A function that packages
+  the repository root (`CodeUri: ../`) can exceed the Lambda unzipped-size cap once coverage output or
+  dev dependencies ride along; the step names the workflow's prune and size check, and the last
+  deploy's size, or adds them first.
+
 ## Task right-sizing & bite-sized steps
 
 A task is the smallest unit that carries its own verification cycle and is worth a

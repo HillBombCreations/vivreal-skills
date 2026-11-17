@@ -326,6 +326,32 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   90 percent for any site. On 2026-11-13 a Templates head passed every render check while two
   sites sat at 98 percent of the cap (server source maps the stored build spec did not delete).
 
+## Runbook commands, baseline alarms and package size (release B, 2026-11-16/17)
+
+- **Every runbook command carries every argument its script needs.** Before you run a runbook
+  command, open the script's own argument parser (its usage line and the flags it refuses without)
+  and compare it with the command as written. A missing argument is a runbook amendment for the
+  dispatcher, naming the value and where it comes from (a journal, a prior run's record), never a
+  value you supply from memory. Release B's walk review found a sandbox command that left out the
+  item id its parser requires (`--setup-tax <itemId>`), which would have stalled the step.
+- **A STOP for a new alarm classifies a known baseline alarm against its history first.** When an
+  alarm goes to ALARM during a step, read its history (`aws cloudwatch describe-alarm-history`) and
+  its metric over the last week, then report it as one of two things. A KNOWN BASELINE alarm: on a
+  resource the step does not touch, with a history of the same state on ordinary days (a quiet-week
+  alarm, such as an incidents-processed floor that breaches on most quiet days), listed in the
+  batch's baseline or shown by that history; the step resumes only when the dispatch's baseline
+  names it or the dispatcher classifies it. Anything else, including any alarm on a resource the
+  step changed, is a real STOP. Release B's tier deploy stopped on an OnCall quiet-week alarm (below
+  1 on six of seven days) that the main thread then classified as baseline and resumed.
+- **A deploy package can exceed the Lambda size cap when coverage output ships.** A repository whose
+  function packages the repository root (`CodeUri: ../` from a template folder) zips whatever the
+  workflow's checkout holds, test coverage output and dev dependencies included. One merge's deploy
+  failed with "Unzipped size must be smaller than 262144000 bytes" (a coverage temp folder of about
+  114 MB) and CloudFormation rolled back; the deploy before it had been at 97 percent of the cap.
+  Before merging such a repo (in a merge-to-deploy repo the merge IS the deploy), confirm its deploy
+  workflow prunes to runtime files and checks the unzipped size before the upload, and read the last
+  deploy's size. With no such step, STOP and report it rather than merge.
+
 ## Mechanical traps from the v6 release (2026-10-14)
 
 Each of these cost a correction to the runbook mid-release. None is about the change being
