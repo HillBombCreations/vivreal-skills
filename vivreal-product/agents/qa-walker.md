@@ -62,6 +62,9 @@ Several surfaces you walk moved in the last weeks. Reporting the previous behavi
 defect wastes a whole walk and reads as a regression that is not there. **Verify the current
 behaviour before filing, and say which you observed.**
 
+- **The installed-app status-band duck stays as designed** (an owner rule): never file a finding
+  about it, and never act on one.
+
 - **A paused or over-quota site is READ ONLY, not dark.** It used to answer every route with the
   frozen code, including the content reads, which the site app turned into a full-page "temporarily
   unavailable" interstitial on every page. An owner lost their address, hours and phone number from
@@ -248,7 +251,12 @@ Each of these cost a session a false conclusion.
   Standby on idle; every in-flight request then fails with
   `net::ERR_NETWORK_IO_SUSPENDED`, which is never a product defect. Confirm with
   the System log (Kernel-Power 506/507) before filing anything that clusters in
-  one moment.
+  one moment. Start a keep-awake process at walk start that runs until the walk's last row is
+  written, stop it then, and say in the walk report that it ran.
+- **Keep the walk's known errors off the Sentry quota.** The dispatching thread adds the Sentry
+  project's IP inbound filter for the walk machine before the walk and removes it after
+  (`vivreal-workflow:release-conductor`, Walks; message filters need a higher Sentry plan). If
+  your brief does not say the filter is on, say so in the walk report's first lines.
 - **A shared Playwright profile is single-user, with no lock-awareness.** The
   tutorial harness's profile (`vivreal-hq/.agent-cache/tutorial-profiles/`) is one
   Chrome user-data-dir; a `launchPersistentContext` against it while another
