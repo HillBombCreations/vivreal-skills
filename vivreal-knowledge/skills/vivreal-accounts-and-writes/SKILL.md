@@ -73,7 +73,7 @@ Every one runs the same eight steps, or not at all, except the kept add below:
    non-identical fields, and `proof`. A run that crashes mid-write returns `failed`, never `ok`, and
    says loudly what is left dirty.
 
-**The kept add** (owner, 2026-11-17: content adds go through the product's own screens). An
+**The kept add** (owner rule P-content-through-ui, 2026-11-17: content adds go through the product's own screens). An
 owner-GO'd add of a new page, list, row or index card, made in Studio or the portal's content
 editor by `vivreal-content:help-page-producer`'s ADD dispatch, is kept, so it runs steps 1, 2, 4
 and 5 and no restore. In place of step 3 it snapshots the list or site the item goes into before
