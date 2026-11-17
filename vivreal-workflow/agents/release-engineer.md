@@ -311,9 +311,21 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   publishes a new route, when the SAME preview also Adds the new `<Api>Deployment<hash>`, Modifies
   `<Api>prodStage` (DeploymentId) and `<Api>` (Body), and the approved diff adds or changes a
   route. Any other Remove, and any Replacement True, is still a STOP.
-- **(b) The expected set is the preview MINUS a control.** Make a second preview the same way from
-  the DEPLOYED commit's own template; a row that also appears in the control is not part of the
-  release. Compare the remainder with the runbook's expected rows.
+- **(b) The expected set is the preview MINUS a control, and the control comes first.** Make a
+  second preview the same way, packaged from the DEPLOYED commit's own template (the CLI's package
+  output, "Runbook commands, baseline alarms and package size" below), before reading the release
+  preview; a row that also appears in the control is not part of the release. Compare the remainder
+  with the runbook's expected rows. **A sound control holds only the rows a redeploy of the same
+  commit cannot avoid:** a Modify of each function's `Code` (the package step uploads a fresh
+  artifact) and the Dynamic re-evaluation rows rule (c) names (an API's `Body`, a rule's `Targets`, a
+  permission's `SourceArn`, a function's `Role`), at Replacement False or Conditional. Release B's
+  controls read exactly that: Client 2 rows (function `Code`, the dynamic `ExpressApi` `Body`), Main
+  14 (9 function `Code`, the `ExpressApi` `Body`, 2 rule `Targets`, 2 permission `SourceArn`
+  Conditional), Secure 73 with none on a queue, a mapping or an alarm. Any other row in the control
+  (an Add or a Remove, a Replacement True, a row on a queue, an event source mapping, an alarm or a
+  role policy) means the method is wrong, not the release: fix the method before reading the
+  release preview. BR-25a's hand-built control showed 102 rows, a DLQ mapping at Replacement True
+  among them; the same commit packaged by the CLI showed 73.
 - **(c) Two row classes pass only with a physical-id proof.** Replacement **Conditional** rows from
   a dynamic re-evaluation (a function's `Role`, a rule's `Targets`, a permission's `SourceArn`) and
   the deploy script's own stack-tag Modifies (only the commit tag moved) are accepted when every
@@ -373,9 +385,9 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
      (`iconv -f CP1252 -t UTF-8 <packaged> > <preview>`) before the preview, or package in WSL.
   2. **Gate on 0 short-form GetAtts:** `grep -cE '!GetAtt|Fn::GetAtt"?: *"?[A-Za-z0-9]+\.' <preview>`
      prints 0, beside `grep -c 'Fn::GetAtt' <preview>` above 0 as its control.
-  3. **Preview a control of the DEPLOYED commit first**, packaged the same way (rule (b) above). A
-     Replacement True, or a row on a resource the deployed commit cannot have changed, in that
-     control means the method is wrong: fix the method before reading the release preview.
+  3. **Preview a control of the DEPLOYED commit first**, packaged the same way. The rows a sound
+     control holds, and what any other row means, are rule (b) under "Change sets, shared state and
+     gates" above.
   4. **Read the normal view** (`describe-change-set` with no `--include-property-values`). That flag
      hides the form rows (BR-25a's research: 46 rows where the normal view showed 102), so it is a
      cross-check only, never the view that passes a preview.

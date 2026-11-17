@@ -1,6 +1,6 @@
 ---
 name: vivreal-deploy-proof
-description: 'Use to PROVE that a backend release or infrastructure change is running in production, a VR_CMS_API / VR_Secure_API / VR_Main_API / VR_Client_API / VR_Outreach_API / EventHandler deploy, a release-train promote or backport, a deploy-role IAM grant, or any CloudFormation stack update, and to diagnose one that went green and shipped nothing. Teaches the baseline-then-moved-and-terminal stack check, why UPDATE_ROLLBACK_COMPLETE passes every naive check, the failures that leave no stack events, proving the running code by health SHA, alias and downloaded artifact, and where a deploy-role refusal is fixed. For a customer SITE deploy (Step Functions + Amplify) use vivreal-deploy-tracker instead. Triggers on: did it deploy, is it live, prove the deploy, verify the release, promote went green, stack status, UPDATE_ROLLBACK_COMPLETE, LastUpdatedTime, deploy failed, not authorized to perform, deploy role, health release sha, which version is running, lambda_api.yml, CodeSha256, live alias, change-set preview.'
+description: 'Use to PROVE that a backend release or infrastructure change is running in production, a VR_CMS_API / VR_Secure_API / VR_Main_API / VR_Client_API / VR_Outreach_API / EventHandler deploy, a release-train promote or backport, a deploy-role IAM grant, or any CloudFormation stack update, and to diagnose one that went green and shipped nothing. Teaches the baseline-then-moved-and-terminal stack check, why UPDATE_ROLLBACK_COMPLETE passes naive checks, the failures that leave no stack events, proving the running code by health SHA, alias and downloaded artifact, and where a deploy-role refusal is fixed. For a customer SITE deploy use vivreal-deploy-tracker. Triggers on: did it deploy, is it live, prove the deploy, verify the release, promote went green, stack status, UPDATE_ROLLBACK_COMPLETE, LastUpdatedTime, deploy failed, not authorized to perform, deploy role, health release sha, which version is running, lambda_api.yml, CodeSha256, live alias, change-set preview.'
 ---
 
 # Proving a backend deploy landed
@@ -155,8 +155,15 @@ stopped on a DLQ event source mapping shown as Replacement True, plus Dynamic ro
 2. **Gate on 0 short-form GetAtts:** `grep -cE '!GetAtt|Fn::GetAtt"?: *"?[A-Za-z0-9]+\.' <template>`
    prints 0, with `grep -c 'Fn::GetAtt' <template>` above 0 as the control.
 3. **Preview a control of the deployed commit first,** packaged the same way. The release's rows
-   are the preview minus the control; a Replacement True, or a row on a resource the deployed
-   commit cannot have changed, in the control means the method is wrong, so fix the method first.
+   are the preview minus the control. A sound control holds only the rows a redeploy of the same
+   commit cannot avoid: a Modify of each function's `Code` (a fresh package upload) and Dynamic
+   re-evaluation rows at Replacement False or Conditional (an API's `Body`, a rule's `Targets`, a
+   permission's `SourceArn`, a function's `Role`). Release B's Client control was 2 rows, function
+   `Code` and the API's `Body`. Any other row in the control (an Add or a Remove, a Replacement True,
+   a row on a queue, an event source mapping, an alarm or a role policy) means the method is wrong,
+   so fix the method first. The release engineer carries the same rule, with the change-set rules
+   it sits beside (`vivreal-workflow:release-engineer`, "Change sets, shared state and gates",
+   rule (b)).
 4. **Read the normal view** of `describe-change-set`. `--include-property-values` hides the form
    rows (46 rows where the normal view showed 102), so it is a cross-check only.
 
