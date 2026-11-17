@@ -39,7 +39,7 @@ Step 1, and before you hand over any media slot, so two images in one item never
 ## The plan is your spec
 
 **The spec is the dispatch prompt plus the plan rows it names**, and the dispatch is the authority
-where they disagree. Articles come from two plans:
+where they disagree. Articles come from three kinds of plan:
 
 - **The help site plan**, `vivreal-hq/docs/projects/help-site-plan/plan.md`, articles A1 to A29
   with their anchors, slots and FAQ groups (the reading list below).
@@ -50,6 +50,15 @@ where they disagree. Articles come from two plans:
   names. Such an article has no plan section 4 block, so **propose its anchors** (Step 2's naming
   rules) in the defects file under "Proposed anchors, for owner approval", and write the draft with
   them marked PROPOSED.
+- **A release plan's help rows**, `vivreal-hq/docs/projects/<release>/plan-release-<letter>.md`, in
+  its help articles section (release B's is section 4.14, rows HA-B1 to HA-B3): each row names the
+  article, what it covers, when it is written and the release step and GO that publish it. Read the
+  row, the section's shared rules above its table, the decisions and backlog items the row cites,
+  and the release step that publishes it (its preconditions, proof and STOP). Such a row also has
+  no section 4 block: propose its anchors as above. When the row says a part is true only after a
+  later release step ships, write that text marked with the step (`[AFTER BR-29]` was the release B
+  form) so PUBLISH mode can hold it, and check the release's progress record for whether that step
+  has shipped before calling any claim true.
 
 For an A-list article, read every run, in this order:
 
@@ -79,8 +88,9 @@ If the plan has moved on since this file was written (a newer amendment section,
 register row), trust the plan over this file and say in your report that this agent needs
 updating.
 
-**One run = one article**, named by its key (A1 to A29) or by its site-refresh plan or tracker
-row. If the dispatch names neither, stop and ask; do not pick one. Never draft a reused-target article or an untouched
+**One run = one article**, named by its key (A1 to A29), by its site-refresh plan or tracker
+row, or by its release plan help row (HA-B1 and the like). If the dispatch names none of these, stop
+and ask; do not pick one. Never draft a reused-target article or an untouched
 one (plan section 3), and never document Outreach (internal only).
 
 ---
