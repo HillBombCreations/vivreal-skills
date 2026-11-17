@@ -41,6 +41,7 @@ The rules as a reviewer walks them, one line per entry.
 20. **Catch blocks that assume an Error.** A catch reads the rejection through `?.` or a normaliser, and never throws.
 21. **An exclusion honoured by one reader only.** A new hide, archive or exclude flag lists every reader of the set and decides each.
 22. **Device clock for a business time.** A time an owner or a customer reads is in the business time zone and names the zone.
+23. **Work that lands in a folder it did not name.** Every shell step changes into its folder in the same command and checks it, and every tool that writes files is pointed outside every repository.
 
 ---
 
@@ -305,3 +306,15 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** `new Date()` formatted with `toLocaleString`, `getHours` or a date library default, with no time zone argument, on a value a person reads. A day boundary computed from the device's midnight. A test that only runs in the machine's own zone.
 
 **Guard shape:** A test that runs with the process or browser in a zone different from the business, and one across a DST change. A lint rule against zone-less formatting of owner-facing times outside one shared formatter.
+
+---
+
+## 23. Work that lands in a folder it did not name
+
+**Rule:** Every shell step names the folder it runs in, in the same command (change into it first, then check it), and every tool that writes files on its own is pointed at a folder outside every repository. A step that relies on wherever its shell or tool happens to start is wrong.
+
+**Why it hurts:** A shell or tool that starts in a default folder can run inside someone else's checkout: an install there can rewrite their lockfile and dependencies, and a scratch file there can carry a credential into a tree that is later committed.
+
+**How to spot it:** A command handed to a second shell layer (a Linux subsystem, a container exec, a remote shell) with no change of folder before it. A change of folder in one tool call and the command in the next, in a tool whose working folder resets between calls. An install or a pack run on a folder that another operating system also uses. A browser, capture or test tool left on its default output folder. A file saved under a relative name.
+
+**Guard shape:** One quoted command per step that changes folder first and prints it, refusing when the printed folder is not the intended one. Tool output folders set to an absolute path outside every repository. A status check of the working folder after a run, expecting no new untracked files.

@@ -33,6 +33,17 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
+- **Every WSL step is ONE quoted command that changes folder first.** A `wsl` call starts in the
+  calling shell's folder, and the Bash tool starts every call in the session's folder, which is
+  often an owner's checkout; a `cd` in an earlier call does not carry over. So each step is one
+  call that moves into its worktree, proves it, then runs:
+  `wsl.exe bash -c 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`, and
+  stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
+  rewrote an owner's root `package.json`, lockfile and `node_modules`, and read-only commands ran
+  in an owner's checkout. **Installs and packs run on WSL's own disk**, a folder under `~` fed by
+  `git archive` of the head, never on a `/mnt/<drive>` folder Windows also uses: `npm ci` there
+  replaces the Windows `node_modules` with Linux binaries, and `npm pack` there records every file
+  as mode 0755, so the tarball never equals the registry's.
 - **MSYS path mangling reaches further than the AWS CLI.** The known case is an `aws` argument
   that starts with `/` coming back as a bogus `AccessDenied`. The case that is missed: **MSYS
   also rewrites a `/` INSIDE a `jq` expression**, and inside a `git show ref:path` argument, so
@@ -630,7 +641,7 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 ## Anti-pattern catalog (check every diff)
 
 Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
-the 22 rules in checklist form, then each entry with how to spot it and its guard (source of
+every rule in checklist form, then each entry with how to spot it and its guard (source of
 truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
 evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
 when its tests pass.

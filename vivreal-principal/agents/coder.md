@@ -415,6 +415,13 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   written that way passes for the wrong reason. Use the Write tool for any file holding a
   backslash, or build the character (`String.fromCharCode(92)`, `chr(92)`), then read the
   written bytes back before trusting it.
+- **Every WSL step is one quoted command that changes folder first** (release B, 2026-11-16).
+  `wsl` starts in the calling shell's folder, and every Bash call of mine starts in the session's
+  folder, often the owner's checkout: a coder's WSL probe rewrote an owner's root `package.json`,
+  lockfile and `node_modules`, and an `npm ci` ran on a Windows-mounted worktree. So each step is
+  `wsl.exe bash -c 'cd "<my worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  stop if `pwd` is not my worktree. Installs and packs run on WSL's own disk from a `git archive`
+  of the head, never on `/mnt/<drive>` (`vivreal-workflow:shared-standards`, "Cross-platform note").
 
 ## Hard rules
 

@@ -233,6 +233,15 @@ with exactly these overrides, and every other SOLO step stands:
 - **An e2e run has three clocks**, the runner's `process.env.TZ`, the dev server's
   `webServer.env.TZ`, and the browser's `use.timezoneId`. Pinning two of three is worse than
   pinning none; state the zone explicitly in any test that asserts a rendered date or time.
+- **Every WSL step is one quoted command that changes folder first** (release B, 2026-11-16). `wsl`
+  starts in the calling shell's folder and every Bash call starts in the session's folder, often
+  the owner's checkout, so a WSL step with no `cd` ran there and rewrote an owner's root
+  `package.json`, lockfile and `node_modules`. Each step is
+  `wsl.exe bash -c 'cd "<the worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  stop if `pwd` is not the worktree. A Linux `npm ci` or `npm pack` runs on WSL's own disk from a
+  `git archive` of the head, never in the portal worktree on `/mnt/<drive>`, where it would replace
+  the Windows `node_modules` the gates use (`vivreal-workflow:shared-standards`, "Cross-platform
+  note").
 
 ## Standards reading rule
 
