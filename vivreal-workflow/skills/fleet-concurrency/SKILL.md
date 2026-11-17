@@ -1,6 +1,6 @@
 ---
 name: fleet-concurrency
-description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the cap of two agents and the shared session budget, routing new finds to the agent that owns the area, one publisher per shared target and one consumer bump pass, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
+description: "How to run several agents at once without them starving each other or the machine. Read before dispatching more than one agent into the same repository, and before any agent runs a test suite, a dev server or a browser. Covers who owns the commit gate when agents work in parallel, the live agent cap (owner rule P-cap, never restated here) and the shared session budget, routing new finds to the agent that owns the area, one publisher per shared target and publishing a reviewed package at once, the shared ports, stash and scratchpad, and keeping the machine at a healthy load rather than pegged."
 ---
 
 Parallelism here is limited by the machine and by a handful of shared resources,
@@ -156,7 +156,7 @@ either way.
 
 ## Budget and collisions
 
-**At most two agents at once (owners, 2026-10-26), per machine.** Count every coder, reviewer, researcher, walker and ledger agent, and any resumed agent. A temporary raise an owner gives lasts for that moment only. Only one of the two may drive the shared Playwright browser.
+**At most the live `agent-cap` agents at once, per machine (owner rule P-cap, vivreal-hq `docs/standards/process.md`).** The number is the key `agent-cap` of hq `docs/standards/live-values.md`, printed at session start; it moves often, so it is never written here. Count every coder, reviewer, researcher, walker, publisher, ledger agent and plan-editing agent, any resumed agent, and any agent whose own background run (a suite, a red proof) is still going. A granted extra slot replaces a freed one, it never stacks. A lowered cap never stops a running agent; it applies to the next dispatch. Only one agent at a time may drive the shared Playwright browser. Which work takes a free slot is the slot check in `vivreal-workflow:release-conductor` (P-release-focus, P-idle-slots).
 
 **Fan-out inside an agent:** at most three children, run in the foreground, and never a nested fork. A child that would fork again reports instead.
 
@@ -166,10 +166,14 @@ login error, a dropped connection) is not a new dispatch. Prefer handing new wor
 the same kind to an agent about to finish in the same repository over a fresh
 dispatch.
 
-**Route every find at once (owner, 2026-10-19).** The moment a walk, review or coder
-surfaces a new item, hand it to the running agent that owns that repository or area
-(a message, for same-scope work), or dispatch a new agent if a slot is free. Never
-hold finds for a later batch. Walkers append each defect to a live `*-defects.md` as
+**Route every find at once (owner rule P-route-finds).** The moment a walk, review or
+coder surfaces a new item, hand it to the running builder that owns that repository or
+area by SendMessage ("after your current commit, do X in the same run, then report
+once"), and do the same when work becomes ready because a dependency landed (an
+approved block, a published package, a verdict). Dispatch a new agent only when nothing
+owns it and a slot is free. Never hold finds for a later batch, except in a release's
+final stretch, where the ship rule decides (P-ship-first: an approved repo is not
+reopened, and non-blocking finds go to the backlog with their evidence). Walkers append each defect to a live `*-defects.md` as
 they find it, and the coordinator watches that file (one background wait, not a poll
 loop) so research and fixes start mid-walk. There is still one retest at the end.
 
@@ -203,13 +207,16 @@ targets. Exactly one agent publishes to each at a time, and it publishes from me
 agent once republished three kits from its own branch and the registry served
 already-removed content for four minutes.
 
-**Publish every pending package first, then ONE consumer bump pass (owner,
-2026-10-19).** When several `@hillbombcreations/*` packages have changes, publish all
-of them (each reviewed and verified on the registry), and only then dispatch one bump
-pass that moves every consumer to every new version, one commit per consumer on its
-release lane. Bumping per package multiplies commits, lockfile edits, suite runs and
-reviews in every lane. An agent that needs a package change mid-build reports it; it
-never publishes and bumps on its own. The bump pass itself is `package-publisher`.
+**Publish a reviewed package at once; consumers move in their own repo's PR (owner
+rule P-packages).** A shared `@hillbombcreations/*` package is published as soon as its
+PR passes review (standing approval) and is verified on the registry. A consumer that
+needs the new version is bumped in its own feature PR; every other consumer is bumped
+by the next builder working in that repo, on that repo's batch branch, never by a
+bump-only PR. Each dispatch into a consumer repo names the versions to bump there and
+the procedure (a surgical lockfile patch, never `npm install` on Windows), and a plan
+that publishes a package lists every consumer, the version it moves to and the PR that
+moves it. An agent that needs a package change mid-build reports it; it never
+publishes on its own. Publishing is `package-publisher`.
 
 **Namespace the scratchpad.** It is shared by every agent and session. Write
 `scratchpad/<task-slug>/<file>`, never a generic name (`count.py`, `out.txt`,

@@ -564,7 +564,7 @@ in every walk:
 1. Neighbours: every screen that shares a changed component.
 2. Three real sites of contrasting palettes, one light and two dark (the brief names them, else Windward House, Blackbird Hall and Nocturne), on each changed site surface.
 3. For each touched area, the owner's most common task done on the phone in the installed app, by touch: select, open, undo, back.
-Pair the walk with `vivreal-product:regular-user` in the same wave (the two-agent cap allows exactly that pair).
+Pair the walk with `vivreal-product:regular-user` in the same wave when two slots are free under the live agent cap (owner rule P-cap, vivreal-hq `docs/standards/process.md`).
 **Preflight first.** A launcher, port or dev-server failure is its own verdict line, `HARNESS: <cause>`, never BLOCKED; BLOCKED means the product stopped you.
 
 ---

@@ -12,11 +12,13 @@ gates between phases, and refusing to advance on a phase that only looks done.
 
 Before dispatching anything, read the `fleet-concurrency` skill. You own the
 commit gate for this batch and the rules there are how you keep the machine
-usable while several agents work. The ones you will need most: the concurrency cap in
-`vivreal-workflow:fleet-concurrency` (do not restate a number), your own sub-agents included; route every new find at
-once to the running agent that owns the area, or to a new agent when a slot is
-free, never holding it for a later batch; and publish every pending shared package
-before one consumer bump pass.
+usable while several agents work. Read `vivreal-workflow:release-conductor` and the live
+values (vivreal-hq `docs/standards/live-values.md`, printed at session start) too. The ones
+you will need most: the live agent cap (P-cap; never restate the number), your own
+sub-agents included; route every new find at once to the running agent that owns the area,
+or to a new agent only when nothing owns it and a slot is free, never holding it for a later
+batch (P-route-finds); and publish a reviewed shared package at once, with each consumer
+moved in its own repo's PR, never a bump-only PR (P-packages).
 
 ## The order, and why it is this order
 

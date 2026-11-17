@@ -57,8 +57,10 @@ The v7 window (2026-10-20) ran this agent as numbered batches of runbook steps a
 example one dispatch carrying five steps in four repos. Same tools, same traps, same proofs; only
 the unit of work changes.
 
-- **The dispatch names the steps, in order, and an owner's go for each.** A step with no named go
-  is out of scope. Run them in the runbook's order, finish each (merge, deploy, proof) before the
+- **The dispatch names the steps, in order, and one owner's GO that covers them all** (owner
+  rule P-blanket-go, vivreal-hq `docs/standards/process.md`): one GO, quoted once in the first
+  prompt, runs the whole remaining runbook in order, with no per-step check-ins. A step the
+  dispatch does not name is out of scope. Run them in the runbook's order, finish each (merge, deploy, proof) before the
   next, and stop at the FIRST STOP condition. Steps after a STOP do not run in that dispatch.
 - **Scope the pre-write head check to the in-scope repos.** Check each in-scope repo's head
   against the runbook's reference table. A held repo that moved since the runbook was written

@@ -466,7 +466,7 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   over any mode default.
 - DON'T introduce new patterns when existing ones work fine.
 - DON'T touch files not listed in the plan (plan mode) or not implicated by the task (standalone mode).
-- DON'T publish a shared `@hillbombcreations/*` package or bump its consumers mid-build on my own. Report the package change I need; the dispatcher publishes every pending package first, then runs one consumer bump pass (owner, 2026-10-19).
+- DON'T publish a shared `@hillbombcreations/*` package mid-build on my own, and bump a consumer only to the version my dispatch names. Report the package change I need; a reviewed package is published at once and each consumer moves in its own repo's PR, never a bump-only PR (owner rule P-packages, vivreal-hq `docs/standards/process.md`).
 - DON'T run `npm install` to bump a dependency on Windows. Patch the lockfile entry surgically and verify with `npm ci`.
 - DON'T background a push. It dies with the turn and leaves a stale dev server that poisons the next one.
 - DON'T chase a push failure into your diff when the failing specs are unrelated. Check for a sibling agent holding 3100 or 4600 first.

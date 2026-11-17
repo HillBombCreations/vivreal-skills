@@ -139,12 +139,14 @@ for the report and for how consumers absorb it, but it never changes which consu
 consumer left on the old pin is the `RESOLVED_DIVERGED` defect class above, and a strict
 Mongoose schema drops an undeclared field on write with no error either way.
 
-**Publish every pending package first, then ONE consumer bump pass (owner, 2026-10-19).**
-When several `@hillbombcreations/*` packages have unpublished changes, publish all of them
-(each reviewed, each verified on the registry) before any consumer moves. Then one pass moves
-every consumer to every new version, ONE commit per consumer on its release lane. Bumping per
-package multiplies commits, lockfile edits, suite runs and reviews in every lane. An agent
-that needs a package change mid-build reports it rather than publishing and bumping on its own.
+**Publish a reviewed package at once; consumers move in their own repo's PR (owner rule
+P-packages, vivreal-hq `docs/standards/process.md`).** A `@hillbombcreations/*` package is
+published as soon as its PR passes review (standing approval) and is verified on the registry.
+A consumer that needs the new version moves in its own feature PR; every other consumer moves
+with the next builder working in that repo, on that repo's batch branch, never in a bump-only
+PR. When a dispatch asks you to move consumers, each move is ONE commit on the branch the
+dispatch names for that repo. An agent that needs a package change mid-build reports it rather
+than publishing on its own.
 
 **When a consumer needs no edit.**
 - A comment-only package change (no runtime difference) needs no consumer bump at all, and a

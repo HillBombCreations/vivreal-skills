@@ -11,7 +11,8 @@ skill is the HOW for the main thread and cites those IDs as `P-<id>`. It never s
 the agent cap, the model, the current release, who runs it and where its state lives are keys of
 `docs/standards/live-values.md`, and the number you act on is the one printed at session start.
 
-Subagents do not use this skill. It is for the thread that dispatches them.
+It is for whichever thread dispatches agents: the main thread, or a coordinator or
+delivery-orchestrator run. An agent that dispatches nothing does not need it.
 
 ## 1. Before the first dispatch
 
@@ -126,8 +127,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 
 - Sweep for orphans first (`vivreal-workflow:fleet-concurrency`).
 - **A "stalled" notice describes the output stream, not the process.** Before relaunching, check
-  the agent list and the agent's working directory for new writes; two agents in one directory
-  race toward the same irreversible step.
+  the agent list and the agent's working directory for new writes; a relaunch beside a live
+  agent in the same directory races it toward the same irreversible step.
 - **Resume a rate-limited agent with SendMessage**, never a duplicate dispatch. An agent cut off
   by a usage limit while the live `model` changed is re-dispatched fresh on the current model from
   its progress file (P-model).
