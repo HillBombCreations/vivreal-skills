@@ -43,6 +43,8 @@ The rules as a reviewer walks them, one line per entry.
 22. **Device clock for a business time.** A time an owner or a customer reads is in the business time zone and names the zone.
 23. **Work that lands in a folder it did not name.** Every shell step changes into its folder in the same command and checks it, and every tool that writes files is pointed outside every repository.
 24. **Expected results resting on unread state.** A result that depends on an account's or an environment's state rests on a read of that state made first.
+25. **Plan steps that cannot run as written.** Every command, step, expected set, threshold and stop action in a plan is checked against what will execute it.
+26. **Plan rows that drift from settled answers.** A settled answer changes everywhere it is stated, each behaviour has one owning row, and a closed question stays closed.
 
 ---
 
@@ -331,3 +333,27 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** An expected result that names an account's configuration with no read of that configuration in the same run. An account named by its role ("the test business") with properties copied from a plan. Two steps in one session that need mutually exclusive states of the same account.
 
 **Guard shape:** A pre-read at the top of every run that records each property the expected results depend on, with its source and time. Each step names the read it rests on. A step the read contradicts is re-scoped or marked not judged, with the read as the reason, and never forced by changing the state to fit.
+
+---
+
+## 25. Plan steps that cannot run as written
+
+**Rule:** Every command, step, expected result and stop condition in a plan or runbook is checked against the thing that will execute it: each command carries every argument its script's parser requires, each step is something the named workflow or tool can do, each expected set is what that tool's real output can be, each threshold is the value measured at the base, and each stop or rollback action passes the repository's own gates.
+
+**Why it hurts:** A step that cannot run stalls a release part way, and a stop pinned to a wrong number or a rollback the gate refuses can halt a correct deploy, or leave an incident with no way back.
+
+**How to spot it:** A command whose flags were never compared with the script's argument list. A step that asks a workflow to act on an input it does not take. An expected change set copied from a different deploy path. A threshold with no measurement cited at the base. A revert or rollback that removes code a coverage, size or required check counts.
+
+**Guard shape:** Beside each command, the parser line it was checked against; beside each workflow step, the workflow's inputs; for each expected set, a dry run or preview of the same path; for each threshold, the measuring command and its base output; for each stop action, a dry run through the repository's gates.
+
+---
+
+## 26. Plan rows that drift from settled answers
+
+**Rule:** A plan stays inside what has been decided. When a precondition settles, every design and row that states it changes in the same edit; each behaviour belongs to the one row that builds and tests it; a question already closed by an earlier read or decision is cited, not reopened; and scope stays within the decision-maker's answer.
+
+**Why it hurts:** A builder pins a stale value from a design, a test meant to fail at its base cannot fail when another row already built the behaviour, and a reopened question can undo a decision that was protecting production.
+
+**How to spot it:** A settled value that still appears in its old form in a linked design. A behaviour tested in one row and built in another. A row whose premise contradicts an earlier closed finding. An item added beyond a recorded answer.
+
+**Guard shape:** A search of every linked design for the old value when a precondition settles. One owning row per behaviour, with its red-at-base test in that row. A citation of the closing record on any row that touches a settled question. Each scope row cites the answer it rests on.

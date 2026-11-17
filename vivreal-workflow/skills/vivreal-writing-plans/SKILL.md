@@ -53,6 +53,41 @@ A plan that touches more than one repo carries both of these, so no builder wait
   dev dependencies ride along; the step names the workflow's prune and size check, and the last
   deploy's size, or adds them first.
 
+## Plan traps the release B reviews found (walk them before the auto-review)
+
+Each was a NEW CLASS blocker in a release B plan review (vivreal-hq
+`docs/projects/next-release-B/review-*.md`). Walk the list over the plan before dispatching the
+reviewer. The general forms are the shared-standards anti-pattern catalog's "Plan steps that cannot
+run as written" and "Plan rows that drift from settled answers".
+
+**Steps that cannot run as written**
+1. **A stop rule pinned to a remembered number.** A STOP said "54 of 60" from memory; the base
+   measured 58, so its test failed and the STOP would have halted a correct deploy. Pin every
+   threshold to the value measured at the base commit, with the command and its output beside it.
+2. **A step the named workflow cannot do.** A plan cut a release "from the commit below" when the
+   cut workflow only branches from `main`'s tip and takes no ref input. Read the workflow's inputs and
+   its checkout step before writing a step that depends on them.
+3. **An expected set the tooling cannot produce.** A preview's expected rows were written for one
+   deploy path and applied to a stack whose deploy script also changes a stack tag (a Modify on every
+   taggable resource). Write each expected set from a preview, or the script, of the SAME path.
+4. **A stop action the repository's own gate refuses.** A STOP's revert would have dropped coverage
+   under a floor set with zero headroom, so CI would refuse the deploy in the middle of an incident.
+   Run every stop and rollback action through the repository's gates (coverage floors, size checks,
+   required checks) on paper or by dry run, and write the companion change it needs into the action.
+
+**Rows that drift from settled answers**
+5. **A settled precondition whose design still says the old one.** When a precondition settles (a
+   key found, a value decided), change every design line that states it in the same edit. A builder
+   pins the design, and a rollback written for the old premise can now be destructive.
+6. **One behaviour owned by a later row.** A behaviour built in one row and tested in a later one
+   cannot go red at the later row's base. Give each behaviour one row that builds it and carries its
+   red-at-base test.
+7. **A row that reopens a question already closed.** Cite the closing record on any row that touches
+   a settled question. A reopened one can undo a protection (blocking a default host that a
+   certificate monitor and a crawler need).
+8. **Scope beyond an owner answer.** A row the owner's answer did not name goes to the next release,
+   or back to the owner as a question, never into the plan by default.
+
 ## Task right-sizing & bite-sized steps
 
 A task is the smallest unit that carries its own verification cycle and is worth a
@@ -105,8 +140,10 @@ subagent_type: reviewer
 prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
   docs/projects/<slug>/spec.md (and research.md if present). Check: completeness
   vs the spec/research, scope correctness (no creep, nothing missing), risk and
-  blast-radius coverage, convention fit, missing edge cases / failure modes, and
-  testability of the plan. Verdict PASS or FAIL with section citations. Write to
+  blast-radius coverage, convention fit, missing edge cases / failure modes,
+  testability of the plan, and every item of the vivreal-writing-plans skill's
+  "Runbook commands and STOP conditions" and "Plan traps" lists. Verdict PASS or
+  FAIL with section citations. Write to
   docs/projects/<slug>/plan-review-N.md.
 ```
 
