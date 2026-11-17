@@ -1231,6 +1231,10 @@ const MEMORY_CITE_MSG =
 // name wrapped onto the next line. Stricter than hq's lint, which has only the three patterns in
 // LEAK_PATTERNS. Tested on the line joined to the next, and counted only when it starts on the line.
 const MEMORY_SLUG = new RegExp(BSL + 'b' + 'mem' + 'ory' + BSL + 's+`[a-z0-9]+(?:-[a-z0-9]+)+`');
+// The Sources-of-truth form, six lines at e1a453f: the word with a colon, then a private note's
+// lowercase file name in backticks on the same line. A function memory size ("1024 MB") names no
+// file, and README.md or CLAUDE.md are not lowercase, so neither is a hit.
+const MEMORY_FILE = new RegExp(BSL + 'b[Mm]em' + 'ory:[^`' + BSL + 'n]*`[a-z0-9][a-z0-9_-]*' + BSL + '.md`');
 const LEAK_PATTERNS = [
   {
     // A path segment, so a process name in a never-kill list is not a hit.
@@ -1336,7 +1340,7 @@ function rulePublicLeaks(files) {
       }
       for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
       const slug = (line + ' ' + (lines[i + 1] || '').trimStart()).match(MEMORY_SLUG);
-      if (slug && slug.index < line.length) fail('public-leak', `${rel}:${i + 1}`, MEMORY_CITE_MSG);
+      if ((slug && slug.index < line.length) || MEMORY_FILE.test(line)) fail('public-leak', `${rel}:${i + 1}`, MEMORY_CITE_MSG);
       // Rule 11 owns a machine path outside docs/, and a line marked generic is generic here too.
       const ruleElevenOwns = !docs && MACHINE_PATH.test(line);
       if (!ruleElevenOwns && !line.includes(MACHINE_PATH_OK) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
@@ -2069,6 +2073,21 @@ function selfTest() {
       label: 'public-leak: a memory slug after a comma',
       path: join(tmp, 'skills', 'mem-slug-comma', 'SKILL.md'),
       body: '---\nname: mem-slug-comma\ndescription: fixture\n---\n\nReconciled on the owner\'s delegation, ' + 'memory\n`some-note`: the coder owns it.\n',
+    },
+    {
+      // The Sources-of-truth form: a private note's file name after "Memory:" on the same line.
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory note file',
+      path: join(tmp, 'skills', 'mem-file', 'SKILL.md'),
+      body: '---\nname: mem-file\ndescription: fixture\n---\n\nSources: the repo guide. ' + 'Mem' + 'ory: deploy gotchas in `project_some_note.md`.\n',
+    },
+    {
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: a function memory size',
+      path: join(tmp, 'skills', 'mem-size', 'SKILL.md'),
+      body: '---\nname: mem-size\ndescription: fixture\n---\n\n- Mem' + 'ory: the function runs at 1024 MB; see `README.md` and `CLAUDE.md`.\n',
     },
     {
       // The ALLOW side: the word in prose, a longer word ending in the same three letters, and

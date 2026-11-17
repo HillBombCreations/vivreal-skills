@@ -88,4 +88,4 @@ prefix grant that once killed a release.
 
 ## Sources of truth
 
-The "IAM Policies" + "Environment Variables" sections of each backend `CLAUDE.md`. Memory: `project_admin_analytics_integration.md` (deploy-role gotcha), the outreach send-domain entries (SESCrudPolicy + GMAIL_SA_KEY_JSON), `project_db_connection_gold_standard.md` (CLUSTER_URL rotation).
+The "IAM Policies" + "Environment Variables" sections of each backend `CLAUDE.md`.

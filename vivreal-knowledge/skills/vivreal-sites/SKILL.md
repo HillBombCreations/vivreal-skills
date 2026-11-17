@@ -64,4 +64,4 @@ Also: **an empty list infers nothing.** A CMS list field's row shape is inferred
 | Safe Mongo queries against the `sites` / `collection_objects` collections | `vivreal-db` |
 | The public API that serves site content (routes, frozenCheck, signed media) | `vivreal-client-stack-knowledge` |
 
-Sources of truth: `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` (Studio preview parity, sites routes), `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md`, `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` + `docs/DESIGN_LANGUAGE.md`. Memory: `insight_publishdate_storefront_gate.md`, `project_q3b_site_chrome.md`, `project_schedule_page_type.md`, `project_site_studio_next_level.md`, `project_showcase_producttype_binding_followup.md`, `insight_templates_main_autosync.md`.
+Sources of truth: `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/CLAUDE.md` (Studio preview parity, sites routes), `${VIVREAL_REPOS}/Vivreal_Templates/CLAUDE.md`, `${VIVREAL_REPOS}/vivreal-site-renderer/CLAUDE.md` + `docs/DESIGN_LANGUAGE.md`.

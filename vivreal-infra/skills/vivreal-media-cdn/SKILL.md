@@ -66,4 +66,4 @@ Only through `VR_Secure_API/scripts/purge-closed-group.js` (dry run by default),
 
 ## Sources of truth
 
-`VR_Client_API/CLAUDE.md` (Media URLs / CloudFront sections), `VR_CMS_API/CLAUDE.md` (handleMedia / presignUpload / S3). Memory: `insight_client_api_array_signing_5_copies.md`, `project_lambda_concurrency_reallocation.md` (SignedUrlTtlSeconds step A).
+`VR_Client_API/CLAUDE.md` (Media URLs / CloudFront sections), `VR_CMS_API/CLAUDE.md` (handleMedia / presignUpload / S3).
