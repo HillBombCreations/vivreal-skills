@@ -107,6 +107,10 @@ until that go is given.
    `list-sequences.js` does not print them, so ask the operator to confirm the chosen
    sequence has its sender and send window set; if it does not, they set it on the
    sequence before the seed, and you say so in `notes`.
+   The registered business address and the approved signature format every outreach email
+   signs with live in vivreal-hq `packages/leadgen/CLAUDE.md`, section "Sender identity".
+   Read them there when a sequence's copy is checked; never copy either into a brief, a note
+   or this public plugin.
 
 3. **NOW get the search query, clarify the target.** Ask only what's needed to
    remove vagueness:
