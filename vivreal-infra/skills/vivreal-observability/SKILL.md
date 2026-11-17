@@ -214,9 +214,10 @@ own error handling, Sentry included, sees a refusal. So:
   sends credentials, and `vary: Origin`. Custom responses and their headers add no WAF cost.
 - **A preflight blocked by a rate rule hides the answer too.** A custom header on the call (the
   portal's `X-App-Source`) makes the browser preflight it, and a preflight answered with any non-2xx
-  status fails whatever headers it carries. A rule scoped to routes that never answer `OPTIONS`
-  themselves excludes the exact `OPTIONS` method; VR_Main_API #137 (approved, unmerged at this writing)
-  does that for two of its rules and adds the headers to all of them
+  status fails whatever headers it carries. Where the CORS layer answers `OPTIONS` before any route
+  runs, a rule scoped to routes can skip the exact `OPTIONS` method and open no door; a whole-API
+  rule that still counts it can still block a preflight at its limit. VR_Main_API #137 (approved,
+  unmerged at this writing) skips it in two route rules and adds the headers to all of them
   (`vivreal-knowledge:vivreal-main-api-knowledge`, the WAF bullets).
 - **Prove it with the app's real `Origin`** (next section).
 

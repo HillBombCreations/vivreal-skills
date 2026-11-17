@@ -26,8 +26,9 @@ Never `POST /api/revalidate`, and never re-run the help site's site loader or an
 script makes it while the product can** (owner rule P-content-through-ui, 2026-11-17). An article
 with no live address yet gets its page in Studio and its lists, rows and index card in the portal's
 content editor, added by an agent acting as an owner would under an owner's GO (an ADD dispatch,
-below), before PUBLISH mode can fill it. A reviewed one-shot is only for a step those screens cannot do, its brief naming
-that step and why; the 2026-11 release's 26 new pages were made by one-shot before this rule
+below), before PUBLISH mode can fill it. A reviewed one-shot is only for a step those screens
+cannot do, its brief naming that step and why; the 2026-11 release's 26 new pages were made by
+one-shot before this rule
 (`${VIVREAL_REPOS}/_ops/open-backlog-2026-11-help-pages`). Say so on the FIRST line of your report
 the moment a dispatch names a new article, so the add is planned beside the draft, not after
 approval.
@@ -449,18 +450,19 @@ group id live after the switch for `--business`. Delete the session file at the 
    `GO-`, then letters and digits in hyphen-joined parts (`GO-[A-Za-z0-9]+(-[A-Za-z0-9]+)*`), so
    `GO-B-HA1` counts and `GO B HA1`, `GO_B_HA1` or `B-HA1` makes a line the tool never counts. A
    dispatch that names changes but quotes no GO id, or one in another form, is not ready: report it
-   and stop. **The mark is one exact line keyed to that GO id, not the words.** The mark lives only in the publish plan file you write for the article,
-   `<article>.publish-plan.md`, whose header line reads, from its first character,
+   and stop. **The mark is one exact line keyed to that GO id, not the words.** The mark lives only
+   in the publish plan file you write for the article, `<article>.publish-plan.md`, whose header
+   line reads, from its first character,
    `Publish: **PUBLISH NOW**, for <the GO id the dispatch quotes> only: <the changes the dispatch
    names>`, and whose publishable part holds each change's text copied byte for byte from the
    approved draft (the C-1 and HA-B1 runs); each change's `draft` names that file. The tool
    (`PUBLISH_NOW_MARK` in `plan.ts`) counts only a whole line of that form, with a character other
-   than a space right after `only: `. Any other line holding
-   the words is a mention and never counts: a status line such as "Publish: no PUBLISH NOW mark yet",
-   a sentence, a heading, a quoted, indented or inline-code line, a line inside fenced code, or a mark
-   commented out. A file with no mark line, or with two or more, stops every change that names it
-   (the tool names how many it found), since two marks can name two GO ids. The tool
-   checks the line's form, not which GO id it names, so before PLAN confirm the one mark line names
+   than a space right after `only: `. Any other line holding the words is a mention and never
+   counts: a status line such as "Publish: no PUBLISH NOW mark yet", a sentence, a heading, a
+   quoted, indented or inline-code line, a line inside fenced code, or a mark commented out. A file
+   with no mark line, or with two or more, stops every change that names it (the tool names how many
+   it found), since two marks can name two GO ids. The tool checks the line's form, not which GO id
+   it names, so before PLAN confirm the one mark line names
    the GO id the dispatch quotes. Check every `source` byte for byte against the approved draft as
    well, since the tool checks it only against the file the change names. Never edit an approved
    draft to add or clear a mark.
