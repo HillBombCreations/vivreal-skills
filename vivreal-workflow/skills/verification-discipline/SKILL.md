@@ -101,8 +101,9 @@ Shapes met since, each a clean answer that only a control can tell from a wrong 
   GitHub writes a vulnerable range as `>= 7.0.0, < 11.0.1`; node-semver (6 and 7 alike, measured)
   returns null from `validRange` for that string, and `satisfies` answers false for every version,
   a clean "not affected". Replace each comma with a space before matching, refuse any range
-  `validRange` still rejects, and run the lowest version the fixed range holds
-  (`minVersion(<range>)`) through the same code as the control: it must come back affected.
+  `validRange` still rejects, and run the lowest version the vulnerable range holds
+  once its commas are swapped (`minVersion(<range with commas replaced>)`) through the same code as
+  the control: it must come back affected.
 
 ---
 

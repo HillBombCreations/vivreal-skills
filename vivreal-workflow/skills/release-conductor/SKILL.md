@@ -198,8 +198,8 @@ have no dependencies.
 export MSYS_NO_PATHCONV=1
 W="$VIVREAL_REPOS/_wt/hq-live-values"
 test -e "$W/.git" || git -C "$VIVREAL_REPOS/vivreal-hq" worktree add --detach "$W" origin/main
-S=$(git -C "$W" status --porcelain) && test -z "$S"   # must exit 0: the worktree starts clean
-cd "$W" && git fetch origin && git checkout --detach origin/main
+# One chain: a dirty worktree stops it here, before the checkout can carry the edit along.
+test -z "$(git -C "$W" status --porcelain)" && cd "$W" && git fetch origin && git checkout --detach origin/main
 # Edit the ONE line of that key inside the live-values markers, keeping `- <key>: <value> | <source>`.
 npm run standards:lint
 node --test "packages/fleet-ops/standards-lint/test/**/*.test.js"

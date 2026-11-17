@@ -90,7 +90,8 @@ For each repo in the dispatch:
    invalid, so `satisfies` answers false for every version, a false "not affected" (release B,
    2026-11-17). Replace each comma with a space before matching, STOP for any alert whose range
    `semver.validRange` still returns null for, and add a second control: the lowest version the
-   fixed range holds, `semver.minVersion(<range>)`, must evaluate affected.
+   vulnerable range holds once its commas are swapped, `semver.minVersion(<range with commas
+   replaced>)`, must evaluate affected.
 6. **What Dependabot cannot see.** A name@version present at the deployed SHA but not on the
    default branch raises no alert. Query each one in the global advisory database,
    `gh api "advisories?ecosystem=npm&affects=<name>@<version>"`, with a known-vulnerable

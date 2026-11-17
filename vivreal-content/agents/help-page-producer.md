@@ -506,18 +506,26 @@ GO relayed mid-task, or one with no name or exact time, is refused.
 title) and any lists, rows or index card. A GO relayed mid-task, or one with no name or exact time,
 is refused. This is the owner's rule for content adds (2026-11-17): through the product's own
 screens, as an owner would, never behind them.
-1. Sign in and switch to the Vivreal business as PUBLISH mode's session paragraph says, and follow
-   `vivreal-knowledge:vivreal-accounts-and-writes`, "The write protocol", for what an add shares
-   with it: the named approval, one item at a time, the write through the product UI, the read-back
-   from a fresh process. An add is kept, so there is no restore.
-2. Add the page in Studio, and the lists, rows and index card in the portal's content editor,
-   exactly as the dispatch names them. The only press is that screen's own save for the item being
-   added: no other page, no channel's buttons.
-3. A step a screen cannot do is never scripted here: report it with what the screen showed, for
-   the main session's reviewed one-shot.
+1. Sign in and switch to the Vivreal business as PUBLISH mode's session paragraph says. An add is
+   "the kept add" of `vivreal-knowledge:vivreal-accounts-and-writes`, "The write protocol": the
+   named approval, one item at a time, a snapshot of the list or site the item goes into before
+   the press, the write through the product UI, the read-back from a fresh process, and the add
+   log in place of the manifest entry. It is kept, so there is no restore.
+2. Arm the guard on the browser context as that skill's `references/walk-harness.md` says, so
+   every write is answered with its readable 403. For each save, name the route it calls first,
+   from one press the guard refuses and logs, or from the portal's `src/app/api/proxy/` routes
+   ("Proxy routes" in `vivreal-knowledge:vivreal-portal-knowledge`). Then admit exactly that one save with its own allow-list entry,
+   anchored on host, method and route (the model is footage-recorder's `WRITE_A_POST_WRITES`),
+   and remove the entry once the save answers. Every other write still gets its 403. Add the page
+   in Studio, and the lists, rows and index card in the portal's content editor, exactly as the
+   dispatch names them. The only press is that screen's own save for the item being added: no
+   other page, no channel's buttons.
+3. A step a screen cannot do is never written to the database here: report it with what the
+   screen showed, for the main session's reviewed one-shot.
 4. Read each add back from a fresh process, and on the live site after the edge cache's minute,
-   and record what was added (ids, address, time, read-back) in `add-log-<date>.md` in the
-   article's publish folder. PUBLISH mode fills the page after that.
+   and record what was added (ids, address, time, read-back) in `add-log-<date>.md` in the run's
+   publish folder, `knowledge/help-drafts/publish-<date>-<article>/` (make it if PLAN has not).
+   PUBLISH mode fills the page after that.
 5. Report under 250 words: what was added, the read-back, and any step left for a one-shot.
 
 ## vivreal.io mode
@@ -527,7 +535,7 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 ## Never
 
 - Publish, write to the CMS, call a writing proxy route, revalidate, or re-run a loader, except in PUBLISH mode, a vivreal.io mode publish that follows it, or an ADD dispatch's saves.
-- Add a page or a list outside an ADD dispatch, or by anything but the product's own screens. Labels, search indexes, media and any step a screen cannot do stay with the main session's reviewed one-shot.
+- Add a page or a list outside an ADD dispatch, or by anything but the product's own screens. Labels, search indexes and media a screen cannot make, and any other step a screen cannot do, stay with the main session's reviewed one-shot.
 - Write anything into `Vivreal_Docs`.
 - Invent, rename or reuse an anchor.
 - Write a BLOCKED section, or document around a defect.
