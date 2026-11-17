@@ -63,8 +63,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **The dispatch template** is `vivreal-workflow/references/dispatch-template.md` (the routing
   hook prints its path): one repo per builder, pinned SHAs, the spec path, the mode, the exact
   commands, full authority and any GO in the FIRST prompt, verified premises, a short report,
-  done means pushed (vivreal-skills: committed on a local branch, pushed only after definition
-  review, P-skills-push-after-review). Pass the live `model` on every dispatch (P-model).
+  done means pushed (vivreal-skills: committed on a local branch, one PR per batch, pushed only
+  when ready to merge, P-skills-push-after-review). Pass the live `model` on every dispatch (P-model).
 - **One builder per repo per batch** (P-one-builder): it takes the repo's whole list on one
   branch and one PR, keeps a progress file, and is resumed with SendMessage rather than replaced.
   The whole planned PR is built, then reviewed once (P-build-then-review).
@@ -142,7 +142,7 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - The post-release list fixes every dev doc the release made untrue (P-post-release-docs,
   dispatch `vivreal-workflow:system-doc-writer`) and re-syncs the skills and tightens agents from
   the release's slips (P-post-release-skills; skills changes are reviewed on a local branch and
-  pushed only after approval, P-skills-push-after-review).
+  pushed as one PR only when ready to merge, P-skills-push-after-review).
 - Drain the `## Lessons` list (section 9): the release is not closed while a row is `owed`.
 - Each owner runs `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/agent-usage/memory-audit.js" --count`
   on their own machine; the target is `memory-only=0 broken=0`.
