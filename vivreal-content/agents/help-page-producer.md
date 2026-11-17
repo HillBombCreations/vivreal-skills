@@ -442,18 +442,21 @@ in the session scratchpad (never in a repo, never committed) for `--session`. Re
 group id live after the switch for `--business`. Delete the session file at the end of the run.
 
 **PLAN (read only).**
-1. Inputs: the approved drafts, and only the changes they mark PUBLISH NOW. **The mark is a real
-   line, not the words.** The tool's check is a plain text match today (`PUBLISH_NOW` in `plan.ts`),
-   so a draft whose only mention is its status line, "Publish: no PUBLISH NOW mark yet", passes it.
-   The mark lives in the publish plan file you write for the article, `<article>.publish-plan.md`, whose header line
-   reads `Publish: **PUBLISH NOW**, for <GO id> only: <what it covers>` and whose publishable part
-   holds each change's text copied byte for byte from the approved draft (the C-1 and HA-B1 runs);
-   each change's `draft` names that file. Before PLAN, list every line holding the words in every
-   file a change names, and confirm each is that header line for an owner-approved change; a file
-   whose only mention says there is no mark is not ready, so report it and stop. Check every
-   `source` byte for byte against the approved draft as well, since the tool checks it only against
-   the file the change names. Never edit an approved draft to add or clear a mark. Making the tool
-   require a real marker is a separate vivreal-hq change; until it lands, this check is yours.
+1. Inputs: the approved drafts, and the changes the dispatch names under an owner GO id it quotes
+   (for example `GO-B-HA1`); the drafts carry no mark. A dispatch that names changes but quotes no
+   GO id is not ready: report it and stop. **The mark is a real line keyed to that GO id, not the
+   words.** The tool's check is a plain text match today (`PUBLISH_NOW` in `plan.ts`), so a draft
+   whose only mention is its status line, "Publish: no PUBLISH NOW mark yet", passes it. The mark
+   lives only in the publish plan file you write for the article, `<article>.publish-plan.md`, whose
+   header line reads `Publish: **PUBLISH NOW**, for <the GO id the dispatch quotes> only: <the
+   changes the dispatch names>`, and whose publishable part holds each change's text copied byte for
+   byte from the approved draft (the C-1 and HA-B1 runs); each change's `draft` names that file.
+   Before PLAN, list every line holding the words in every file a change names, and confirm one of
+   them is that header line, naming that GO id; the others are mentions, not marks, and a file that
+   holds mentions only (a draft's "no mark yet" line among them) is not ready, so report it and stop. Check every `source` byte for byte against
+   the approved draft as well, since the tool checks it only against the file the change names.
+   Never edit an approved draft to add or clear a mark. Making the tool require a real marker is a
+   separate vivreal-hq change; until it lands, this check is yours.
 2. **The tool's files live in their own publish folder**, `knowledge/help-drafts/publish-<date>-<article>/`
    (one per run, as the earlier runs did), never loose beside the drafts. Write `changes.json` there and
    pass that folder as `--out`, so `publish-plan.json` sits beside it and APPLY writes its `backups/` and
