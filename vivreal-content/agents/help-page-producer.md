@@ -442,11 +442,26 @@ in the session scratchpad (never in a repo, never committed) for `--session`. Re
 group id live after the switch for `--business`. Delete the session file at the end of the run.
 
 **PLAN (read only).**
-1. Inputs: the approved drafts, and only the changes they mark PUBLISH NOW.
-2. Write `changes.json` beside the drafts, exactly in the README's shape: one entry per change, with
-   `current` copied byte for byte from the stored text the draft quotes. Every entry (update, delete
-   and create alike) also carries `"draft"`, the draft file's path relative to `changes.json` (its
-   file name when it sits beside it), and `"source"`, the exact text in that draft the change
+1. Inputs: the approved drafts, and only the changes they mark PUBLISH NOW. **The mark is a real
+   line, not the words.** The tool's check is a plain text match today (`PUBLISH_NOW` in `plan.ts`),
+   so a draft whose only mention is its status line, "Publish: no PUBLISH NOW mark yet", passes it.
+   The mark lives in the publish plan file you write for the article, `<article>.publish-plan.md`, whose header line
+   reads `Publish: **PUBLISH NOW**, for <GO id> only: <what it covers>` and whose publishable part
+   holds each change's text copied byte for byte from the approved draft (the C-1 and HA-B1 runs);
+   each change's `draft` names that file. Before PLAN, list every line holding the words in every
+   file a change names, and confirm each is that header line for an owner-approved change; a file
+   whose only mention says there is no mark is not ready, so report it and stop. Check every
+   `source` byte for byte against the approved draft as well, since the tool checks it only against
+   the file the change names. Never edit an approved draft to add or clear a mark. Making the tool
+   require a real marker is a separate vivreal-hq change; until it lands, this check is yours.
+2. **The tool's files live in their own publish folder**, `knowledge/help-drafts/publish-<date>-<article>/`
+   (one per run, as the earlier runs did), never loose beside the drafts. Write `changes.json` there and
+   pass that folder as `--out`, so `publish-plan.json` sits beside it and APPLY writes its `backups/` and
+   `publish-log-<date>.md` there too. Write `changes.json` exactly in the README's shape: one entry per
+   change, with `current` copied byte for byte from the stored text the draft quotes. Every entry
+   (update, delete and create alike) also carries `"draft"`, the named file's path relative to
+   `changes.json` (for example `../<article>.publish-plan.md`, which the tool resolves), and
+   `"source"`, the exact text in that draft the change
    carries out, copied byte for byte from the draft, never from the portal or a row: for an update
    or a create, the draft's words for the new text; for a delete, the draft's words that remove the
    row. Before writing an entry, read the row's `updatedAt`: a row changed since the draft is
@@ -455,7 +470,7 @@ group id live after the switch for `--business`. Delete the session file at the 
    change by exact text, keys it by the document id, proves the session reads the target business,
    writes `publish-plan.json` and prints its sha256. It stops a change for any reason it prints,
    among them a change that names no draft, quotes no source, names a draft it cannot read, a draft
-   with no PUBLISH NOW mark, a draft that does not hold the quoted source, and a change that zero or
+   with no PUBLISH NOW mark (a plain text match today, step 1), a draft that does not hold the quoted source, and a change that zero or
    two rows match. A stopped change is reported with the tool's reason, never forced: never edit an
    approved draft to clear any stop.
 4. List what this mode will not do (new pages, new lists, site document writes, media) for the
