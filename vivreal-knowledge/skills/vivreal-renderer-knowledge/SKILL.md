@@ -1,6 +1,6 @@
 ---
 name: vivreal-renderer-knowledge
-description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site-renderer), the engine behind Vivreal_Templates sites and the portal Studio preview. Covers the publish runbook (a publish hits every site), the dev-sync.js dev overlay (a green consumer run can describe unpublished code), the ImageComponent seam, the Tailwind v4 @source rule, identity kits and DESIGN_LANGUAGE.md. Triggers on: vivreal-site-renderer, site-renderer, @hillbombcreations/site-renderer, renderer package, ContentRenderer, PageTemplates, publish renderer, bump renderer, primitives, design language, canHidePoweredBy, checkoutIdentifier, CartAdapter, isPageAllowed, DemoRibbon, motion preset, dev:linked, dev-sync, dev overlay, dev-status, RENDERER-DEV-OVERLAY, compose diff, pre-publish check, nullOnEmpty, hideOnMobile, imageFocus. Source of truth: `vivreal-site-renderer` `CLAUDE.md` and its linked docs at `origin/master`. Not this: the Templates app is vivreal-templates-knowledge, the product model is vivreal-sites.'
+description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site-renderer), the engine behind Vivreal_Templates sites and the portal Studio preview. Covers the publish runbook (a publish hits every site), the dev-sync.js dev overlay (a green consumer run can describe unpublished code), the ImageComponent seam, the Tailwind v4 @source rule, identity kits and DESIGN_LANGUAGE.md. Triggers on: vivreal-site-renderer, site-renderer, @hillbombcreations/site-renderer, renderer package, ContentRenderer, PageTemplates, ProductCard, publish renderer, bump renderer, primitives, design language, canHidePoweredBy, checkoutIdentifier, CartAdapter, isPageAllowed, DemoRibbon, motion preset, dev:linked, dev-sync, dev overlay, dev-status, RENDERER-DEV-OVERLAY, compose diff, pre-publish check, nullOnEmpty, hideOnMobile, imageFocus. Source of truth: `vivreal-site-renderer` `CLAUDE.md` and its linked docs at `origin/master`. Not this: the Templates app is vivreal-templates-knowledge, the product model is vivreal-sites.'
 ---
 
 # vivreal-site-renderer: knowledge digest
@@ -50,6 +50,18 @@ wrong, so the warning lives here.
   root, outside the package directory (an extra file inside it would fail the byte proof), and
   deliberately not gitignored so it surfaces as untracked in `git status`. It only exists from
   2026-09-30, so its absence proves nothing about an older overlay.
+- **The dev link does not reach a worktree under `_wt/`.** `dev-sync.js`, `dev-status.js` and
+  `dev-unlink.js` find consumers as SIBLINGS of the renderer checkout they run from
+  (`consumerRoots()` in `scripts/lib/renderer-overlay.js`: the renderer root's parent plus
+  `CONSUMER_DIRS`), and a consumer's `npm run dev:linked` calls `../vivreal-site-renderer`. From
+  `${VIVREAL_REPOS}/_wt/` both point at `_wt/`, where no checkout carries those names, so the link
+  overlays nothing in your worktree (or, run from the main renderer checkout, overlays the MAIN
+  consumer checkouts instead). Name the consumer worktree on the one command line:
+  `RENDERER_CONSUMER_ROOTS="<absolute consumer worktree>" node "<renderer worktree>/scripts/dev-sync.js"`,
+  then start the consumer's dev server yourself; separate several roots with the platform's path
+  delimiter (`;` on Windows, `:` elsewhere). Run `dev-status.js` and `dev-unlink.js` with the SAME
+  value, or they look at the siblings and report a clean install. The variable widens the WRITE path
+  too, so set it for that one command and never export it.
 - **Consumer guard:** `Vivreal_Templates` `pretest` and `prebuild` refuse when the marker is present
   (`checks/assert-no-renderer-overlay.mjs`, applied 2026-09-30). Acknowledge deliberately with
   `ALLOW_RENDERER_OVERLAY=1 npm test` in bash, or `$env:ALLOW_RENDERER_OVERLAY='1'; npm test` in
@@ -84,6 +96,7 @@ Key src dirs: `src/chrome/` (Navbar/Footer/MobileNav/OverlayNav/CardNav/UtilityS
 - **Authoring knobs that are no-ops in places:** `sectionConfig.hideOnMobile: true` appends `hidden md:block` in `SectionShell` and does nothing on `home-section` and `cta` kinds, which pass no sectionConfig through; `imageFocus {x, y}` (0 to 100) sets the cover crop on heroes, spotlights, cards and split rows. A stored block with no `config` must render (a crash there broke vivreal.io's Amplify build once).
 - **Not for sale is data the API decides, never the renderer.** `shapeDetailItem` passes `purchasable: false` only when the item says so and reads `notForSaleVariants`; the storefront, the product parts and `ProductDetailView` pick `firstSellableVariant` from it, and the detail page says "Not for sale right now" per item and per size. The rule itself is VR_CMS_API's catalog state and VR_Client_API's `assessSellability` (read at `origin/master` `ed2e2db`).
 - **`renderedHeroFor(input)` answers which hero a composed page will render** (`src/composition/composePage.tsx`), for `resolveMastheadTone` on a Mood dark site. Call it only there (elsewhere the tone ignores it), and only with side-effect-free data accessors: it runs the whole composition pipeline a second time beside `composePage`, so a fetching, logging or metering accessor double counts.
+- **`ProductCard` is the one card the standard storefront draws, and it is public from 1.101.0.** `ProductCard` and `ProductCardProps` are exported from the root (`src/index.ts`, defined in `src/PageTemplates/Products/parts.tsx`), so the portal's Sales list draws the same card a site's products page does and the owner's card cannot drift from the site's. A `resolveAction` that answers `{ kind: 'none' }` draws no buy button (the portal's use). It reads `LinkComponent` through `useSiteRenderer()`, so draw it inside a `SiteRendererContext` provider. `tileStyle: 'cutout'` is a second look (read `sectionConfig.tileStyle` on a site's `products-grid` binding to see which a live shop uses), and no renderer test covers the cutout arm yet, so prove a change there on a rendered page, not by the suite. The kit storefront shells (`src/PageTemplates/Products/looks/*`, `OfferTilesLayout`) draw their own tiles, so a shop selling on one of those will not match the portal card.
 - **An unknown layout renders as `CardsLayout`, with no error.** `ContentRenderer.tsx` falls through `layoutMap[displayAs] ?? CardsLayout`, and site-loader never calls `checkRendererCompat`, so a binding naming a layout the PUBLISHED renderer lacks passes every check and ships a card grid. A strict enum fails the other way (`hero.variant` is a `z.enum` in site-loader, so a missing literal rejects the whole blueprint with a refusal that reads like a version problem). Check a `displayAs` against the published capability manifest, and ship a renderer publish and the kits that use its new layouts on the SAME train.
 - **v6 (the minor Templates and the portal adopted 2026-10-14):** `DetailBody` is a new public export, scope entries can pin items by id (a rename never drops a picked item), and a curated font family named by its literal name carries its own stylesheet (`googleFontsHref`), beside the `siteFontsHref()` / `SITE_FONT_LITERAL_FAMILIES` helpers Templates now links from its layout because Turbopack drops a CSS `@import url()`. Read the pin from each consumer's lockfile.
 
@@ -106,6 +119,14 @@ The renderer is a published npm package; a publish reaches every deployed custom
 4. **Push to `master`** → `.github/workflows/publish.yml` runs `npm ci` + build + `npm publish` automatically. It no-ops on an unchanged version, so a merged change with no bump publishes nothing (it no-op'd twice on 2026-10-03). Local `npm publish` is discouraged; CI uses its own write token.
 5. **Bump consumers.** Pin the new version in each consumer's `package.json` and TEXT-PATCH the lockfile entry (version, resolved, integrity) rather than running `npm install`, which on Windows prunes the Linux-only optional dependencies the Amplify build needs; prove it with `npm ci --dry-run`. Templates, Secure (exact pin plus a re-vendored worker manifest) and the portal each had a "surgically patched lockfile" commit for every 1.7x/1.8x adoption.
 6. Deploy: the portal ships via its release train, NOT a merge to `main` (`vivreal-infra:vivreal-lambda` `references/deploy.md`); Templates releases via the **promote-stable** workflow (main→stable FF, then release builds for the `live` build tier only; demo sites catch up weekly), merging Templates `main` alone releases nothing. Expect a rollout wave across live sites after promote-stable.
+
+**Comparing a pack with the registry: pack on WSL's own disk, never on `/mnt/<drive>`.** A publish is
+proved by comparing the registry tarball byte for byte with a pack of the reviewed head, and that only
+holds when both were packed the same way. `npm pack` run in WSL on a Windows-mounted folder records
+every file as mode 0755, so its hash never equals the registry's (the CI build's files are 0644), and a
+pack made on Windows differs by line endings. Pack from a `git archive` of the head extracted under
+WSL's own home folder, compare file modes as well as bytes, and keep a control that must fail (a
+one-byte change).
 
 ### The pre-publish real-data compose diff (how 1.81.0 and 1.83.0 were proven)
 
