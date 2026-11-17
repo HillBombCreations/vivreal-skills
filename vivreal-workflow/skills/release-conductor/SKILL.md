@@ -219,9 +219,15 @@ node --test "packages/fleet-ops/standards-lint/test/**/*.test.js"
 git diff --numstat origin/main
 ```
 
-**The worktree starts clean.** The `status --porcelain` line exits non-zero when `$W` holds any
-change: another session's flip in flight, or a STOP that was never restored. STOP there, leave
-the file alone (P-shared-checkout), and tell the owner what `git -C "$W" status --porcelain` printed.
+**The worktree starts clean.** The `status --porcelain` chain exits non-zero when `$W` holds any
+change, and also when its `git fetch` or its `git checkout` fails. Tell which by running
+`git -C "$W" status --porcelain` on its own:
+- **It prints anything:** the worktree is dirty (another session's flip in flight, or a STOP that
+  was never restored). STOP there, leave the file alone (P-shared-checkout), and tell the owner what
+  it printed.
+- **It prints nothing:** the fetch or the checkout failed. Read that command's own error (no
+  network, or a lock another git process holds, which you wait out and never delete), then run the
+  chain again; never edit until it exits 0.
 
 The last command must print exactly one line, `1<TAB>1<TAB>docs/standards/live-values.md`.
 **STOP on a non-zero exit or any other diff output, and do not commit:** tell the owner which check
