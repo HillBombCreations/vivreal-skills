@@ -16,6 +16,12 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
 - **Outside every repository**, in `${VIVREAL_REPOS}/_ops/<release>-<slug>/` (owner rule). A one-shot in a
   repo reads as a supported tool and invites a rerun. Never commit one, not even to a pushed branch.
   The durable fix belongs in service code; the script only repairs data the fix can no longer reach.
+- **Not for a content add** (owner rule P-content-through-ui, vivreal-hq `docs/standards/process.md`).
+  A new help page, blog post or collection item goes through the product's own screens, Studio or
+  the portal's content editor, done by an agent acting as an owner would (for a help or vivreal.io
+  page, `vivreal-content:help-page-producer`'s ADD dispatch). A one-shot makes only the step those
+  screens cannot do (labels, search indexes, media a screen cannot make), and its header names that
+  step and why.
 - **One folder per script**: `<slug>.js` (the I/O half: read, apply, revert, CLI), `lib.js` (the PURE
   half: rules, plan, the expect line, the revert state), `test/`, `redproof.js` with its dated log,
   dated dry-run logs, and `runs/` (snapshots, journals, run records).

@@ -53,7 +53,10 @@ local runs have their own limit (P-heavy-runs), whatever the agent count.
 2. **Does every path step wait on an owner?** Then ask that owner for the GO now (section 4),
    in the same turn. While you wait, a free slot may take side work: no slot is held empty for the
    path. The moment a path step can start, it takes the next free slot.
-3. **Never stop a running agent to make room** (P-cap).
+3. **Does a path step wait on another running agent** (the live walk that follows a release
+   engineer's ship, say)? Hold no slot for it either: it takes that agent's slot when the agent
+   finishes, and the free slot runs post-release work now.
+4. **Never stop a running agent to make room** (P-cap).
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
 planning for the next release. A repo already in flight runs to approval before any new repo
@@ -78,7 +81,7 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
-- **Content adds go through the product's own screens** (owner, 2026-11-17). A new help page, a
+- **Content adds go through the product's own screens** (P-content-through-ui). A new help page, a
   blog post or a collection item is added in Studio or the portal's content editor by an agent
   acting as an owner would, signed in as `vivreal-knowledge:vivreal-accounts-and-writes` says, under
   the owner's GO quoted in its dispatch; for a help or vivreal.io page that agent is
@@ -106,10 +109,10 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   in RUNBOOK mode with every remaining step and that GO quoted once; no per-step check-ins.
 - **An owner-gated command** (a deploy-role change set, a typed confirmation) wants the owner's
   approval, not their typing: re-check its shape, then run it yourself (P-owner-gated-yourself).
-- Warn the owners before any Sentry test event (P-sentry-warn). Report unusual CI, build or agent
-  spend the first time it shows (P-flag-cost). In a live support chat, type the reply and never
-  press send (P-chat-drafts). No added WAF spend (P-no-waf-cost). No new QA users or businesses
-  (P-no-new-qa-users).
+- Warn the owners before any Sentry test event or a probe that can trip a paging alarm
+  (P-sentry-warn). Report unusual CI, build or agent spend the first time it shows (P-flag-cost).
+  In a live support chat, type the reply and never press send (P-chat-drafts). No added WAF spend
+  (P-no-waf-cost). No new QA users or businesses (P-no-new-qa-users).
 
 ## 5. Walks
 

@@ -23,10 +23,10 @@ screen cannot make stay with the main session's reviewed one-shot (`vivreal-work
 Never `POST /api/revalidate`, and never re-run the help site's site loader or any other loader.
 
 **A NEW help or vivreal.io page is a content add, so PUBLISH mode cannot make it, and no database
-script makes it while the product can** (owner, 2026-11-17). An article with no live address yet
-gets its page in Studio and its lists, rows and index card in the portal's content editor, added
-by an agent acting as an owner would under an owner's GO (an ADD dispatch, below), before PUBLISH
-mode can fill it. A reviewed one-shot is only for a step those screens cannot do, its brief naming
+script makes it while the product can** (owner rule P-content-through-ui, 2026-11-17). An article
+with no live address yet gets its page in Studio and its lists, rows and index card in the portal's
+content editor, added by an agent acting as an owner would under an owner's GO (an ADD dispatch,
+below), before PUBLISH mode can fill it. A reviewed one-shot is only for a step those screens cannot do, its brief naming
 that step and why; the 2026-11 release's 26 new pages were made by one-shot before this rule
 (`${VIVREAL_REPOS}/_ops/open-backlog-2026-11-help-pages`). Say so on the FIRST line of your report
 the moment a dispatch names a new article, so the add is planned beside the draft, not after
@@ -504,8 +504,8 @@ GO relayed mid-task, or one with no name or exact time, is refused.
 **A fresh dispatch whose first prompt quotes the owner's GO verbatim**, `GO: "<exact words>" from
 <Justin|Hunter>, <ISO time>, <source>`, and names each thing to add: the page (its address and
 title) and any lists, rows or index card. A GO relayed mid-task, or one with no name or exact time,
-is refused. This is the owner's rule for content adds (2026-11-17): through the product's own
-screens, as an owner would, never behind them.
+is refused. This is owner rule P-content-through-ui (2026-11-17): content adds go through the
+product's own screens, as an owner would, never behind them.
 1. Sign in and switch to the Vivreal business as PUBLISH mode's session paragraph says. An add is
    "the kept add" of `vivreal-knowledge:vivreal-accounts-and-writes`, "The write protocol": the
    named approval, one item at a time, a snapshot of the list or site the item goes into before
