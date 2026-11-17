@@ -115,10 +115,11 @@ A zero is only evidence when the same query can return a hit for something you k
   both skipped this way over the same group and window, and only the case-insensitive regex
   `filter @message =~ /(?i)literal/` scanned. Use the form that scans for a negative you will cite,
   write the positive control in that SAME form, and record both queries' statistics: a control in a
-  different form can scan while the measurement skips.
+  different form can scan while the measurement skips. AWS documents this skip as a field-index skip,
+  and `like` as always scanning; on 2026-11-16 it did not, so treat it as measured, not documented.
 - **`like` on a computed field matches nothing.** A filter on a field the same query built
-  (`parse @message ... as x`, `fields concat(a, b) as x`, `coalesce(...)`) returned zero on lines
-  that held the text; only a planted line that had to match exposed it. Filter `@message` itself
+  (`fields concat(a, b) as x` or `coalesce(...)` over fields a `parse` extracted; a plain `parse ...
+  as x` field alone was not measured) returned zero on lines that held the text; only a planted line that had to match exposed it. Filter `@message` itself
   (`filter @message like /.../`, or the `=~` form above), and plant a line in each log format the
   group carries, one that must match and one that must not.
 

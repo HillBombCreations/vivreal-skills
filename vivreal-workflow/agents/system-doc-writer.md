@@ -228,7 +228,7 @@ reader opens the markdown in the repository, on GitHub or in an editor. Never ru
 `npm run docs:publish`, and never write for a conversion. `npm run docs:build` is
 still how you render and look at the diagrams. Read
 `packages/docs-publisher/README.md` before changing anything about the lint or the
-lookups. What that means for how you write:
+lookups; its publishing sections are retired (2026-11-16). What that means for how you write:
 
 - **Headings carry the outline.** `#` through `######` are the whole navigation of
   a document, in GitHub's outline and in the lookups. Skipping a level, or faking a

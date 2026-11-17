@@ -172,7 +172,8 @@ Each of these cost a session a false conclusion.
 - **An open native select list can be captured page only, in a visible browser.** The list a native
   `<select>` opens is drawn outside the page, so a headless screenshot shows the closed box. In a
   non-headless browser, a page-only screenshot (`page.screenshot`) does include the open list, so no
-  screen capture is needed (a screen capture can land on another monitor). At a 2x device scale it
+  screen capture is needed (a screen capture can land on another monitor); keep the window
+  unoccluded (topmost) while the list is open. At a 2x device scale it
   may not come out; take that frame at 1x and say so beside the still.
 - **Copy `test-results/` out after every Playwright run.** Playwright empties it at the start of
   the next run, so a second spec run erased the first run's page snapshots. Copy every
