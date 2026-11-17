@@ -1223,6 +1223,14 @@ function privateTokenKinds(line) {
   return kinds;
 }
 
+const MEMORY_CITE_MSG =
+  "a citation of one machine's private memory (a cite to a memory note, its projects path, its file or its name). " +
+  'Cite the shared file that now holds the lesson (owner rule P-shared-rules).';
+// The word, then a note's name in backticks (kebab-case, so a setting such as autoMemoryDirectory
+// is not a hit), which is how this repo cited a private note four times at e1a453f, twice with the
+// name wrapped onto the next line. Stricter than hq's lint, which has only the three patterns in
+// LEAK_PATTERNS. Tested on the line joined to the next, and counted only when it starts on the line.
+const MEMORY_SLUG = new RegExp(BSL + 'b' + 'mem' + 'ory' + BSL + 's+`[a-z0-9]+(?:-[a-z0-9]+)+`');
 const LEAK_PATTERNS = [
   {
     // A path segment, so a process name in a never-kill list is not a hit.
@@ -1249,13 +1257,12 @@ const LEAK_PATTERNS = [
     // vivreal-hq docs/standards/process.md); the lesson moves to a shared file and that is what
     // gets cited. The same three patterns as hq's standards lint. The colon needs nothing after
     // it, so a cite wrapped onto the next line is caught on its first; the left edge keeps a
-    // longer word ending in the same letters out. Assembled, so this line is not a hit itself.
+    // longer word ending in the same letters out. MEMORY_SLUG below adds the form this repo
+    // actually shipped. Assembled, so this line is not a hit itself.
     re: new RegExp(
       '(^|[^A-Za-z0-9_])' + 'me' + 'm:|' + BSL + '.cla' + 'ude/projects/|/mem' + 'ory/[A-Za-z0-9_-]+' + BSL + '.md',
     ),
-    msg:
-      "a citation of one machine's private memory (a cite to a memory note, its projects path or its file). " +
-      'Cite the shared file that now holds the lesson (owner rule P-shared-rules).',
+    msg: MEMORY_CITE_MSG,
   },
   {
     re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\bwhsec_[A-Za-z0-9]{8,}|\b(?:acct|cus)_[A-Za-z0-9]{12,}/,
@@ -1328,6 +1335,8 @@ function rulePublicLeaks(files) {
         }
       }
       for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
+      const slug = (line + ' ' + (lines[i + 1] || '').trimStart()).match(MEMORY_SLUG);
+      if (slug && slug.index < line.length) fail('public-leak', `${rel}:${i + 1}`, MEMORY_CITE_MSG);
       // Rule 11 owns a machine path outside docs/, and a line marked generic is generic here too.
       const ruleElevenOwns = !docs && MACHINE_PATH.test(line);
       if (!ruleElevenOwns && !line.includes(MACHINE_PATH_OK) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
@@ -2040,6 +2049,28 @@ function selfTest() {
       body: '---\nname: mem-note-path\ndescription: fixture\n---\n\nThe lesson is in `x/mem' + 'ory/some-note.md`.\n',
     },
     {
+      // The form the three hq patterns miss, found live in this repo at e1a453f (three lines).
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory slug in parens',
+      path: join(tmp, 'skills', 'mem-slug', 'SKILL.md'),
+      body: '---\nname: mem-slug\ndescription: fixture\n---\n\nAgents spend the same budget (' + 'mem' + 'ory `some-note`).\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a wrapped memory slug',
+      path: join(tmp, 'skills', 'mem-slug-wrapped', 'SKILL.md'),
+      body: '---\nname: mem-slug-wrapped\ndescription: fixture\n---\n\nReconciled on the owner\'s delegation (' + 'memory\n`some-note`).\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory slug after a comma',
+      path: join(tmp, 'skills', 'mem-slug-comma', 'SKILL.md'),
+      body: '---\nname: mem-slug-comma\ndescription: fixture\n---\n\nReconciled on the owner\'s delegation, ' + 'memory\n`some-note`: the coder owns it.\n',
+    },
+    {
       // The ALLOW side: the word in prose, a longer word ending in the same three letters, and
       // the plugin's own auto memory setting name the shared rule, not a private note.
       rule: 'public-leak',
@@ -2048,7 +2079,7 @@ function selfTest() {
       path: join(tmp, 'skills', 'mem-prose', 'SKILL.md'),
       body:
         '---\nname: mem-prose\ndescription: fixture\n---\n\n' +
-        'Private memory keeps a pointer, never the only copy; auto memory is machine local. A `shmem:` key and ' +
+        'Private memory keeps a pointer, never the only copy; auto memory (memory is machine local) stays on, and auto memory `autoMemoryDirectory` moves it. A `shmem:` key and' +
         '`memory/` folders in code are fine, and so is `MEMORY.md`.\n',
     },
   ];

@@ -306,8 +306,8 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   or stashed to see red (owner, 2026-10-06). That includes the "mutation check": deleting or
   commenting out a line of the fix, watching the test fail, and putting the line back is the
   banned revert cycle under another name, and agents did it repeatedly on 2026-10-15. The two
-  rules were reconciled 2026-10-15 on the owner's delegation (memory
-  `one-full-suite-run-per-change`): **the coder owns the red proof and does it at the base
+  rules were reconciled 2026-10-15 on the owner's delegation (owner rule P-one-suite,
+  vivreal-hq `docs/standards/process.md`): **the coder owns the red proof and does it at the base
   commit; the reviewer checks the record and never repeats the cycle.** Red is established by
   (b) or (a) for code in a repository, and by (c) for a one-shot ops script outside every
   repository; the report names which:

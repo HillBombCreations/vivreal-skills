@@ -179,8 +179,8 @@ flow the diff touches.
   deleted harness is at least a CONCERN: the red cannot be reproduced. A missing REFUSE half, a missing
   ALLOW half, a red that was only established "by reading", or a red that was a load, import or
   environment failure rather than the REFUSE assertion failing is a FAIL, cite which. The red
-  proof is the coder's job (reconciled 2026-10-15 on the owner's delegation, memory
-  `one-full-suite-run-per-change`): confirm the recorded red-at-base evidence fails
+  proof is the coder's job (reconciled 2026-10-15 on the owner's delegation; owner rule
+  P-one-suite, vivreal-hq `docs/standards/process.md`): confirm the recorded red-at-base evidence fails
   on the REFUSE assertion for the stated reason, read the tests, and run each relevant test file
   at most once at the head. Do not rerun the base-commit cycle yourself; a missing or doubtful
   `Red:` line is a FAIL that goes back to the coder. Never revert or mutate the fix in the
@@ -227,8 +227,7 @@ flow the diff touches.
   `--untracked-files=all` and an empty `rev-parse --show-prefix`, and a present but unreadable
   sibling fails rather than skips.
 - **Ops scripts: what does the dry run skip that the apply runs?** A dry run on different
-  predicates from the apply proves nothing about the apply (memory
-  `ops-script-dry-run-cannot-prove-apply`). Ask it before any PASS on a production data step, and
+  predicates from the apply proves nothing about the apply. Ask it before any PASS on a production data step, and
   check the script against every rail in `vivreal-workflow:ops-one-shot`.
 - **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
   because the test fed a state the product cannot produce, or because the write the fix depends on
