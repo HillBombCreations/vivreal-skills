@@ -212,6 +212,13 @@ exactly as the screen prints them.
 - **A shared package is a version trap.** Check the installed `@hillbombcreations/*`
   version against the lockfile before trusting behaviour.
 - **A negative result is only evidence when the same query can produce a positive one.**
+- **Before you say a topic has no page, search both sites in a real browser.** The help centre and
+  vivreal.io each hold pages the other's search never finds, and both render in the browser: a
+  fetch without one reads a skeleton, which is how vivreal.io's AI connection how-to was reported
+  missing in release B (2026-11-16). Load each candidate settled in the headless browser (Step 1's
+  rules), use the help centre's own search and both sitemaps (they leave out noindex pages), check
+  vivreal.io's own pages too, and find a page you know is live by the same method in the same run.
+  A topic that already has a page is an EXTEND of it, never a second page.
 - **Do not print a number the product does not enforce.**
 
 There are no expert agents to dispatch. For a system-specific gotcha, load the

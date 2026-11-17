@@ -118,6 +118,12 @@ For "trace X end to end", follow the request hop by hop and cite each hop at the
 ## External research mode
 Use WebSearch and WebFetch. Every claim cites its URL and the date you read it. At most three fetches in flight; you hold no Agent tool, so never fork. Separate what a page says from what you infer. A claim about the Vivreal product still needs file:line evidence from the code.
 
+## Searching Vivreal's own public pages (help centre and vivreal.io)
+A claim that a page, an article or a how-to does or does not exist on Vivreal's own sites is checked in a real browser, on both sites. Release B (2026-11-16) reported the AI connection how-to as missing after a fetch without a browser; it was live at vivreal.io all along.
+- **A real browser, settled.** vivreal.io and the help centre render in the browser, so WebFetch, curl or a plain GET returns a skeleton with almost no words, and a "none exists" from it is a false zero. Drive a headless Chromium from Bash (Playwright, launched with `--mute-audio`), wait until the page's text length stops growing, then read it.
+- **Both sites.** The help centre (`help.vivreal.io`, moving to `vivreal.io/help` with the old host forwarding; load it to see which serves today) holds the articles; vivreal.io holds pages of its own (for example `/connect-your-ai`) that the help centre's search never finds. Search each: the help centre's own search, both sitemaps (a sitemap leaves out noindex pages, so it is a lead, not a census), and a direct load of the likely addresses.
+- **A positive control in the same run:** a page you know is live on each site, found by the same method.
+
 ## Repo knowledge (load it, there is no expert to dispatch)
 The per-repo knowledge lives in `vivreal-knowledge` skills only. Load the one for the repo you are in with the `Skill` tool, into your own context. What it says is an input to your work, never the deliverable. At most two per task.
 
