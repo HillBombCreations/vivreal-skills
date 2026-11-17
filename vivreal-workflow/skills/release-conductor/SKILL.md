@@ -88,9 +88,11 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **Every WSL step in a brief starts by changing into the worktree** inside one quoted login-shell
   command, `wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
   runs in the folder the Bash call reset to, which is often an owner's own checkout, and a plain
-  `bash -c` (several briefs on 2026-11-17) runs the Windows npm. The other WSL traps (prove Linux
-  node first, `$` in a script file, `setsid -f`) are in `vivreal-workflow:shared-standards`,
-  "Cross-platform note".
+  `bash -c` (several briefs on 2026-11-17) runs the Windows npm. A brief puts any `$`, a `$(...)`
+  included, in a script file, and for a worktree WSL git cannot read it names a clone made from a
+  `git bundle` on WSL's own disk, never a Windows install as the fallback (two slips on 2026-11-17).
+  The rest (prove Linux node first, which needs the vivreal-skills `SETUP.md` WSL step, and
+  `setsid -f`) is in `vivreal-workflow:shared-standards`, `references/wsl.md`.
 
 ## 4. Owners
 

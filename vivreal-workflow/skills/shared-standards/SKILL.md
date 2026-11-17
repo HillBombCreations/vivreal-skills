@@ -33,32 +33,12 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
-- **Every WSL step is ONE quoted command that changes folder first.** A `wsl` call starts in the
-  calling shell's folder, and the Bash tool can start a call in the session's folder, which is
-  often an owner's checkout; in a subagent, and often in the main session, a `cd` in an earlier call
-  does not carry over. So each step is one call that moves into its worktree, proves it, then
-  runs:
-  `wsl.exe bash -lc 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`,
-  and stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
-  rewrote an owner's root `package.json`, lockfile and `node_modules`, and read-only commands ran
-  in an owner's checkout. **Installs and packs run on WSL's own disk**, a folder under `~` fed by
-  `git archive` of the head, never on a `/mnt/<drive>` folder Windows also uses: `npm ci` there
-  replaces the Windows `node_modules` with Linux binaries, and `npm pack` there records every file
-  as mode 0755, so the tarball never equals the registry's.
-- **A WSL step is a login shell, `bash -lc`, never `bash -c`** (release B, 2026-11-17, found by the
-  HA-B2 one-shot builder after several briefs used the plain form). Measured: `wsl.exe bash -c`
-  loads no profile, so nvm never starts, `node` is not found, and `npm` resolves to the Windows npm
-  under `/mnt/<drive>/Program Files`; `bash -lc` finds nvm's Linux copies. Three more traps:
-  - **Prove Linux node in its own call, before any install or test:**
-    `wsl.exe bash -lc 'cd "<the worktree>" && pwd && command -v node npm'` must print the worktree,
-    then two paths, neither under `/mnt/`. Read what it prints: `command -v` exits 0 when only one
-    of the names is found, so chaining on it guards nothing, and a Windows npm run from WSL installs
-    Windows binaries into the tree.
-  - **Anything holding a `$` goes in a script file** on WSL's disk, run as `bash <file>`: the shell
-    `wsl.exe` hands its command line to expands every `$` first, quotes or not, so a variable set
-    inside the command reads empty.
-  - **`nohup <command> &` dies when `wsl.exe` returns.** Start a long-running process with
-    `setsid -f <command> > <log> 2>&1`, which outlives the call.
+- **WSL steps: read [references/wsl.md](references/wsl.md) before the first one.** Each is one
+  quoted `wsl.exe bash -lc` command that changes folder first; Linux node is proven first, which
+  needs the WSL step of the vivreal-skills `SETUP.md` (nvm's lines in `~/.profile`); any `$`, a
+  `$(...)` included, goes in a script file; a long-running process starts with `setsid -f`;
+  installs, tests and packs run on WSL's own disk, in a clone made from a `git bundle` when WSL git
+  cannot read a Windows worktree, and never fall back to an install on Windows.
 - **MSYS path mangling reaches further than the AWS CLI.** The known case is an `aws` argument
   that starts with `/` coming back as a bogus `AccessDenied`. The case that is missed: **MSYS
   also rewrites a `/` INSIDE a `jq` expression**, and inside a `git show ref:path` argument, so
@@ -104,7 +84,7 @@ agent acts on itself, by ID:
 - **P-skills-push-after-review:** vivreal-skills changes are committed to a LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`, fixed and re-reviewed locally, and pushed with ONE PR per batch only when that batch is ready to merge (reviewed, gates green, merge GO in hand), because CI runs on every push and every PR; later work for the same batch folds into that PR, never a second stacked PR.
 - **P-shared-checkout:** agents share one checkout's stash and scratchpad; never `git stash`, `reset --hard`, `checkout --` or `restore` a file you did not write.
 - **P-allow-refuse:** pair every ALLOW test with a REFUSE test on the same mechanism; a one-sided gate test passes when the gate never engages.
-- **Every WSL step starts by changing into the worktree,** inside one quoted login-shell command (`wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout, and a plain `bash -c` runs the Windows npm (Cross-platform note).
+- **Every WSL step starts by changing into the worktree,** inside one quoted login-shell command (`wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout, and a plain `bash -c` runs the Windows npm ([references/wsl.md](references/wsl.md)).
 
 ## Two rules that outrank every fact below
 
@@ -160,6 +140,7 @@ three searches returned three different incomplete answers.
 | Integration manifests (`src/data/manifests/`), portal component patterns, shared sheet/dialog renderers | [references/portal.md](references/portal.md): "Conventions you'll see" + "Default-renderer fallbacks" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
+| A `wsl` or `wsl.exe` step: a Linux install, test, gate or pack on a Windows machine | [references/wsl.md](references/wsl.md) |
 | Dispatching a deploy workflow, or claiming a stack updated | "Reading and verifying a CloudFormation deploy" |
 | Backports, cherry-picks, "did this fix reach `release/*`" | "Proving a fix reached a line" |
 | Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog", which points to [references/anti-patterns.md](references/anti-patterns.md) |

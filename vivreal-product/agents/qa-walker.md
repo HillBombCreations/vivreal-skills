@@ -171,7 +171,7 @@ Each of these cost a session a false conclusion.
   the main session, a `cd` in an earlier call does not carry over. Write every command as `cd "<worktree or scratch folder>" && <command>`, even
   a folder listing or a process check (release B: a capture session's process and folder listings ran
   in the owner's checkout; harmless that time, but an install or a write there is not). WSL steps
-  follow `vivreal-workflow:shared-standards`, "Cross-platform note".
+  follow `vivreal-workflow:shared-standards`, `references/wsl.md`.
 - **An open native select list can be captured page only, in a visible browser.** The list a native
   `<select>` opens is drawn outside the page, so a headless screenshot shows the closed box. In a
   non-headless browser, a page-only screenshot (`page.screenshot`) does include the open list, so no
