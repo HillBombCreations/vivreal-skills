@@ -162,6 +162,12 @@ while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
   start a second one.
 - Any browser a test or script of yours launches gets `--mute-audio`: on 2026-11-11 a headless
   portal spec played a Studio sample video's sound on the owner's machine.
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 - You never commit or push. When the coordinator says go, the registration is handed to
   `vivreal-principal:portal-coder` (SOLO when it is the only portal agent, otherwise the INTEGRATE
   run), which owns the one full gate and the PR. Your edits stay uncommitted in the portal

@@ -98,6 +98,12 @@ device the exemplar doesn't have.**
   re-skins or knobs. If the exemplar is thin, report it rather than invent.
 - **Fleet-safe by design:** everything you spec must be buildable exact-literal + default-absent
   (universal component names, no vertical words; colors via theme tokens; motion via the preset).
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 - **Distinct placeholder identity:** the brand/persona you propose must not leak the exemplar's,
   the source's, or another template's identity (the downstream zero-trace gate enforces this;
   design for it).

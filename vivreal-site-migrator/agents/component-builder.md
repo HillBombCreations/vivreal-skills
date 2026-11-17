@@ -244,4 +244,10 @@ nobody has written yet.
 - **Every renderer change is byte-identical for every other site.** Default-absent, exact-literal,
   kit-scoped. When in doubt, keep it in authoring.
 - **You measure → build → re-verify against the live target.** Don't theorize past an unverified step.
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 - **NOTHING committed** unless told (leave the tree dirty); update the handoff STATUS + memory.

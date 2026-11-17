@@ -182,6 +182,12 @@ STOP and flag it, that's a process violation (template sites belong there).
 - **Any Chromium a script of yours launches gets `--mute-audio`.** Studio sample videos carry
   sound, and on 2026-11-11 a headless test browser played one on the owner's machine while he
   worked.
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 - **THE SHIM REWRITES ITS OWN FIXTURE ON EVERY SAVE, a failing roundtrip may be
   a STALE FIXTURE, not a live defect.** `serve-preview` persists each captured
   PUT back into `<bundle>/siteDetails.json`, and `served-baseline.json` is

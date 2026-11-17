@@ -85,6 +85,12 @@ tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query
 - **Lucide React icons only.** No mixed icon libraries. Stick to 16/20/24 sizes.
 - **Tailwind CSS 4 via `@tailwindcss/postcss`**, not the old `tailwind.config.js` style. Use `@layer` and CSS variable-driven utilities (`.bg-glass`, `.hover-lift`, `.border-border-all` exist already).
 - **PWA-capable.** Pages render standalone on mobile. Safe-area insets matter on iOS.
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 - **React 19 Server Components by default.** `'use client'` only where interactivity is needed. Design docs should distinguish which components are client vs. server.
 - **Framer Motion v12** is already installed (12.38.0). Use it, don't re-introduce CSS-only animation helpers.
 

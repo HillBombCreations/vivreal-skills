@@ -132,6 +132,12 @@ then restart :3000. On any data/authoring change, re-bundle and restart BOTH :87
 - **Check artifact freshness before quoting a number.** `ls -la` the `qa-*.json` against
   `blueprint.json`. An artifact older than the blueprint it measured is not evidence; re-run
   it or state the staleness out loud.
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 - **Prove your gate can fail.** Feed any "0 findings" comparator a fixture it should catch
   before you believe it. A gate that cannot go red is a `console.log` (see confirm-studio's
   stub detector, which matched a React prop that was never emitted as a DOM attribute and

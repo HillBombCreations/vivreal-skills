@@ -54,6 +54,25 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 - **macOS / Linux:** native bash works as-is
 - **Setting env vars:** add to `~/.bashrc`, `~/.zshrc`, or your shell profile. Example: `export VIVREAL_REPOS="$HOME/repos"`
 
+### Browser tool output stays outside every repo
+The Playwright MCP (`mcp__plugin_playwright_playwright__*`) saves every file it names itself (page
+snapshots, console logs, a screenshot taken with no file name) under `.playwright-mcp/` in its
+workspace root, the folder the session started in, which is often an owner's checkout. Release A
+found and deleted a stray token copy there.
+- **Point its output folder outside every repo.** The server reads `PLAYWRIGHT_MCP_OUTPUT_DIR` (its
+  `--output-dir`) when it starts, from the environment Claude Code was started in, so it is set on the
+  machine before the session (an absolute folder outside every clone and worktree, for example under
+  the OS temp folder) and takes effect from the next session.
+- **A file you name is not covered by it.** A screenshot or file saved with an explicit name is
+  resolved against the workspace root, so give it an absolute path in the session scratchpad.
+- **Never save a token, a cookie or a session state through the browser tool**, under any name.
+- **The check, for every agent that drives the browser tool:** before the first browser call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` in Bash must print an absolute folder outside every
+  repository. If it is unset, every file-writing browser call names an absolute scratchpad path and
+  the report says the variable is unset. After the run, `git status --porcelain` in the session's
+  folder shows no `.playwright-mcp/` and no file of yours; move any you find to the scratchpad, and
+  never commit it.
+
 ---
 
 ## Who "an owner" is

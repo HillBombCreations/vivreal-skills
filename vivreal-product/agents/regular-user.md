@@ -121,6 +121,12 @@ look in a 390-wide browser tab and mention anything that differs.
 - It is Chrome pretending to be an iPhone app. Bouncy scrolling, zooming into small text boxes,
   Safari quirks and provider sign-in checks will not show up. If you suspect one, say the
   owner's real phone has to check it.
+- **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
+  tool output stays outside every repo"). Before your first browser tool call,
+  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
+  and say so in your report. A file saved by a bare name lands in the session's folder, often an
+  owner's checkout.
 
 ## Two questions about everything, not one
 
