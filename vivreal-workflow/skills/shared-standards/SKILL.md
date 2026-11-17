@@ -33,6 +33,18 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
+- **Every WSL step is ONE quoted command that changes folder first.** A `wsl` call starts in the
+  calling shell's folder, and the Bash tool can start a call in the session's folder, which is
+  often an owner's checkout; in a subagent, and often in the main session, a `cd` in an earlier call
+  does not carry over. So each step is one call that moves into its worktree, proves it, then
+  runs:
+  `wsl.exe bash -c 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`, and
+  stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
+  rewrote an owner's root `package.json`, lockfile and `node_modules`, and read-only commands ran
+  in an owner's checkout. **Installs and packs run on WSL's own disk**, a folder under `~` fed by
+  `git archive` of the head, never on a `/mnt/<drive>` folder Windows also uses: `npm ci` there
+  replaces the Windows `node_modules` with Linux binaries, and `npm pack` there records every file
+  as mode 0755, so the tarball never equals the registry's.
 - **MSYS path mangling reaches further than the AWS CLI.** The known case is an `aws` argument
   that starts with `/` coming back as a bogus `AccessDenied`. The case that is missed: **MSYS
   also rewrites a `/` INSIDE a `jq` expression**, and inside a `git show ref:path` argument, so
@@ -40,13 +52,45 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
   A `git show` mangled this way fails loudly, but a mangled `jq` filter can simply select
   nothing and print `null`, which reads as "no such value" rather than as an error.
   **Export `MSYS_NO_PATHCONV=1` for the whole block**, not just for the `aws` line.
+- **`core.autocrlf=true` makes content checks lie.** Git stores LF and checks out CRLF, so a
+  raw-byte hash of a text file never equals its blob, a committed `dist` rebuilds as modified with
+  no content change, and Python text mode rewrites paths on their way into git. Hash the output of
+  `git show <ref>:<path>`, or normalise line ends first; pack from an `autocrlf=false` checkout.
+- **The AWS CLI on Windows** reads a `file://` input as cp1252 unless `AWS_CLI_FILE_ENCODING=UTF-8`
+  is set, and truncated JSON can still parse, so compare an item count with the pagination token
+  before trusting a list.
+- **PowerShell splits an unquoted comma argument.** `--flag=1,2,3` reaches the script as an array,
+  not a string (a hold list once held nothing that way). Quote every argument that carries a comma.
+- **Python on Windows under Git Bash** cannot open a Git Bash `/c/...` path (write the drive form,
+  a letter and a colon, then forward slashes), and `python -` with no stdin waits at a prompt.
+  Always feed it a file or a heredoc.
 - **macOS / Linux:** native bash works as-is
 - **Setting env vars:** add to `~/.bashrc`, `~/.zshrc`, or your shell profile. Example: `export VIVREAL_REPOS="$HOME/repos"`
+
+### Browser tool output stays outside every repo
+Anyone who drives the browser tool (the Playwright MCP) reads [references/browser-tool-output.md](references/browser-tool-output.md) first: set `PLAYWRIGHT_MCP_OUTPUT_DIR` outside every repo, name saved files with absolute scratchpad paths, and run its folder check, with its control, before and after the run.
 
 ---
 
 ## Who "an owner" is
 An owner means either co-owner, Justin or Hunter. Either one may give any GO, any QA-walk sign-off and any owner decision, for any change. Nobody else may. Never wait for one particular owner, and never treat one owner's GO as needing the other's.
+
+## Owner rules every agent follows
+
+The owners' rules live in vivreal-hq: `docs/standards/process.md` (each rule with its date and
+detail) and its one-line index `docs/standards/INDEX.md`, which the vivreal-workflow session-rules
+hook prints into every session and subagent outside a current hq checkout. These are the ones an
+agent acts on itself, by ID:
+- **P-no-secrets:** never print a secret (a token, password, connection string or env value) in a transcript, a commit or a PR body; an AWS read that can return env or secret values names only the fields it needs with `--query`.
+- **P-no-personal-files:** never use an owner's personal files (photos, documents, personal synced folders) as test data, even into a throwaway resource; ask an owner for a test file, or use a public or generated sample.
+- **P-no-new-qa-users:** no new QA users or businesses; prove a live flow read-only on real traffic since the deploy (counts and shape, no personal data), or with the existing accounts in the QA account bundle.
+- **P-mute-audio:** every Chromium a test, walk or script launches gets `--mute-audio`; headless still plays sound on the machine.
+- **P-sentry-warn:** a new Sentry issue, even a deliberate test event, pages the owners; prefer a control that creates no issue, warn in chat before sending one, and if one slips out say so at once and resolve it with a note.
+- **P-no-waf-cost:** no new web ACL, WAF logging, Bot Control or other managed rule group as a fix; fix abuse in code, existing access logs or Cognito's own protections, and price and ask before adding a rule to an existing ACL.
+- **P-skills-push-after-review:** vivreal-skills changes are committed to a LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`, fixed and re-reviewed locally, and pushed with ONE PR per batch only when that batch is ready to merge (reviewed, gates green, merge GO in hand), because CI runs on every push and every PR; later work for the same batch folds into that PR, never a second stacked PR.
+- **P-shared-checkout:** agents share one checkout's stash and scratchpad; never `git stash`, `reset --hard`, `checkout --` or `restore` a file you did not write.
+- **P-allow-refuse:** pair every ALLOW test with a REFUSE test on the same mechanism; a one-sided gate test passes when the gate never engages.
+- **Every WSL step starts by changing into the worktree,** inside one quoted command (`wsl bash -c 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout.
 
 ## Two rules that outrank every fact below
 
@@ -224,6 +268,16 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   delivery id can be consumed exactly once across the whole fleet. Failing all three, say
   in the file that tenant selection is unauthenticated, so the next reader does not assume
   the signature covered it.
+- **A local Turbopack `next build` writes env values, tokens included, into
+  `.next/cache/turbopack/*.sst`.** Never grep or print that cache, and delete it before sharing a
+  tree.
+- **URL guards have two traps.** A host pattern built by joining strings into `new RegExp` loses
+  its backslashes, so a dot matches any character; and `URL.hostname` keeps an IPv6 host's
+  brackets, so a bare `::1` comparison never matches. Escape each joined part, and compare
+  against the bracketed form.
+- **Never string-replace a caller's value into an OAuth URL.** A caller-supplied `{shop}` replaced
+  into an authorize URL once sent `client_id` and `client_secret` to an attacker's host. Validate
+  the host against an allowlist and build the URL with the `URL` API.
 
 ## Code quality non-negotiables
 - No `any` (use `unknown` and narrow)
@@ -235,6 +289,8 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
 - No premature abstraction (rule of three: don't extract until 3 callers exist)
 - Functional components only. Named exports preferred (except Next.js pages).
 - File naming: `PascalCase` components, `camelCase` fns/vars, `kebab-case` files, `UPPER_SNAKE_CASE` constants
+- Backends: the shared `errorHandler` (in the backends whose handlers call `next()`) fails open
+  when it is used from router-level middleware. Use it only in controller position.
 
 ## Performance non-negotiables
 - No N+1 queries (use `$in` or aggregate pipelines)
@@ -269,6 +325,14 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   customer site builds** in one session. After any `npm install` on Windows, check the
   lockfile diff for removed entries, and validate with the `npm@10 ci --dry-run` above before
   it leaves the machine.
+- **A bare `npm view @hillbombcreations/<pkg>` against public npm answers a misleading E404.**
+  The packages live on GitHub Packages; query through the scope registry with the token (in an
+  agent's Bash the npm wrapper does this for `view`).
+- **Switching a worktree's branch updates `package.json` and the lockfile, never `node_modules`.**
+  Run `npm ci` after a checkout before trusting any version-mirror test.
+- **A GitHub Actions billing refusal** is a completed, failed job with ZERO steps, whose logs
+  expire. A job that has steps and fails is something else, and no runs at all is evidence of
+  neither.
 
 ## Testing rules
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
@@ -285,14 +349,16 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   loaded. See the `verification-discipline` skill.
 - **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
 - Sites/integrations pages serialized under parallel workers, don't break that.
+- **`Object.freeze` on a `Readonly<Record<Union, T>>` lets a stray key compile,** so `tsc` cannot
+  prove a tier or enum key was removed. Add a test over the key set.
 - **Red proof, the one rule every agent follows.** A guard, validation or fix is proven by a
   direct REFUSE test (feeds the bad input or bad object, asserts the exact refusal) paired with an
   ALLOW test (valid input, asserts success). Nothing in the working tree is ever reverted, mutated
   or stashed to see red (owner, 2026-10-06). That includes the "mutation check": deleting or
   commenting out a line of the fix, watching the test fail, and putting the line back is the
   banned revert cycle under another name, and agents did it repeatedly on 2026-10-15. The two
-  rules were reconciled 2026-10-15 on the owner's delegation (memory
-  `one-full-suite-run-per-change`): **the coder owns the red proof and does it at the base
+  rules were reconciled 2026-10-15 on the owner's delegation (owner rule P-one-suite,
+  vivreal-hq `docs/standards/process.md`): **the coder owns the red proof and does it at the base
   commit; the reviewer checks the record and never repeats the cycle.** Red is established by
   (b) or (a) for code in a repository, and by (c) for a one-shot ops script outside every
   repository; the report names which:
@@ -630,7 +696,7 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 ## Anti-pattern catalog (check every diff)
 
 Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
-the 22 rules in checklist form, then each entry with how to spot it and its guard (source of
+every rule in checklist form, then each entry with how to spot it and its guard (source of
 truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
 evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
 when its tests pass.
@@ -659,10 +725,13 @@ The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` 
 **Backend test conventions (read each repo's `test/CLAUDE.md` or `test/claude.md` first):**
 - Tests are unit-style with **heavy mocking** via `test/helpers/loadWithMocks.js`
 - Mock DB adapters, AWS SDK clients, sockets, service dependencies
+- **An unstubbed AWS SDK client runs with the machine's real credentials** and can write
+  production. Stub every client, and make a test that reaches the network fail.
 - Endpoint-focused: cover route wiring, handlers, controllers, validators, services
 - Branch coverage required: success path, validation failure, empty response, error branches
 - Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate)
 - `test/test.js` is legacy and NOT in the active glob, don't add tests there
+- **An in-memory MongoDB helper retries a port Windows refuses** (`listen EACCES` inside a reserved port range): [references/in-memory-mongo-ports.md](references/in-memory-mongo-ports.md).
 
 **Backend test commands quick ref:**
 ```bash

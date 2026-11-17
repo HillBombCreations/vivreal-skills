@@ -205,6 +205,16 @@ Read the lifecycle rule rather than assuming the fleet policy applies.
 
 ---
 
+## Audits and walks: three ways to be wrong quietly
+
+- **Amplify access-log audits have two silent false negatives.** Logs are partitioned per domain,
+  so read every custom domain AND the default app domain; and a range over 7 days returns nothing
+  rather than partial data, so split the range and keep a known-hit control.
+- **Older Sentry traces can hold session cookies and query-string emails.** The server-side
+  scrubbing rules drop them now; treat traces from before those rules as sensitive.
+- **Keep a walk's known errors off the Sentry quota:** add the project's IP inbound filter for the
+  walk machine before the walk and remove it after (message filters need a higher Sentry plan).
+
 ## VR_OnCall_Webhook: errors reach a person by push
 A new Sentry error becomes one staff web push in the admin app (`src/errorPush.js` at `origin/main`): claim, format, `SendMessage` to `vivreal-notification-queue`, consumed by VR_Main_API as type `infra.error`, opened at the admin app's Errors page. It REPLACED the ClickUp filing (owners, 2026-10-27), so it is the only delivery to a human on that path. An enqueued push is not a delivered one: delivery also needs the `infraAlerts` switch on and an admin-app device subscribed (`surface: "admin"`); the consumer logs `no-subscriptions` when there is none. See `vivreal-notifications`.
 

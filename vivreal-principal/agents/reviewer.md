@@ -179,8 +179,8 @@ flow the diff touches.
   deleted harness is at least a CONCERN: the red cannot be reproduced. A missing REFUSE half, a missing
   ALLOW half, a red that was only established "by reading", or a red that was a load, import or
   environment failure rather than the REFUSE assertion failing is a FAIL, cite which. The red
-  proof is the coder's job (reconciled 2026-10-15 on the owner's delegation, memory
-  `one-full-suite-run-per-change`): confirm the recorded red-at-base evidence fails
+  proof is the coder's job (reconciled 2026-10-15 on the owner's delegation; owner rule
+  P-one-suite, vivreal-hq `docs/standards/process.md`): confirm the recorded red-at-base evidence fails
   on the REFUSE assertion for the stated reason, read the tests, and run each relevant test file
   at most once at the head. Do not rerun the base-commit cycle yourself; a missing or doubtful
   `Red:` line is a FAIL that goes back to the coder. Never revert or mutate the fix in the
@@ -227,8 +227,7 @@ flow the diff touches.
   `--untracked-files=all` and an empty `rev-parse --show-prefix`, and a present but unreadable
   sibling fails rather than skips.
 - **Ops scripts: what does the dry run skip that the apply runs?** A dry run on different
-  predicates from the apply proves nothing about the apply (memory
-  `ops-script-dry-run-cannot-prove-apply`). Ask it before any PASS on a production data step, and
+  predicates from the apply proves nothing about the apply. Ask it before any PASS on a production data step, and
   check the script against every rail in `vivreal-workflow:ops-one-shot`.
 - **A passing suite does not prove the fix is live.** A fix can be inert and still be green, either
   because the test fed a state the product cannot produce, or because the write the fix depends on
@@ -267,7 +266,7 @@ raises a specific doubt no existing run answers.
 
 ### 13. Anti-pattern catalog (MANDATORY on every code diff)
 
-Open the `vivreal-workflow:shared-standards` skill's `references/anti-patterns.md` (if the path is not expanded for you, glob for `**/shared-standards/references/anti-patterns.md`). For each of the 22 entries,
+Open the `vivreal-workflow:shared-standards` skill's `references/anti-patterns.md` (if the path is not expanded for you, glob for `**/shared-standards/references/anti-patterns.md`). For each entry,
 decide whether the diff ADDS, REMOVES or does not touch an instance, using that entry's "How to
 spot it". Report a line per touched entry: `#<n> <name>: ADDS at file:line | REMOVES | n/a`.
 Confirm the coder's item 4 list of doors and readers (every route sharing the changed
@@ -292,6 +291,7 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 - Are there off-by-one errors, null/undefined paths, or race conditions?
 - Are edge cases handled? (empty arrays, missing fields, concurrent writes, network failures)
 - Is error handling correct? (not swallowing errors, not leaking internal details)
+- Is every guarantee a comment or docblock asserts (idempotent, atomic, tenant-scoped, never throws, already validated) true in the code under it? Each is a claim to verify, never evidence: every blocker across two reviews of one feature was such a comment.
 
 ### 2. Security
 - For an OAuth, connect, grant or sign-in diff, run the workflow checklist's item 5a (consent and identity) first

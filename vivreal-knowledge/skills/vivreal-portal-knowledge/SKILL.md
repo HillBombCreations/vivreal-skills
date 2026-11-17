@@ -91,6 +91,13 @@ Each is a tag on `release/v0.37` promoted to `stable`; `git log --first-parent v
 - **Coverage map**: `e2e/coverage-map.json` + `scripts/check-coverage-map.mjs --strict` is a mechanical route→spec evidence gate, a new or changed proxy route needs a coverage-map entry or the gate fails.
 - **Inventory**: `e2e/BASELINE.md` is the authoritative test/pass/annotation count, re-measure before quoting a number, never trust a remembered one. Full guide: `e2e/TESTING.md`.
 - **Lint & gates**: repo-wide ESLint is 0 errors/0 warnings; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive). There is **no CI**, husky pre-commit (lint-staged + vitest + coverage-map) and pre-push (eslint 0/0 + tsc + vitest + coverage-map --strict + e2e smoke) are the only automated gates. **How the owner runs them:** no full e2e gate for a release (2026-10-10): the release-head check is eslint, both `tsc` passes and every unit file the release added or changed, and the local QA walks replace the confidence the full run gave. After one green full gate, fix-ups run only the specs that touch the diff with `--no-verify` (2026-10-06; `portal-coder` FOLLOWUP mode). PARALLEL portal coders push `--no-verify` and leave the one gate to INTEGRATE. Outside those modes, do not bypass the hooks. The smoke binds machine-wide ports 3100 and 4600, so two full gates at once fail each other's unrelated specs.
+- **Rerun a failing list three ways before calling it yours:** the same list alone on the base, on the head, AND on `origin/stable`. Two sides say whether it is a regression; the third says whether it is yours at all.
+- **`npm run kit:validate` proves a kit locally:** registration, the live view at both widths and a real Studio edit walk. It is a heavy run, so it counts toward the heavy-run limit (owner rule P-heavy-runs).
+- **Never replace `window.WebSocket` in an e2e spec.** The dev server's HMR socket is built through it, so the page stops hydrating; stub at the app's own socket seam instead.
+- **`--workers=1` makes the duplicate-page-tree flake MORE likely,** not less; the default worker count passes where a serial run fails.
+- **`freeYearSurvivesToCheckout` times out under full-suite load.** Re-run it alone before blaming the diff.
+- **Seed `localStorage` before any app document.** A `page.evaluate` seed on a live app page loses to the page's own persist effect; seed from the auth setup's landing on `public/release.json`, or with `addInitScript`.
+- **Adding an ESLint rule:** warn mode is impossible (lint is 0 warnings), minimatch eats `[param]` route paths in a files glob, and a JSXText node starts on the previous line.
 
 ## Gotchas
 
@@ -104,6 +111,7 @@ Each is a tag on `release/v0.37` promoted to `stable`; `git log --first-parent v
 - **`cn()` knows the portal type scale (v6).** tailwind-merge filed an unknown `text-*` class as a text COLOUR, so `cn("text-label", "text-primary-foreground")` dropped the size. `src/lib/utils.ts` adds a `portal-font-size` class group that conflicts only with itself; add a name to `PORTAL_FONT_SIZES` when `globals.css` adds one.
 - `src/proxy.ts` short-circuits ALL `/api/proxy/` matcher paths right after rate limiting, the proactive `active_ctx` refresh must never run on a proxy request, since rewriting `active_ctx` mid-flight desyncs the CSRF token (`HMAC(CTX_SECRET, 'csrf:' + active_ctx)`). Don't add a proxy POST path to the matcher expecting refresh behavior.
 - Manual proxy routes should unwrap upstream errors via the exported `extractUpstreamError()`/`extractUpstreamDetail()` from `_helpers/createProxyHandler` rather than a hand-rolled `data?.error` read, VR_Main_API sends bare-JSON-string error bodies, and that hand-rolled read is what silently killed the login error branches in prod.
+- **The portal's `package.json` name is `vivreal-templates`,** so npm banners make a portal run look like a Templates run. Check the folder, not the banner.
 
 ## Deploy model: release train
 

@@ -75,6 +75,7 @@ longer a postable platform at all.
 - **The per-connection approvals switch** (`group.integrations[].approvalRequired`) is written by
   VR_Secure_API's dedicated path (`63bc6641`; the general update route would have deactivated the
   channel) and read by VR_Client_API, which hides unapproved synced posts from the site.
+- **Facebook comments are on for every owner** since Meta approved them on 2026-10-22 (a graduation, not a flag): read and delete only; replies are Instagram only.
 
 ## What REMOVES synced posts (read before disconnecting anything)
 
@@ -98,6 +99,7 @@ longer a postable platform at all.
   2026-10-04 the Vivreal Business Integration was removed with notify UNticked, and the `pod_01` Facebook token still died with the app removal (ledger 16:30Z).
 - **A data-deletion request** (`/api/user/data-deletion/:provider`) does the same purge and owes Meta
   a confirmation code and a public status page.
+- **An OAuth channel disconnects per account, from its card.** The portal's "Disconnect Integration" danger zone exists only for key-based channels; when a dead token breaks the channel page, the only path is the endpoint the card calls.
 
 ## Failure signatures seen in production
 

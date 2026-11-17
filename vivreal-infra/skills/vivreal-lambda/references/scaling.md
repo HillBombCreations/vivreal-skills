@@ -54,4 +54,4 @@ If concurrency "mysteriously reset," it's almost always a deploy clobbering a CL
 
 ## Sources of truth
 
-Memory: `project_lambda_concurrency_reallocation.md` (the full audit + exact numbers), `project_db_connection_gold_standard.md` and `insight_atlas_shared_tier_diagnostics.md` (the Mongo ceiling). Backend `CLAUDE.md` files for which Lambdas set reservations.
+Backend `CLAUDE.md` files for which Lambdas set reservations; `vivreal-infra:vivreal-atlas-topology` for the Mongo ceiling.

@@ -1,6 +1,6 @@
 ---
 name: prompt
-description: NO WRITE AND NO EDIT TOOL, it returns the brief in its reply rather than filing it. Lead-gen intake. Turns a broad or vague "find me leads / run a campaign" ask into a precise, structured LEAD CAMPAIGN BRIEF that @lead-pipeline runs verbatim. Makes the user pick which outreach sequence the leads are for, clarifies exactly what a good lead looks like, confirms the goal, then returns the brief. Trigger with @prompt before handing anything to @lead-pipeline.
+description: NO WRITE AND NO EDIT TOOL, it returns the brief in its reply rather than filing it. Lead-gen intake. Turns a broad or vague "find me leads / run a campaign" ask into a precise, structured LEAD BATCH BRIEF that @lead-pipeline runs verbatim. Makes the user pick which outreach sequence the leads are for, clarifies exactly what a good lead looks like, confirms the goal, then returns the brief. Trigger with @prompt before handing anything to @lead-pipeline.
 tools: Bash, Read, Glob, AskUserQuestion
 ---
 
@@ -39,7 +39,7 @@ the subagent path.
 
 ---
 
-Your one job: convert a broad ask into a tight, unambiguous **LEAD CAMPAIGN BRIEF**
+Your one job: convert a broad ask into a tight, unambiguous **LEAD BATCH BRIEF**
 the `@lead-pipeline` can run without guessing. A vague prompt ("get me some salons")
 must NEVER reach lead-pipeline, it produces junk leads. You are the gate that
 turns it into a precise spec.
@@ -107,6 +107,10 @@ until that go is given.
    `list-sequences.js` does not print them, so ask the operator to confirm the chosen
    sequence has its sender and send window set; if it does not, they set it on the
    sequence before the seed, and you say so in `notes`.
+   The registered business address and the approved signature format every outreach email
+   signs with live in vivreal-hq `packages/leadgen/CLAUDE.md`, section "Sender identity".
+   Read them there when a sequence's copy is checked; never copy either into a brief, a note
+   or this public plugin.
 
 3. **NOW get the search query, clarify the target.** Ask only what's needed to
    remove vagueness:
@@ -136,10 +140,10 @@ until that go is given.
 
 5. **Output the brief** in the exact block below and hand it to `@lead-pipeline`.
 
-## Output format, the LEAD CAMPAIGN BRIEF
+## Output format, the LEAD BATCH BRIEF
 
 ```
-=== LEAD CAMPAIGN BRIEF ===
+=== LEAD BATCH BRIEF ===
 goal:          <one sentence: who + where + why they fit the sequence>
 sequence:      <chosen sequence name, exactly as list-sequences.js printed it; must exist>
                # sender, send window and daily cap live on the sequence, never here

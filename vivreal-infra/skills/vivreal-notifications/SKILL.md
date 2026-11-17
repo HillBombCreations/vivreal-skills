@@ -50,6 +50,15 @@ producer → vivreal-notification-queue (SQS, batch size 1, + DLQ) → Notificat
 - The consumer's DB connection is separate on purpose, do not "consolidate" it into the shared Main connection helper.
 - Producer failures are swallowed by design (notifications must never fail the producing workflow), a missing push with a green producer log means look at the queue/DLQ and the consumer, not the producer.
 - Push delivery requires a live `pushsubscriptions` row for the user AND preferences allowing that event class in `pushpreferences`, AND, for a staff type, a row with `surface: 'admin'`.
+- **An SES configuration set is created with NO event destination,** and the per-group sets are
+  what sends use, so a missing destination silently disables the campaign circuit breaker.
+- **Subscriber confirmation emails send on the TRANSACTIONAL account,** not the campaigns account:
+  fine one at a time, an account-risk event in bulk.
+- **Campaign mail sends from its own AWS account,** separate from transactional, so a complaint
+  spike cannot stop customer sign-ins. Its account id is key `campaignsAccountId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
+- **vivreal.io's email authentication lives in its Route 53 zone, not in any repo:** three DMARC
+  records, with two SES sending subdomains still at `p=none`. The zone id is key
+  `vivrealIoZoneId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
 
 ## Companions
 

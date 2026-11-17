@@ -83,3 +83,11 @@ In a repo whose settings do not declare the marketplace yet, install by hand:
 claude plugin marketplace add HillBombCreations/vivreal-skills
 claude plugin install <name>@vivreal-skills --scope user
 ```
+
+Sessions in a repo that declares no plugins get the hooks and skills only from a user-scope install,
+so install the core set at user scope once per machine: `vivreal-principal`, `vivreal-workflow`,
+`vivreal-knowledge`, `vivreal-infra`, `vivreal-agent-review`, `vivreal-db-explorer`,
+`vivreal-sentry`, `vivreal-ops`, `vivreal-product`, `vivreal-cms`, `vivreal-fullstack` and
+`vivreal-proxy-factory`. The vivreal-workflow hooks then print the owners' shared rules (hq
+`docs/standards/live-values.md` and `INDEX.md` from hq `origin/main`) into every session and
+subagent. A new owner's machine follows vivreal-hq `docs/ONBOARDING.md` from here.

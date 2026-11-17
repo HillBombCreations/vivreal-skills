@@ -28,6 +28,7 @@ jobs:
         run: >-
           node --test
           vivreal-workflow/hooks/routing-hooks.test.cjs
+          vivreal-workflow/hooks/session-rules.test.cjs
           vivreal-workflow/hooks/package-nudge.test.cjs
           scripts/skill-drift.test.mjs
           vivreal-infra/hooks/lambda-env-guard.test.cjs

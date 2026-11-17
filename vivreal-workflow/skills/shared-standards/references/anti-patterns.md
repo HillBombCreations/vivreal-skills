@@ -41,6 +41,13 @@ The rules as a reviewer walks them, one line per entry.
 20. **Catch blocks that assume an Error.** A catch reads the rejection through `?.` or a normaliser, and never throws.
 21. **An exclusion honoured by one reader only.** A new hide, archive or exclude flag lists every reader of the set and decides each.
 22. **Device clock for a business time.** A time an owner or a customer reads is in the business time zone and names the zone.
+23. **Work that lands in a folder it did not name.** Every shell step changes into its folder in the same command and checks it, and every tool that writes files is pointed outside every repository.
+24. **Expected results resting on unread state.** A result that depends on an account's or an environment's state rests on a read of that state made first.
+25. **Plan steps that cannot run as written.** Every command, step, expected set, threshold and stop action in a plan is checked against what will execute it.
+26. **Plan rows that drift from settled answers.** A settled answer changes everywhere it is stated, each behaviour has one owning row, and a closed question stays closed.
+27. **A limit that reaches zero written as a quantity.** A cap that can reach zero refuses the action or removes the line, never writes zero as the amount.
+28. **A move that leaves the repository's own guide behind.** A change that moves what the repository's guide files state updates them in the same change.
+29. **An enforcement row true only on paper.** A register row says a limit is enforced only when the path the product actually calls runs the gate.
 
 ---
 
@@ -305,3 +312,87 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** `new Date()` formatted with `toLocaleString`, `getHours` or a date library default, with no time zone argument, on a value a person reads. A day boundary computed from the device's midnight. A test that only runs in the machine's own zone.
 
 **Guard shape:** A test that runs with the process or browser in a zone different from the business, and one across a DST change. A lint rule against zone-less formatting of owner-facing times outside one shared formatter.
+
+---
+
+## 23. Work that lands in a folder it did not name
+
+**Rule:** Every shell step names the folder it runs in, in the same command (change into it first, then check it), and every tool that writes files on its own is pointed at a folder outside every repository. A step that relies on wherever its shell or tool happens to start is wrong.
+
+**Why it hurts:** A shell or tool that starts in a default folder can run inside someone else's checkout: an install there can rewrite their lockfile and dependencies, and a scratch file there can carry a credential into a tree that is later committed.
+
+**How to spot it:** A command handed to a second shell layer (a Linux subsystem, a container exec, a remote shell) with no change of folder before it. A change of folder in one tool call and the command in the next, in a tool whose working folder resets between calls. An install or a pack run on a folder that another operating system also uses. A browser, capture or test tool left on its default output folder. A file saved under a relative name.
+
+**Guard shape:** One quoted command per step that changes folder first and prints it, refusing when the printed folder is not the intended one. Tool output folders set to an absolute path outside every repository. After a run, a test for each tool's output folder by its own path, because a status check skips a path the repository ignores, run beside a control that plants that folder and must fire.
+
+---
+
+## 24. Expected results resting on unread state
+
+**Rule:** A test, walk or proof step whose expected result depends on the state of an account or an environment (which provider is active, which features or settings are on, which plan it is on, what data it holds) rests on a read of that state made first and recorded with the step, never on what a plan or a file says the state is.
+
+**Why it hurts:** A step written against an assumed state can fail on a correct product or pass for the wrong reason, and the report then describes a state that never existed.
+
+**How to spot it:** An expected result that names an account's configuration with no read of that configuration in the same run. An account named by its role ("the test business") with properties copied from a plan. Two steps in one session that need mutually exclusive states of the same account.
+
+**Guard shape:** A pre-read at the top of every run that records each property the expected results depend on, with its source and time. Each step names the read it rests on. A step the read contradicts is re-scoped or marked not judged, with the read as the reason, and never forced by changing the state to fit.
+
+---
+
+## 25. Plan steps that cannot run as written
+
+**Rule:** Every command, step, expected result and stop condition in a plan or runbook is checked against the thing that will execute it: each command carries every argument its script's parser requires, each step is something the named workflow or tool can do, each expected set is what that tool's real output can be, each threshold is the value measured at the base, and each stop or rollback action passes the repository's own gates.
+
+**Why it hurts:** A step that cannot run stalls a release part way, and a stop pinned to a wrong number or a rollback the gate refuses can halt a correct deploy, or leave an incident with no way back.
+
+**How to spot it:** A command whose flags were never compared with the script's argument list. A step that asks a workflow to act on an input it does not take. An expected change set copied from a different deploy path. A threshold with no measurement cited at the base. A revert or rollback that removes code a coverage, size or required check counts.
+
+**Guard shape:** Beside each command, the parser line it was checked against; beside each workflow step, the workflow's inputs; for each expected set, a dry run or preview of the same path; for each threshold, the measuring command and its base output; for each stop action, a dry run through the repository's gates.
+
+---
+
+## 26. Plan rows that drift from settled answers
+
+**Rule:** A plan stays inside what has been decided. When a precondition settles, every design and row that states it changes in the same edit; each behaviour belongs to the one row that builds and tests it; a question already closed by an earlier read or decision is cited, not reopened; and scope stays within the decision-maker's answer.
+
+**Why it hurts:** A builder pins a stale value from a design, a test meant to fail at its base cannot fail when another row already built the behaviour, and a reopened question can undo a decision that was protecting production.
+
+**How to spot it:** A settled value that still appears in its old form in a linked design. A behaviour tested in one row and built in another. A row whose premise contradicts an earlier closed finding. An item added beyond a recorded answer.
+
+**Guard shape:** A search of every linked design for the old value when a precondition settles. One owning row per behaviour, with its red-at-base test in that row. A citation of the closing record on any row that touches a settled question. Each scope row cites the answer it rests on.
+
+---
+
+## 27. A limit that reaches zero written as a quantity
+
+**Rule:** When a cap, a remaining stock or an allowance can reach zero, the code refuses the action or removes the line; it never writes zero as an item's quantity or treats zero as a valid amount.
+
+**Why it hurts:** A zero-quantity line can pass the step that wrote it and fail later, in a payment or order step, with an error the user cannot act on, while a total elsewhere can count it as one.
+
+**How to spot it:** A clamp such as `Math.min(requested, cap)` written straight into a quantity field. An add, increase or set path with no branch for a result of zero. A success return after a clamp produced zero.
+
+**Guard shape:** REFUSE tests at a cap of zero on every write path (add, increase, set), asserting the action is refused or the line removed, and the stored quantity unchanged.
+
+---
+
+## 28. A move that leaves the repository's own guide behind
+
+**Rule:** A change that moves a runtime, a version, a gate, a limit or a contract that the repository's own guide files state (its agent guide, its readme, any other assistant guide) updates every such line in the same change.
+
+**Why it hurts:** The guide is what the next engineer and every assistant read first, so a false line there is believed, acted on and copied into other documents.
+
+**How to spot it:** A diff that changes a runtime or a gate in a deploy template or in code with no change to the guide files. A guide line that still names the old value after the change.
+
+**Guard shape:** A sweep of the guide files for the old value, with a positive control, recorded in the pull request. Where the value is mechanical, a test that pins the guide line to the template or constant it describes.
+
+---
+
+## 29. An enforcement row true only on paper
+
+**Rule:** A register or manifest row that marks a limit or a gate as enforced is true only if the path the product actually calls runs that gate. Trace the caller, not the callee, before marking it, and make every other path that writes the same thing refuse.
+
+**Why it hurts:** The register names a file, and nothing can tell whether the product calls it, so the gate's own tests and the register's conformance test pass while every real request goes around the gate and the limit is never applied.
+
+**How to spot it:** A row flipped to enforced in a change that names no caller. A gate added to one of two routes that write the same thing. A backend that accepts a new shape while the client's own route in front of it still refuses it.
+
+**Guard shape:** The change that flips a row cites the client file and line that reaches the gated route, found by a search with a positive control; one test runs through that route with the gate's refusal; every sibling write path has a refusal test.

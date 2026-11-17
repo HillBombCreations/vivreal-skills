@@ -93,3 +93,11 @@ A direct call to Secure, CMS or Main (a proof, a read-back, a fixture read) carr
 unrecognised X-App-Source header" and files it in Sentry, so a walk's own probes show up as new
 issues. Never send a deliberately malformed request to production: a walk's malformed probe has
 reopened a resolved issue. On a production walk, also block the Sentry ingest host.
+
+## Browser mechanics that read as defects
+
+- **A cookie's `expires` is not token freshness.** A storageState cookie can say weeks while the JWT inside is dead: read the JWT's `exp`, and treat a capture that lands on the sign-in page as a failure.
+- **"intercepts pointer events" names the blocking element.** Grep that class string first, before theorising about stacking contexts.
+- **`locator.click()` scrolls a partly hidden element into view first,** so a "keeps scroll position" row fails falsely. Use `hasTouch` plus `touchscreen.tap` on a fully visible element.
+- **Locator and input mechanics:** `getByText` with a string is a FULL match, a raw mouse press skips hit-testing, and a dialog is measured only after its animation settles.
+- **Stripe's sandbox Checkout:** the page says Sandbox, not TEST MODE; Card is a radio; Link's save box is pre-ticked; there is no load event; storefront buttons are dead until hydration.

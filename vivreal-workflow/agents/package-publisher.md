@@ -139,12 +139,14 @@ for the report and for how consumers absorb it, but it never changes which consu
 consumer left on the old pin is the `RESOLVED_DIVERGED` defect class above, and a strict
 Mongoose schema drops an undeclared field on write with no error either way.
 
-**Publish every pending package first, then ONE consumer bump pass (owner, 2026-10-19).**
-When several `@hillbombcreations/*` packages have unpublished changes, publish all of them
-(each reviewed, each verified on the registry) before any consumer moves. Then one pass moves
-every consumer to every new version, ONE commit per consumer on its release lane. Bumping per
-package multiplies commits, lockfile edits, suite runs and reviews in every lane. An agent
-that needs a package change mid-build reports it rather than publishing and bumping on its own.
+**Publish a reviewed package at once; consumers move in their own repo's PR (owner rule
+P-packages, vivreal-hq `docs/standards/process.md`).** A `@hillbombcreations/*` package is
+published as soon as its PR passes review (standing approval) and is verified on the registry.
+A consumer that needs the new version moves in its own feature PR; every other consumer moves
+with the next builder working in that repo, on that repo's batch branch, never in a bump-only
+PR. When a dispatch asks you to move consumers, each move is ONE commit on the branch the
+dispatch names for that repo. An agent that needs a package change mid-build reports it rather
+than publishing on its own.
 
 **When a consumer needs no edit.**
 - A comment-only package change (no runtime difference) needs no consumer bump at all, and a
@@ -167,6 +169,15 @@ spend sits close to its budget cap with "Stop usage" enabled, a billing stop REA
 job with zero steps, which looks exactly like a broken workflow rather than an exhausted budget.
 If a bump's CI run fails with no steps executed, check the billing page before assuming the
 workflow itself is broken.
+
+**A pack made in WSL on a Windows-mounted folder never equals the registry's.** `npm pack` on
+`/mnt/<drive>/...` records every file as mode 0755, so its integrity never matches the registry
+tarball (whose files are 0644). Make comparison packs on WSL's own disk, from a `git archive` of
+the head.
+
+**A tarball publish through the npm wrapper sends no `gitHead`.** The wrapper packs, then
+publishes the tarball, so a "gitHead equals the merge SHA" proof can never pass. Prove the
+publish by the tarball's shasum plus a git tag, packed from an `autocrlf=false` checkout.
 
 ## The Studio gate before a renderer merge (`kit:validate`)
 
@@ -247,6 +258,23 @@ Both must exit 0 with every control line printed; exit 1 (NOT BUILDABLE or DEAD)
 (VOID) stops the publish. It reads only stored `siteDetails` (fetch once, for both the census and
 the fast path's count), and builds nothing, so a words-only publish runs it too. A new kit riding the publish is offered in the picker only once its own
 instantiated demo site passes (`vivreal-site-migrator`'s `/template`, validation step 8).
+
+**The census VOIDs on a home page that holds only a legal document.** It treats a home page with no
+hero as a broken reader, so one customer site whose home page holds only a legal document makes the
+whole fleet run exit 2. That is the checker's false fail (vivreal-hq backlog F412), not a result
+about this publish: report it with the site and the page, and never read it as a pass either.
+
+**Narrowing or waiving a gate is an owner's GO, never your call**, outside the owner's standing
+words-only fast path earlier in this section (decided by its masked diff and its control). When a
+publish gate cannot pass for a reason you believe has nothing to do with this publish (the fleet
+run's pre-existing gaps or that VOID, a Studio gate the machine was too busy to run), STOP before
+the merge and bring the owner the gate, its result, why you believe it is unrelated, and the exact
+narrowing or waiver you propose
+(for example "the template run only for this export-only publish, the fleet gaps to the backlog",
+or "the Studio gate waived here, re-run by the consumer's re-pin"). Proceed only on an owner's GO
+quoted with name and ISO time, and record the narrowed gate and the GO on the PR before the merge. A
+narrowing or waiver covers that one publish, never the next one (release B's export-only renderer
+publish stopped on both gates and the owner narrowed them, 2026-11-16).
 
 ## Registry auth and consumers
 
@@ -338,6 +366,10 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
 
 - DON'T run `rm -rf node_modules package-lock.json && npm install` on Windows to move a pin.
   Patch the lockfile entry surgically and verify with `npm ci`.
+- DON'T narrow, skip or waive a publish gate (the Blank-buildable runs, the Studio gate, the
+  fleet build and render diff) on your own judgement, outside the owner's standing words-only fast
+  path ("Before a renderer publish", decided by its masked diff and its control). Stop and ask for
+  an owner's GO naming the exact narrowing ("Narrowing or waiving a gate" above).
 - DON'T use `--package-lock-only` as a substitute, it produces a lockfile shape that breaks a
   later `npm ci`.
 - DON'T trust a publish workflow's green conclusion. Confirm on the registry with `npm view`.

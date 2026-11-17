@@ -62,6 +62,9 @@ Several surfaces you walk moved in the last weeks. Reporting the previous behavi
 defect wastes a whole walk and reads as a regression that is not there. **Verify the current
 behaviour before filing, and say which you observed.**
 
+- **The installed-app status-band duck stays as designed** (an owner rule): never file a finding
+  about it, and never act on one.
+
 - **A paused or over-quota site is READ ONLY, not dark.** It used to answer every route with the
   frozen code, including the content reads, which the site app turned into a full-page "temporarily
   unavailable" interstitial on every page. An owner lost their address, hours and phone number from
@@ -163,6 +166,18 @@ Each of these cost a session a false conclusion.
   Studio sample video's sound on the owner's machine while he worked. Give every Chromium your
   script launches `--mute-audio` (`chromium.launch({ args: ['--mute-audio'] })`,
   `launchPwaDevice({ ..., extraArgs: ['--mute-audio'] })`).
+- **Start every shell command by changing into a worktree or your scratch folder.** A Bash call can
+  start in the session's default folder, often an owner's checkout, and in a subagent, and often in
+  the main session, a `cd` in an earlier call does not carry over. Write every command as `cd "<worktree or scratch folder>" && <command>`, even
+  a folder listing or a process check (release B: a capture session's process and folder listings ran
+  in the owner's checkout; harmless that time, but an install or a write there is not). WSL steps
+  follow `vivreal-workflow:shared-standards`, "Cross-platform note".
+- **An open native select list can be captured page only, in a visible browser.** The list a native
+  `<select>` opens is drawn outside the page, so a headless screenshot shows the closed box. In a
+  non-headless browser, a page-only screenshot (`page.screenshot`) does include the open list, so no
+  screen capture is needed (a screen capture can land on another monitor); keep the window
+  unoccluded (topmost) while the list is open. At a 2x device scale it
+  may not come out; take that frame at 1x and say so beside the still.
 - **Copy `test-results/` out after every Playwright run.** Playwright empties it at the start of
   the next run, so a second spec run erased the first run's page snapshots. Copy every
   `error-context.md` into the walk folder as soon as a run ends.
@@ -236,7 +251,12 @@ Each of these cost a session a false conclusion.
   Standby on idle; every in-flight request then fails with
   `net::ERR_NETWORK_IO_SUSPENDED`, which is never a product defect. Confirm with
   the System log (Kernel-Power 506/507) before filing anything that clusters in
-  one moment.
+  one moment. Start a keep-awake process at walk start that runs until the walk's last row is
+  written, stop it then, and say in the walk report that it ran.
+- **Keep the walk's known errors off the Sentry quota.** The dispatching thread adds the Sentry
+  project's IP inbound filter for the walk machine before the walk and removes it after
+  (`vivreal-workflow:release-conductor`, Walks; message filters need a higher Sentry plan). If
+  your brief does not say the filter is on, say so in the walk report's first lines.
 - **A shared Playwright profile is single-user, with no lock-awareness.** The
   tutorial harness's profile (`vivreal-hq/.agent-cache/tutorial-profiles/`) is one
   Chrome user-data-dir; a `launchPersistentContext` against it while another
@@ -322,6 +342,19 @@ Read each tenant's tier and `dbKey` live at the start of the walk (the group doc
 portal's own read route); never copy them from a file, this one included. The previous table here
 called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three were wrong by
 2026-10, and QA residue on it forced a demo cleanup.
+
+**Every expected result rests on a state you read first, never on one you assume.** Before the first
+row, read every property of each business that a row's expected result depends on: which payments
+provider is ACTIVE (a business sells through one; the others can be connected and inactive), which
+channels are connected, its tier, which settings are on (sales tax, low stock, the cart's options),
+which test accounts it holds. Read them with a projected read of the group document that names
+only the fields you need, or through the portal's own read route, and put the read, its source and
+its time in the matrix header. Each row names the read it rests on. A row whose expected result the read
+contradicts is re-scoped to what the read shows, or NOT JUDGED with the read as the reason, and the
+plan gets a correction; never flip the business's state to fit the row without an owner-approved
+write. Release B's walk plan expected one QA business to sell through Square in the same session
+that used its Stripe, which it cannot (review-walk-coverage B1); the pre-read that settled it named
+Stripe active and Square inactive.
 
 | Tenant | Use for | Watch out |
 |---|---|---|
@@ -539,7 +572,7 @@ in every walk:
 1. Neighbours: every screen that shares a changed component.
 2. Three real sites of contrasting palettes, one light and two dark (the brief names them, else Windward House, Blackbird Hall and Nocturne), on each changed site surface.
 3. For each touched area, the owner's most common task done on the phone in the installed app, by touch: select, open, undo, back.
-Pair the walk with `vivreal-product:regular-user` in the same wave (the two-agent cap allows exactly that pair).
+Pair the walk with `vivreal-product:regular-user` in the same wave when two slots are free under the live agent cap (owner rule P-cap, vivreal-hq `docs/standards/process.md`).
 **Preflight first.** A launcher, port or dev-server failure is its own verdict line, `HARNESS: <cause>`, never BLOCKED; BLOCKED means the product stopped you.
 
 ---

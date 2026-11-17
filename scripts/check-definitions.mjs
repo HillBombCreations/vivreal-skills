@@ -55,8 +55,9 @@
  *      handle, a OneDrive path, a machine path under docs/ (rule 11 covers the rest), a Secrets
  *      Manager or SSM name prefix (write `<secret-prefix>/` or `<ssm-prefix>/`), a named private
  *      account, a personal mailbox on the company domain or a free-mail one, a Stripe key or account id, a real
- *      Mongo ObjectId, an AWS or Atlas generated hostname or resource id, and a dollar figure in
- *      the unit-economics skill or the finance-auditor.
+ *      Mongo ObjectId, an AWS or Atlas generated hostname or resource id, a citation of one
+ *      machine's private Claude Code memory, and a dollar figure in the unit-economics skill or
+ *      the finance-auditor.
  *
  * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
  * that LOADS an agent as a skill, since an agent has no skill entry to load.
@@ -1222,6 +1223,18 @@ function privateTokenKinds(line) {
   return kinds;
 }
 
+const MEMORY_CITE_MSG =
+  "a citation of one machine's private memory (a cite to a memory note, its projects path, its file or its name). " +
+  'Cite the shared file that now holds the lesson (owner rule P-shared-rules).';
+// The word, then a note's name in backticks (kebab-case, so a setting such as autoMemoryDirectory
+// is not a hit), which is how this repo cited a private note four times at e1a453f, twice with the
+// name wrapped onto the next line. Stricter than hq's lint, which has only the three patterns in
+// LEAK_PATTERNS. Tested on the line joined to the next, and counted only when it starts on the line.
+const MEMORY_SLUG = new RegExp(BSL + 'b' + 'mem' + 'ory' + BSL + 's+`[a-z0-9]+(?:-[a-z0-9]+)+`');
+// The Sources-of-truth form, six lines at e1a453f: the word with a colon, then a private note's
+// lowercase file name in backticks on the same line. A function memory size ("1024 MB") names no
+// file, and README.md or CLAUDE.md are not lowercase, so neither is a hit.
+const MEMORY_FILE = new RegExp(BSL + 'b[Mm]em' + 'ory:[^`' + BSL + 'n]*`[a-z0-9][a-z0-9_-]*' + BSL + '.md`');
 const LEAK_PATTERNS = [
   {
     // A path segment, so a process name in a never-kill list is not a hit.
@@ -1242,6 +1255,18 @@ const LEAK_PATTERNS = [
     // `<name>@gmail.com` is not an address and does not match.
     re: /(?<![A-Za-z0-9._%+-])[A-Za-z0-9][A-Za-z0-9._%+-]*@(?:gmail|yahoo|outlook|hotmail|icloud)\.com\b/i,
     msg: 'a personal free-mail address (gmail, yahoo, outlook, hotmail, icloud). Name the role, never the address.',
+  },
+  {
+    // Shared files never cite one machine's private Claude Code memory (owner rule P-shared-rules,
+    // vivreal-hq docs/standards/process.md); the lesson moves to a shared file and that is what
+    // gets cited. The same three patterns as hq's standards lint. The colon needs nothing after
+    // it, so a cite wrapped onto the next line is caught on its first; the left edge keeps a
+    // longer word ending in the same letters out. MEMORY_SLUG below adds the form this repo
+    // actually shipped. Assembled, so this line is not a hit itself.
+    re: new RegExp(
+      '(^|[^A-Za-z0-9_])' + 'me' + 'm:|' + BSL + '.cla' + 'ude/projects/|/mem' + 'ory/[A-Za-z0-9_-]+' + BSL + '.md',
+    ),
+    msg: MEMORY_CITE_MSG,
   },
   {
     re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{8,}|\bwhsec_[A-Za-z0-9]{8,}|\b(?:acct|cus)_[A-Za-z0-9]{12,}/,
@@ -1314,6 +1339,8 @@ function rulePublicLeaks(files) {
         }
       }
       for (const kind of privateTokenKinds(line)) fail('public-leak', `${rel}:${i + 1}`, TOKEN_MESSAGES[kind]);
+      const slug = (line + ' ' + (lines[i + 1] || '').trimStart()).match(MEMORY_SLUG);
+      if ((slug && slug.index < line.length) || MEMORY_FILE.test(line)) fail('public-leak', `${rel}:${i + 1}`, MEMORY_CITE_MSG);
       // Rule 11 owns a machine path outside docs/, and a line marked generic is generic here too.
       const ruleElevenOwns = !docs && MACHINE_PATH.test(line);
       if (!ruleElevenOwns && !line.includes(MACHINE_PATH_OK) && (DRIVE_PATH.test(line) || HOME_PATH.test(line))) {
@@ -1978,6 +2005,101 @@ function selfTest() {
       label: 'public-leak: a free-mail address',
       path: join(tmp, 'skills', 'free-mail', 'SKILL.md'),
       body: '---\nname: free-mail\ndescription: fixture\n---\n\nThe owner reads `someone' + '@' + 'gmail.com`.\n',
+    },
+    // R15, private-memory citations (shared-rules migration K7: the same three patterns as the
+    // vivreal-hq standards lint). Assembled, so this file carries no citation of its own.
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory cite in parens',
+      path: join(tmp, 'skills', 'mem-cite', 'SKILL.md'),
+      body: '---\nname: mem-cite\ndescription: fixture\n---\n\nSee the rule (' + 'me' + 'm: some-note).\n',
+    },
+    {
+      // A cite wrapped after its colon is caught on its first line, with nothing after the colon.
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a wrapped memory cite',
+      path: join(tmp, 'skills', 'mem-wrapped', 'SKILL.md'),
+      // The colon is its own piece, or the letter, colon and newline escape read as a drive path.
+      body: '---\nname: mem-wrapped\ndescription: fixture\n---\n\nSee the rule (' + 'mem' + ':' + '\nsome-note).\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory cite, no space',
+      path: join(tmp, 'skills', 'mem-nospace', 'SKILL.md'),
+      body: '---\nname: mem-nospace\ndescription: fixture\n---\n\nSource: ' + 'me' + 'm:some-note\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: the memory legend',
+      path: join(tmp, 'skills', 'mem-legend', 'SKILL.md'),
+      body: '---\nname: mem-legend\ndescription: fixture\n---\n\n**' + 'me' + 'm:** a memory note.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a projects memory path',
+      path: join(tmp, 'skills', 'mem-projects', 'SKILL.md'),
+      body: '---\nname: mem-projects\ndescription: fixture\n---\n\nRead `~/.cla' + 'ude/projects/x/notes.txt`.\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory note path',
+      path: join(tmp, 'skills', 'mem-note-path', 'SKILL.md'),
+      body: '---\nname: mem-note-path\ndescription: fixture\n---\n\nThe lesson is in `x/mem' + 'ory/some-note.md`.\n',
+    },
+    {
+      // The form the three hq patterns miss, found live in this repo at e1a453f (three lines).
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory slug in parens',
+      path: join(tmp, 'skills', 'mem-slug', 'SKILL.md'),
+      body: '---\nname: mem-slug\ndescription: fixture\n---\n\nAgents spend the same budget (' + 'mem' + 'ory `some-note`).\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a wrapped memory slug',
+      path: join(tmp, 'skills', 'mem-slug-wrapped', 'SKILL.md'),
+      body: '---\nname: mem-slug-wrapped\ndescription: fixture\n---\n\nReconciled on the owner\'s delegation (' + 'memory\n`some-note`).\n',
+    },
+    {
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory slug after a comma',
+      path: join(tmp, 'skills', 'mem-slug-comma', 'SKILL.md'),
+      body: '---\nname: mem-slug-comma\ndescription: fixture\n---\n\nReconciled on the owner\'s delegation, ' + 'memory\n`some-note`: the coder owns it.\n',
+    },
+    {
+      // The Sources-of-truth form: a private note's file name after "Memory:" on the same line.
+      rule: 'public-leak',
+      match: 'private memory',
+      label: 'public-leak: a memory note file',
+      path: join(tmp, 'skills', 'mem-file', 'SKILL.md'),
+      body: '---\nname: mem-file\ndescription: fixture\n---\n\nSources: the repo guide. ' + 'Mem' + 'ory: deploy gotchas in `project_some_note.md`.\n',
+    },
+    {
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: a function memory size',
+      path: join(tmp, 'skills', 'mem-size', 'SKILL.md'),
+      body: '---\nname: mem-size\ndescription: fixture\n---\n\n- Mem' + 'ory: the function runs at 1024 MB; see `README.md` and `CLAUDE.md`.\n',
+    },
+    {
+      // The ALLOW side: the word in prose, a longer word ending in the same three letters, and
+      // the plugin's own auto memory setting name the shared rule, not a private note.
+      rule: 'public-leak',
+      kind: 'clean',
+      label: 'public-leak: memory in prose',
+      path: join(tmp, 'skills', 'mem-prose', 'SKILL.md'),
+      body:
+        '---\nname: mem-prose\ndescription: fixture\n---\n\n' +
+        'Private memory keeps a pointer, never the only copy; auto memory (memory is machine local) stays on, and auto memory `autoMemoryDirectory` moves it. A `shmem:` key and' +
+        '`memory/` folders in code are fine, and so is `MEMORY.md`.\n',
     },
   ];
 

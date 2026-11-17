@@ -17,6 +17,9 @@ figures and the spend plan of each test are in `vivreal-hq/docs/agent-notes/vivr
 
 ## Account facts (verify before trusting, these can change)
 
+- **Which account:** use the Google Ads account named by key `googleAdsCustomerId` of
+  `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, and ignore the stray draft account named by key `googleAdsDraftAccountId`. An owner's
+  own login may not reach the right one, so check which account a session is in before any change.
 - Google Ads account name: **Vivreal**.
 - Google Ads conversion ID: **AW-472935172** (public, it appears in page source).
 - A GA4 property, also named **Vivreal**, is linked to the Ads account with audience import and

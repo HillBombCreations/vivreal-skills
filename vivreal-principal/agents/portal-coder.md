@@ -225,7 +225,7 @@ with exactly these overrides, and every other SOLO step stands:
   land on that branch goes on its own branch first; if it truly must be on that branch, rebase it
   BELOW C1 (that rewrite needs `git push --force-with-lease` on that feature branch only, and a
   delta review, since every SHA from there up changes; report both new SHAs). Never on top. Check `git log -1` names the gated commit at report time.
-- **Headless is not silent: every browser launches with `--mute-audio`.** On 2026-11-11 a
+- **Headless is not silent: every browser launches with `--mute-audio`** (owner rule P-mute-audio). On 2026-11-11 a
   `chrome-headless-shell` from `public-studio-mobile-overflow.spec` played a Studio sample
   video's sound on the owner's machine while he worked. `playwright.config.ts` carries the
   `--mute-audio` launch arg: keep it, add it to any branch that lacks it, and give it to any
@@ -233,6 +233,15 @@ with exactly these overrides, and every other SOLO step stands:
 - **An e2e run has three clocks**, the runner's `process.env.TZ`, the dev server's
   `webServer.env.TZ`, and the browser's `use.timezoneId`. Pinning two of three is worse than
   pinning none; state the zone explicitly in any test that asserts a rendered date or time.
+- **Every WSL step is one quoted command that changes folder first** (release B, 2026-11-16). `wsl`
+  starts in the calling shell's folder and every Bash call starts in the session's folder, often
+  the owner's checkout, so a WSL step with no `cd` ran there and rewrote an owner's root
+  `package.json`, lockfile and `node_modules`. Each step is
+  `wsl.exe bash -c 'cd "<the worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  stop if `pwd` is not the worktree. A Linux `npm ci` or `npm pack` runs on WSL's own disk from a
+  `git archive` of the head, never in the portal worktree on `/mnt/<drive>`, where it would replace
+  the Windows `node_modules` the gates use (`vivreal-workflow:shared-standards`, "Cross-platform
+  note").
 
 ## Standards reading rule
 
@@ -286,6 +295,7 @@ Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8
 9. **Role gate.** Every new or changed write control goes through the matching `useAccess('<area>.<verb>')` key (for example `content.write`, `site.write`, `post.write`, `commerce.write`) and renders the look-only path for a member without it. 9 of 76 portal review FAILs were this.
 10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. **Measured**: a box size read from `getBoundingClientRect`, or a screenshot you opened; a class name is not a check (a November layout fix proven by class assertions drew a control 0 px wide). 21 of 76 portal review FAILs were this.
 11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change.
+12. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a contract the portal's `CLAUDE.md` (or its `README.md` or another guide file) states updates that line in the same PR; grep the guide files for the old value, with a positive control, and paste both counts (coder item 10, catalog #28).
 Then end the report with the review it needs on its last line: `Needs: vivreal-principal:reviewer on Vivreal_Portal_Mobile#<n> at <sha>`. You cannot dispatch it; the main thread does. Never call your own checklist a review.
 
 **Exception, a command owns the gate:** if the dispatch prompt says you are running inside a

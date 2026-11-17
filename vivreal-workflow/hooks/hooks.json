@@ -1,5 +1,5 @@
 {
-  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session). At session start in a Vivreal checkout, print who owns which task. Before a general-purpose dispatch whose first word is a routed task, deny it with the owning agent named.",
+  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session). At session start in a Vivreal checkout, print who owns which task, and the owners' shared rules from vivreal-hq origin/main: the live values, plus the rules index everywhere except a current hq checkout, whose CLAUDE.md imports it. At each subagent start, hand the subagent the same rules as context unless that CLAUDE.md already gave them (Explore and Plan always get them). Before a general-purpose dispatch whose first word is a routed task, deny it with the owning agent named.",
   "hooks": {
     "PostToolUse": [
       {
@@ -19,6 +19,26 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-routing.cjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.cjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-rules.cjs\"",
             "timeout": 10
           }
         ]

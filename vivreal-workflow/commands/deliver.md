@@ -45,7 +45,8 @@ prompt: |
   The release-engineer dispatch carries an owner's go and the named steps in its
   FIRST prompt; never relay a go as a later message.
 
-  At most four background agents at once, yours included. Route every new find at
+  At most the live agent cap of background agents at once (P-cap; the value is printed at
+  session start, never restated here), yours included. Route every new find at
   once to the running agent that owns the area, or to a new agent when a slot is
   free. Walkers write defects to a live *-defects.md file as they find them.
 

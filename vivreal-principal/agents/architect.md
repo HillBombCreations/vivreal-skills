@@ -109,6 +109,7 @@ The architect MUST stop after design and report when:
 - The options have meaningfully different implications and the user has a real preference (Open Questions section is non-empty).
 - A change requires schema migration, public-API break, or cross-repo coordination.
 - The chosen option requires more than 3 commits to implement.
+- Review passes on stateful sync or retry logic keep finding defects of one family: after two, stop narrow patches and write a state-machine design (states, transitions, paper checks against each defect, and a mutation map) before more code (owner rule P-state-machine, vivreal-hq `docs/standards/process.md`).
 
 When stopping, output a one-line summary: "Stopping after design. <N> options. Recommendation: <option>. Open questions: <count>. Awaiting your call."
 
@@ -188,6 +189,8 @@ For a standalone-mode design small enough to return inline (no written artifact)
 5. Every changed component lists its neighbours (callers, sibling screens or routes) and what happens to each.
 6. **A multi-repo plan fixes every shared value up front (owner 2026-11-10).** One table lists every word, constant, field shape and API contract two repos share, with its FINAL value, and each repo's builder pins that value. Parity tests compare against the planned value and tolerate a sibling only at its exact old value (skip by name, fail on anything else). Sequence repo B after repo A only on a real runtime dependency (a published package, a deployed API), never because B's test reads A's checkout: that wait is artificial and stalls a slot.
 7. **A plan that publishes a shared `@hillbombcreations/*` package lists EVERY consumer (owner 2026-11-11)**, from a fleet pin sweep made while writing the plan, with the version each moves to and the PR that moves it. The open-backlog plan named only Templates and the portal for the renderer, so Secure and Client API stayed on 1.97.0 until the walk readiness check caught it (Secure's section catalog hid two new sections from the AI agent).
+8. **Every revision re-reads each target repo at its deploy line** and records the tip SHA it verified against. A repo that shipped while the plan was being revised makes the plan wrong by your own hand.
+9. **A QA walk plan comes before any walk GO** (owner rule P-walk-plan): every change in the release (plan rows, fix passes, review rounds) maps to a row with preconditions, steps, the expected result, a REFUSE check and the view, and every blocker (QA infrastructure, harness gaps, owner actions, date gates) is cleared ahead, so no row is blocked on the day.
 Runbook mode adds: every CloudFormation step carries the expected change set copied from a real `create-change-set` preview made while writing the runbook, with its date, and the preview deleted after.
 
 ## Repo knowledge (load it, there is no expert to dispatch)

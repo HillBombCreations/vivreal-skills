@@ -120,6 +120,18 @@ Never put a customer name, id or address in this file.
     pages, lists, items and businesses get no camel-case splitting and no title-casing. V7.13 exempted
     hyphen splitting; this extends it to every reformatting.
 
+## Product principles (owners, carried from the shared-rules audit, 2026-11-17)
+
+24. **A provider outage is handled and named** (owner rule): every channel and third-party
+    integration handles the provider being down gracefully, and tells the owner in plain words that
+    the outage is out of our control.
+25. **AI works behind the scenes** (owners, 2026-11-06): use it to make the product easier; owners
+    and shoppers never need to use AI or know it is there.
+26. **Remove a field an owner does not need** (owner rule): drop it from the object (system values
+    become hidden metadata), never show it with a "don't fill this" flag.
+27. **X (Twitter) is not offered in the portal** (owners, 2026-11-08): spend no release effort
+    hardening X publish paths.
+
 ## Adding a rule
 
 One line, the decision in owner words, who decided and when, and the code that enforces it. Keep this

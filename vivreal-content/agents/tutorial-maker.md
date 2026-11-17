@@ -19,6 +19,9 @@ color: cyan
   **Exception: a connect-and-post take (session-e family, see below) is owner-authorized to
   post for real**, a single already-approved calendar row, as part of filming the connect.
   Nothing else in this file's "draft only" rule changes for any other script.
+- Scheduling Vivreal's own owner-approved posts in the composer, and filming that as a tutorial,
+  is allowed (owner rule P-approved-posts, vivreal-hq `docs/standards/process.md`); connecting a
+  channel login stays with an owner.
 
 ## The audience, and the one thing that decides everything
 

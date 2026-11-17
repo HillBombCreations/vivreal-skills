@@ -39,7 +39,7 @@ Step 1, and before you hand over any media slot, so two images in one item never
 ## The plan is your spec
 
 **The spec is the dispatch prompt plus the plan rows it names**, and the dispatch is the authority
-where they disagree. Articles come from two plans:
+where they disagree. Articles come from three kinds of plan:
 
 - **The help site plan**, `vivreal-hq/docs/projects/help-site-plan/plan.md`, articles A1 to A29
   with their anchors, slots and FAQ groups (the reading list below).
@@ -50,6 +50,15 @@ where they disagree. Articles come from two plans:
   names. Such an article has no plan section 4 block, so **propose its anchors** (Step 2's naming
   rules) in the defects file under "Proposed anchors, for owner approval", and write the draft with
   them marked PROPOSED.
+- **A release plan's help rows**, `vivreal-hq/docs/projects/<release>/plan-release-<letter>.md`, in
+  its help articles section (release B's is section 4.14, rows HA-B1 to HA-B3): each row names the
+  article, what it covers, when it is written and the release step and GO that publish it. Read the
+  row, the section's shared rules above its table, the decisions and backlog items the row cites,
+  and the release step that publishes it (its preconditions, proof and STOP). Such a row also has
+  no section 4 block: propose its anchors as above. When the row says a part is true only after a
+  later release step ships, write that text marked with the step (`[AFTER BR-29]` was the release B
+  form) so PUBLISH mode can hold it, and check the release's progress record for whether that step
+  has shipped before calling any claim true.
 
 For an A-list article, read every run, in this order:
 
@@ -79,8 +88,9 @@ If the plan has moved on since this file was written (a newer amendment section,
 register row), trust the plan over this file and say in your report that this agent needs
 updating.
 
-**One run = one article**, named by its key (A1 to A29) or by its site-refresh plan or tracker
-row. If the dispatch names neither, stop and ask; do not pick one. Never draft a reused-target article or an untouched
+**One run = one article**, named by its key (A1 to A29), by its site-refresh plan or tracker
+row, or by its release plan help row (HA-B1 and the like). If the dispatch names none of these, stop
+and ask; do not pick one. Never draft a reused-target article or an untouched
 one (plan section 3), and never document Outreach (internal only).
 
 ---
@@ -212,6 +222,13 @@ exactly as the screen prints them.
 - **A shared package is a version trap.** Check the installed `@hillbombcreations/*`
   version against the lockfile before trusting behaviour.
 - **A negative result is only evidence when the same query can produce a positive one.**
+- **Before you say a topic has no page, search both sites in a real browser.** The help centre and
+  vivreal.io each hold pages the other's search never finds, and both render in the browser: a
+  fetch without one reads a skeleton, which is how vivreal.io's AI connection how-to was reported
+  missing in release B (2026-11-16). Load each candidate settled in the headless browser (Step 1's
+  rules), use the help centre's own search and both sitemaps (they leave out noindex pages), check
+  vivreal.io's own pages too, and find a page you know is live by the same method in the same run.
+  A topic that already has a page is an EXTEND of it, never a second page.
 - **Do not print a number the product does not enforce.**
 
 There are no expert agents to dispatch. For a system-specific gotcha, load the
@@ -425,11 +442,29 @@ in the session scratchpad (never in a repo, never committed) for `--session`. Re
 group id live after the switch for `--business`. Delete the session file at the end of the run.
 
 **PLAN (read only).**
-1. Inputs: the approved drafts, and only the changes they mark PUBLISH NOW.
-2. Write `changes.json` beside the drafts, exactly in the README's shape: one entry per change, with
-   `current` copied byte for byte from the stored text the draft quotes. Every entry (update, delete
-   and create alike) also carries `"draft"`, the draft file's path relative to `changes.json` (its
-   file name when it sits beside it), and `"source"`, the exact text in that draft the change
+1. Inputs: the approved drafts, and the changes the dispatch names under an owner GO id it quotes
+   (for example `GO-B-HA1`); the drafts carry no mark. A dispatch that names changes but quotes no
+   GO id is not ready: report it and stop. **The mark is a real line keyed to that GO id, not the
+   words.** The tool's check is a plain text match today (`PUBLISH_NOW` in `plan.ts`), so a draft
+   whose only mention is its status line, "Publish: no PUBLISH NOW mark yet", passes it. The mark
+   lives only in the publish plan file you write for the article, `<article>.publish-plan.md`, whose
+   header line reads `Publish: **PUBLISH NOW**, for <the GO id the dispatch quotes> only: <the
+   changes the dispatch names>`, and whose publishable part holds each change's text copied byte for
+   byte from the approved draft (the C-1 and HA-B1 runs); each change's `draft` names that file.
+   Before PLAN, list every line holding the words in every file a change names, and confirm one of
+   them is that header line, naming that GO id; the others are mentions, not marks, and a file that
+   holds mentions only (a draft's "no mark yet" line among them) is not ready, so report it and stop. Check every `source` byte for byte against
+   the approved draft as well, since the tool checks it only against the file the change names.
+   Never edit an approved draft to add or clear a mark. Making the tool require a real marker is a
+   separate vivreal-hq change; until it lands, this check is yours.
+2. **The tool's files live in their own publish folder**, `knowledge/help-drafts/publish-<date>-<article>/`
+   (one per run, as the earlier runs did), never loose beside the drafts. Write `changes.json` there and
+   pass that folder as `--out`, so `publish-plan.json` sits beside it and APPLY writes its `backups/` and
+   `publish-log-<date>.md` there too. Write `changes.json` exactly in the README's shape: one entry per
+   change, with `current` copied byte for byte from the stored text the draft quotes. Every entry
+   (update, delete and create alike) also carries `"draft"`, the named file's path relative to
+   `changes.json` (for example `../<article>.publish-plan.md`, which the tool resolves), and
+   `"source"`, the exact text in that draft the change
    carries out, copied byte for byte from the draft, never from the portal or a row: for an update
    or a create, the draft's words for the new text; for a delete, the draft's words that remove the
    row. Before writing an entry, read the row's `updatedAt`: a row changed since the draft is
@@ -438,7 +473,7 @@ group id live after the switch for `--business`. Delete the session file at the 
    change by exact text, keys it by the document id, proves the session reads the target business,
    writes `publish-plan.json` and prints its sha256. It stops a change for any reason it prints,
    among them a change that names no draft, quotes no source, names a draft it cannot read, a draft
-   with no PUBLISH NOW mark, a draft that does not hold the quoted source, and a change that zero or
+   with no PUBLISH NOW mark (a plain text match today, step 1), a draft that does not hold the quoted source, and a change that zero or
    two rows match. A stopped change is reported with the tool's reason, never forced: never edit an
    approved draft to clear any stop.
 4. List what this mode will not do (new pages, new lists, site document writes, media) for the

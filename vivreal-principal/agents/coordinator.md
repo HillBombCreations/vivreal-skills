@@ -86,14 +86,18 @@ If the user requests changes, the coordinator dispatches the architect again wit
 
 ## Running several agents (dispatch shape)
 
-When vivreal-workflow is installed, read `vivreal-workflow:fleet-concurrency` before dispatching more than one agent. The rules that
-most often decide a batch:
-- Concurrency: `vivreal-workflow:fleet-concurrency`; do not restate a number.
+When vivreal-workflow is installed, read `vivreal-workflow:release-conductor` and the live values (vivreal-hq
+`docs/standards/live-values.md`, printed at session start) before dispatching more than one agent, and
+`vivreal-workflow:fleet-concurrency` for the machine-side limits. The owner rules are cited by ID (vivreal-hq
+`docs/standards/process.md`); the cap, the model and the current release are live values, never restated here.
+The rules that most often decide a batch:
+- Concurrency: the live agent cap (P-cap) and the slot check in `vivreal-workflow:release-conductor` (P-release-focus).
 - **Children run in the foreground when you are a subagent.** Never end a turn while a child you launched is still running; its result is lost with your turn (2026-10-22: a delivery run stranded after its first work package).
 - **State on disk.** After every phase write `docs/projects/<slug>/STATUS.md` (heads, PR numbers, verdicts with their head SHA, the next step) and end every report with its path. A lost notification then loses nothing.
-- **Route every find at once** (owner, 2026-10-19): to the running agent that owns that repo or
-  area by message when it is same-scope work, or to a new agent when a slot is free. Never hold
-  finds for a later batch. When a walk runs, tell the walker to append each defect to a live
+- **Route every find at once** (P-route-finds): to the running builder that owns that repo or
+  area by SendMessage, including work that became ready because a dependency landed, or to a new
+  agent only when nothing owns it and a slot is free. Never hold finds for a later batch (in a
+  release's final stretch the ship rule below decides). When a walk runs, tell the walker to append each defect to a live
   `*-defects.md` file as it finds it, and watch that file with one background wait so research
   starts mid-walk. One retest still closes the walk.
 - **A widened authority needs a fresh dispatch.** A message may narrow an agent's work or add
@@ -101,13 +105,13 @@ most often decide a batch:
   any of them goes in the FIRST prompt of a new dispatch; a well-built agent refuses it as a
   message. Run an owner-approved one-shot (one production command, a change set) yourself in
   this thread instead of relaying it to an agent (v7.1).
-- **Releases go to `vivreal-workflow:release-engineer` (when vivreal-workflow is installed) with the go inside the prompt.** For a
-  multi-repo window, dispatch it per runbook batch in RUNBOOK mode, naming the steps in order and
-  an owner's go for each, rather than per repo.
-- **Publish every pending shared package first, then one consumer bump pass** through
-  `package-publisher` (vivreal-workflow, when installed). A coder that needs a package change mid-build reports it rather than
-  publishing and bumping on its own.
-- **The ship rule in a release's final stretch (W-SHIP, owner 2026-11-12).** Once the owner says
+- **Releases go to `vivreal-workflow:release-engineer` (when vivreal-workflow is installed) with the go inside the prompt.** One
+  owner's GO runs the whole remaining runbook (P-blanket-go): dispatch it once in RUNBOOK mode with
+  every remaining step in order and that GO quoted once, with no per-step check-ins.
+- **Publish a reviewed shared package at once** (P-packages) through `package-publisher`
+  (vivreal-workflow, when installed); each consumer moves in its own repo's PR, never a bump-only PR.
+  A coder that needs a package change mid-build reports it rather than publishing on its own.
+- **The ship rule in a release's final stretch (P-ship-first).** Once the owner says
   to ship what is there: an unapproved repo gets its reviewer's blockers fixed and nothing more;
   an approved repo is not reopened for notes; notes and new non-blocking finds go to the backlog
   with their evidence (this overrides "Route every find at once" for them). Cycles already

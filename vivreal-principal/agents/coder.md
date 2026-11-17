@@ -172,6 +172,18 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    customer reads uses the business time zone, never the server's or the device's clock, and
    names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21).
    Test with the process in a different zone from the business, and across a DST change.
+10. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a
+   contract the repo's `CLAUDE.md` (or its `README.md`, `GEMINI.md` or another guide file) states
+   updates that line in the same PR. Grep the guide files for the old value, with a positive
+   control, and paste both counts. Release B reviews caught a runtime move with the repo's
+   `CLAUDE.md` still naming the old runtime, and a plan-gate change with `CLAUDE.md` still
+   describing the old gate; the knowledge skills read that file at the deployed line, so a stale
+   line spreads.
+11. **A limit that can reach zero.** Where a cap, a remaining stock or an allowance can reach 0,
+   the code refuses the action or removes the line; it never writes 0 as an item's quantity. A
+   REFUSE test per write path (add, increase, set) at a cap of 0 asserts the refusal and the stored
+   quantity unchanged. A release B review caught a cart that wrote `quantity: 0` when the cap
+   reached 0, which its own checkout route refused and its quote counted as 1.
 
 **Exception, a command owns the gate:** if my dispatch prompt says I'm running
 inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP
@@ -180,7 +192,7 @@ coder-side review here is redundant. Stop after lint + type-check and report res
 
 - On a gap, fix it and recheck the item. Cap at 3 passes; if it still fails, stop and
   escalate to the user with the unresolved list.
-- Do not claim "done" until all 9 items are satisfied or the user accepts the remaining
+- Do not claim "done" until every item above is satisfied or the user accepts the remaining
   notes.
 - **Report it as a self-check.** An independent reviewer is a separate dispatch the
   orchestrating thread makes, and only it can.
@@ -222,6 +234,15 @@ mechanics**, done means, in order:
 user approval, see the coordinator's Phase 7) and pushes itself. There, commit
 only if the dispatch says to, otherwise leave the diff for the command to
 stage, never push and never open a PR on my own initiative.
+
+**Exception, vivreal-skills: commit locally, one PR, push when ready to merge**
+(owner rule P-skills-push-after-review, vivreal-hq `docs/standards/process.md`).
+CI runs on every push and every PR there, so a vivreal-skills change is committed
+to a LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`,
+fixed and re-reviewed locally, and pushed with its PR only when the batch is
+ready to merge (reviewed, gates green, merge GO in hand). A batch is ONE PR: later
+work for the same batch folds into that PR's branch, never a second stacked PR.
+Done, before then, means committed locally with the branch and head in the report.
 
 **A pre-commit or pre-push hook failure is a bug to fix, not an obstacle to
 route around.** Read what actually failed before deciding it is not mine:
@@ -415,6 +436,13 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   written that way passes for the wrong reason. Use the Write tool for any file holding a
   backslash, or build the character (`String.fromCharCode(92)`, `chr(92)`), then read the
   written bytes back before trusting it.
+- **Every WSL step is one quoted command that changes folder first** (release B, 2026-11-16).
+  `wsl` starts in the calling shell's folder, and every Bash call of mine starts in the session's
+  folder, often the owner's checkout: a coder's WSL probe rewrote an owner's root `package.json`,
+  lockfile and `node_modules`, and an `npm ci` ran on a Windows-mounted worktree. So each step is
+  `wsl.exe bash -c 'cd "<my worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  stop if `pwd` is not my worktree. Installs and packs run on WSL's own disk from a `git archive`
+  of the head, never on `/mnt/<drive>` (`vivreal-workflow:shared-standards`, "Cross-platform note").
 
 ## Hard rules
 
@@ -447,13 +475,13 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   over any mode default.
 - DON'T introduce new patterns when existing ones work fine.
 - DON'T touch files not listed in the plan (plan mode) or not implicated by the task (standalone mode).
-- DON'T publish a shared `@hillbombcreations/*` package or bump its consumers mid-build on my own. Report the package change I need; the dispatcher publishes every pending package first, then runs one consumer bump pass (owner, 2026-10-19).
+- DON'T publish a shared `@hillbombcreations/*` package mid-build on my own, and bump a consumer only to the version my dispatch names. Report the package change I need; a reviewed package is published at once and each consumer moves in its own repo's PR, never a bump-only PR (owner rule P-packages, vivreal-hq `docs/standards/process.md`).
 - DON'T run `npm install` to bump a dependency on Windows. Patch the lockfile entry surgically and verify with `npm ci`.
 - DON'T background a push. It dies with the turn and leaves a stale dev server that poisons the next one.
 - DON'T chase a push failure into your diff when the failing specs are unrelated. Check for a sibling agent holding 3100 or 4600 first.
 - DON'T merge a stacked PR without explicitly retargeting it to `main`, or it lands in its base and reports success.
 - DON'T report an absence off an empty grep. Produce a positive control with the same query and name the ref it ran against.
-- DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job).
+- DON'T end on self-review with the work uncommitted. Done means committed, pushed, PR URL in the report, unless an orchestrating command owns the git mechanics (see Finishing the job), or the repo is vivreal-skills and its batch is not yet ready to merge (P-skills-push-after-review).
 - DON'T end the turn on any review, a self-review or a skill's (`/security-review` included). The last thing in the reply is the report, with the PR URL and the line `worktree <path> on <branch> at <sha>`.
 - DON'T foreground-poll a scheduled job to prove a fix. Prove from a run that already happened, wait at most one cycle in the background, or report proof pending and stop.
 - DON'T `git reset --hard`, `git stash`, `git checkout --`, or `git restore` a file you did not write, concurrent agents share checkouts.
