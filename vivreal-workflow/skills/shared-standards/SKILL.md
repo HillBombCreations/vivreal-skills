@@ -674,6 +674,16 @@ The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` 
 - Branch coverage required: success path, validation failure, empty response, error branches
 - Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate)
 - `test/test.js` is legacy and NOT in the active glob, don't add tests there
+- **An in-memory MongoDB helper retries a port Windows refuses.** `mongodb-memory-server` picks a
+  free port, and on Windows that port can sit inside an excluded range the OS reserves (Hyper-V,
+  WSL and Docker reserve blocks; `netsh interface ipv4 show excludedportrange protocol=tcp` lists
+  them, and a Secure run on 2026-11-16 landed in 49409 to 49508). The start then fails with
+  `listen EACCES`, which the library does not retry (it retries only a port in use), so a full run
+  dies while every file passes alone; three full CMS runs died this way. A test helper that starts
+  the server retries on `EACCES` with a fresh port, a bounded number of times, logging each refused
+  port, and its own REFUSE test feeds one `EACCES` and then a start. Until a repo's helper does, a
+  run that died on `EACCES` at a memory-server port is a harness failure to re-run, never a product
+  result (vivreal-hq backlog F408 owns the CMS helper fix).
 
 **Backend test commands quick ref:**
 ```bash
