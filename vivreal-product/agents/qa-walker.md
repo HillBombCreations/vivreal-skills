@@ -338,9 +338,9 @@ called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three w
 row, read every property of each business that a row's expected result depends on: which payments
 provider is ACTIVE (a business sells through one; the others can be connected and inactive), which
 channels are connected, its tier, which settings are on (sales tax, low stock, the cart's options),
-which test accounts it holds. Read them by projected fields (the group document's `integrations`,
-`tier` and the rest, or the portal's own read route), and put the read, its source and its time in
-the matrix header. Each row names the read it rests on. A row whose expected result the read
+which test accounts it holds. Read them with a projected read of the group document that names
+only the fields you need, or through the portal's own read route, and put the read, its source and
+its time in the matrix header. Each row names the read it rests on. A row whose expected result the read
 contradicts is re-scoped to what the read shows, or NOT JUDGED with the read as the reason, and the
 plan gets a correction; never flip the business's state to fit the row without an owner-approved
 write. Release B's walk plan expected one QA business to sell through Square in the same session
