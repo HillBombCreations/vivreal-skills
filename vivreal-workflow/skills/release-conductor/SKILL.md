@@ -116,6 +116,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **A reviewed walk plan first** (P-walk-plan): every change in the release maps to a row with
   preconditions, steps, the expected result, a REFUSE check and the view, and every blocker is
   cleared before the walk GO. Walk the exact flows before any recording (P-walk-before-footage).
+- **A copy row that names a control is checked on the screen where the copy shows** (release B,
+  L-B-15). Its expected result names the control as THAT screen labels it, and where it sits, read
+  at the walk's head, never from the form where the control is first named: release B's sales-tax
+  line said "Choose Connect with Stripe above" on a board whose only Stripe sign-in control reads
+  "Switch to signing in with Stripe", below it, and the plan's STOP check had compared the words
+  with the connect form. A row whose evidence is a test names the deployed handler its mock was
+  built from (`vivreal-workflow:shared-standards`, Testing rules): a mock in the wrong shape is how
+  "Create my site" read as tested while it failed.
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
   defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each

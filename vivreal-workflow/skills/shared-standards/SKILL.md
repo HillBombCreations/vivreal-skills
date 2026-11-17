@@ -401,6 +401,20 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   front-door-help-path origin request policy check had the same gap (F441). Save one real answer
   from a read-only call as the fixture (nothing secret in it), test that the planned shape matches
   it, and pair that with a REFUSE test of a real answer changed in one field.
+- **A test mock answers in the shape the deployed backend sends** (release B, 2026-11-17, L-B-15).
+  The same gap, one layer up: a mock written from what the caller expects passes while the real
+  answer breaks the screen. The portal's site picker read only the hosted create's
+  `created.site._id`, its e2e mock answered both creates in that shape, and VR_Secure_API's blank
+  create answers with the site document itself, so "Create my site" looked tested while it left the
+  owner on the old page (portal #496 item 7). Build each mock from the deployed line's handler
+  (quote the file and the ref) or from a recorded real answer, one mock per shape the route can
+  send, and give the caller a REFUSE test fed each shape it must not misread.
+- **A copy check that names a control reads the screen where the copy shows** (L-B-15). A test or
+  a STOP check on words such as "choose Connect with Stripe above" compares the control's name with
+  the control on the SAME screen, as that screen labels it and where it sits, never with the form
+  where the control is first named. Release B's sales-tax line told a key-connected shop to
+  "Choose Connect with Stripe above"; its check compared the name with the connect form's button,
+  and the board where the line shows has only "Switch to signing in with Stripe", below it.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
 - **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.

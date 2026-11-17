@@ -284,6 +284,14 @@ owned the question "can somebody type the URL and get the page".
 publish button said "puts it on the web at your Vivreal address", so the check
 is a DNS lookup and an HTTP fetch of that address, not a green job.
 
+**A green test is no evidence for a flow whose mock answers in the wrong
+shape** (release B, L-B-15). "Create my site" on Start blank had tests and an
+e2e spec, and still left the owner on the old site's page: the e2e mock
+answered both creates in the hosted shape, while the deployed blank create
+answers with the site document itself (portal #496 item 7). Walk the flow on
+the real backend whatever the suite says, and when a test is cited as
+evidence, ask which deployed handler its mock was built from.
+
 For anything deploy-shaped, **Step Functions execution history is the best
 evidence available** and it is one command:
 
@@ -564,6 +572,13 @@ in every walk:
   screen or the article, filed live.
 - **Every new or changed owner promise** (Plans, help, a toast, a hint) gets a row that does the
   promised thing end to end in the product, not just reads the words.
+- **Copy that names a control is checked on the screen where the copy shows** (release B,
+  L-B-15). Find the control it names on THAT screen, by its label there and where it sits ("above",
+  "below"), read from the accessibility tree, never from the form where the control is first named.
+  Release B's sales-tax line told a key-connected shop to "Choose Connect with Stripe above"; the
+  plan's check had compared the name with the connect form's button, and the board where the line
+  shows has only "Switch to signing in with Stripe", below the line. A name the screen does not
+  carry is a defect, filed live, even when the plan's own check said PASS.
 - **Plan-gated controls are walked in each plan state**, on a paid (or comped) QA business too.
 - **A visitor-facing form counts only when submitted once and its stored record read back** (on
   a QA site, then removed).
