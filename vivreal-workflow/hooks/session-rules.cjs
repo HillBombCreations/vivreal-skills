@@ -16,9 +16,11 @@
 // tracked docs/standards/ files equal origin/main's. A checkout that fails either gets a stale
 // line naming why, then origin/main's index, which wins.
 //
-// When the index cannot be read anywhere (an hq clone whose origin/main predates the shared rules
-// and whose working tree has none), either event prints ONE line saying so and naming the fetch,
-// never a promise of an index below.
+// When the index cannot be read anywhere and origin/main truly lacks it (an hq clone whose
+// origin/main predates the shared rules and whose working tree has none), or the live values are
+// unreadable too, either event prints ONE line saying so and naming the fetch, never a promise of
+// an index below. A read that failed for another reason (a git timeout, say) keeps the live values
+// it read and ends with the command that reads the index (F467).
 //
 // It reads, never writes: every git call runs with GIT_OPTIONAL_LOCKS=0 and with every inherited
 // GIT_* variable dropped, it never fetches, and it compares docs/standards by blob hash
@@ -149,6 +151,7 @@ function noIndexLine(f) {
  * @param {string|null} f.live  live-values.md text
  * @param {string|null} f.index  INDEX.md text
  * @param {string|null} f.sha  hq origin/main
+ * @param {boolean} [f.indexMissingAtOrigin]  origin/main is known to lack the index
  * @param {'origin'|'worktree'} f.source  where the two files were read
  * @param {number|null} f.fetchAgeHours
  * @param {boolean} [f.importPresent]  hq only
@@ -171,29 +174,34 @@ function buildOutput(f) {
     );
   }
 
+  const indexText = typeof f.index === 'string' && f.index.trim() ? f.index : null;
+  const live = parseLive(f.live);
+  // The one fetch line replaces everything only when the live values are unreadable too, or when
+  // origin/main truly lacks the index (no ref at all, or a `cat-file -e` that answered "absent").
+  // Any other failed read, a git timeout among them, keeps the live values it read (F467).
   // Checked before the current-hq skip below: a CLAUDE.md import of a file that is not there
   // gives the session nothing either.
-  if (typeof f.index !== 'string' || !f.index.trim()) return wrap(noIndexLine(f));
+  if (!indexText && (!live.ok || !f.sha || f.indexMissingAtOrigin === true)) return wrap(noIndexLine(f));
 
   const isHq = String(f.repo).toLowerCase() === HQ;
   const reasons = [];
   if (isHq && !f.importPresent) reasons.push(REASON_NO_IMPORT);
   if (isHq && f.standardsDiffer) reasons.push(REASON_DIFFERS);
   const stale = reasons.length > 0;
-  const needsIndex = !isHq || stale || (subagent && SKIPS_CLAUDE_MD.has(f.agentType));
+  // An unread index always gets its command line: an import of a file git could not read may
+  // give the session nothing.
+  const needsIndex = !indexText || !isHq || stale || (subagent && SKIPS_CLAUDE_MD.has(f.agentType));
   // A current hq checkout's CLAUDE.md already gave this subagent the rules.
   if (subagent && !needsIndex) return '';
 
   const lines = [firstLine(f.sha, f.source)];
   if (stale) {
-    lines.push(
-      `This checkout cannot load the current rules (${reasons.join('; ')}); ` +
-        (f.source === 'origin'
-          ? "the index below is hq origin/main's and wins."
-          : 'origin/main has no copy here, so the index below is the working tree\'s; fetch hq origin.'),
-    );
+    let tail;
+    if (!indexText) tail = "hq origin/main's index wins, and it could not be read here: read it with the command below.";
+    else if (f.source === 'origin') tail = "the index below is hq origin/main's and wins.";
+    else tail = 'origin/main has no copy here, so the index below is the working tree\'s; fetch hq origin.';
+    lines.push(`This checkout cannot load the current rules (${reasons.join('; ')}); ${tail}`);
   }
-  const live = parseLive(f.live);
   if (live.ok) lines.push(...live.lines);
   else lines.push(`Live values unreadable (${live.why}); read them with ${HQ_SHOW}${LIVE_PATH}`);
   if (f.fetchAgeHours === null || f.fetchAgeHours === undefined || f.fetchAgeHours > STALE_FETCH_HOURS) {
@@ -205,7 +213,11 @@ function buildOutput(f) {
   if (!subagent) lines.push('Load vivreal-workflow:release-conductor before the first dispatch.');
 
   let text = lines.join('\n');
-  if (needsIndex) {
+  if (!indexText) {
+    text +=
+      '\nThe rules index could not be read here (a git read failed, timed out or came back empty); ' +
+      `read it now with ${HQ_SHOW}${INDEX_PATH} before the first dispatch.`;
+  } else if (needsIndex) {
     const withIndex = `${text}\n\n${stripIndex(f.index)}`;
     if (withIndex.length <= OUTPUT_BUDGET) text = withIndex;
     else {
@@ -283,6 +295,16 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
   };
   const live = read(LIVE_PATH);
   const index = read(INDEX_PATH);
+  // Asked only when no index could be read: does origin/main truly lack it? git answers a missing
+  // path with exit 128; a timeout or a failed spawn gives no status, which is not an absence (F467).
+  let indexMissingAtOrigin = false;
+  if (typeof index !== 'string' || !index.trim()) {
+    if (!sha) indexMissingAtOrigin = true;
+    else {
+      const has = git(hqDir, ['cat-file', '-e', `${sha}:${INDEX_PATH}`], genv);
+      indexMissingAtOrigin = typeof has.status === 'number' && has.status !== 0;
+    }
+  }
 
   let fetchAgeHours = null;
   // FETCH_HEAD moves on every fetch, but each linked worktree writes its own (in its own git dir,
@@ -309,6 +331,7 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
     live,
     index,
     sha,
+    indexMissingAtOrigin,
     source: fromWorktree ? 'worktree' : 'origin',
     fetchAgeHours,
     // Printed inside a Bash command, where a Windows backslash path would need escaping.

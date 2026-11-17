@@ -189,12 +189,20 @@ test('no hq clone prints one line that says so', () => {
 const NO_INDEX_DIR = '/clones/vivreal-hq';
 const NO_INDEX_START = "Vivreal shared rules, printed by the vivreal-workflow plugin's session-rules hook: no rules index could be read";
 
+// F467 (2) narrowed the fetch line to an index that is truly absent at origin/main, or live values
+// that are unreadable too, so each case below states which of those two facts makes it absent.
 test('REFUSE (F452): no index anywhere prints one fetch line naming the hq checkout, never "the index below"', () => {
   const cases = {
     'the stale hq checkout itself': facts({ repo: 'vivreal-hq', live: null, index: null, importPresent: false, hqDir: NO_INDEX_DIR }),
     'another repo reading that clone': facts({ live: null, index: null, hqDir: NO_INDEX_DIR }),
-    'an hq whose CLAUDE.md imports a file that is not there': facts({ repo: 'vivreal-hq', index: null, importPresent: true, hqDir: NO_INDEX_DIR }),
-    'an empty index file': facts({ index: ' \n', hqDir: NO_INDEX_DIR }),
+    'an hq whose CLAUDE.md imports a file that is not there': facts({
+      repo: 'vivreal-hq',
+      index: null,
+      indexMissingAtOrigin: true,
+      importPresent: true,
+      hqDir: NO_INDEX_DIR,
+    }),
+    'an empty index file and no live values': facts({ live: null, index: ' \n', hqDir: NO_INDEX_DIR }),
     'no origin/main ref at all': facts({ index: null, sha: null, source: 'worktree', hqDir: NO_INDEX_DIR }),
   };
   for (const [name, f] of Object.entries(cases)) {
@@ -211,9 +219,18 @@ test('REFUSE (F452): no index anywhere prints one fetch line naming the hq check
 });
 
 test('REFUSE (F452): on SubagentStart the fetch line is the whole additionalContext, a current hq included', () => {
+  // Both are F452's clone: origin/main lacks the index (F467 keeps the live values otherwise).
   for (const f of [
-    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', index: null, hqDir: NO_INDEX_DIR }),
-    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', repo: 'vivreal-hq', importPresent: true, index: null, hqDir: NO_INDEX_DIR }),
+    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', index: null, indexMissingAtOrigin: true, hqDir: NO_INDEX_DIR }),
+    facts({
+      event: 'SubagentStart',
+      agentType: 'vivreal-principal:coder',
+      repo: 'vivreal-hq',
+      importPresent: true,
+      index: null,
+      indexMissingAtOrigin: true,
+      hqDir: NO_INDEX_DIR,
+    }),
   ]) {
     const raw = lib().buildOutput(f);
     assert.notEqual(raw, '', `${f.repo}: printed nothing`);
@@ -228,6 +245,58 @@ test('ALLOW (F452): an index read from the working tree alone still prints, with
   const out = lib().buildOutput(facts({ source: 'worktree', hqDir: NO_INDEX_DIR }));
   assert.match(out, /^- P-cap:/m);
   assert.ok(!out.includes(NO_INDEX_START));
+});
+
+// F467 (2): the fetch line fired on ANY failed index read, a 3 s git timeout included, and dropped
+// the live values the hook had read. It belongs only where the live values are unreadable too, or
+// where origin/main truly lacks the index.
+const INDEX_UNREAD = /^The rules index could not be read here \(.+\); read it now with git -C "\$VIVREAL_REPOS\/vivreal-hq" show origin\/main:docs\/standards\/INDEX\.md before the first dispatch\.$/m;
+
+test('REFUSE (F467): an index read that failed keeps the live values it read and names the index command', () => {
+  const cases = {
+    'another repo, index unread': facts({ index: null }),
+    'another repo, index blank': facts({ index: ' \n' }),
+    'a subagent in another repo': facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', index: null }),
+    'a stale hq checkout': facts({ repo: 'vivreal-hq', importPresent: false, index: null }),
+    'a plugin subagent in a current hq': facts({
+      event: 'SubagentStart',
+      agentType: 'vivreal-principal:coder',
+      repo: 'vivreal-hq',
+      importPresent: true,
+      index: null,
+    }),
+    'origin/main holds the index, read as such': facts({ index: null, indexMissingAtOrigin: false }),
+  };
+  for (const [name, f] of Object.entries(cases)) {
+    const raw = lib().buildOutput(f);
+    assert.notEqual(raw, '', `${name}: printed nothing`);
+    const text = f.event === 'SubagentStart' ? contextOf(raw) : raw;
+    assert.ok(!text.startsWith(NO_INDEX_START), `${name}: dropped the live values for the fetch line`);
+    assert.equal(firstLineOf(text), FIRST, name);
+    for (const l of LIVE_LINES) assert.ok(text.includes(l), `${name}: missing live line ${l}`);
+    assert.match(text, INDEX_UNREAD, `${name}: no line naming the command that reads the index`);
+    assert.doesNotMatch(text, /index below/, `${name}: promised an index`);
+    assert.doesNotMatch(text, /^- P-/m, `${name}: printed an index line`);
+  }
+  const staleLine = lib().buildOutput(cases['a stale hq checkout']).split('\n')[1];
+  assert.match(staleLine, /^This checkout cannot load the current rules \(no @docs\/standards\/INDEX\.md import in CLAUDE\.md\);/);
+  assert.match(staleLine, /could not be read here/);
+});
+
+test('ALLOW (F467): the fetch line still replaces everything when the live values are unreadable too, or origin/main lacks the index', () => {
+  const cases = {
+    'both reads failed': facts({ live: null, index: null, hqDir: NO_INDEX_DIR }),
+    'live values with no markers': facts({ live: '# Live values\n- agent-cap: 7\n', index: null, hqDir: NO_INDEX_DIR }),
+    'origin/main lacks the index': facts({ index: null, indexMissingAtOrigin: true, hqDir: NO_INDEX_DIR }),
+    'no origin/main ref': facts({ index: null, sha: null, source: 'worktree', hqDir: NO_INDEX_DIR }),
+  };
+  for (const [name, f] of Object.entries(cases)) {
+    const out = lib().buildOutput(f);
+    const lines = out.trim().split('\n');
+    assert.equal(lines.length, 1, `${name}: printed ${lines.length} lines`);
+    assert.ok(lines[0].startsWith(NO_INDEX_START), `${name}: ${lines[0]}`);
+    assert.doesNotMatch(out, INDEX_UNREAD, `${name}: printed the unread-index line instead`);
+  }
 });
 
 // ---------------------------------------------------------------- SubagentStart, pure builder
@@ -310,8 +379,16 @@ test('REFUSE: the import line in backticks or in a code fence does not count', (
 
 // ---------------------------------------------------------------- gather, injected git
 
-function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = INDEX, showFails = false, gitPath = '.git/FETCH_HEAD' } = {}) {
+// indexRead: 'ok', 'timeout' (no exit status, as a spawn past GIT_TIMEOUT_MS returns) or 'missing'
+// (exit 128, as git answers for a path a commit does not hold); it drives `show` and `cat-file -e`
+// of the index alike, since a slow git is slow for both.
+function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = INDEX, showFails = false, gitPath = '.git/FETCH_HEAD', indexRead = 'ok' } = {}) {
   const calls = [];
+  const indexAnswer = (ok) => {
+    if (indexRead === 'timeout') return { status: null, stdout: '' };
+    if (indexRead === 'missing') return { status: 128, stdout: '' };
+    return ok;
+  };
   const defaultTree = [
     `100644 blob aaaa\tdocs/standards/INDEX.md`,
     `100644 blob bbbb\tdocs/standards/live-values.md`,
@@ -331,7 +408,12 @@ function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = IND
       if (showFails) return { status: 128, stdout: '' };
       const target = args[args.length - 1];
       if (target.endsWith(':docs/standards/live-values.md')) return { status: 0, stdout: live };
-      if (target.endsWith(':docs/standards/INDEX.md')) return { status: 0, stdout: index };
+      if (target.endsWith(':docs/standards/INDEX.md')) return indexAnswer({ status: 0, stdout: index });
+      return { status: 128, stdout: '' };
+    }
+    if (cmd === 'cat-file') {
+      const target = args[args.length - 1];
+      if (target.endsWith(':docs/standards/INDEX.md')) return indexAnswer({ status: 0, stdout: '' });
       return { status: 128, stdout: '' };
     }
     if (cmd === 'ls-tree') return { status: 0, stdout: (tree || defaultTree).map((l) => l + '\0').join('') };
@@ -372,8 +454,10 @@ function gatherWith(over = {}, gitOpts = {}) {
 }
 
 test('REFUSE of a lock: every git call runs with GIT_OPTIONAL_LOCKS=0 and no inherited GIT_* variable', () => {
-  const { calls } = gatherWith();
+  // The missing-index run adds the cat-file call, so it is held to the same rule.
+  const calls = [...gatherWith().calls, ...gatherWith({}, { indexRead: 'missing' }).calls];
   assert.ok(calls.length >= 5, `only ${calls.length} git calls`);
+  assert.ok(calls.some((c) => c.args[0] === 'cat-file'), 'control: no cat-file call was checked');
   for (const c of calls) {
     assert.equal(c.env.GIT_OPTIONAL_LOCKS, '0', `git ${c.args.join(' ')} ran without GIT_OPTIONAL_LOCKS=0`);
     assert.equal(c.env.GIT_TERMINAL_PROMPT, '0');
@@ -386,9 +470,9 @@ test('REFUSE of a lock: every git call runs with GIT_OPTIONAL_LOCKS=0 and no inh
 });
 
 test('REFUSE of a write: the hook only reads (no fetch, no diff, no hash-object -w)', () => {
-  const { calls } = gatherWith();
+  const calls = [...gatherWith().calls, ...gatherWith({}, { indexRead: 'missing' }).calls];
   assert.ok(calls.length >= 5, `only ${calls.length} git calls`);
-  const allowed = new Set(['rev-parse', 'show', 'ls-tree', 'ls-files', 'hash-object']);
+  const allowed = new Set(['rev-parse', 'show', 'ls-tree', 'ls-files', 'hash-object', 'cat-file']);
   for (const c of calls) {
     assert.ok(allowed.has(c.args[0]), `git ${c.args[0]} is not a read this hook may make`);
     assert.ok(!c.args.includes('-w'), 'hash-object -w writes an object');
@@ -437,6 +521,38 @@ test('origin/main without the files falls back to the working tree, labelled', (
   const { out } = gatherWith({ files }, { showFails: true });
   assert.equal(out.source, 'worktree');
   assert.equal(out.live, LIVE);
+});
+
+// F467 (2), through the real gather and the real builder: only git is faked. Another repo, so no
+// working-tree copy of the index can rescue the read.
+test('REFUSE (F467), gather: an index read that times out keeps the live values and names the index command', () => {
+  const { out, calls } = gatherWith({ repo: 'VR_Client_Auth' }, { indexRead: 'timeout' });
+  assert.equal(out.live, LIVE, 'control: the live values were read');
+  assert.equal(out.index, null, 'control: the index read failed');
+  assert.notEqual(out.indexMissingAtOrigin, true, 'a timeout was read as an absence');
+  const text = lib().buildOutput(out);
+  for (const l of LIVE_LINES) assert.ok(text.includes(l), `the timeout dropped live line ${l}`);
+  assert.ok(!text.startsWith(NO_INDEX_START), 'the timeout printed the fetch line');
+  assert.match(text, INDEX_UNREAD);
+  assert.ok(!calls.some((c) => c.args.includes('fetch')), 'the hook fetched');
+});
+
+test('ALLOW (F467), gather: an origin/main that lacks the index, asked with cat-file -e, gives the one fetch line', () => {
+  const { out, calls } = gatherWith({ repo: 'VR_Client_Auth' }, { indexRead: 'missing' });
+  assert.equal(out.indexMissingAtOrigin, true);
+  const asked = calls.find((c) => c.args[0] === 'cat-file');
+  assert.ok(asked, 'absence was never asked');
+  assert.deepEqual(asked.args, ['cat-file', '-e', `${SHA}:docs/standards/INDEX.md`]);
+  const text = lib().buildOutput(out);
+  assert.equal(text.trim().split('\n').length, 1);
+  assert.ok(text.startsWith(NO_INDEX_START), text);
+});
+
+test('ALLOW (F467), gather: a readable index asks nothing more and reads as present', () => {
+  const { out, calls } = gatherWith({ repo: 'VR_Client_Auth' });
+  assert.equal(out.index, INDEX);
+  assert.equal(out.indexMissingAtOrigin, false);
+  assert.ok(!calls.some((c) => c.args[0] === 'cat-file'), 'a readable index paid for an extra git call');
 });
 
 test('outside hq, the rules are read from the clone root, and a missing hq clone is reported', () => {
@@ -525,8 +641,13 @@ const noHqRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-no-hq-'));
 const oldRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-old-hq-'));
 const hqOld = path.join(oldRoot, 'vivreal-hq');
 const otherOld = path.join(oldRoot, 'VR_Client_Auth');
+// F467: a clone root whose hq origin/main holds the live values but no index.
+const halfRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vr-half-hq-'));
+const halfSeed = path.join(halfRoot, '_seed');
+const hqHalf = path.join(halfRoot, 'vivreal-hq');
+const otherHalf = path.join(halfRoot, 'VR_Client_Auth');
 test.after(() => {
-  for (const d of [root, nowhere, noHqRoot, oldRoot]) fs.rmSync(d, { recursive: true, force: true });
+  for (const d of [root, nowhere, noHqRoot, oldRoot, halfRoot]) fs.rmSync(d, { recursive: true, force: true });
 });
 
 fs.mkdirSync(seed, { recursive: true });
@@ -560,6 +681,17 @@ git(hqOld, 'reset', '-q', '--hard', staleSha);
 fs.mkdirSync(otherOld, { recursive: true });
 git(otherOld, 'init', '-q');
 git(otherOld, 'remote', 'add', 'origin', 'https://github.com/HillBombCreations/VR_Client_Auth.git');
+fs.mkdirSync(path.join(halfSeed, 'docs', 'standards'), { recursive: true });
+git(halfSeed, 'init', '-q');
+fs.writeFileSync(path.join(halfSeed, 'CLAUDE.md'), '# hq\n');
+fs.writeFileSync(path.join(halfSeed, 'docs', 'standards', 'live-values.md'), LIVE);
+git(halfSeed, 'add', '-A');
+git(halfSeed, 'commit', '-q', '-m', 'live values only');
+git(halfRoot, 'clone', '-q', halfSeed, hqHalf);
+git(hqHalf, 'remote', 'set-url', 'origin', 'https://github.com/HillBombCreations/vivreal-hq.git');
+fs.mkdirSync(otherHalf, { recursive: true });
+git(otherHalf, 'init', '-q');
+git(otherHalf, 'remote', 'add', 'origin', 'https://github.com/HillBombCreations/VR_Client_Auth.git');
 
 const REAL_FIRST = `Vivreal shared rules from hq origin/main@${currentSha.slice(0, 7)}, printed by the vivreal-workflow plugin's session-rules hook:`;
 
@@ -661,6 +793,19 @@ test('REFUSE (F452), real hook: an hq clone whose origin/main predates the rules
       assert.ok(m, `${name}: no fetch command`);
       assert.ok(sameDir(m[1], hqOld), `${name}: the fetch names ${m[1]}, not the hq clone`);
     }
+  }
+});
+
+test('ALLOW (F467), real hook: an origin/main with live values and no index is read as absent by real git', () => {
+  const has = (ref) => spawnSync('git', ['-C', hqHalf, 'cat-file', '-e', ref], { env: cleanEnv() }).status === 0;
+  assert.ok(!has('origin/main:docs/standards/INDEX.md'), 'origin/main holds the index');
+  assert.ok(has('origin/main:docs/standards/live-values.md'), 'control: origin/main lacks the live values too');
+  assert.ok(!fs.existsSync(path.join(hqHalf, 'docs', 'standards', 'INDEX.md')), 'the working tree holds the index');
+  for (const cwd of [hqHalf, otherHalf]) {
+    const out = runHook({ hook_event_name: 'SessionStart', cwd }, halfRoot);
+    const lines = out.trim().split('\n');
+    assert.equal(lines.length, 1, `${path.basename(cwd)}: printed ${lines.length} lines`);
+    assert.ok(lines[0].startsWith(NO_INDEX_START), `${path.basename(cwd)}: ${lines[0]}`);
   }
 });
 
