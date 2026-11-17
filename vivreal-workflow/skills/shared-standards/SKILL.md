@@ -34,9 +34,10 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
 - **Every WSL step is ONE quoted command that changes folder first.** A `wsl` call starts in the
-  calling shell's folder, and the Bash tool starts every call in the session's folder, which is
-  often an owner's checkout; a `cd` in an earlier call does not carry over. So each step is one
-  call that moves into its worktree, proves it, then runs:
+  calling shell's folder, and the Bash tool can start a call in the session's folder, which is
+  often an owner's checkout; in a subagent, and often in the main session, a `cd` in an earlier call
+  does not carry over. So each step is one call that moves into its worktree, proves it, then
+  runs:
   `wsl.exe bash -c 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`, and
   stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
   rewrote an owner's root `package.json`, lockfile and `node_modules`, and read-only commands ran
@@ -55,23 +56,7 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 - **Setting env vars:** add to `~/.bashrc`, `~/.zshrc`, or your shell profile. Example: `export VIVREAL_REPOS="$HOME/repos"`
 
 ### Browser tool output stays outside every repo
-The Playwright MCP (`mcp__plugin_playwright_playwright__*`) saves every file it names itself (page
-snapshots, console logs, a screenshot taken with no file name) under `.playwright-mcp/` in its
-workspace root, the folder the session started in, which is often an owner's checkout. Release A
-found and deleted a stray token copy there.
-- **Point its output folder outside every repo.** The server reads `PLAYWRIGHT_MCP_OUTPUT_DIR` (its
-  `--output-dir`) when it starts, from the environment Claude Code was started in, so it is set on the
-  machine before the session (an absolute folder outside every clone and worktree, for example under
-  the OS temp folder) and takes effect from the next session.
-- **A file you name is not covered by it.** A screenshot or file saved with an explicit name is
-  resolved against the workspace root, so give it an absolute path in the session scratchpad.
-- **Never save a token, a cookie or a session state through the browser tool**, under any name.
-- **The check, for every agent that drives the browser tool:** before the first browser call,
-  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` in Bash must print an absolute folder outside every
-  repository. If it is unset, every file-writing browser call names an absolute scratchpad path and
-  the report says the variable is unset. After the run, `git status --porcelain` in the session's
-  folder shows no `.playwright-mcp/` and no file of yours; move any you find to the scratchpad, and
-  never commit it.
+Anyone who drives the browser tool (the Playwright MCP) reads [references/browser-tool-output.md](references/browser-tool-output.md) first: set `PLAYWRIGHT_MCP_OUTPUT_DIR` outside every repo, name saved files with absolute scratchpad paths, and run its folder check, with its control, before and after the run.
 
 ---
 
@@ -693,16 +678,7 @@ The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` 
 - Branch coverage required: success path, validation failure, empty response, error branches
 - Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate)
 - `test/test.js` is legacy and NOT in the active glob, don't add tests there
-- **An in-memory MongoDB helper retries a port Windows refuses.** `mongodb-memory-server` picks a
-  free port, and on Windows that port can sit inside an excluded range the OS reserves (Hyper-V,
-  WSL and Docker reserve blocks; `netsh interface ipv4 show excludedportrange protocol=tcp` lists
-  them, and a Secure run on 2026-11-16 landed in 49409 to 49508). The start then fails with
-  `listen EACCES`, which the library does not retry (it retries only a port in use), so a full run
-  dies while every file passes alone; three full CMS runs died this way. A test helper that starts
-  the server retries on `EACCES` with a fresh port, a bounded number of times, logging each refused
-  port, and its own REFUSE test feeds one `EACCES` and then a start. Until a repo's helper does, a
-  run that died on `EACCES` at a memory-server port is a harness failure to re-run, never a product
-  result (vivreal-hq backlog F408 owns the CMS helper fix).
+- **An in-memory MongoDB helper retries a port Windows refuses** (`listen EACCES` inside a reserved port range): [references/in-memory-mongo-ports.md](references/in-memory-mongo-ports.md).
 
 **Backend test commands quick ref:**
 ```bash

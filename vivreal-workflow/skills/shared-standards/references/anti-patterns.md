@@ -322,7 +322,7 @@ The rules as a reviewer walks them, one line per entry.
 
 **How to spot it:** A command handed to a second shell layer (a Linux subsystem, a container exec, a remote shell) with no change of folder before it. A change of folder in one tool call and the command in the next, in a tool whose working folder resets between calls. An install or a pack run on a folder that another operating system also uses. A browser, capture or test tool left on its default output folder. A file saved under a relative name.
 
-**Guard shape:** One quoted command per step that changes folder first and prints it, refusing when the printed folder is not the intended one. Tool output folders set to an absolute path outside every repository. A status check of the working folder after a run, expecting no new untracked files.
+**Guard shape:** One quoted command per step that changes folder first and prints it, refusing when the printed folder is not the intended one. Tool output folders set to an absolute path outside every repository. After a run, a test for each tool's output folder by its own path, because a status check skips a path the repository ignores, run beside a control that plants that folder and must fire.
 
 ---
 

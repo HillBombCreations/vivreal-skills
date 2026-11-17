@@ -137,7 +137,9 @@ then restart :3000. On any data/authoring change, re-bundle and restart BOTH :87
   `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
   is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
   and say so in your report. A file saved by a bare name lands in the session's folder, often an
-  owner's checkout.
+  owner's checkout. After the run, the session's folder must hold no `.playwright-mcp/` (the
+  folder check, with its control, in that section's reference; `git status` cannot see it); move
+  anything there to your scratchpad and say so.
 - **Prove your gate can fail.** Feed any "0 findings" comparator a fixture it should catch
   before you believe it. A gate that cannot go red is a `console.log` (see confirm-studio's
   stub detector, which matched a React prop that was never emitted as a DOM attribute and

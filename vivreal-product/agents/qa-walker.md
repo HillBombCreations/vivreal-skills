@@ -163,9 +163,9 @@ Each of these cost a session a false conclusion.
   Studio sample video's sound on the owner's machine while he worked. Give every Chromium your
   script launches `--mute-audio` (`chromium.launch({ args: ['--mute-audio'] })`,
   `launchPwaDevice({ ..., extraArgs: ['--mute-audio'] })`).
-- **Start every shell command by changing into a worktree or your scratch folder.** Each Bash call
-  starts in the session's default folder, often an owner's checkout, and a `cd` in an earlier call
-  does not carry over. Write every command as `cd "<worktree or scratch folder>" && <command>`, even
+- **Start every shell command by changing into a worktree or your scratch folder.** A Bash call can
+  start in the session's default folder, often an owner's checkout, and in a subagent, and often in
+  the main session, a `cd` in an earlier call does not carry over. Write every command as `cd "<worktree or scratch folder>" && <command>`, even
   a folder listing or a process check (release B: a capture session's process and folder listings ran
   in the owner's checkout; harmless that time, but an install or a write there is not). WSL steps
   follow `vivreal-workflow:shared-standards`, "Cross-platform note".
