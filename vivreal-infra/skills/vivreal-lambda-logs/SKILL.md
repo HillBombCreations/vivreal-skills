@@ -1,6 +1,6 @@
 ---
 name: vivreal-lambda-logs
-description: 'Use when you need to READ or COUNT what a Vivreal Lambda (or an Amplify site''s compute) actually logged, to prove a hotfix is working, to find the error behind a 500, to check a scheduled job ran, or to answer "how many times did X happen". Teaches the method that does not return a false zero, listing the newest log streams and paging get-log-events to the end, counting with Logs Insights instead of filter-log-events, resolving the right log group, account and Lambda version, and the Windows shell traps that silently rewrite a log group path. Triggers on: CloudWatch logs, log stream, get-log-events, filter-log-events, Logs Insights, start-query, is it in the logs, prove from the logs, read the logs, hourly run logged, count errors, Lambda log group, REPORT line, false zero.'
+description: 'Use when you need to READ or COUNT what a Vivreal Lambda (or an Amplify site''s compute) actually logged, to prove a hotfix is working, to find the error behind a 500, to check a scheduled job ran, or to answer "how many times did X happen". Teaches the method that does not return a false zero, listing the newest log streams and paging get-log-events to the end, counting with Logs Insights instead of filter-log-events, resolving the right log group, account and Lambda version, and the Windows shell traps that silently rewrite a log group path. Triggers on: CloudWatch logs, log stream, get-log-events, filter-log-events, Logs Insights, start-query, is it in the logs, prove from the logs, read the logs, hourly run logged, count errors, Lambda log group, REPORT line, false zero, recordsScanned, skipped query, INIT_START, cold start line.'
 ---
 
 # Reading Vivreal Lambda logs without a false zero
@@ -105,6 +105,44 @@ A zero is only evidence when the same query can return a hit for something you k
 - The control must not share the measurement's failure modes: not the same `--max-items`, not the
   same truncated page, not the same wrong account. Two checks that fail the same way are one check.
 - Name the group, account, window and command in the report, so the next reader can re-run it.
+
+### Two Logs Insights zeros that are not absences (measured 2026-11-16)
+
+- **A skipped query is not a scanned negative.** Read the `statistics` block of `get-query-results`,
+  not only `results`. No rows with `recordsScanned: 0`, or with `estimatedRecordsSkipped` above 0,
+  means Insights skipped the events instead of reading them, so the zero says nothing about them.
+  In one session `filter @message like /literal/` and `filter strcontains(@message, "literal")` were
+  both skipped this way over the same group and window, and only the case-insensitive regex
+  `filter @message =~ /(?i)literal/` scanned. Use the form that scans for a negative you will cite,
+  write the positive control in that SAME form, and record both queries' statistics: a control in a
+  different form can scan while the measurement skips.
+- **`like` on a computed field matches nothing.** A filter on a field the same query built
+  (`parse @message ... as x`, `fields concat(a, b) as x`, `coalesce(...)`) returned zero on lines
+  that held the text; only a planted line that had to match exposed it. Filter `@message` itself
+  (`filter @message like /.../`, or the `=~` form above), and plant a line in each log format the
+  group carries, one that must match and one that must not.
+
+## Matching an app's start-up line to cold starts
+
+To prove every cold start logged a line (a "service started" event, for example), count the
+start-ups from CloudWatch and the lines from wherever they are written, then match them:
+
+- **Start-ups and whether they served** come from each log stream: its `INIT_START`, and a
+  `START RequestId` in the SAME stream marks that start-up as served. A start-up that never served
+  a request may never reach code that flushes its line, so split served from never-served before
+  you compare.
+- **Lines** come from their own store (Sentry Logs, for a line sent there), never assumed to be in
+  CloudWatch, and carry only the keys they were written with. A match key the line does not carry
+  (a function name on a line that names only the service) cannot be evaluated.
+- **Match by group, not one to one.** Start-ups of one service whose `INIT_START`s fall within the
+  window of one another form a group; each line counts once, in the group of the nearest
+  `INIT_START` before it within the window (a window the start-up cannot outlast); a group passes
+  when its lines number at least its served start-ups (or its start-ups, where every start-up must
+  log). A "nearest start-up, each line once" rule collapses a burst of concurrent cold starts onto
+  the LAST start-up and reads the others as lineless.
+- **Controls:** served plus never-served equals the `INIT_START` count, served is at least 1, and
+  planted lines in a burst are each placed by the matcher. Pin a control's numbers to the record it
+  cites, over the window that record states (`vivreal-workflow:verification-discipline`).
 
 ## Windows shell traps (this machine)
 
