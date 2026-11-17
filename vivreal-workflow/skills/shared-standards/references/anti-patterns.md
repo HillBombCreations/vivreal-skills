@@ -47,6 +47,7 @@ The rules as a reviewer walks them, one line per entry.
 26. **Plan rows that drift from settled answers.** A settled answer changes everywhere it is stated, each behaviour has one owning row, and a closed question stays closed.
 27. **A limit that reaches zero written as a quantity.** A cap that can reach zero refuses the action or removes the line, never writes zero as the amount.
 28. **A move that leaves the repository's own guide behind.** A change that moves what the repository's guide files state updates them in the same change.
+29. **An enforcement row true only on paper.** A register row says a limit is enforced only when the path the product actually calls runs the gate.
 
 ---
 
@@ -383,3 +384,15 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** A diff that changes a runtime or a gate in a deploy template or in code with no change to the guide files. A guide line that still names the old value after the change.
 
 **Guard shape:** A sweep of the guide files for the old value, with a positive control, recorded in the pull request. Where the value is mechanical, a test that pins the guide line to the template or constant it describes.
+
+---
+
+## 29. An enforcement row true only on paper
+
+**Rule:** A register or manifest row that marks a limit or a gate as enforced is true only if the path the product actually calls runs that gate. Trace the caller, not the callee, before marking it, and make every other path that writes the same thing refuse.
+
+**Why it hurts:** The register names a file, and nothing can tell whether the product calls it, so the gate's own tests and the register's conformance test pass while every real request goes around the gate and the limit is never applied.
+
+**How to spot it:** A row flipped to enforced in a change that names no caller. A gate added to one of two routes that write the same thing. A backend that accepts a new shape while the client's own route in front of it still refuses it.
+
+**Guard shape:** The change that flips a row cites the client file and line that reaches the gated route, found by a search with a positive control; one test runs through that route with the gate's refusal; every sibling write path has a refusal test.
