@@ -58,6 +58,21 @@ So: renderer change → publish renderer package → bump the exact pin on Templ
 - **"My Templates/renderer change isn't on the live site"** → either (a) you merged to Templates `main` but never ran **promote-stable** (merging main alone releases NOTHING), (b) the renderer package wasn't published/bumped, (c) the site's app is in the `demo` or `qa` tier and waits for `demo-catchup.yml`, or (d) its release job has not finished.
 - **"Content created in portal missing on site"** → that's the publishDate storefront gate, not the deploy pipeline, see `vivreal-db`.
 
+## Amplify and Route 53 traps
+
+- **An Amplify app's name and the subdomain it serves are independent.** Build URLs from the app's
+  domain association, never its name: a URL built from the name answers curl 000 and reads as an
+  outage.
+- **Amplify environment-variable maps REPLACE, never merge.** A partial write wipes every other
+  key: read the whole map into a file without printing it (names only in a transcript), change
+  one key, and write the whole map back. A variable also needs a buildspec copy line to reach the
+  build.
+- **Never spend a build to learn what the data knows.** Builds cost money and are the slowest probe
+  there is; check a content change against the routing model with a free database read before
+  triggering any deploy.
+- **Route 53 allows 5 requests a second for the WHOLE account,** shared with this pipeline, and
+  this account's Amplify domains-per-app quota is 40, not the documented 5.
+
 ## Sources of truth
 
 `Vivreal_EventHandler/CLAUDE.md` (pipeline internals), `Vivreal_Templates/CLAUDE.md` (branch/render model), the `createSites` section of `VR_Secure_API/CLAUDE.md`, and `Vivreal_Portal_Mobile/docs/projects/site-provisioning-scalability/HANDOFF-2026-07-15.md` (Phase 2 ship log).

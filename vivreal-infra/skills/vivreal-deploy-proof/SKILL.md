@@ -168,6 +168,20 @@ production; a malformed probe has reopened a resolved issue.
   2026-10-20; details in `vivreal-iam-secrets`). Then make the first real call the grant exists for
   and read its result.
 
+## CloudFormation traps that look like something else
+
+- **A parameter `Default` never updates a deployed stack.** The stored value survives every
+  deploy; pass the new value explicitly and read it back from `describe-stacks`.
+- **A stack whose template resolves a Secrets Manager secret cannot be deleted once the secret is
+  gone.** Recreate the secret with placeholder values, then delete cleanly; `retain-resources`
+  clears only one blocker per attempt.
+- **`DeletionPolicy: Retain` plus a failed FIRST deploy orphans the resource,** and every retry
+  then fails EarlyValidation `ResourceExistenceCheck` naming nothing. Delete or import the orphan
+  before retrying.
+- **A post-deploy probe proves a fix only if the same probe would fail on the old code.** When no
+  safe probe can (it would email a real business), download the deployed package and
+  byte-compare the changed files.
+
 ## Related
 
 `vivreal-deploy-tracker` (customer site deploys), `vivreal-lambda` (packaging and limits),

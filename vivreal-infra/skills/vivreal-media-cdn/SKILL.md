@@ -57,6 +57,18 @@ A media-signing pattern keyed on `targetField.name` **silently no-ops on ARRAY f
 
 Only through `VR_Secure_API/scripts/purge-closed-group.js` (dry run by default), on owner approval, using the snapshot, conditional-delete, dry-run-twice, read-back-with-controls pattern in the `infra-engineer` agent: diff two identical dry runs before `--apply`, then prove the bucket gone with `head-bucket` 404 beside a 200 on a bucket that exists. A 404 alone also reads that way for a bucket name that never existed.
 
+## preupload keys and promotion
+
+- **A media reference left on a `preupload-` key dies after a day.** The bucket's
+  `ExpirePreuploadOrphans` lifecycle rule deletes it and its signed URL then answers 403. Verify
+  placements by diffing references against the bucket's key list, never by looking at a page.
+- **A real placement goes through presign plus Secure `promoteMedia`,** which answers
+  `{from, to}` for each file: store the `to` key. Media prepared in a session scratchpad and never
+  promoted is stored nowhere.
+- **Check rich text before trusting it:** whether an image inserted through the portal's long-text
+  editor is promoted on save was not settled at portal `origin/stable` (2026-11-17), so look in
+  the saved HTML for a `preupload-` key.
+
 ## Debugging media issues
 
 - **Image 403 on a site** → expired/unsigned URL, or the bucket OAC policy. Check `signCloudFrontUrl` config + the key pair in Secrets Manager.

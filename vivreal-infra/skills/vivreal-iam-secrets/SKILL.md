@@ -86,6 +86,31 @@ prefix grant that once killed a release.
 ### Known secrets tech debt
 - **Stripe live API key is hardcoded** in 4 VR_Secure_API billing files, should move to Secrets Manager.
 
+## Traps around secrets, keys and accounts
+
+- **The Atlas "Add New Database User" dialog shows the password in a plain textbox,** so an
+  accessibility snapshot or a screenshot of it prints the secret. Never snapshot that dialog.
+- **The Campaigns AWS account is an Organizations member.** Inspect it by assuming the
+  organization access role from the main account. Its account id is key `campaignsAccountId` of
+  `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, never written here.
+- **Some resources are deliberately outside CloudFormation:** the per-service secrets above and the
+  Route 53 hosted zones are never adopted into a stack, and one SES setting has no CloudFormation
+  form at all, so a change there changes the mechanism rather than adopting the resource.
+- **Rotating `ENCRYPTION_KEY` is a migration, not a config change.** There is no keyring and no
+  re-encryption path, so every encrypted credential becomes unreadable at once.
+- **A `GetSecretValue` right after `PutSecretValue` can return the PREVIOUS version.** A failed
+  read-back is not a failed write: read by the `VersionId` the put returned.
+- **SESv2 `SendBulkEmail` authorizes against the legacy action `ses:SendBulkTemplatedEmail`.**
+  Granting `ses:SendBulkEmail` alone answers 403 naming an action you never wrote.
+- **A Stripe TEST secret key for the platform billing account exists,** as key
+  `STRIPE_PLATFORM_SECRET_KEY_TEST` of `<secret-prefix>/stripe-connect-oauth` (a key name, never
+  its value). The agents' own Stripe test keys are restricted merchant keys that cannot read the
+  platform account.
+- **The Dependabot alert reads use their own token,** `<secret-prefix>/github-dependabot-read`: a
+  fine-grained, read-only GitHub token for the whole org (Dependabot alerts, Contents for lockfile
+  reads, Metadata). Editing a fine-grained token's permissions keeps its value, and GitHub asks
+  for a "Confirm access" step first. It expires: check the date before a long-lived job leans on it.
+
 ## Sources of truth
 
 The "IAM Policies" + "Environment Variables" sections of each backend `CLAUDE.md`.

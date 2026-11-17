@@ -65,6 +65,10 @@ aws cloudformation deploy ...
 - **A metric filter on a log group created in the same deploy needs `DependsOn`.** `LogGroupName: !Sub '/aws/lambda/${Fn}'` makes the filter depend on the function, not on the `AWS::Logs::LogGroup`, so CloudFormation may create the filter first: "The specified log group does not exist", then rollback (Secure v2.21.2). Add `DependsOn: <LogGroup>` and sweep for any new resource that names a same-deploy resource by a constructed string rather than `!Ref`/`!GetAtt`. Secure holds this with `test/unit/templateLogGroupDependencies.test.js`.
 - **Deploy-role IAM scoping** can block a new resource type (the deploy role's EventBridge policy was `vh-*`-only and blocked an EventBridge rule on another stack). See `vivreal-iam-secrets`.
 - **Reserved-concurrency in templates** silently reverts CLI tuning on the next deploy, see `references/scaling.md`.
+- **Lambda rejects an image carrying buildx provenance attestations:** build with
+  `--provenance=false`.
+- **Amplify caps the size of a build's output,** so build artifacts (source maps included) can
+  fail a site build that compiled cleanly.
 
 ## Sources of truth
 

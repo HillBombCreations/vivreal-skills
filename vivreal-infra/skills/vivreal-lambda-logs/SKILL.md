@@ -45,6 +45,11 @@ see events, and use Logs Insights to count them.
    profiles). A zero from the wrong account is a fact about the account.
 4. **Retention bounds the evidence.** Standard groups keep 30 days. Anything older is gone, so
    capture the lines you will cite into the report as you read them.
+5. **`start-query` keeps only the LAST `--log-group-names` value.** Pass every group in one flag,
+   space-separated, or the query silently reads one group.
+6. **vivreal.io's traffic logs under its Amplify app, not under the custom domain,** and
+   EventHandler's functions log under `/aws/lambda/vh-site-deployment-<name>`, never
+   `vh-prod-<name>` (`vivreal-knowledge:vivreal-eventhandler-knowledge`). List the names first.
 
 ## Step 1: see the events (read the streams)
 

@@ -171,6 +171,12 @@ If you build a new backend or connector, do not invent another shape. Use the pa
 
 The pre-2026-09-15 standard (originated in VR_Secure_API, rolled out fleet-wide 2026-06-09) told every backend to null the cache on `disconnected`/`error`/`close` and to ping on every `connect()`. Both are now known to be wrong: the eviction rule is exactly mechanism step 2 above, and the per-call ping is unnecessary round-trip cost the fix removes (E1 in the spec). The one rule that survives unchanged is fail-fast timeouts (`serverSelectionTimeoutMS`/`connectTimeoutMS` 5s, `waitQueueTimeoutMS` 5s, `maxIdleTimeMS` 60s). Those are still correct and are now defaults in the package.
 
+## Agent-made load
+
+Bulk production reads by agents (a walk, or a renderer compose check making hundreds of Client API
+calls in minutes) can saturate the cluster's connection cap. Read the connection metric first,
+cap the agent's concurrency, and stop at the first connection error.
+
 ## The DEV environment is gone (2026-09-15)
 
 Sixteen DEV Lambdas (CMS x5, Client API x1, Secure x9, Main Express x1) connected to the **production** cluster with the **production services user** (e2e runs and manual testing included), drawing on the same connection cap (500 on M0 then) with production write access. The owner had the stacks deleted:

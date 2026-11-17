@@ -18,6 +18,10 @@ Each backend's API Gateway authorizes EVERY request before the Lambda runs. Two 
 
 `aws-jwt-verify` is the library used for Cognito JWT verification. Cognito config (`CLIENT_ID`, `USERPOOL_ID`) comes from SSM (`<ssm-prefix>/shared/cognito-client-id`, `<ssm-prefix>/shared/cognito-userpool-id`), not from the retired `hb-api-secrets`.
 
+**An HTTP API JWT authorizer names ONE issuer and cannot be widened;** a REST
+`COGNITO_USER_POOLS` authorizer takes a list of pools. Two user pools behind one HTTP API need two
+authorizers, or a REST API.
+
 ### VR_Client_Auth injected context (read on every Client API request)
 
 On Allow, the authorizer injects context the downstream Lambda reads via `req.apiGateway.event.requestContext.authorizer`:
