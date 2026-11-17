@@ -1,6 +1,6 @@
 ---
 name: vivreal-observability
-description: 'Use when reasoning about whether Vivreal would actually FIND OUT about a failure: CloudWatch alarms and why one that looks healthy may be latched silent, alarm periods and thresholds, AWS Budgets against cost alarms, log groups and retention, API Gateway access logging, CloudFront logging and origin verification, or any question shaped like "why did nothing page us" or "is this alarmed". Teaches that an alarm notifies on a TRANSITION and never on a state, that a threshold is a claim about traffic volume, and the shapes where a failure is invisible to the thing meant to catch it. Triggers on: CloudWatch alarm, alarm latched, alarm did not fire, notification, SNS, put-metric-alarm, describe-alarms, AWS Budgets, cost alarm, billing alarm, log retention, put-retention-policy, never expire, filter-log-events, access logging, API Gateway logging role, CloudFront logging, origin verification, on-call, did we get alerted, is this monitored.'
+description: 'Use when reasoning about whether Vivreal would actually FIND OUT about a failure: CloudWatch alarms and why one that looks healthy may be latched silent, alarm periods and thresholds, AWS Budgets against cost alarms, log groups and retention, API Gateway access logging, CloudFront logging and origin verification, or any question shaped like "why did nothing page us" or "is this alarmed". Teaches that an alarm notifies on a TRANSITION and never on a state, that a threshold is a claim about traffic volume, and the shapes where a failure is invisible to the thing meant to catch it. Triggers on: CloudWatch alarm, alarm latched, alarm did not fire, notification, SNS, put-metric-alarm, describe-alarms, AWS Budgets, cost alarm, billing alarm, log retention, put-retention-policy, never expire, filter-log-events, access logging, API Gateway logging role, CloudFront logging, origin verification, on-call, did we get alerted, is this monitored, WAF custom response, CORS on a 429.'
 ---
 
 **This skill states mechanisms, not inventory.** Every roster and count below is something the AWS
@@ -203,13 +203,36 @@ one as a security control.
 shorter expiry than the shared bucket's policy, and nothing records whether that was deliberate.
 Read the lifecycle rule rather than assuming the fleet policy applies.
 
+**A WAF block a browser cannot read looks like the user's own network** (release B live walk M1,
+2026-11-17). A WAF rule's `CustomResponse` (a 429 or a 403) REPLACES the answer API Gateway or the
+origin would have sent, so it carries none of the API's CORS headers. The browser then reports a
+network failure, the app shows its offline or "check your connection" text, and nothing in the app's
+own error handling, Sentry included, sees a refusal. So:
+- **Every custom response a browser can reach names its CORS headers:**
+  `access-control-allow-origin` (one origin: a WAF cannot echo the request's `Origin`, so any other
+  origin the app answers on stays unreadable), `access-control-allow-credentials: true` when the app
+  sends credentials, and `vary: Origin`. Custom responses and their headers add no WAF cost.
+- **A preflight blocked by a rate rule hides the answer too.** A custom header on the call (the
+  portal's `X-App-Source`) makes the browser preflight it, and a preflight answered with any non-2xx
+  status fails whatever headers it carries. A rule scoped to routes that never answer `OPTIONS`
+  themselves excludes the exact `OPTIONS` method; VR_Main_API #137 (approved, unmerged at this writing)
+  does that for two of its rules and adds the headers to all of them
+  (`vivreal-knowledge:vivreal-main-api-knowledge`, the WAF bullets).
+- **Prove it with the app's real `Origin`** (next section).
+
 ---
 
-## Audits and walks: three ways to be wrong quietly
+## Audits and walks: four ways to be wrong quietly
 
 - **Amplify access-log audits have two silent false negatives.** Logs are partitioned per domain,
   so read every custom domain AND the default app domain; and a range over 7 days returns nothing
   rather than partial data, so split the range and keep a known-hit control.
+- **A WAF walk row reads the block with the app's real `Origin`.** Send the `Origin` the app
+  sends (for the portal, `https://vivreal.io`) on the blocked call and on its preflight, and compare
+  `access-control-allow-origin` with it byte for byte. A read with no `Origin` cannot tell whether a
+  browser accepts the answer, and the app's own screen is the proof that it did: the expected
+  result is the app's refusal text, never its offline text. Driving the block can trip the rule's
+  alarm, which can page the owners: warn them in chat first (owner rule P-sentry-warn).
 - **Older Sentry traces can hold session cookies and query-string emails.** The server-side
   scrubbing rules drop them now; treat traces from before those rules as sensitive.
 - **Keep a walk's known errors off the Sentry quota:** add the project's IP inbound filter for the
