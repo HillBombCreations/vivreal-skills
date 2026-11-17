@@ -291,6 +291,7 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 - Are there off-by-one errors, null/undefined paths, or race conditions?
 - Are edge cases handled? (empty arrays, missing fields, concurrent writes, network failures)
 - Is error handling correct? (not swallowing errors, not leaking internal details)
+- Is every guarantee a comment or docblock asserts (idempotent, atomic, tenant-scoped, never throws, already validated) true in the code under it? Each is a claim to verify, never evidence: every blocker across two reviews of one feature was such a comment.
 
 ### 2. Security
 - For an OAuth, connect, grant or sign-in diff, run the workflow checklist's item 5a (consent and identity) first

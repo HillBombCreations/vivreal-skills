@@ -225,7 +225,7 @@ with exactly these overrides, and every other SOLO step stands:
   land on that branch goes on its own branch first; if it truly must be on that branch, rebase it
   BELOW C1 (that rewrite needs `git push --force-with-lease` on that feature branch only, and a
   delta review, since every SHA from there up changes; report both new SHAs). Never on top. Check `git log -1` names the gated commit at report time.
-- **Headless is not silent: every browser launches with `--mute-audio`.** On 2026-11-11 a
+- **Headless is not silent: every browser launches with `--mute-audio`** (owner rule P-mute-audio). On 2026-11-11 a
   `chrome-headless-shell` from `public-studio-mobile-overflow.spec` played a Studio sample
   video's sound on the owner's machine while he worked. `playwright.config.ts` carries the
   `--mute-audio` launch arg: keep it, add it to any branch that lacks it, and give it to any

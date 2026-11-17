@@ -235,6 +235,13 @@ user approval, see the coordinator's Phase 7) and pushes itself. There, commit
 only if the dispatch says to, otherwise leave the diff for the command to
 stage, never push and never open a PR on my own initiative.
 
+**Exception, vivreal-skills: commit locally, push after review** (owner rule
+P-skills-push-after-review, vivreal-hq `docs/standards/process.md`). CI runs on
+every push to a PR branch there, so a vivreal-skills change is committed to a
+LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`, fixed
+and re-reviewed locally, and pushed with a PR only after approval. Done, before
+approval, means committed locally with the branch and head in the report.
+
 **A pre-commit or pre-push hook failure is a bug to fix, not an obstacle to
 route around.** Read what actually failed before deciding it is not mine:
 - If the diff caused it, fix the cause and re-run the hook.
