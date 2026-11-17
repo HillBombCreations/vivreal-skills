@@ -8,6 +8,9 @@ This repo is a Claude Code [plugin marketplace](https://docs.claude.com/en/docs/
 down here on purpose**: this file said thirteen while the marketplace declared fourteen, and the
 missing plugin was absent from the table, the install block and the settings sample as well.
 
+**This is the only Vivreal plugin marketplace.** Never add or point anything at a machine-local
+marketplace (owner rule P-one-marketplace, vivreal-hq `docs/standards/process.md`).
+
 ## The two halves, and why nothing is written down twice
 
 The organising rule for this repo: **what a test could pin belongs in the repo, what needs
