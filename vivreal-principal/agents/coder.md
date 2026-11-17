@@ -172,6 +172,17 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    customer reads uses the business time zone, never the server's or the device's clock, and
    names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21).
    Test with the process in a different zone from the business, and across a DST change.
+10. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a
+   contract the repo's `CLAUDE.md` (or its `README.md`, `GEMINI.md` or another guide file) states
+   updates that line in the same PR. Grep the guide files for the old value, with a positive
+   control, and paste both counts. Release B shipped a runtime move with the repo's `CLAUDE.md`
+   still naming the old runtime, and a plan-gate change with `CLAUDE.md` still describing the old
+   gate; the knowledge skills read that file at the deployed line, so the stale line spreads.
+11. **A limit that can reach zero.** Where a cap, a remaining stock or an allowance can reach 0,
+   the code refuses the action or removes the line; it never writes 0 as an item's quantity. A
+   REFUSE test per write path (add, increase, set) at a cap of 0 asserts the refusal and the stored
+   quantity unchanged. Release B's cart wrote `quantity: 0` when the cap reached 0, which its own
+   checkout route then refused and its quote counted as 1.
 
 **Exception, a command owns the gate:** if my dispatch prompt says I'm running
 inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP
@@ -180,7 +191,7 @@ coder-side review here is redundant. Stop after lint + type-check and report res
 
 - On a gap, fix it and recheck the item. Cap at 3 passes; if it still fails, stop and
   escalate to the user with the unresolved list.
-- Do not claim "done" until all 9 items are satisfied or the user accepts the remaining
+- Do not claim "done" until every item above is satisfied or the user accepts the remaining
   notes.
 - **Report it as a self-check.** An independent reviewer is a separate dispatch the
   orchestrating thread makes, and only it can.

@@ -45,6 +45,8 @@ The rules as a reviewer walks them, one line per entry.
 24. **Expected results resting on unread state.** A result that depends on an account's or an environment's state rests on a read of that state made first.
 25. **Plan steps that cannot run as written.** Every command, step, expected set, threshold and stop action in a plan is checked against what will execute it.
 26. **Plan rows that drift from settled answers.** A settled answer changes everywhere it is stated, each behaviour has one owning row, and a closed question stays closed.
+27. **A limit that reaches zero written as a quantity.** A cap that can reach zero refuses the action or removes the line, never writes zero as the amount.
+28. **A move that leaves the repository's own guide behind.** A change that moves what the repository's guide files state updates them in the same change.
 
 ---
 
@@ -357,3 +359,27 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** A settled value that still appears in its old form in a linked design. A behaviour tested in one row and built in another. A row whose premise contradicts an earlier closed finding. An item added beyond a recorded answer.
 
 **Guard shape:** A search of every linked design for the old value when a precondition settles. One owning row per behaviour, with its red-at-base test in that row. A citation of the closing record on any row that touches a settled question. Each scope row cites the answer it rests on.
+
+---
+
+## 27. A limit that reaches zero written as a quantity
+
+**Rule:** When a cap, a remaining stock or an allowance can reach zero, the code refuses the action or removes the line; it never writes zero as an item's quantity or treats zero as a valid amount.
+
+**Why it hurts:** A zero-quantity line can pass the step that wrote it and fail later, in a payment or order step, with an error the user cannot act on, while a total elsewhere can count it as one.
+
+**How to spot it:** A clamp such as `Math.min(requested, cap)` written straight into a quantity field. An add, increase or set path with no branch for a result of zero. A success return after a clamp produced zero.
+
+**Guard shape:** REFUSE tests at a cap of zero on every write path (add, increase, set), asserting the action is refused or the line removed, and the stored quantity unchanged.
+
+---
+
+## 28. A move that leaves the repository's own guide behind
+
+**Rule:** A change that moves a runtime, a version, a gate, a limit or a contract that the repository's own guide files state (its agent guide, its readme, any other assistant guide) updates every such line in the same change.
+
+**Why it hurts:** The guide is what the next engineer and every assistant read first, so a false line there is believed, acted on and copied into other documents.
+
+**How to spot it:** A diff that changes a runtime or a gate in a deploy template or in code with no change to the guide files. A guide line that still names the old value after the change.
+
+**Guard shape:** A sweep of the guide files for the old value, with a positive control, recorded in the pull request. Where the value is mechanical, a test that pins the guide line to the template or constant it describes.
