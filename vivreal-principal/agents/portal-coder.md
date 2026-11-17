@@ -237,11 +237,18 @@ with exactly these overrides, and every other SOLO step stands:
   starts in the calling shell's folder and every Bash call starts in the session's folder, often
   the owner's checkout, so a WSL step with no `cd` ran there and rewrote an owner's root
   `package.json`, lockfile and `node_modules`. Each step is
-  `wsl.exe bash -c 'cd "<the worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  `wsl.exe bash -lc 'cd "<the worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
   stop if `pwd` is not the worktree. A Linux `npm ci` or `npm pack` runs on WSL's own disk from a
   `git archive` of the head, never in the portal worktree on `/mnt/<drive>`, where it would replace
   the Windows `node_modules` the gates use (`vivreal-workflow:shared-standards`, "Cross-platform
   note").
+- **A WSL step is a login shell, `bash -lc`, never `bash -c`** (release B, 2026-11-17). A plain
+  `bash -c` loads no profile, so nvm never starts and `npm` is the Windows npm under `/mnt/`. Before
+  any install or test, one call `wsl.exe bash -lc 'cd "<the worktree>" && pwd && command -v node npm'`
+  must print the worktree and two paths, neither under `/mnt/` (read them: `command -v` exits 0 with
+  one name missing). Anything holding a `$` goes in a script file run with `bash <file>`, because
+  the shell `wsl.exe` starts expands `$` first. A long-running process starts with `setsid -f`,
+  never `nohup ... &`, which dies when `wsl.exe` returns.
 
 ## Standards reading rule
 

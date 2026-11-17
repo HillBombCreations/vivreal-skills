@@ -85,9 +85,12 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   `vivreal-content:help-page-producer`. Brief a one-off database script
   (`vivreal-workflow:ops-one-shot`) only for a step those screens cannot do, and name that step and
   why in the brief.
-- **Every WSL step in a brief starts by changing into the worktree** inside one quoted command,
-  `wsl bash -c 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...` runs in
-  the folder the Bash call reset to, which is often an owner's own checkout.
+- **Every WSL step in a brief starts by changing into the worktree** inside one quoted login-shell
+  command, `wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
+  runs in the folder the Bash call reset to, which is often an owner's own checkout, and a plain
+  `bash -c` (several briefs on 2026-11-17) runs the Windows npm. The other WSL traps (prove Linux
+  node first, `$` in a script file, `setsid -f`) are in `vivreal-workflow:shared-standards`,
+  "Cross-platform note".
 
 ## 4. Owners
 

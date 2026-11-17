@@ -38,13 +38,27 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
   often an owner's checkout; in a subagent, and often in the main session, a `cd` in an earlier call
   does not carry over. So each step is one call that moves into its worktree, proves it, then
   runs:
-  `wsl.exe bash -c 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`, and
-  stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
+  `wsl.exe bash -lc 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`,
+  and stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
   rewrote an owner's root `package.json`, lockfile and `node_modules`, and read-only commands ran
   in an owner's checkout. **Installs and packs run on WSL's own disk**, a folder under `~` fed by
   `git archive` of the head, never on a `/mnt/<drive>` folder Windows also uses: `npm ci` there
   replaces the Windows `node_modules` with Linux binaries, and `npm pack` there records every file
   as mode 0755, so the tarball never equals the registry's.
+- **A WSL step is a login shell, `bash -lc`, never `bash -c`** (release B, 2026-11-17, found by the
+  HA-B2 one-shot builder after several briefs used the plain form). Measured: `wsl.exe bash -c`
+  loads no profile, so nvm never starts, `node` is not found, and `npm` resolves to the Windows npm
+  under `/mnt/<drive>/Program Files`; `bash -lc` finds nvm's Linux copies. Three more traps:
+  - **Prove Linux node in its own call, before any install or test:**
+    `wsl.exe bash -lc 'cd "<the worktree>" && pwd && command -v node npm'` must print the worktree,
+    then two paths, neither under `/mnt/`. Read what it prints: `command -v` exits 0 when only one
+    of the names is found, so chaining on it guards nothing, and a Windows npm run from WSL installs
+    Windows binaries into the tree.
+  - **Anything holding a `$` goes in a script file** on WSL's disk, run as `bash <file>`: the shell
+    `wsl.exe` hands its command line to expands every `$` first, quotes or not, so a variable set
+    inside the command reads empty.
+  - **`nohup <command> &` dies when `wsl.exe` returns.** Start a long-running process with
+    `setsid -f <command> > <log> 2>&1`, which outlives the call.
 - **MSYS path mangling reaches further than the AWS CLI.** The known case is an `aws` argument
   that starts with `/` coming back as a bogus `AccessDenied`. The case that is missed: **MSYS
   also rewrites a `/` INSIDE a `jq` expression**, and inside a `git show ref:path` argument, so
@@ -90,7 +104,7 @@ agent acts on itself, by ID:
 - **P-skills-push-after-review:** vivreal-skills changes are committed to a LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`, fixed and re-reviewed locally, and pushed with ONE PR per batch only when that batch is ready to merge (reviewed, gates green, merge GO in hand), because CI runs on every push and every PR; later work for the same batch folds into that PR, never a second stacked PR.
 - **P-shared-checkout:** agents share one checkout's stash and scratchpad; never `git stash`, `reset --hard`, `checkout --` or `restore` a file you did not write.
 - **P-allow-refuse:** pair every ALLOW test with a REFUSE test on the same mechanism; a one-sided gate test passes when the gate never engages.
-- **Every WSL step starts by changing into the worktree,** inside one quoted command (`wsl bash -c 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout.
+- **Every WSL step starts by changing into the worktree,** inside one quoted login-shell command (`wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout, and a plain `bash -c` runs the Windows npm (Cross-platform note).
 
 ## Two rules that outrank every fact below
 
@@ -398,6 +412,14 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 - **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. The check is the red proof above, never an edit to the implementation: a mirroring test stays green at the base commit, so run (b) and it shows.
 - **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
 - **A faked layer hides the failure it fakes** (v7, 2026-10-19/20). A stubbed Mongoose model never runs the schema cast, so a write on an undeclared path passes; a mocked network never runs the next hop's validator; a test of what is DECLARED (a `@font-face`) passes while the element resolves to something else; a spy that matches any call passes on broken code. So: one test of any write runs through the REAL schema model; when a change alters what a client sends, one test goes through the real next hop with only the far upstream mocked; assert what renders or resolves; assert the exact call. Cases and rules: `verification-discipline`, "A faked layer hides exactly the failure it fakes".
+- **A tool that compares a live AWS answer with a planned shape tests against a fixture recorded
+  from a real answer** (release B, 2026-11-17). A planned shape written by hand only proves the
+  comparison agrees with itself. CloudFront returns every part a policy leaves unset as an empty
+  `{}` block: front-door-hsts created the right response headers policy at BR-18, then refused it as
+  different, because its tests only ever compared the planned config with itself; the
+  front-door-help-path origin request policy check had the same gap (F441). Save one real answer
+  from a read-only call as the fixture (nothing secret in it), test that the planned shape matches
+  it, and pair that with a REFUSE test of a real answer changed in one field.
 - **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
 - **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
 - **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.
