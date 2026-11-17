@@ -446,19 +446,20 @@ group id live after the switch for `--business`. Delete the session file at the 
 **PLAN (read only).**
 1. Inputs: the approved drafts, and the changes the dispatch names under an owner GO id it quotes
    (for example `GO-B-HA1`); the drafts carry no mark. A dispatch that names changes but quotes no
-   GO id is not ready: report it and stop. **The mark is a real line keyed to that GO id, not the
-   words.** The tool's check is a plain text match today (`PUBLISH_NOW` in `plan.ts`), so a draft
-   whose only mention is its status line, "Publish: no PUBLISH NOW mark yet", passes it. The mark
-   lives only in the publish plan file you write for the article, `<article>.publish-plan.md`, whose
-   header line reads `Publish: **PUBLISH NOW**, for <the GO id the dispatch quotes> only: <the
-   changes the dispatch names>`, and whose publishable part holds each change's text copied byte for
-   byte from the approved draft (the C-1 and HA-B1 runs); each change's `draft` names that file.
-   Before PLAN, list every line holding the words in every file a change names, and confirm one of
-   them is that header line, naming that GO id; the others are mentions, not marks, and a file that
-   holds mentions only (a draft's "no mark yet" line among them) is not ready, so report it and stop. Check every `source` byte for byte against
-   the approved draft as well, since the tool checks it only against the file the change names.
-   Never edit an approved draft to add or clear a mark. Making the tool require a real marker is a
-   separate vivreal-hq change; until it lands, this check is yours.
+   GO id is not ready: report it and stop. **The mark is one exact line keyed to that GO id, not the
+   words.** The mark lives only in the publish plan file you write for the article,
+   `<article>.publish-plan.md`, whose header line reads, from its first character,
+   `Publish: **PUBLISH NOW**, for <the GO id the dispatch quotes> only: <the changes the dispatch
+   names>`, and whose publishable part holds each change's text copied byte for byte from the
+   approved draft (the C-1 and HA-B1 runs); each change's `draft` names that file. The tool
+   (`PUBLISH_NOW_MARK` in `plan.ts`) counts only a whole line of that form. Any other line holding
+   the words is a mention and never counts: a status line such as "Publish: no PUBLISH NOW mark yet",
+   a sentence, a heading, a quoted, indented or inline-code line, a line inside fenced code, or a mark
+   commented out. A file with no mark line, or with two, stops every change that names it. The tool
+   checks the line's form, not which GO id it names, so before PLAN confirm the one mark line names
+   the GO id the dispatch quotes. Check every `source` byte for byte against the approved draft as
+   well, since the tool checks it only against the file the change names. Never edit an approved
+   draft to add or clear a mark.
 2. **The tool's files live in their own publish folder**, `knowledge/help-drafts/publish-<date>-<article>/`
    (one per run, as the earlier runs did), never loose beside the drafts. Write `changes.json` there and
    pass that folder as `--out`, so `publish-plan.json` sits beside it and APPLY writes its `backups/` and
@@ -475,7 +476,7 @@ group id live after the switch for `--business`. Delete the session file at the 
    change by exact text, keys it by the document id, proves the session reads the target business,
    writes `publish-plan.json` and prints its sha256. It stops a change for any reason it prints,
    among them a change that names no draft, quotes no source, names a draft it cannot read, a draft
-   with no PUBLISH NOW mark (a plain text match today, step 1), a draft that does not hold the quoted source, and a change that zero or
+   with no PUBLISH NOW mark line or with two (step 1), a draft that does not hold the quoted source, and a change that zero or
    two rows match. A stopped change is reported with the tool's reason, never forced: never edit an
    approved draft to clear any stop.
 4. List what this mode will not do (new pages, new lists, site document writes, media) for the
