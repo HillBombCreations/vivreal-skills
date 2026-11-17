@@ -18,6 +18,14 @@ then AUTO-REVIEWS it with the reviewer agent. No dependency on superpowers.
 If the spec spans multiple independent subsystems, split into one plan per
 subsystem. Each plan must produce working, testable software on its own.
 
+Research a build depends on (inventories, censuses, field audits) finishes before that build
+starts; a plan never schedules the two in parallel (owner rule P-research-first, vivreal-hq
+`docs/standards/process.md`).
+
+Every plan revision re-reads each target repo at its deploy line itself and records the tip SHA
+it verified against. Shipping to a repo while its plan is being revised makes the plan wrong by
+your own hand.
+
 ## File structure
 
 Before defining tasks, map which files are created/modified and what each is

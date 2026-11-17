@@ -137,7 +137,7 @@ every dependency tree in every worktree. It had burned thousands of CPU seconds
 over hours by the time anyone looked. Prune at the source, and treat a search
 that is still running minutes later as a bug rather than as thoroughness.
 
-**At most TWO heavy local runs at once (owner, 2026-11-12), whatever the agent
+**At most TWO heavy local runs at once (owner rule P-heavy-runs), whatever the agent
 count.** Heavy: a full suite, a red proof, a fleet build, a render diff,
 `kit:validate`. Before starting one, sample the CPU over an interval (on Windows
 `Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 5 -MaxSamples 6`,
@@ -162,7 +162,10 @@ either way.
 
 When a slot
 frees, start the next item rather than idling. Restarting an agent that crashed (a
-login error, a dropped connection) is not a new dispatch. Prefer handing new work of
+login error, a dropped connection) is not a new dispatch. A "stalled" notice describes the
+output stream, not the process: before relaunching, check the agent list and that agent's
+working directory for new writes, because a relaunch beside a live agent in the same directory
+races it toward the same irreversible step. Prefer handing new work of
 the same kind to an agent about to finish in the same repository over a fresh
 dispatch.
 

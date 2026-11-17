@@ -158,3 +158,11 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
   evidence rows when it does not hold);
 - a red-proof harness written, run and then deleted;
 - a checkout guard that runs `git` with the caller's `GIT_*` env, or ignores untracked files.
+- a run record ignored: before (re)running a step a triage doc calls "not run", read that step's
+  run records under `${VIVREAL_REPOS}/_ops/*/runs/`; a run record outranks a triage doc;
+- an exact read-back or undo that forgets the collection-object schema keeps `_id` on
+  `objectValue`: an update whose `objectValue` lacks `_id` mints a fresh ObjectId, so the
+  read-back and the undo must carry that `_id` or ignore it on purpose;
+- a run of `purge-closed-group.js` without reading it first: it defaults to the Secure API
+  secret, derives the bucket as `<type>-<key>`, skips the main database, trusts the stale site
+  counter and refuses any tier but free.

@@ -170,6 +170,15 @@ job with zero steps, which looks exactly like a broken workflow rather than an e
 If a bump's CI run fails with no steps executed, check the billing page before assuming the
 workflow itself is broken.
 
+**A pack made in WSL on a Windows-mounted folder never equals the registry's.** `npm pack` on
+`/mnt/<drive>/...` records every file as mode 0755, so its integrity never matches the registry
+tarball (whose files are 0644). Make comparison packs on WSL's own disk, from a `git archive` of
+the head.
+
+**A tarball publish through the npm wrapper sends no `gitHead`.** The wrapper packs, then
+publishes the tarball, so a "gitHead equals the merge SHA" proof can never pass. Prove the
+publish by the tarball's shasum plus a git tag, packed from an `autocrlf=false` checkout.
+
 ## The Studio gate before a renderer merge (`kit:validate`)
 
 Merging a renderer PR publishes it, and the release engineer stops without a recorded gate at

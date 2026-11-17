@@ -385,6 +385,12 @@ released; all of them are about a check reading wrong.
 - **Write `date -d` windows in ISO with `Z`.** `date -u -d '2026-10-14T21:05Z -1 min'` gives
   21:04. The plain form `'2026-10-14 21:05 -1 min'` reads the `-1` as a timezone offset, the
   start lands after the end, and `logs start-query` refuses the window.
+- **`git push --delete` runs the pre-push hook.** In a repo whose husky pre-push runs a test
+  suite that is failing, a remote branch cannot be deleted that way. Delete the ref through the
+  GitHub API (`gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>`).
+- **Build the release line itself before promoting.** A clean cherry-pick can still leave the
+  line unbuildable: `main` and the deployed line are different facts, and only a build at the
+  line's head proves the backport.
 
 ## No busy-wait polling
 

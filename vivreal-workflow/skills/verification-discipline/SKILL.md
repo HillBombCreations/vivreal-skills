@@ -77,6 +77,27 @@ absence when you read only the output.
 
 **There is a seventh, and an eighth.** The list is not the point. The control is the point.
 
+Shapes met since, each a clean answer that only a control can tell from a wrong one:
+
+- **A raw NUL byte hides a file from grep.** grep treats the file as binary and skips it with no
+  error. Sweep with `grep -a` (or read the bytes in a program), and keep a control file that
+  holds a NUL.
+- **A build rewrites the values you grep for.** Tailwind v4 normalises `rgba()` to hex in built
+  CSS, so grepping the build for the source text returns a false zero. Grep the source, or
+  normalise both sides.
+- **A docblock can poison its own measurement.** Write a measurement's search terms into the
+  comment or doc that cites it and the text becomes a hit, so the next run's count refutes the
+  claim. Quote the command, not the matched terms.
+- **`diff <(a) <(b)` exits 0 when both sides fail to empty.** Check each side's exit status and
+  require non-empty output before reading "identical".
+- **`gh api` can serve a cached page on consecutive reads.** For run state, compare with
+  `gh run view` or re-read until the value changes; one read proves nothing.
+- **git eats stdin in a `while read` loop.** In `while read x; do git ...; done < file` the
+  first git call consumes the rest of the list, so the loop runs once and reports success for
+  items never checked. Verify a list in a program, or give git `</dev/null`.
+- **Never `.strip()` `git status --porcelain` output.** It eats the first line's status column
+  and shifts that path by one character. Strip line endings only.
+
 ---
 
 ## The commonest class of all: the matcher was narrower than the data
@@ -158,6 +179,15 @@ rather than editing the code or config it guards. If the bad input does not brea
 gate is decoration. For a guard in code, that proof is the `shared-standards` red proof: the new
 test run at the base commit in a separate read-only worktree, never a line deleted from the
 working tree and restored.
+
+Two more gates that pass for the wrong reason:
+
+- **A hardcoded future date passes vacuously.** A test pinned to a date that is future today flips
+  when the date passes, and tests that only needed it to BE in the future start passing for the
+  wrong reason. Inject the clock and assert relative to it.
+- **A pre-commit suite that runs after lint-staged restores the tree measures the final tree, not
+  the commit.** Per-commit greenness in a stack is then reasoned, not measured; prove a commit by
+  checking it out alone.
 
 ---
 
@@ -267,6 +297,13 @@ the function is still there.
 Parse the key, or strip comment lines, then sweep. And give the stripper its own control:
 feed it one commented occurrence and one live occurrence, and require exactly one survivor.
 
+**A sweep rewrites its own account.** An automated rewrite also edits the comments and guards
+that record what it changed, so a docblock ends up describing the value it just replaced, and a
+guard asserts the thing it was written to forbid. Exclude the record (changelog lines, guard
+tests) from the sweep and re-read it by hand. The same goes for a comment that asserts a
+guarantee (idempotent, atomic, tenant-scoped, never throws, already validated): it is a claim to
+check against the code under it, never evidence.
+
 ---
 
 ## A faked layer hides exactly the failure it fakes (v7 false greens, 2026-10-19/20)
@@ -283,6 +320,9 @@ the suites did not.
    outside the declared schema either declares the path or uses the native driver
    (`Model.collection.updateOne`) on purpose, and at least one test runs the write through the
    REAL schema model (in-memory Mongo, or buffering off so the cast still runs).
+   The quieter half: under the default strict mode, a field the schema does not declare is
+   silently DROPPED from a `$set` or a new document, with no error, so the feature is inert in
+   production and green in CI. The same real-model test catches it.
 2. **A mocked network skips the next hop's own validation.** A portal hook test mocked the
    network, so the proxy route that still required a field the client had stopped sending
    never ran, and every save without that field would have answered 400. Unit tests that
@@ -311,6 +351,10 @@ the suites did not.
    (`vivreal-infra:vivreal-iam-secrets`).
 8. **An unknown flag is not a dry run.** A preview that passes a flag the script does not define
    runs the real thing. Read the argument parser before trusting any flag as a preview.
+9. **A fix fed a state the product cannot produce can be a no-op.** Fixtures built by hand can
+   hold a shape no real producer emits, so the fix passes its tests and never engages in
+   production. **Rule:** build at least one fixture from the real producer's output (a captured
+   payload, or the real upstream).
 
 Sources, all in vivreal-hq `docs/projects/next-release-v7/`: the Secure rename and portal walk
 2 reviews, the walk 2 defects research, the final deltas review (B2), the alarm suppressor
