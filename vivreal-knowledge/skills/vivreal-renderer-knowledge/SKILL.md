@@ -54,13 +54,13 @@ wrong, so the warning lives here.
   `dev-unlink.js` find consumers as SIBLINGS of the renderer checkout they run from
   (`consumerRoots()` in `scripts/lib/renderer-overlay.js`: the renderer root's parent plus
   `CONSUMER_DIRS`), and a consumer's `npm run dev:linked` calls `../vivreal-site-renderer`. From
-  `${VIVREAL_REPOS}/_wt/` both point at `_wt/`, where no checkout carries those names, so the link
-  overlays nothing in your worktree (or, run from the main renderer checkout, overlays the MAIN
-  consumer checkouts instead). Name the consumer worktree on the one command line:
+  `${VIVREAL_REPOS}/_wt/` both point into `_wt/` instead of at your worktrees, so the link fails or
+  overlays nothing in your consumer worktree, and run from the main renderer checkout it overlays the
+  MAIN consumer checkouts instead. Name the consumer worktree on the one command line:
   `RENDERER_CONSUMER_ROOTS="<absolute consumer worktree>" node "<renderer worktree>/scripts/dev-sync.js"`,
   then start the consumer's dev server yourself; separate several roots with the platform's path
   delimiter (`;` on Windows, `:` elsewhere). Run `dev-status.js` and `dev-unlink.js` with the SAME
-  value, or they look at the siblings and report a clean install. The variable widens the WRITE path
+  value, or they check the siblings and never see the worktree. The variable widens the WRITE path
   too, so set it for that one command and never export it.
 - **Consumer guard:** `Vivreal_Templates` `pretest` and `prebuild` refuse when the marker is present
   (`checks/assert-no-renderer-overlay.mjs`, applied 2026-09-30). Acknowledge deliberately with
