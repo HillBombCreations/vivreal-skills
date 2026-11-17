@@ -791,6 +791,20 @@ need no backslash (`[.]`, `[?]`, an explicit character set instead of `\s`). The
 bytes back. A heredoc whose body holds an apostrophe or a triple-quoted string can also end in
 `unexpected EOF`; the same fix applies.
 
+### JS `String.replace` expands `$` patterns in the new text
+An edit script that runs `text.replace(old, next)` with a string `next` does not insert `next` as
+written. In the new text, `$&` becomes the matched text, `` $` `` everything in the file before the
+match, `$'` everything after it, and `$$` one `$` (measured on node, 2026-11-17; `replaceAll` is the
+same, and a regex `old` adds `$1` and `$<name>`). So new text that holds a `$` (a shell line, a
+template literal, a price) can duplicate half the file or corrupt it, and the script still exits 0
+(release B, L-B-13).
+
+**Fix:** whenever the new text can hold a `$`, pass a replacer function, whose return is inserted as
+is: `text.replace(old, () => next)`. Or slice: find `old` with `indexOf`, refuse unless it occurs
+exactly once, and write `text.slice(0, i) + next + text.slice(i + old.length)`. Then read the bytes
+back. Python's `re.sub` has the same trap with a backslash in its replacement (`\1`, `\g<name>`); pass
+it a function too.
+
 ### Subagent file write verification
 Subagents (researcher, architect, etc.) sometimes claim they wrote a file but did NOT actually write it. The coordinator MUST verify every artifact exists after each agent dispatch:
 ```bash
