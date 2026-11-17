@@ -37,6 +37,9 @@ and click only the visible one, in every session script. Chain the restore insid
 restores crashed mid-run more than once on 2026-10-13. Never film the business list itself (see
 vivreal-hq `docs/filming-hygiene.md`).
 
+- **Filming the site-creation wizard creates a real site** and uses a slot on the demo business. Read the live count with the Vivreal MCP's `get-group-usage` before filming; never a remembered number.
+- **vivreal.io and the help centre belong to the Vivreal group (`pod_01`), not the Vivreal Content demo group;** the agent account is an admin member of both.
+
 ## The walk and capture harness
 
 How a browser script stays read-only and still sees the product as an owner does (guard the

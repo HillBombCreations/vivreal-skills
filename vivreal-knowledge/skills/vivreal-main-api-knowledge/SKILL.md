@@ -74,6 +74,7 @@ Since v7 the roster also carries `SubscriberConfirmFunction` and `SubscriberConf
 - ESLint adopted + a husky pre-push gate (lint, then `nyc` against `package.json`'s declared thresholds); the temporary `.coverage-floor.json` ratchet was deleted once the thresholds were met. No GitHub Actions test workflow exists here, so the hook is the only automated gate before merge (Main CLAUDE.md, The gate).
 - ⚠️ **Tests can send REAL emails**, `queueEmail` is not stubbed in the test suite; never run the full suite against a prod `.env` (this has fired ~140 real sends before). Never copy a prod `.env` into a backend test worktree.
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+- **The pre-push cannot pass on a machine with a `.env`:** a config test re-reads it through dotenv. Push from a clean worktree.
 
 ## Deploy model: release train
 

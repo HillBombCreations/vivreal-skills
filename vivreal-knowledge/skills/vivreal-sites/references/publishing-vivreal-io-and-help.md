@@ -85,3 +85,5 @@ writes a row of either site.
 - **A purge does not make the site fresh everywhere at once.** What it reaches and how to prove
   freshness lives in `vivreal-infra:vivreal-media-cdn`, "Purging an edge cache". Never call
   `/api/revalidate` by hand.
+- **A vivreal.io screenshot swap needs no CMS write:** overwrite the same S3 key (the bucket is versioned, so it reverts), purge through `cdn-purge`, and verify by content hash.
+- **vivreal.io page structure traps:** each section exists twice (`blocks[]` and `collections[]`) and editing one renders nothing; a bulk create leaves `publishDate` null, so its rows render nowhere; the compare pages hardcode their competitor list.

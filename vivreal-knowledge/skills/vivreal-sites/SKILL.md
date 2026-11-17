@@ -51,6 +51,8 @@ These bite constantly, know them even before opening a reference:
 1. **publishDate storefront gate.** VR_Client_API hides any content where `publishDate` is null (draft), in the future (scheduled), **or stored as a string instead of a Date** (silently dropped by `$lte: new Date()` type-bracketing). "Created/edited in the portal but missing on the site" is almost always this. Check `publishDate` **type and value** first. A scripted collection-object update that OMITS `publishDate` unpublishes the item (the portal proxy sends `publishDate ?? null`), so a script always echoes the stored `publishDate` and `__v`. Config-like content (filters, schedule stops) MUST be stamped with a past `publishDate`; event dates live elsewhere (e.g. `objectValue.start`), never in `publishDate`. Full detail: `vivreal-db` + `references/page-formats.md`.
 2. **Label-vs-value binding drift.** A free-text field that must equal a canonical machine value (e.g. the home Product Showcase `product-type` → `/products?f_productType=` filter) silently matches zero when an author types a display label ("Sweet Treats") instead of the stored value ("Sweets"). Studio's filter-bound enums fix this for new authoring; legacy free-text data can still drift. See `references/page-formats.md`.
 
+Also: **an empty list infers nothing.** A CMS list field's row shape is inferred from stored data, so an EMPTY list renders the plain-string widget and the structured shape never forms; seed one row.
+
 ## Companions / boundary
 
 | Need | Skill |

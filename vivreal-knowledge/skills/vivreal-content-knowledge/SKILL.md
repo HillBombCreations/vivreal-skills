@@ -58,6 +58,7 @@ Owner decision 2026-10-06: every agent, command and skill lives in the vivreal-s
 - **Honesty floor**: never assert an unverified feature claim or price; the verify list is in `brand/voice.md`. Violations hide in the meta description, the closing paragraph and cover-image copy, the three places `voice-check.mjs` cannot see (it word-checks only the `## Body` block).
 - Never commit `packages/leadgen/Data/`, `auth.storageState.json` or `fixtures.json`. Reference MP4s are local inputs, never crawled or republished.
 - Zero em or en dashes in any copy; scan bytes, because `grep -P` lies on this machine.
+- **Only customers recorded as consenting may be featured** in Vivreal marketing. The record is vivreal-hq `docs/agent-notes/content-planner.md`, section "Customer consent for marketing"; every other customer is not consented.
 
 ## Companions
 

@@ -168,6 +168,7 @@ A product list carries `collection_groups.commerce { state: selling | paused | m
 - **`preupload-*` keys live one day** (`ExpirePreuploadOrphans` on every tenant bucket). A reference left on one after a save is permanently dead (S3 403 behind the media 302). Verify media by diffing referenced keys against the bucket listing.
 - ESLint (correctness rules) + a 100%-coverage test suite + husky push gate are now in place, no GitHub Actions test workflow exists, so the hook is the only automated gate before merge.
 - The consolidated prod-bug punch list (portal + all backends, fixed vs still-open) lives at `Vivreal_Portal_Mobile/docs/projects/portal-frontend-testing-strategy/prod-bugs-found.md`.
+- **A `collectionObjects` update that omits `publishDate` through the portal proxy unpublishes the item** (the proxy sends `null`); a scripted edit sends the stored `publishDate` back (`vivreal-knowledge:vivreal-db`, "Write and schema traps").
 
 ## Before you report an absence
 

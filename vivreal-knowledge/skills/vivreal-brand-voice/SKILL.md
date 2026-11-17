@@ -68,6 +68,10 @@ Defined on four dimensions ([Technotize](https://technotize.io/insights/brand-vo
 | Naming real customers / quoting real prospects | Privacy | Anonymized scenes |
 | Citing metrics ("3x reach," "saves 2 hours") not in the brand guide / not user-provided | Unverifiable claims | Omit, or flag for verification |
 
+**Say sequence, never campaign, in outreach** (owner rule P-sequence, vivreal-hq `docs/standards/process.md`): the unit is a sequence, or a batch of leads on a sequence. An owner's own email campaign to their sign-ups is a product feature and keeps its name.
+
+**A dash sweep of served HTML strips `<style>` and `<script>` first:** renderer CSS comments carry dashes and the count differs per page, so never compare against a fixed baseline.
+
 ## The competitive frame
 
 Lead against the tools owners actually know (plus the niche industry CMS a trade gets locked into), never enterprise-CMS jargon. Grant the strength, then win on product.

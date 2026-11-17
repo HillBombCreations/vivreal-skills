@@ -120,6 +120,10 @@ Restyling an ALREADY-LIVE site in place, neither `/migrate` nor `/template`: `sc
 - **`verify-live.js` browser-boundary rule:** it destructures `PROSE_BLOB_CHARS`/`SHARE` into the `page.evaluate` callback, closure vars don't cross the browser boundary; keep constants passed explicitly.
 - **WordPress `-WxH` thumbnail normalization:** `src/capture/imageUrl.js` strips trailing `-WxH` from `/wp-content/uploads/` image URLs (sized thumbnails 404; originals always exist).
 - **Probe-guessed routes lie on WordPress:** guessed paths (`/menu`, `/about`, …) resolve to the theme's 404 template with a 200, `deadPageFilter.js` drops them (probe-discovered pages ONLY; linked/sitemapped pages are never touched).
+- **A re-assemble undoes an artifact-level fix.** `assemble-blueprint` regenerates the ledger, meta and contact fields from `capture.json`, so a fix made in `blueprint.json` is gone after the next assemble. Fix at the part level, or replay the fix after every assemble.
+- **The loader drops empty-bound pages.** A generic-format page whose only bindings resolve to zero-object collections is dropped at load (`packages/site-loader/src/loader/convertBlocks.js` at `origin/master`, which logs `[loader] dropping N empty-bound page(s)`), mirroring the Templates empty-page guard. Authoring-time coverage does not predict which pages drop: read that log line, or replay the conversion against the staged artifact.
+- **A rebranded sibling capture keeps the donor's `sourcePath` values,** so assemble reports its pages as dropped until they are bridged.
+- **Check gaps against gate decisions before blaming the renderer.** An open gap needs an accepted `gateDecisions` entry (`packages/site-loader/src/loader/gaps.js`), and staged captures carry `gateDecisions: []`, so read a kit's open `gaps[]` against its decisions before reading a template-picker instantiation failure as a renderer bug.
 
 ## capabilities/CAPABILITIES.md: useful to ANY Vivreal agent
 
