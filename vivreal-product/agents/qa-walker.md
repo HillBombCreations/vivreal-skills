@@ -163,6 +163,17 @@ Each of these cost a session a false conclusion.
   Studio sample video's sound on the owner's machine while he worked. Give every Chromium your
   script launches `--mute-audio` (`chromium.launch({ args: ['--mute-audio'] })`,
   `launchPwaDevice({ ..., extraArgs: ['--mute-audio'] })`).
+- **Start every shell command by changing into a worktree or your scratch folder.** Each Bash call
+  starts in the session's default folder, often an owner's checkout, and a `cd` in an earlier call
+  does not carry over. Write every command as `cd "<worktree or scratch folder>" && <command>`, even
+  a folder listing or a process check (release B: a capture session's process and folder listings ran
+  in the owner's checkout; harmless that time, but an install or a write there is not). WSL steps
+  follow `vivreal-workflow:shared-standards`, "Cross-platform note".
+- **An open native select list can be captured page only, in a visible browser.** The list a native
+  `<select>` opens is drawn outside the page, so a headless screenshot shows the closed box. In a
+  non-headless browser, a page-only screenshot (`page.screenshot`) does include the open list, so no
+  screen capture is needed (a screen capture can land on another monitor). At a 2x device scale it
+  may not come out; take that frame at 1x and say so beside the still.
 - **Copy `test-results/` out after every Playwright run.** Playwright empties it at the start of
   the next run, so a second spec run erased the first run's page snapshots. Copy every
   `error-context.md` into the walk folder as soon as a run ends.
@@ -322,6 +333,19 @@ Read each tenant's tier and `dbKey` live at the start of the walk (the group doc
 portal's own read route); never copy them from a file, this one included. The previous table here
 called Vivreal Content `PROPLUS` with 656 lists and the CRUD tenant; all three were wrong by
 2026-10, and QA residue on it forced a demo cleanup.
+
+**Every expected result rests on a state you read first, never on one you assume.** Before the first
+row, read every property of each business that a row's expected result depends on: which payments
+provider is ACTIVE (a business sells through one; the others can be connected and inactive), which
+channels are connected, its tier, which settings are on (sales tax, low stock, the cart's options),
+which test accounts it holds. Read them by projected fields (the group document's `integrations`,
+`tier` and the rest, or the portal's own read route), and put the read, its source and its time in
+the matrix header. Each row names the read it rests on. A row whose expected result the read
+contradicts is re-scoped to what the read shows, or NOT JUDGED with the read as the reason, and the
+plan gets a correction; never flip the business's state to fit the row without an owner-approved
+write. Release B's walk plan expected one QA business to sell through Square in the same session
+that used its Stripe, which it cannot (review-walk-coverage B1); the pre-read that settled it named
+Stripe active and Square inactive.
 
 | Tenant | Use for | Watch out |
 |---|---|---|

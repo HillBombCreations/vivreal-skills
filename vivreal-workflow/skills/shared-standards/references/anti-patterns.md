@@ -42,6 +42,7 @@ The rules as a reviewer walks them, one line per entry.
 21. **An exclusion honoured by one reader only.** A new hide, archive or exclude flag lists every reader of the set and decides each.
 22. **Device clock for a business time.** A time an owner or a customer reads is in the business time zone and names the zone.
 23. **Work that lands in a folder it did not name.** Every shell step changes into its folder in the same command and checks it, and every tool that writes files is pointed outside every repository.
+24. **Expected results resting on unread state.** A result that depends on an account's or an environment's state rests on a read of that state made first.
 
 ---
 
@@ -318,3 +319,15 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** A command handed to a second shell layer (a Linux subsystem, a container exec, a remote shell) with no change of folder before it. A change of folder in one tool call and the command in the next, in a tool whose working folder resets between calls. An install or a pack run on a folder that another operating system also uses. A browser, capture or test tool left on its default output folder. A file saved under a relative name.
 
 **Guard shape:** One quoted command per step that changes folder first and prints it, refusing when the printed folder is not the intended one. Tool output folders set to an absolute path outside every repository. A status check of the working folder after a run, expecting no new untracked files.
+
+---
+
+## 24. Expected results resting on unread state
+
+**Rule:** A test, walk or proof step whose expected result depends on the state of an account or an environment (which provider is active, which features or settings are on, which plan it is on, what data it holds) rests on a read of that state made first and recorded with the step, never on what a plan or a file says the state is.
+
+**Why it hurts:** A step written against an assumed state can fail on a correct product or pass for the wrong reason, and the report then describes a state that never existed.
+
+**How to spot it:** An expected result that names an account's configuration with no read of that configuration in the same run. An account named by its role ("the test business") with properties copied from a plan. Two steps in one session that need mutually exclusive states of the same account.
+
+**Guard shape:** A pre-read at the top of every run that records each property the expected results depend on, with its source and time. Each step names the read it rests on. A step the read contradicts is re-scoped or marked not judged, with the read as the reason, and never forced by changing the state to fit.
