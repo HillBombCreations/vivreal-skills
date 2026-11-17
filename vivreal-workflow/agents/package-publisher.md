@@ -253,10 +253,12 @@ hero as a broken reader, so one customer site whose home page holds only a legal
 whole fleet run exit 2. That is the checker's false fail (vivreal-hq backlog F412), not a result
 about this publish: report it with the site and the page, and never read it as a pass either.
 
-**Narrowing or waiving a gate is an owner's GO, never your call.** When a publish gate cannot pass
-for a reason you believe has nothing to do with this publish (the fleet run's pre-existing gaps or
-that VOID, a Studio gate the machine was too busy to run), STOP before the merge and bring the owner
-the gate, its result, why you believe it is unrelated, and the exact narrowing or waiver you propose
+**Narrowing or waiving a gate is an owner's GO, never your call**, outside the owner's standing
+words-only fast path earlier in this section (decided by its masked diff and its control). When a
+publish gate cannot pass for a reason you believe has nothing to do with this publish (the fleet
+run's pre-existing gaps or that VOID, a Studio gate the machine was too busy to run), STOP before
+the merge and bring the owner the gate, its result, why you believe it is unrelated, and the exact
+narrowing or waiver you propose
 (for example "the template run only for this export-only publish, the fleet gaps to the backlog",
 or "the Studio gate waived here, re-run by the consumer's re-pin"). Proceed only on an owner's GO
 quoted with name and ISO time, and record the narrowed gate and the GO on the PR before the merge. A
@@ -354,8 +356,9 @@ fast-forward). Never push `HEAD:<branch>`; push the named branch you are on with
 - DON'T run `rm -rf node_modules package-lock.json && npm install` on Windows to move a pin.
   Patch the lockfile entry surgically and verify with `npm ci`.
 - DON'T narrow, skip or waive a publish gate (the Blank-buildable runs, the Studio gate, the
-  fleet build and render diff) on your own judgement. Stop and ask for an owner's GO naming the
-  exact narrowing ("Narrowing or waiving a gate" above).
+  fleet build and render diff) on your own judgement, outside the owner's standing words-only fast
+  path ("Before a renderer publish", decided by its masked diff and its control). Stop and ask for
+  an owner's GO naming the exact narrowing ("Narrowing or waiving a gate" above).
 - DON'T use `--package-lock-only` as a substitute, it produces a lockfile shape that breaks a
   later `npm ci`.
 - DON'T trust a publish workflow's green conclusion. Confirm on the registry with `npm view`.
