@@ -41,7 +41,7 @@ Vivreal's **first-party, privacy-first web-analytics pipeline**. Increment 1 (th
 - **Origin-verify secret rotation requires a stack redeploy**, the value is baked into both the Lambda env and the CloudFront origin config via `{{resolve:...}}` at deploy time.
 - Origin verify is a shared-secret header, NOT CloudFront OAC, OAC would force SigV4 payload hashes `sendBeacon` cannot send. Direct-to-Function-URL callers bypass WAF but still hit every Lambda-side defense.
 - Cardinality capping happens at **cron time**, not ingest (race-free; ingest path stays write-only). Paths length-capped ≤300 chars at validation.
-- Runtime is `nodejs22.x` since 2026-10-02 (`c23f0d0`), moved with the rest of the fleet.
+- Runtime is `nodejs24.x` since release B (#30, `48ac543`, live 2026-11-17; `template.yaml`), and the four function roles carry the fleet's workload permissions boundary (`b345efc`): an `AccessDenied` that names the boundary is a grant it denies, not a missing policy (`vivreal-infra:vivreal-iam-secrets`). It was `nodejs22.x` from 2026-10-02 (`c23f0d0`).
 
 ## Increment 2: the read side (built: in other repos)
 

@@ -118,6 +118,12 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
 - **VR-Ops-Write**: three named actions on named resources, `runAuditor`, `sendTestAlert`,
   `purgeCdn`, each written to `/vivreal/ops-write-audit`. `purgeCdn` plans by default and writes
   only on an explicit confirm, rebuilding the plan server side.
+- **Both run `nodejs24.x`, and their roles, like the compute role in `admin-identity.yaml`, carry
+  the fleet's workload permissions boundary** (release B BR-12, live 2026-11-17; `Runtime` and
+  `PermissionsBoundary` in each template at `origin/deploy/admin-app` `619dde3a`). An
+  `AccessDenied` that names the boundary is a grant the boundary denies, not a missing policy
+  (`vivreal-infra:vivreal-iam-secrets`). The Next.js app itself stays on Node 22 (the package's
+  `engines` and `.nvmrc`).
 
 ## Deploy: fast-forward `deploy/admin-app`
 
@@ -142,7 +148,7 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
 ## Working in it
 
 - `npm run test:admin` from the repo root (vitest plus the Lambdas' `node --test`); `npm run
-  typecheck` in the package. Node 22.
+  typecheck` in the package. Node 22 for the app (the two Lambdas deploy on 24, above).
 - **Tailwind 4 scans test files unless told not to.** A class-like string in a test once broke
   `next dev` with a 500 while `next build` passed (the minifier dropped the rule). The four
   `@source not` lines in `src/styles/globals.css` and `src/styles/tailwindSourceScan.test.ts` keep

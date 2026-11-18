@@ -11,7 +11,7 @@ Source of truth: `VR-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/
 
 Last synced: 2026-10-20 against `origin/main` at `3285303` (#52, the v7 release; this repo deploys on every merge to `main`)
 
-Remote MCP server for the Vivreal CMS. Cognito **OAuth 2.1 + PKCE** (bearer token), deployed on Lambda (Node 22 since 2026-10-02, `c8cd658`; arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. Deploys on every push to `main` (`.github/workflows/deploy.yaml`, no `workflow_dispatch`; the `dogfood` trigger was removed), so a merge IS a production deploy. Read `CLAUDE.md` at `origin/main` for depth. **The AI offering is this server, and only this server** (owner 2026-10-07): the in-app agent is retired, and in owner copy it is "an AI agent", never "assistant" or a model name.
+Remote MCP server for the Vivreal CMS. **OAuth 2.1 + PKCE** toward the AI app (it holds only this server's opaque token), deployed on Lambda (Node 24 since release B, 2026-11-17, #63 `c4880ed`, with the workload permissions boundary on its role; arm64) + HTTP API Gateway + DynamoDB sessions. All ops are group-scoped. Deploys on every push to `main` (`.github/workflows/deploy.yaml`, no `workflow_dispatch`; the `dogfood` trigger was removed), so a merge IS a production deploy. Read `CLAUDE.md` at `origin/main` for depth. **The AI offering is this server, and only this server** (owner 2026-10-07): the in-app agent is retired, and in owner copy it is "an AI agent", never "assistant" or a model name.
 
 ## Two MCP surfaces: don't confuse them
 
@@ -36,6 +36,10 @@ neither is the module list itself. Alongside the tools there are guided **prompt
 (`vivreal://groups/{groupId}` and descendants); count each from its own source.
 
 **One plan gate: `canUseMcp`** (`@hillbombcreations/tier-quotas`, the `mcpAccess` flag), applied in `src/tools/session.ts` and again per call, so a business whose plan lacks it is refused whatever tool it names (`TIER_NOT_ENTITLED`). `TOOL_MIN_TIER` and its per-tool ladder are **deleted** (`src/tools/catalog.ts` records why: it could never refuse a call the first gate allowed, and it answered three tools with a different error code). What remains there is `entitlementTier`, which resolves a stored plan string into the tier-quotas vocabulary and is not a gate. `tierForDbKey` is deleted too: a tenant database name cannot tell a plan. **Metering is `mcpToolCalls`** (`src/middleware/usage-quota.ts`, the limit from `getTierQuotas(tier).mcpToolCalls`): a hard stop with no overage rate. `agentActions` is the retired in-app agent's allowance and is `0` on every tier.
+
+## How a person signs in: the portal's `/login`, never Cognito's page (since 2026-10-10, `0fd5ae6`)
+
+`/oauth/authorize` sends a signed-out or stale owner to the portal's own `/login`, whose password form goes through VR_Main_API's `/api/user/login` on the portal's app client, so Main's emailed sign-in code applies here too, on the same `/login`, before it returns to Allow access. Approve accepts only an ID token issued to the portal client and signed in recently (`src/auth/middleware.ts`), and each connection refreshes its ID token on the portal client (`src/auth/downstream.ts`). The Cognito broker is retired (`src/auth/broker.ts`) and no route reaches Cognito's hosted pages, so any text that says this server signs people in on Cognito's page is stale. Which other ways into the user pool still accept a password is not written here (`vivreal-infra:vivreal-auth-architecture`, System 3).
 
 ## What a connection may do (2026-10-09 hardening, v5 grants)
 
@@ -67,4 +71,4 @@ Most tools need `groupID` + `dbKey` from the active group. `set-active-group` is
 
 ## Runtime
 
-`src/index.ts` (local HTTP) + `src/lambda.ts` (API Gateway v2 adapter). SAM CloudFormation, GitHub Actions on `main` only (CI token scoped `packages: read`). Required env: `AWS_REGION`, `USERPOOL_ID`, `MCP_CLIENT_ID`, `COGNITO_DOMAIN`; Sentry config is resolved from SSM.
+`src/index.ts` (local HTTP) + `src/lambda.ts` (API Gateway v2 adapter). The deploy ships the runtime files only and checks the unzipped size first, because the whole checkout once passed Lambda's size cap (Outreach MCP #20, the same step here). The server's own instructions point a person at the help centre, `https://vivreal.io/help` (MC-1, `src/server.ts`), a plain website it does not fetch. SAM CloudFormation, GitHub Actions on `main` only (CI token scoped `packages: read`). Required env: `AWS_REGION`, `USERPOOL_ID`, `MCP_CLIENT_ID`, `COGNITO_DOMAIN`; Sentry config is resolved from SSM.

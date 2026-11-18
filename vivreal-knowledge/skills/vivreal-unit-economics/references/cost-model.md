@@ -65,6 +65,16 @@ Two rules fall out of this decomposition, and both have already produced a wrong
   free-tier absorbed. The growth is in build minutes, WAF, logs and secrets, none of which the
   old model tracked at all.
 
+**Release B's added run rate** is planned in vivreal-hq `docs/projects/next-release-B/plan-release-B.md`
+section 0.6 (the figures and the ceiling live there, and the private finance notes, not here), with no
+WAF anywhere. Almost all of it is the rebuild after a save (B-2): Amplify build minutes again, this
+time driven by owner saves within per-site and fleet caps, and only once the sweeper is on (the pilot
+and fleet steps; it runs in shadow on 2026-11-18 and builds nothing). The rest is CloudWatch: release
+B's new alarms and custom metrics (usage billing, the caller limit, the checkout tax alarm, the help
+centre). Stripe Tax fees fall on each shop's own Stripe account, not Vivreal's. Re-read the bill a
+month after the fleet step rather than trusting the plan figure: the rebuild line scales with saves,
+which no one has measured yet.
+
 The Atlas tier step does not change any of this: Atlas is billed directly by MongoDB and never
 appears on the AWS invoice.
 
