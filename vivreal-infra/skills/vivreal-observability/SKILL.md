@@ -110,18 +110,24 @@ a total-spend budget and a tighter infrastructure-only one. **Read the current a
 
 ---
 
-## A new alarm is created with its actions off
+## A new alarm must not page at its own creation
 
 An absence alarm (a "no run in 2 hours" alarm, a missed-run alarm) reads ALARM the moment it is
 created, because no datapoint exists yet, and pages the owners at its own creation:
 `live-rebuild-sweep-missed-run` paged 12 minutes after it was made and stayed in ALARM (backlog
-F343). The owners' rule since release B: **every new alarm is created with `ActionsEnabled: false`,
-and a reviewed one-line commit switches its actions on only after it has read `OK` for 24 hours**,
-proven with `describe-alarms --query 'MetricAlarms[].[AlarmName,StateValue,ActionsEnabled]'`. Each
-repo pins it with a test that holds the list of alarms allowed actions (VR_Secure_API
+F343). **Release B's answer:** every new alarm was created with `ActionsEnabled: false`, and a
+reviewed one-line commit switched its actions on after it had read `OK` for 24 hours, proven with
+`describe-alarms --query 'MetricAlarms[].[AlarmName,StateValue,ActionsEnabled]'`. Each repo pins it
+with a test that holds the list of alarms allowed actions (VR_Secure_API
 `test/unit/alarms/alarmActionsGate.test.js`, VR_Client_API `test/checkoutTaxAlarm.test.js`, and the
-same in CMS and Main); the flip commit edits that list. A plan or design that creates an alarm with
-actions on, or with no flip step, is the defect.
+same in CMS and Main); a flip edits that list.
+
+**From release C the flip is not a deployment** (hq `docs/standards/process.md`, P-one-promote,
+amended 2026-11-18: one deployment per repo per release). Release B flipped its alarms with
+follow-up commits and promotes (BR-30); a plan no longer does. An alarm whose metric cannot breach
+before its soak ends is created with its actions on; one that could page at its own creation is
+shaped by the design so it cannot, inside the one deployment, or carries an owner exception
+recorded in hq `decisions.md`.
 
 **Release B's alarms created this way** (actions off on 2026-11-18, switched on at release B's BR-30
 after their 24 quiet hours): `VR-CMS-API-caller-rate-refused`, `VR-Secure-API-caller-rate-refused`,

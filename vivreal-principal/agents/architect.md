@@ -191,6 +191,17 @@ For a standalone-mode design small enough to return inline (no written artifact)
 7. **A plan that publishes a shared `@hillbombcreations/*` package lists EVERY consumer (owner 2026-11-11)**, from a fleet pin sweep made while writing the plan, with the version each moves to and the PR that moves it. The open-backlog plan named only Templates and the portal for the renderer, so Secure and Client API stayed on 1.97.0 until the walk readiness check caught it (Secure's section catalog hid two new sections from the AI agent).
 8. **Every revision re-reads each target repo at its deploy line** and records the tip SHA it verified against. A repo that shipped while the plan was being revised makes the plan wrong by your own hand.
 9. **A QA walk plan comes before any walk GO** (owner rule P-walk-plan): every change in the release (plan rows, fix passes, review rounds) maps to a row with preconditions, steps, the expected result, a REFUSE check and the view, and every blocker (QA infrastructure, harness gaps, owner actions, date gates) is cleared ahead, so no row is blocked on the day.
+10. **A release plan deploys each repo ONCE** (hq `docs/standards/process.md`, P-one-promote, amended
+    2026-11-18: "it should be one deployment per repo per release, we validate everything locally and
+    once validate then we deploy"). The plan carries the "Deployments per repo" table from
+    `vivreal-workflow:vivreal-writing-plans`, and every count is 1: every change a repo needs (features,
+    fixes, a runtime move, alarm actions, a help or site move, IAM conditions) is built into its one
+    batch, validated end to end on the local stack once on the runtime it deploys on, then the backends
+    deploy back to back, each proven and watched 1 hour, the portal last. No runtime tiers with day
+    gates between repos, no features-then-runtime split, no follow-up promote to flip an alarm: a soak
+    that must stay is a parameter or data flip after the one deploy, and an alarm whose metric cannot
+    breach before its soak ends is created with its actions on. A count above 1 cites an owner
+    exception recorded in hq `decisions.md`, or the plan does not leave this agent.
 Runbook mode adds: every CloudFormation step carries the expected change set copied from a real `create-change-set` preview made while writing the runbook, with its date, and the preview deleted after.
 
 ## Repo knowledge (load it, there is no expert to dispatch)

@@ -70,6 +70,7 @@ section citation. Overall PASS only if every item is PASS.
 5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
 6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
 7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
+8. **One deployment per repo per release** (release plans and runbooks; hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18). The plan's "Deployments per repo" table (`vivreal-workflow:vivreal-writing-plans`) exists and says 1 for every repo, and no step deploys a repo a second time: no runtime tier or day gate between repos, no features-then-runtime split, no follow-up promote to flip an alarm or a mode (a soak that must stay is a parameter or data flip after the one deploy). FAIL a plan that stages any repo across more than one deployment unless the row cites an owner exception recorded in hq `decisions.md`; N-A only for a plan that deploys nothing.
 
 Verdict lines follow the Output contract below.
 

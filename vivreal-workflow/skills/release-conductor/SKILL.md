@@ -36,6 +36,32 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
 4. **Read `vivreal-workflow:fleet-concurrency`** for the machine-side limits (ports, gates, stash,
    scratchpad, the orphan sweep).
 
+## 1a. The shape of a release: one deployment per repo (P-one-promote, amended 2026-11-18)
+
+The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18, from release C
+on): "it should be one deployment per repo per release, we validate everything locally and once
+validate then we deploy". Release B staged repos across tiers, follow-up promotes and day gates,
+and that is now the exception an owner must approve, never the plan's default.
+
+1. **Every repo deploys ONCE per release.** Everything a repo needs in the release is built into its
+   one batch, one PR: features, fixes, a runtime move, alarm actions, a help or site move, IAM
+   conditions. A find mid-batch joins that repo's PR as another commit.
+2. **Validate the whole batch end to end on the local stack once** (P-local-validate), on the runtime
+   it will deploy on (a runtime move is validated on the new runtime locally, not proven by a tier in
+   production).
+3. **Then deploy the backends back to back**, each proven live (`vivreal-infra:vivreal-deploy-proof`)
+   and watched for 1 hour before the next, **the portal last** (P-api-first).
+4. **A timed soak that must stay is a flip, not a deployment.** A watch-only or shadow mode, an
+   allowlist, a rate limit's mode: ship it in the one deploy behind a parameter or data value, and
+   turn it on later with a parameter or data flip. Never a second promote to flip an alarm or a mode.
+5. **An alarm is created with its actions on when nothing can breach before its soak ends.** No
+   follow-up promote flips an alarm's actions. An alarm that could page at its own creation (an
+   absence alarm with no datapoint yet) is a design question the plan answers without a second
+   deployment, or an owner exception in `decisions.md` (`vivreal-infra:vivreal-observability`).
+6. **Check every plan before you run it:** its table of deployments per repo says 1 for every repo.
+   More than 1 for any repo needs an owner's exception recorded in hq `decisions.md`; without it,
+   send the plan back (the reviewer FAILs it too).
+
 ## 2. Slots: the check before every dispatch
 
 The cap and its counting rule are P-cap (the live value `agent-cap`, per machine): count every

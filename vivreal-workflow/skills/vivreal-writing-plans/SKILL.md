@@ -47,6 +47,26 @@ A plan that touches more than one repo carries both of these, so no builder wait
   the plan, with the version each moves to and the PR that moves it. Naming only Templates and
   the portal for the renderer left Secure and Client API on 1.97.0 until the walk readiness check.
 
+## Deployments per repo (REQUIRED in a release plan, from release C)
+
+The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
+one deployment per repo per release, we validate everything locally and once validate then we
+deploy". A release plan carries this table, and every row's count is 1:
+
+| Repo | What its one batch carries (features, fixes, runtime move, alarm actions, help or site move, IAM conditions) | Deployments in this release | Flips after the deploy (parameter or data only) |
+|---|---|---|---|
+
+- **Everything a repo needs rides its one batch**, validated end to end on the local stack once,
+  on the runtime it deploys on (P-local-validate); then the backends deploy back to back, each
+  proven and watched 1 hour, the portal last (P-api-first).
+- **A timed soak is a flip, not a step that deploys.** A watch-only or shadow mode, an allowlist, a
+  rate limit's mode ships in the one deploy behind a parameter or data value; the plan's later step
+  is the flip, with its GO and its undo.
+- **An alarm is created with its actions on** when nothing can breach before its soak ends; an
+  alarm that could page at its own creation is shaped so it cannot, inside the one deployment.
+- **A count above 1 needs an owner exception recorded in hq `decisions.md`**, cited in that row;
+  without it the plan review FAILs (trap 10 below).
+
 ## Runbook commands and STOP conditions (REQUIRED in a release plan)
 
 - **Every command carries every argument its script needs**, checked against the script's own
@@ -106,6 +126,14 @@ with no tripwire".
    toward counting or refusing, and pair it with a REFUSE test that plants the unseen case
    (catalog entry "A guard narrowed to one read with no tripwire").
 
+**Releases staged across deployments**
+10. **A repo deployed more than once in one release** (owner rule P-one-promote, amended 2026-11-18,
+    after release B). Release B moved runtimes in tiers with day gates between repos, split each
+    release-line API into a features promote and a runtime promote, and flipped alarms with follow-up
+    promotes. From release C the "Deployments per repo" table above says 1 for every repo; runtime
+    moves, alarm actions, help moves and IAM conditions join each repo's one batch; and a soak that
+    must stay is a parameter or data flip after the deploy, never another deployment.
+
 ## Task right-sizing & bite-sized steps
 
 A task is the smallest unit that carries its own verification cycle and is worth a
@@ -160,7 +188,9 @@ prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
   vs the spec/research, scope correctness (no creep, nothing missing), risk and
   blast-radius coverage, convention fit, missing edge cases / failure modes,
   testability of the plan, and every item of the vivreal-writing-plans skill's
-  "Runbook commands and STOP conditions" and "Plan traps" lists. Verdict PASS or
+  "Deployments per repo", "Runbook commands and STOP conditions" and "Plan traps"
+  lists (FAIL a plan that deploys a repo more than once in the release unless an owner
+  exception is recorded in hq decisions.md). Verdict PASS or
   FAIL with section citations. Write to
   docs/projects/<slug>/plan-review-N.md.
 ```
