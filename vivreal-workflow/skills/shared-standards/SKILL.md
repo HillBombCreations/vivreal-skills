@@ -1,6 +1,6 @@
 ---
 name: shared-standards
-description: Vivreal Portal shared engineering standards, the non-negotiable conventions every Vivreal bug/feature workflow agent reads before working. Use when an agent or command says to consult "shared-standards" or "_shared-standards", or when a task touches Vivreal proxy routes, multi-tenancy (active_ctx/dbKey/groupID), CSRF, hydration/SSR, Lambda infra, MongoDB queries, testing rules, npm lockfiles and the node 20 versus node 22 CI runner skew, verifying a CloudFormation deploy actually landed, or proving a backport reached a release line. Carries the ${VIVREAL_REPOS} path-resolution preamble and the lazy-reading trigger map.
+description: Vivreal Portal shared engineering standards, the non-negotiable conventions every Vivreal bug/feature workflow agent reads before working. Use when an agent or command says to consult "shared-standards" or "_shared-standards", or when a task touches Vivreal proxy routes, multi-tenancy (active_ctx/dbKey/groupID), CSRF, hydration/SSR, Lambda infra, MongoDB queries, testing rules, npm lockfiles and the npm 10 versus npm 11 CI runner skew, verifying a CloudFormation deploy actually landed, or proving a backport reached a release line. Carries the ${VIVREAL_REPOS} path-resolution preamble and the lazy-reading trigger map.
 ---
 
 > NOTE: This skill is the relocated form of the portal's `.claude/agents/_shared-standards.md`.
