@@ -177,7 +177,7 @@ function buildOutput(f) {
   const indexText = typeof f.index === 'string' && f.index.trim() ? f.index : null;
   const live = parseLive(f.live);
   // The one fetch line replaces everything only when the live values are unreadable too, or when
-  // origin/main truly lacks the index (no ref at all, or a `cat-file -e` that answered "absent").
+  // origin/main truly lacks the index (no ref at all, or a `show` of it that exited non-zero).
   // Any other failed read, a git timeout among them, keeps the live values it read (F467).
   // Checked before the current-hq skip below: a CLAUDE.md import of a file that is not there
   // gives the session nothing either.
@@ -279,10 +279,14 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
   const sha = head.status === 0 && /^[0-9a-f]{40}$/.test(head.stdout.trim()) ? head.stdout.trim() : null;
 
   let fromWorktree = false;
+  // The exit status of each origin/main read, by path. git answers a path the commit does not hold
+  // with exit 128; a timeout or a failed spawn gives no status at all, which is UNREADABLE, never
+  // missing (F467, definition review F476 (2)). An empty answer is not trusted as content either.
+  const shownStatus = {};
   const read = (rel) => {
     if (sha) {
       const shown = git(hqDir, ['show', `${sha}:${rel}`], genv);
-      // A non-zero exit or an empty answer is "not there": never trust an empty read.
+      shownStatus[rel] = shown.status;
       if (shown.status === 0 && shown.stdout) return shown.stdout;
     }
     try {
@@ -295,15 +299,13 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
   };
   const live = read(LIVE_PATH);
   const index = read(INDEX_PATH);
-  // Asked only when no index could be read: does origin/main truly lack it? git answers a missing
-  // path with exit 128; a timeout or a failed spawn gives no status, which is not an absence (F467).
+  // Decided only when no index could be read: does origin/main truly lack it? The `show` above
+  // already answered, so no second git call asks again: a numbered non-zero exit is an absence, no
+  // status (a timeout) is not, and with no origin/main ref at all there is nothing to read.
   let indexMissingAtOrigin = false;
   if (typeof index !== 'string' || !index.trim()) {
-    if (!sha) indexMissingAtOrigin = true;
-    else {
-      const has = git(hqDir, ['cat-file', '-e', `${sha}:${INDEX_PATH}`], genv);
-      indexMissingAtOrigin = typeof has.status === 'number' && has.status !== 0;
-    }
+    const st = shownStatus[INDEX_PATH];
+    indexMissingAtOrigin = !sha || (typeof st === 'number' && st !== 0);
   }
 
   let fetchAgeHours = null;

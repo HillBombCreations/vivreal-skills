@@ -380,8 +380,8 @@ test('REFUSE: the import line in backticks or in a code fence does not count', (
 // ---------------------------------------------------------------- gather, injected git
 
 // indexRead: 'ok', 'timeout' (no exit status, as a spawn past GIT_TIMEOUT_MS returns) or 'missing'
-// (exit 128, as git answers for a path a commit does not hold); it drives `show` and `cat-file -e`
-// of the index alike, since a slow git is slow for both.
+// (exit 128, as git answers for a path a commit does not hold); it drives the `show` of the index,
+// and a `cat-file -e` of it too, so a test can prove the hook no longer asks one (F476 (2)).
 function fakeGit({ sha = SHA, tree, indexPaths, hashes, live = LIVE, index = INDEX, showFails = false, gitPath = '.git/FETCH_HEAD', indexRead = 'ok' } = {}) {
   const calls = [];
   const indexAnswer = (ok) => {
@@ -454,10 +454,13 @@ function gatherWith(over = {}, gitOpts = {}) {
 }
 
 test('REFUSE of a lock: every git call runs with GIT_OPTIONAL_LOCKS=0 and no inherited GIT_* variable', () => {
-  // The missing-index run adds the cat-file call, so it is held to the same rule.
+  // The missing-index run takes the failed show path, so it is held to the same rule.
   const calls = [...gatherWith().calls, ...gatherWith({}, { indexRead: 'missing' }).calls];
   assert.ok(calls.length >= 5, `only ${calls.length} git calls`);
-  assert.ok(calls.some((c) => c.args[0] === 'cat-file'), 'control: no cat-file call was checked');
+  assert.ok(
+    calls.some((c) => c.args[0] === 'show' && c.args[c.args.length - 1].endsWith(':docs/standards/INDEX.md')),
+    'control: no show of the index was checked',
+  );
   for (const c of calls) {
     assert.equal(c.env.GIT_OPTIONAL_LOCKS, '0', `git ${c.args.join(' ')} ran without GIT_OPTIONAL_LOCKS=0`);
     assert.equal(c.env.GIT_TERMINAL_PROMPT, '0');
@@ -535,14 +538,15 @@ test('REFUSE (F467), gather: an index read that times out keeps the live values 
   assert.ok(!text.startsWith(NO_INDEX_START), 'the timeout printed the fetch line');
   assert.match(text, INDEX_UNREAD);
   assert.ok(!calls.some((c) => c.args.includes('fetch')), 'the hook fetched');
+  assert.ok(!calls.some((c) => c.args[0] === 'cat-file'), 'a timed-out show was asked again with cat-file');
 });
 
-test('ALLOW (F467), gather: an origin/main that lacks the index, asked with cat-file -e, gives the one fetch line', () => {
+test('ALLOW (F467, F476 (2)), gather: an origin/main that lacks the index, read from the failed show, gives the one fetch line', () => {
   const { out, calls } = gatherWith({ repo: 'VR_Client_Auth' }, { indexRead: 'missing' });
   assert.equal(out.indexMissingAtOrigin, true);
-  const asked = calls.find((c) => c.args[0] === 'cat-file');
-  assert.ok(asked, 'absence was never asked');
-  assert.deepEqual(asked.args, ['cat-file', '-e', `${SHA}:docs/standards/INDEX.md`]);
+  const asked = calls.filter((c) => c.args[0] === 'show' && c.args[c.args.length - 1] === `${SHA}:docs/standards/INDEX.md`);
+  assert.equal(asked.length, 1, 'the index show was not asked exactly once');
+  assert.ok(!calls.some((c) => c.args[0] === 'cat-file'), 'absence was asked a second time with cat-file -e');
   const text = lib().buildOutput(out);
   assert.equal(text.trim().split('\n').length, 1);
   assert.ok(text.startsWith(NO_INDEX_START), text);
