@@ -237,31 +237,33 @@ with exactly these overrides, and every other SOLO step stands:
   starts in the calling shell's folder and every Bash call starts in the session's folder, often
   the owner's checkout, so a WSL step with no `cd` ran there and rewrote an owner's root
   `package.json`, lockfile and `node_modules`. Each step is
-  `wsl.exe bash -lc 'cd "<the worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  `wsl.exe -e bash -lc 'cd "<the worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
   stop if `pwd` is not the worktree. A Linux `npm ci` or `npm pack` runs on WSL's own disk from a
   `git archive` of the head, never in the portal worktree on `/mnt/<drive>`, where it would replace
   the Windows `node_modules` the gates use (`vivreal-workflow:shared-standards`, `references/wsl.md`).
 - **A WSL step is a login shell, `bash -lc`, never `bash -c`** (release B, 2026-11-17). A plain
   `bash -c` loads no profile, so nvm never starts and `npm` is the Windows npm under `/mnt/`. Before
-  any install or test, one call `wsl.exe bash -lc 'cd "<the worktree>" && pwd && command -v node npm'`
+  any install or test, one call `wsl.exe -e bash -lc 'cd "<the worktree>" && pwd && command -v node npm'`
   must print the worktree and two paths, neither under `/mnt/` (read them: `command -v` exits 0 with
   one name missing). A path under `/mnt/` or a missing line means the machine lacks the WSL step of
   the vivreal-skills `SETUP.md` (nvm's lines in `~/.profile`): I stop and report it. A long-running
   process starts with `setsid -f`, never `nohup ... &`, which dies when `wsl.exe` returns.
-- **Any `$`, a `$(...)` included, goes in a script file run with `bash <file>`** (release B,
-  2026-11-17, a repeat of the rule above on the day it shipped). The shell `wsl.exe` hands its line
-  to expands every `$` first, in the folder the call started in, before my `cd` runs: a coder's
-  `$(...)` on a `wsl.exe bash -lc` line ran two `git diff`s in the owner's checkout. I write the
-  script with the Write tool and run `wsl.exe bash -lc 'cd "<the worktree>" && pwd && bash "<script>"'`.
+- **`wsl.exe -e`, so no outer shell expands a `$`** (release B, 2026-11-17 and 2026-11-18, the
+  root-cause fix for a repeat on the day the first rule shipped). Without `-e`, the shell `wsl.exe`
+  hands its line to expands every `$` first, in the folder the call started in, before the `cd` runs:
+  a coder's `$(...)` on a `wsl.exe bash -lc` line ran two `git diff`s in the owner's checkout. With
+  `-e`, bash runs directly and the `$` reaches it intact (measured 2026-11-18). A long step still
+  goes in a script file I write with the Write tool and run as
+  `wsl.exe -e bash -lc 'cd "<the worktree>" && pwd && bash "<script>"'`.
 - **When WSL git cannot read the worktree, a Linux step runs in a WSL-native clone, never on
   Windows instead** (release B, 2026-11-17: a coder ran `npm ci` on Windows in place of its Linux
   step for that reason). A worktree's `.git` file names a Windows path, so WSL git answers `not a
   git repository`. I bundle the branch from Git Bash (`git -C <the worktree> bundle create
-  <scratch>/<name>.bundle <branch>`), clone it on WSL's own disk (`wsl.exe bash -lc 'cd ~ && pwd &&
+  <scratch>/<name>.bundle <branch>`), clone it on WSL's own disk (`wsl.exe -e bash -lc 'cd ~ && pwd &&
   git clone -b <branch> "<the bundle as /mnt/<drive>/...>" ~/<name>'`), prove Linux node there, and
   run the Linux install or test in that clone; I edit and commit only in the worktree, and bundle
   again after a change. A Windows install never stands in for a Linux step (`references/wsl.md`);
-  the gates' own `npm ci` in the worktree (step 2 above) is unchanged.
+  the gates' own `npm ci` in the worktree (SOLO step 2) is unchanged.
 
 ## Standards reading rule
 

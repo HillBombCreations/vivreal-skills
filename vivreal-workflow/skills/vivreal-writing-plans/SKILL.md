@@ -66,7 +66,8 @@ A plan that touches more than one repo carries both of these, so no builder wait
 Each was a NEW CLASS blocker in a release B plan review (vivreal-hq
 `docs/projects/next-release-B/review-*.md`). Walk the list over the plan before dispatching the
 reviewer. The general forms are the shared-standards anti-pattern catalog's "Plan steps that cannot
-run as written" and "Plan rows that drift from settled answers".
+run as written", "Plan rows that drift from settled answers" and "A guard narrowed to one read
+with no tripwire".
 
 **Steps that cannot run as written**
 1. **A stop rule pinned to a remembered number.** A STOP said "54 of 60" from memory; the base
@@ -95,6 +96,15 @@ run as written" and "Plan rows that drift from settled answers".
    certificate monitor and a crawler need).
 8. **Scope beyond an owner answer.** A row the owner's answer did not name goes to the next release,
    or back to the owner as a question, never into the plan by default.
+
+**Guards that lose their fail-safe**
+9. **A guard narrowed to one read with no tripwire** (release C F222 design review, 2026-11-18, NEW
+   CLASS). A design swapped a coarse "any code read counts" for one precise read (a secret grant)
+   and named two refusal paths, but a template that resolves the secret into an environment variable
+   at deploy time needs no grant, so a real user would have been counted 0 with a false reason. When
+   a row narrows a guard, list every way the one read can miss, give each a tripwire that fails
+   toward counting or refusing, and pair it with a REFUSE test that plants the unseen case
+   (catalog entry "A guard narrowed to one read with no tripwire").
 
 ## Task right-sizing & bite-sized steps
 

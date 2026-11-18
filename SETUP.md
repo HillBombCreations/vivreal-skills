@@ -23,12 +23,13 @@ On Windows, keep Git's default `core.autocrlf=true` and run `git config --global
 ### The WSL step (Windows only): Node inside WSL, found by a login shell
 
 Lockfile changes, Linux test gates and packs compared with the registry run in WSL Ubuntu, so WSL needs
-its own Node, and agents reach it with a login shell, `wsl.exe bash -lc '...'`. That shell reads
-`~/.profile` (or `~/.bash_profile` or `~/.bash_login`, whichever exists first); Ubuntu's `~/.profile`
+its own Node, and agents reach it with a login shell, `wsl.exe -e bash -lc '...'` (`-e`, so no outer
+shell expands a `$` first). That shell reads the first of `~/.bash_profile`, `~/.bash_login` and
+`~/.profile` that exists, and only that one; Ubuntu's `~/.profile`
 then reads `~/.bashrc`, which returns at its top for a shell that is not interactive. A stock nvm
 install writes its two lines to the end of `~/.bashrc`, below that return, so they never run and `npm`
 resolves to the Windows npm under `/mnt/`. Inside a WSL terminal (open Ubuntu, not a `wsl.exe` command
-line, which expands `$` first):
+line without `-e`, which expands `$` first):
 
 1. Install nvm by its own README (github.com/nvm-sh/nvm), then `nvm install 22`.
 2. Put nvm's two lines in the login file too, once:
@@ -41,7 +42,7 @@ Prove it from Git Bash on Windows. This must print your WSL home folder, then tw
 `/mnt/`; read both lines, because `command -v` exits 0 when only one of the names is found:
 
 ```bash
-wsl.exe bash -lc 'cd ~ && pwd && command -v node npm'
+wsl.exe -e bash -lc 'cd ~ && pwd && command -v node npm'
 ```
 
 How agents use WSL from there (one quoted command that changes folder first, any `$` in a script file,

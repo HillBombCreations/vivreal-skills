@@ -257,6 +257,16 @@ Each of these cost a session a false conclusion.
   project's IP inbound filter for the walk machine before the walk and removes it after
   (`vivreal-workflow:release-conductor`, Walks; message filters need a higher Sentry plan). If
   your brief does not say the filter is on, say so in the walk report's first lines.
+- **A refusal row can page the owners even with that filter on** (release B, L-B-18). The filter
+  stops only what the walk machine's browser sends; a refusal a BACKEND logs (a removed member's
+  open session, a view-only member opening an owner screen, a real bug) reaches Sentry from the
+  service and files a NEW issue, and a new issue pages the owners (P-sentry-warn): three Secure
+  issues came from one day's walks unannounced. So: list the walk's refusal and membership rows in
+  the report's first lines so the dispatching thread can warn the owners before you run them; read
+  Sentry for every project the walk touched right after the walk (issues first seen in the walk's
+  window, by title and count, no event bodies); and report each one the walk caused, with the row
+  that caused it, so it can be resolved with that reason. An issue you cannot tie to a row is a
+  finding, not noise.
 - **A shared Playwright profile is single-user, with no lock-awareness.** The
   tutorial harness's profile (`vivreal-hq/.agent-cache/tutorial-profiles/`) is one
   Chrome user-data-dir; a `launchPersistentContext` against it while another
@@ -391,7 +401,11 @@ process before reporting a sign-in as unavailable (a v7 release step was wrongly
 exactly this, 2026-10-20).
 
 **Never print or store a whole group document, a secret value or a key.** Project named fields
-only, in every database read and every API read. A walker once printed one group's API key into
+only, in every database read and every API read. **Not even part of one in a shape check** (release
+B, L-B-16): a check that classed an `@` in a password as an email address printed the rest of the
+password. A check prints key names and booleans only (`typeof`, a length band, a `startsWith`
+result), and a page that lists customers or logins is read by locator and named fields, never as
+whole-page text. A walker once printed one group's API key into
 its own tool output while listing a group document's fields (v7 retest walk). Name the fields you
 need; never read a group without a projection.
 

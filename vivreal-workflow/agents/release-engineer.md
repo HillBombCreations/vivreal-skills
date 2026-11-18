@@ -317,8 +317,9 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   preview; a row that also appears in the control is not part of the release. Compare the remainder
   with the runbook's expected rows. **A sound control holds only the rows a redeploy of the same
   commit cannot avoid:** a Modify of each function's `Code` (the package step uploads a fresh
-  artifact) and the Dynamic re-evaluation rows rule (c) names (an API's `Body`, a rule's `Targets`, a
-  permission's `SourceArn`, a function's `Role`), at Replacement False or Conditional. Release B's
+  artifact), an API's `Body` re-evaluated at Replacement False, and the Conditional Dynamic
+  re-evaluation rows rule (c) names (a function's `Role`, a rule's `Targets`, a permission's
+  `SourceArn`). Release B's
   controls read exactly that: Client 2 rows (function `Code`, the dynamic `ExpressApi` `Body`), Main
   14 (9 function `Code`, the `ExpressApi` `Body`, 2 rule `Targets`, 2 permission `SourceArn`
   Conditional), Secure 73 with none on a queue, a mapping or an alarm. Any other row in the control
@@ -373,6 +374,17 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   Before merging such a repo (in a merge-to-deploy repo the merge IS the deploy), confirm its deploy
   workflow prunes to runtime files and checks the unzipped size before the upload, and read the last
   deploy's size. With no such step, STOP and report it rather than merge.
+- **A deploy script's `npm` call runs in WSL, through a wrapper that allows exactly that one call**
+  (release B BR-15, 2026-11-18). A repository's `deploy.sh` run from Git Bash calls whatever `npm` is
+  first on `PATH`, which on Windows is the Windows npm, and it would pack Windows binaries into a
+  Linux Lambda. For that run, put an executable named `npm` first on `PATH`, kept in the step's run
+  folder outside every repository, that (1) accepts exactly the argument list the script sends
+  (OnCall's was `ci --omit=dev --ignore-scripts`) and exits non-zero naming anything else, (2) refuses
+  any folder outside the step's own worktree, and (3) runs the call as
+  `wsl.exe -e bash -lc 'cd "<that folder as /mnt/<drive>/...>" && bash "<a script that proves Linux node and runs npm ci>"'`
+  (`vivreal-workflow:shared-standards`, `references/wsl.md`). Package the control preview the same
+  way so both sides carry the same Linux binaries, keep the wrapper and its log with the run, and
+  report it as a deviation. Never let the script reach the Windows npm because "only `ci` runs".
 - **Build every change-set preview template from the CLI's own `aws cloudformation package`
   output, never the merged source.** Package the template at the commit being previewed the way
   the repo's deploy workflow does, and preview that file. A hand-built template (the source with

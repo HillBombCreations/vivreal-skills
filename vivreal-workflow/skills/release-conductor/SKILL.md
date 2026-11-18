@@ -89,10 +89,11 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   (`vivreal-workflow:ops-one-shot`) only for a step those screens cannot do, and name that step and
   why in the brief.
 - **Every WSL step in a brief starts by changing into the worktree** inside one quoted login-shell
-  command, `wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
-  runs in the folder the Bash call reset to, which is often an owner's own checkout, and a plain
-  `bash -c` (several briefs on 2026-11-17) runs the Windows npm. A brief puts any `$`, a `$(...)`
-  included, in a script file, and for a worktree WSL git cannot read it names a clone made from a
+  command, `wsl.exe -e bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
+  runs in the folder the Bash call reset to, which is often an owner's own checkout, a plain
+  `bash -c` (several briefs on 2026-11-17) runs the Windows npm, and without `-e` an outer shell
+  expands every `$` there first. A brief puts a long step in a script file, and for a worktree WSL
+  git cannot read it names a clone made from a
   `git bundle` on WSL's own disk, never a Windows install as the fallback (two slips on 2026-11-17).
   The rest (prove Linux node first, which needs the vivreal-skills `SETUP.md` WSL step, and
   `setsid -f`) is in `vivreal-workflow:shared-standards`, `references/wsl.md`.
@@ -105,6 +106,12 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   quote `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of
   the dispatch. For a portal release, ask for the walk sign-off on the exact head in the same
   question.
+- **A blocking question stalls everything behind it, so at night only release-path questions go
+  in a dialog** (release B main thread, 2026-11-18). A dialog the owner has not answered holds every
+  other action of the session, including the free slots' work. When an owner may be away, ask in a
+  dialog only for what the release path needs next (a GO, a STOP decision); put every other question
+  (backlog placement, wording, next-release scope) in the session's report or the release state, and
+  keep the slots working while it waits.
 - **One GO runs the whole remaining runbook** (P-blanket-go): dispatch the release engineer once
   in RUNBOOK mode with every remaining step and that GO quoted once; no per-step check-ins.
 - **An owner-gated command** (a deploy-role change set, a typed confirmation) wants the owner's
@@ -135,6 +142,13 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   stalled walk), and say so in the walk report.
 - **Keep the walk's known errors off the Sentry quota:** add the project's IP inbound filter for
   the walk machine before the walk, and remove it after.
+- **Warn the owners before a walk's refusal and membership rows, and read Sentry right after**
+  (release B, L-B-18). The IP filter stops only the walk browser's own events; a refusal by design
+  (a removed member's open session, a view-only member on an owner screen) or a real bug is logged
+  by the backend, files a NEW issue and pages the owners (P-sentry-warn): three Secure issues came
+  from one day's walks unannounced. Before the walk GO, name those rows to the owners; after the
+  walk's end marker, list the issues first seen in its window per project the walk touched, tie
+  each to its row, and resolve the test-caused ones with that reason (P-sentry-clean).
 
 ## 6. Records
 
