@@ -47,7 +47,7 @@ A plan that touches more than one repo carries both of these, so no builder wait
   the plan, with the version each moves to and the PR that moves it. Naming only Templates and
   the portal for the renderer left Secure and Client API on 1.97.0 until the walk readiness check.
 
-## Deployments per repo (REQUIRED in a release plan, from release C)
+## Deployments per repo (REQUIRED in every release plan)
 
 The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
 one deployment per repo per release, we validate everything locally and once validate then we
@@ -128,11 +128,13 @@ with no tripwire".
 
 **Releases staged across deployments**
 10. **A repo deployed more than once in one release** (owner rule P-one-promote, amended 2026-11-18,
-    after release B). Release B moved runtimes in tiers with day gates between repos, split each
+    during release B). Release B moved runtimes in tiers with day gates between repos, split each
     release-line API into a features promote and a runtime promote, and flipped alarms with follow-up
-    promotes. From release C the "Deployments per repo" table above says 1 for every repo; runtime
-    moves, alarm actions, help moves and IAM conditions join each repo's one batch; and a soak that
-    must stay is a parameter or data flip after the deploy, never another deployment.
+    promotes. From now, in every plan, the "Deployments per repo" table above says 1 for every repo;
+    runtime moves, alarm actions, help moves and IAM conditions join each repo's one batch; and a soak
+    that must stay is a parameter or data flip after the deploy, never another deployment. Release
+    B's steps already staged before 2026-11-18 are the owners' recorded exception (hq `decisions.md`,
+    2026-11-18).
 
 ## Task right-sizing & bite-sized steps
 

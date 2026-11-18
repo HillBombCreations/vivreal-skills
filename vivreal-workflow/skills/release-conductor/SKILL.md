@@ -38,10 +38,12 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
 
 ## 1a. The shape of a release: one deployment per repo (P-one-promote, amended 2026-11-18)
 
-The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18, from release C
-on): "it should be one deployment per repo per release, we validate everything locally and once
-validate then we deploy". Release B staged repos across tiers, follow-up promotes and day gates,
-and that is now the exception an owner must approve, never the plan's default.
+The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
+one deployment per repo per release, we validate everything locally and once validate then we
+deploy". It applies to every plan and every step from now, the rest of release B included ("Like
+all these BR23 and BR33 as well"); release B's steps already staged before 2026-11-18 are the
+owners' recorded exception (hq `decisions.md`, 2026-11-18). Staging a repo across deployments is an
+exception an owner must approve, never the plan's default.
 
 1. **Every repo deploys ONCE per release.** Everything a repo needs in the release is built into its
    one batch, one PR: features, fixes, a runtime move, alarm actions, a help or site move, IAM

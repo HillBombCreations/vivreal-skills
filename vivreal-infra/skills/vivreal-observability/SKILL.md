@@ -122,10 +122,11 @@ with a test that holds the list of alarms allowed actions (VR_Secure_API
 `test/unit/alarms/alarmActionsGate.test.js`, VR_Client_API `test/checkoutTaxAlarm.test.js`, and the
 same in CMS and Main); a flip edits that list.
 
-**From release C the flip is not a deployment** (hq `docs/standards/process.md`, P-one-promote,
-amended 2026-11-18: one deployment per repo per release). Release B flipped its alarms with
-follow-up commits and promotes (BR-30); a plan no longer does. An alarm whose metric cannot breach
-before its soak ends is created with its actions on; one that could page at its own creation is
+**The flip is not a deployment** (hq `docs/standards/process.md`, P-one-promote, amended
+2026-11-18: one deployment per repo per release, for every plan from now). Release B's plan
+flipped its alarms with follow-up commits and promotes (BR-30); a plan no longer does, and
+release B's steps already staged before 2026-11-18 are the owners' recorded exception (hq
+`decisions.md`, 2026-11-18). An alarm whose metric cannot breach before its soak ends is created with its actions on; one that could page at its own creation is
 shaped by the design so it cannot, inside the one deployment, or carries an owner exception
 recorded in hq `decisions.md`.
 
