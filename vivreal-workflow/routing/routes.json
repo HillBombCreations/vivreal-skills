@@ -18,6 +18,7 @@
     { "task": "ads, GA4, marketing measurement, GTM", "agent": "vivreal-growth-analytics:growth", "keywords": ["ads", "ga4", "growth", "funnel", "gtm"], "repo": "*", "note": "numbers mode or GTM audit mode" },
     { "task": "product walks", "agent": "vivreal-product:qa-walker", "keywords": ["walk", "qa"], "repo": "*", "note": "before footage, never after" },
     { "task": "naive-owner passes", "agent": "vivreal-product:regular-user", "keywords": ["usability", "regular-user"], "repo": "*", "note": "" },
+    { "task": "stage a kit republish in the template store", "agent": "vivreal-site-migrator:kit-stager", "keywords": ["stage"], "requiresAny": ["kit", "kits", "template store"], "repo": "*", "note": "owner GO quoted verbatim; it never moves a row, the row move is its own GO" },
     { "task": "built template versus exemplar (judgement pass)", "agent": "vivreal-product:template-critic", "keywords": ["judge"], "repo": "*", "note": "" },
     { "task": "renderer Studio gate (kit:validate)", "agent": "vivreal-workflow:package-publisher", "keywords": ["studio", "gate"], "requiresAny": ["kit:validate", "live-view", "studio gate"], "repo": "*", "note": "the portal kit:validate run before a renderer merge, recorded on the renderer PR" },
     { "task": "social draft critique", "agent": "vivreal-product:social-critic", "keywords": ["critique"], "repo": "*", "note": "" },

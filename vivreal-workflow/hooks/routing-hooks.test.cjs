@@ -186,6 +186,29 @@ test('ALLOW: a Studio product fix is not the Studio gate (S3)', () => {
   assert.equal(r.stdout, '');
 });
 
+test('REFUSE: staging a kit republish routes to kit-stager, in any repo', () => {
+  for (const [cwd, description] of [[hq, 'Stage the 11 kits at f8578b5'], [cms, 'Stage kit republish for bakery-ansel'], [portal, 'Stage the template store objects']]) {
+    const r = run(
+      GUARD,
+      { cwd, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.match(decisionOf(r.stdout).permissionDecisionReason, /^Route this to vivreal-site-migrator:kit-stager \(stage a kit republish/, description);
+  }
+});
+
+test('ALLOW: "stage" with no kit or template store word is not the kit stage', () => {
+  for (const description of ['Stage the release B walk rows', 'Stage 2 review of the plan']) {
+    const r = run(
+      GUARD,
+      { cwd: hq, tool_input: { subagent_type: 'general-purpose', description } },
+      { VIVREAL_REPOS: root },
+    );
+    assert.equal(r.status, 0, description);
+    assert.equal(r.stdout, '', description);
+  }
+});
+
 test('REFUSE: publishing help or vivreal.io content in vivreal-hq routes to help-page-producer (S5)', () => {
   for (const description of ["Publish 6 help articles' content rows", 'Publish the vivreal.io blog fixes']) {
     const r = run(
