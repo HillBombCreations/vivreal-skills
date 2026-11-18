@@ -385,6 +385,11 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   (`vivreal-workflow:shared-standards`, `references/wsl.md`). Package the control preview the same
   way so both sides carry the same Linux binaries, keep the wrapper and its log with the run, and
   report it as a deviation. Never let the script reach the Windows npm because "only `ci` runs".
+  **You have no Write tool, so the dispatcher provides the wrapper and its WSL script** (the run
+  folder's path in the brief), or you write each file from Bash with one
+  `printf '%s\n' '<line 1>' '<line 2>' ... > <file>` whose lines hold no backslash (a heredoc decodes them, shared-standards "Bash heredocs
+  decode backslash escapes"), `chmod +x` it, and `cat` it back into the step's log before the first
+  use. Either way, read the file before running it and stop if it allows more than the one call.
 - **Build every change-set preview template from the CLI's own `aws cloudformation package`
   output, never the merged source.** Package the template at the commit being previewed the way
   the repo's deploy workflow does, and preview that file. A hand-built template (the source with
