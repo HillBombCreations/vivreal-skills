@@ -4,6 +4,13 @@ Moved out of `SKILL.md` ("Testing rules") on 2026-11-18 so that file stays a map
 F476 6). Every rule below is binding exactly as it was; agents that cite "shared-standards, Testing
 rules" read it here.
 
+Contents, in order: the e2e harness (fixtures, real signed ctx cookies, raw upstream mocks, the
+coverage map); gates that cannot fail; the test inventory; the red proof (forms (a), (b), (c) and the
+`Red:` line); real code paths, tests defending a defect, faked layers; fixtures recorded from real
+answers; mocks in the deployed shape; copy checks on the screen that shows the copy; inert fixes;
+honest assertions; a green suite is not a build; vacuous controls; child output read by content;
+lint, the hook gates, the portal release-head check and the one full run.
+
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
 - **Logged-in specs authenticate with REAL signed ctx cookies**, `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses, `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
 - **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope, the proxy route applies the envelope on top, same as it does against the real backends.

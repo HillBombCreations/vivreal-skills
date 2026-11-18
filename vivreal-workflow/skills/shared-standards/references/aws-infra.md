@@ -4,6 +4,10 @@ Moved out of `SKILL.md` ("AWS Lambda & Infrastructure Reference") on 2026-11-18 
 map (definition review F476 6). The subsections keep their names, so a citation such as
 "shared-standards, Release trains" or "Reading and verifying a CloudFormation deploy" lands here.
 
+Contents: Function rosters (count them, do not quote them); Release trains; Proving a fix reached a
+line (`git cherry`); Infrastructure stacks; Secrets Manager; Reading and verifying a CloudFormation
+deploy; When to consult the Lambda inventory.
+
 
 **The estate:** `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/05-reference/aws-estate.md` (with `05-reference/resource-to-template-map.md` and `04-operations/standalone-stacks.md`), READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. A count or a name there is a pointer to re-derive from the stack, never a value to quote.
 
