@@ -12,6 +12,13 @@ How permissions and secrets are organized across the backends. Pairs with `vivre
 - Roles/policies are defined **in the SAM fragments** per Lambda (VR_Secure_API `cloudformation/<lambda>.yaml`, VR_CMS_API fragments, etc.). SAM auto-attaches `AWSLambdaBasicExecutionRole` + `AWSXrayWriteOnlyAccess` (not listed in tables). Custom **managed** policies are attached via each function's `Policies:` block.
 - **No hardcoded account IDs**, ARNs use `!Sub 'arn:aws:iam::${AWS::AccountId}:policy/...'`. Least-privilege is the intent (per-Lambda policy sets, not one god role).
 
+### The workload permissions boundary (release B, the role safety limit)
+
+- **What it is.** One managed policy, `Vivreal-Deploy-Workload-Boundary`, in its own vivreal-hq stack (template `packages/fleet-ops/deploy-role/cloudformation/workload-boundary.yaml`, live since BR-12, 2026-11-17). It allows everything except identity writes (`iam:Create*`, `Put*`, `Attach*` and the rest), `PassRole` outside the census roles, `AssumeRole` outside the Campaigns roles, and account, audit and key tampering (read the document in the template, never a copy). Its name sits inside `Vivreal-Deploy-*`, which the deploy role may not version, so the deploy role cannot raise its own ceiling.
+- **Who carries it.** Every role a deploy-role template creates declares it (SAM `Globals.Function.PermissionsBoundary`, explicit roles, Serverless `provider.iam.role.permissionsBoundary`), each repo through its own release B `PB-<repo>` row; SAM's generated `CodeDeployServiceRole` is not reached by `Globals`, so VR_CMS_API gives CodeDeploy an explicit role. On 2026-11-18 it is on the hq roles and on every repo whose runtime tier shipped (`vivreal-infra:vivreal-lambda` lists them); Secure, CMS, Client, Client_Auth and Main carry it from their own release B steps. Two roles are written outside any template, EventHandler's domain saga roles, and their deploy scripts set the boundary at creation and before every policy write.
+- **What it means when you hit it.** An `AccessDenied` whose message names the boundary is a grant the boundary DENIES. Adding the action to the function's policy changes nothing; the action is one no workload should do, so the design changes, not the grant. Every `PB-` test asserts on the EXPANDED template (the SAM translator output, `serverless package` output, or the plain template), and a preview reads the processed template for the boundary ARN on every `AWS::IAM::Role`.
+- **The deploy role's grants, now and final.** Since BR-12 (H-PB2) the deploy role may `PutRolePermissionsBoundary` and `DeleteRolePermissionsBoundary` on the nine role-name patterns, each only with `iam:PermissionsBoundary` equal to the boundary's ARN; Delete is what lets CloudFormation roll a `PB-` row back. At BR-36 (H-PB3, not run on 2026-11-18), after a census proves every role carries it (read with `get-account-authorization-details --filter Role`, never `list-roles`), every role-writing statement requires the boundary on `CreateRole`, `PutRolePolicy`, `AttachRolePolicy` and `PutRolePermissionsBoundary`, and `DeleteRolePermissionsBoundary` is removed. **From then on a template without the boundary cannot deploy**, so a rollback target is the prior tag plus its `PB-` commit.
+
 ### Key shared managed policies
 
 | Policy | Grants | Attached to |
@@ -106,6 +113,15 @@ prefix grant that once killed a release.
   `STRIPE_PLATFORM_SECRET_KEY_TEST` of `<secret-prefix>/stripe-connect-oauth` (a key name, never
   its value). The agents' own Stripe test keys are restricted merchant keys that cannot read the
   platform account.
+- **A test-mode tool refuses to run unless its key IS a test key** (release B review, NEW CLASS).
+  A secret can hold the live key and the test key side by side (`<secret-prefix>/stripe-connect-oauth`
+  does), so one wrong field name, a `|| <live key>` fallback, or a reuse of a service's
+  mode-switching loader turns a test script into a write on the live account, whose events then
+  reach the production webhook. The tool reads exactly the one field it names, never prints or logs
+  it, and makes no provider call unless the value carries the test prefix (`sk_test_` for Stripe,
+  the check VR_Secure_API's `stripeConnectConfig.js` makes). Pair a REFUSE test (a live-shaped
+  value, zero provider calls) with an ALLOW test, and have every object it creates read back
+  `livemode: false`.
 - **The Dependabot alert reads use their own token,** `<secret-prefix>/github-dependabot-read`: a
   fine-grained, read-only GitHub token for the whole org (Dependabot alerts, Contents for lockfile
   reads, Metadata). Editing a fine-grained token's permissions keeps its value, and GitHub asks

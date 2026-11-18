@@ -110,6 +110,29 @@ a total-spend budget and a tighter infrastructure-only one. **Read the current a
 
 ---
 
+## A new alarm is created with its actions off
+
+An absence alarm (a "no run in 2 hours" alarm, a missed-run alarm) reads ALARM the moment it is
+created, because no datapoint exists yet, and pages the owners at its own creation:
+`live-rebuild-sweep-missed-run` paged 12 minutes after it was made and stayed in ALARM (backlog
+F343). The owners' rule since release B: **every new alarm is created with `ActionsEnabled: false`,
+and a reviewed one-line commit switches its actions on only after it has read `OK` for 24 hours**,
+proven with `describe-alarms --query 'MetricAlarms[].[AlarmName,StateValue,ActionsEnabled]'`. Each
+repo pins it with a test that holds the list of alarms allowed actions (VR_Secure_API
+`test/unit/alarms/alarmActionsGate.test.js`, VR_Client_API `test/checkoutTaxAlarm.test.js`, and the
+same in CMS and Main); the flip commit edits that list. A plan or design that creates an alarm with
+actions on, or with no flip step, is the defect.
+
+**Release B's alarms created this way** (actions off on 2026-11-18, switched on at release B's BR-30
+after their 24 quiet hours): `VR-CMS-API-caller-rate-refused`, `VR-Secure-API-caller-rate-refused`,
+`VR-Client-API-checkout-tax-dropped`, `VR-Secure-API-UsageMonths-errors`,
+`VR-Secure-API-UsageMonths-no-run-2h`, `VR-Secure-API-usage-absorbed`, EventHandler's six site
+rebuild alarms (the rebuild's R-B5, in the same step), and Main's sign-in code send-failed alarm
+(BR-35d). Read the live set with that query, not this list. **The cost of the rule:** Secure's
+AlarmVerifier counts an actions-off alarm as undeliverable, so
+`VR-Secure-API-AlarmVerifier-undeliverable-alarms` flips to ALARM every few hours and notifies the
+owners until the flips (backlog F499). Expect it, and say so when it fires.
+
 ## What v7 deployed (2026-10-20), and how to check it
 
 The estate grew in the v7 release. These are pointers to the templates and checks, not a roster;

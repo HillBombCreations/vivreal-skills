@@ -48,6 +48,24 @@ The portal also signs a `user_ctx`; for the outreach API the gmail/email routes 
 
 The ROOT `CTX_SECRET` MUST be **identical** between the portal (env) and every service that verifies portal-minted tokens (VR_Outreach_API; VR_Secure_API's admin gate), because each derives its key from it, via Secrets Manager `<secret-prefix>/core` (the old shared `hb-api-secrets` store is retired and fully deleted, see `vivreal-iam-secrets`). **Rotating one without the others → 401 "Invalid active context" on every request** to that service. Rotate atomically across all consumers. See `vivreal-iam-secrets`.
 
+## System 3: how a person signs in, and the emailed sign-in code (release B)
+
+Every product sign-in goes through VR_Main_API: the portal's password form, Google and LinkedIn
+through the portal's own SSO routes, and, since VR-MCP-Server `0fd5ae6` (2026-10-10), the Vivreal AI
+connection, whose `/oauth/authorize` sends a person to the portal's `/login`. Since release B (Main
+v2.20.0) Main can hold a risky password sign-in for an emailed code (`202 { challenge: 'EMAIL_CODE',
+challengeId }`, finished by `POST /api/user/login/code`); the mechanism and its mode lever are
+`vivreal-knowledge:vivreal-main-api-knowledge`, "Release B".
+
+**The code covers only the sign-ins Main sees.** Secure and CMS accept an ID token from any app
+client in the user pool, so any other way into the pool that accepts a password yields a session
+that never met the code. Before saying which ways in are open, read the live app client with a
+names-only query, for example
+`aws cognito-idp describe-user-pool-client --user-pool-id <id> --client-id <id> --query 'UserPoolClient.{Flows:ExplicitAuthFlows,Providers:SupportedIdentityProviders}'`;
+never run it without `--query`, because its default answer carries the client secret. The current
+state of each way in, and when each closes, lives in the private vivreal-hq release plan, never in
+this public repository.
+
 ## Debugging 401/403
 
 - **403 (CMS) / 502 (Secure) on a brand-new route** → API Gateway does not know the route. None of CMS, Secure or Client has a catch-all `{proxy+}`, so an unknown path never reaches Express, it falls through to the default IAM-protected resource and the Cognito authorizer never fires. The CMS 403 is SigV4/IAM on that fall-through resource, *not* an auth bug. Fix, CMS (since CMS #266): declare the path and method in the API's route list, `cloudformation/base.yaml` `ExpressApi.DefinitionBody.paths`, with an explicit `security`; never a SAM `Type: Api` event and never a new permission (each function has ONE, scoped to the API's prod stage, so console Test Invoke is refused). Fix, Secure and Client: add the per-route event in the `cloudformation/` fragment or `sam-template.yaml`. Never hand-edit a generated `allRoutes.yaml`. Deploy-config miss; the full CMS checklist is in `vivreal-cms-api-knowledge`. (Main API is exempt, public routes, no gateway authorizer.) See `vivreal-lambda`.

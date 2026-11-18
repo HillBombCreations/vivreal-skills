@@ -13,7 +13,8 @@ Cross-cutting Lambda knowledge shared by all Vivreal backends. For repo-internal
 ## The shared shape (all backends): quick facts
 
 - **Express.js wrapped in `@codegenie/serverless-express`** (older docs say `serverless-express`), deployed as AWS Lambda behind API Gateway.
-- **Node.js 22.x on every backend function** (the fleet moved off end-of-life `nodejs20.x` on 2026-10-02 and 2026-10-03, VR_Client_Auth and EventHandler included; read each template's `Runtime:`/`runtime:` rather than this line), arm64 (Graviton2), X-Ray on every function. Memory and timeout differ per function; read the template.
+- **The fleet is part way from Node.js 22.x to 24.x (release B, 2026-11-17 on), one tier at a time; read each template's `Runtime:`/`runtime:` on the deployed line rather than this line.** On 2026-11-18 these run `nodejs24.x`: the vivreal-hq fleet-ops stacks and the admin app's two Lambdas, VR_Insights_Scan, vivreal-domain-search, VR-MCP-Server, VR-Outreach-MCP-Server, VR_Outreach_API, VR_Analytics_API, Vivreal_EventHandler (its thumbnail image on `node:24`) and VR_OnCall_Webhook's `cognito-messages` stack. Still on `nodejs22.x`, each built and held for its own release B step: VR_Secure_API with its websocket and media-CDN stacks, VR_CMS_API, VR_Client_Auth, VR_Client_API, VR_Main_API, and OnCall's webhook and ops-monitors stacks. The plan is vivreal-hq `docs/projects/runtime-nodejs24/plan.md` (branch `docs/runtime-nodejs24-plan`); the runtime close (BR-37) reads every function's serving version. arm64 (Graviton2), X-Ray on every function. Memory and timeout differ per function; read the template.
+- **Every role a deploy creates carries the workload permissions boundary** once its repo's release B row ships (`Vivreal-Deploy-Workload-Boundary`, `vivreal-infra:vivreal-iam-secrets`). An `AccessDenied` that names the boundary is a grant the boundary denies, never a missing policy to add.
 - **Pino structured logging + AWS X-Ray.** Use the two-arg pino form `logger.info(obj, 'event_name')`, single-arg drops the message body (also a Sentry-ingestion regression signal; see `sentry-tracer`).
 - **Secrets from per-service AWS Secrets Manager entries** (`<secret-prefix>/<service>` plus shared `<secret-prefix>/{core,stripe,social-oauth,github-app,vapid}`) injected at deploy/runtime. The old single `hb-api-secrets` store is retired AND now fully deleted (2026-09-15); see `vivreal-iam-secrets`.
 - **CI/CD = GitHub Actions → CloudFormation.** VR_Outreach_API, VR_Client_Auth, and Vivreal_EventHandler still auto-deploy prod on push to `main`, no manual deploy for a normal change, push the branch. **A `dogfood` push still fires a deploy too, but the DEV stacks it used to build no longer exist for CMS/Client API/Secure (deleted 2026-09-15) and the trigger removal itself hasn't shipped yet** (spec `atlas-connection-fixes-2026-09-15` section 13.4). For VR_Client_Auth specifically, `dogfood`'s default stage IS the production authorizer (`VRClientAuthorizer-dev-function1`), so pushing that repo's stale `dogfood` branch redeploys production. Don't push `dogfood` anywhere until that PR lands; see `vivreal-atlas-topology`. **VR_Secure_API, VR_CMS_API, VR_Main_API, and VR_Client_API do NOT**, since 2026-08-15 those four (plus the portal) ship via a release train: prod deploys only on push to the `stable` branch, moved there only by a dispatched `promote.yml` (nothing ships without a dispatch; the weekly crons were retired 2026-11-04; since 2026-08-19 the promote auto-mints a patch tag, `vX.Y.Z+1`, when backports landed on the line), and backports reach a line via each repo's `backport.yml` (PATCH semantics; never a new cut). Pushing `main` in those four repos triggers zero prod workflow runs. See `docs/RELEASE.md` in each of those repos, or the `shared-standards` skill's "Release trains" section for the full model.
@@ -50,6 +51,29 @@ every path segment against its parent's real directory listing.
 **An optional third parameter on a handler binds to the runtime callback.** A handler written as
 `(event, context, deps)` receives the runtime's callback as `deps`, not your injected dependencies.
 Arity catches this; coverage cannot.
+
+**On Node 24 a handler with three or more declared parameters does not load at all.** The runtime
+reads the exported function's `length` and throws `CallbackHandlerDeprecatedError` when it is 3 or
+more (callback handlers end at Node 22), so `(event, context, deps)` with a default still counts.
+Every repo's release B runtime row adds an arity guard: a test that loads each handler file the way
+Lambda does (`import()` of every handler file the template names) and asserts `length` below 3 on
+the exported function. `context.succeed`, `fail` and `done` are gone too. A runtime move also
+updates the repo's own guide line that names the runtime (the anti-pattern catalog's "A move that
+leaves the repository's own guide behind").
+
+**A runtime-only change does not move an alias.** SAM's `AutoPublishAlias` publishes a new version
+only when the code changes, so a deploy that changes only `Runtime` updates `$LATEST` while the `live`
+alias, which is what API Gateway invokes on an aliased function, keeps serving the old version on the
+old runtime. Every aliased function sets `AutoPublishAliasAllProperties: true` so a property change
+publishes too, and the proof reads the version the alias names (`vivreal-infra:vivreal-deploy-proof`,
+"Prove the serving version"), never only `$LATEST`.
+
+**A pooled socket does not survive a freeze.** Lambda freezes the process between invocations, and
+a keep-alive connection pooled before the freeze may have been closed by the other side meanwhile,
+so the next warm call fails at once with `fetch failed` or `ECONNRESET`. A call to the function's
+own local server sends `connection: close` (VR-MCP-Server `f61f46e`, VR-Outreach-MCP-Server #21, F438),
+and a test of it replays a freeze longer than the server's idle timer, because the bug does not show
+on a run with no gap.
 
 ## Companions
 
