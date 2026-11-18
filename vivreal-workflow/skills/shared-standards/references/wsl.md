@@ -11,7 +11,7 @@ trap below cost a release step, a false result or a write in an owner's checkout
   often an owner's checkout; in a subagent, and often in the main session, a `cd` in an earlier call
   does not carry over. So each step is one call that moves into its worktree, proves it, then
   runs:
-  `wsl.exe bash -lc 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`,
+  `wsl.exe -e bash -lc 'cd "<the worktree as a /mnt/<drive>/... path>" && pwd && <command>'`,
   and stop if `pwd` prints anything but that worktree. Twice in one release this was skipped: a probe
   rewrote an owner's root `package.json`, lockfile and `node_modules`, and read-only commands ran
   in an owner's checkout.
@@ -22,24 +22,27 @@ trap below cost a release step, a false result or a write in an owner's checkout
   lines are in `~/.profile` (`SETUP.md`, the WSL step): a stock nvm install writes them to the end
   of `~/.bashrc`, below the line that returns early for a shell that is not interactive.
 - **Prove Linux node in its own call, before any install or test:**
-  `wsl.exe bash -lc 'cd "<the worktree>" && pwd && command -v node npm'` must print the worktree,
+  `wsl.exe -e bash -lc 'cd "<the worktree>" && pwd && command -v node npm'` must print the worktree,
   then two paths, neither under `/mnt/`. Read what it prints: `command -v` exits 0 when only one
   of the names is found, so chaining on it guards nothing, and a Windows npm run from WSL installs
   Windows binaries into the tree. A path under `/mnt/`, or a missing line, means the machine lacks
   the SETUP step: stop and report it, never carry on with the Windows npm.
 
-## Any `$` goes in a script file
+## `-e`, so the outer shell never sees your `$`
 
-- **The shell `wsl.exe` hands its command line to expands every `$` first, quotes or not, in the
-  folder the call started in, before your `cd` runs.** A variable set inside the command reads
-  empty, and a command substitution runs in the calling folder. Measured 2026-11-17:
-  `wsl.exe bash -lc 'cd /tmp && echo "$(pwd)"'` printed the calling folder, not `/tmp`. Release B
-  repeated this the day the rule shipped: a coder put `$(...)` around two `git diff`s on a
-  `wsl.exe bash -lc` line, and both ran in the owner's checkout (read only, so nothing was written).
-- **So anything holding a `$`, a `$(...)` included, goes in a script file**, written with the Write
-  tool (a heredoc decodes backslashes, see "Bash heredocs decode backslash escapes" in SKILL.md) and
-  run as `wsl.exe bash -lc 'cd "<the worktree>" && pwd && bash "<the script as a /mnt/<drive>/... path>"'`.
-  The script itself can then use `$` freely, and its own first line changes folder too.
+- **Without `-e`, `wsl.exe` hands its command line to a shell that expands every `$` first, quotes or
+  not, in the folder the call started in, before your `cd` runs.** A variable set inside the command
+  reads empty, and a command substitution runs in the calling folder. Release B hit this the day the
+  first rule shipped: a coder put `$(...)` around two `git diff`s on a `wsl.exe bash -lc` line, and
+  both ran in the owner's checkout (read only, so nothing was written).
+- **`wsl.exe -e` runs `bash` directly, with no outer shell, so the `$` reaches the login shell intact**
+  (definition review F476 (1), the root-cause fix for L-B-12). Measured 2026-11-18 from a worktree:
+  `wsl.exe bash -lc 'cd /tmp && echo "$(pwd)"'` printed the worktree, and
+  `wsl.exe -e bash -lc 'cd /tmp && echo "$(pwd)"'` printed `/tmp`. Every form in this file uses `-e`.
+- **A long or many-line step still goes in a script file**, written with the Write tool (a heredoc
+  decodes backslashes, see "Bash heredocs decode backslash escapes" in SKILL.md) and run as
+  `wsl.exe -e bash -lc 'cd "<the worktree>" && pwd && bash "<the script as a /mnt/<drive>/... path>"'`;
+  its own first line changes folder too. Without `-e`, a script file is the only safe home for a `$`.
 - **`nohup <command> &` dies when `wsl.exe` returns.** Start a long-running process with
   `setsid -f <command> > <log> 2>&1`, which outlives the call.
 
@@ -57,7 +60,7 @@ trap below cost a release step, a false result or a write in an owner's checkout
   1. From Git Bash, bundle the branch into a scratch folder outside every repo:
      `git -C "<the worktree>" bundle create "<scratch>/<name>.bundle" <branch>`.
   2. Clone it on WSL's own disk, one quoted call that changes folder first:
-     `wsl.exe bash -lc 'cd ~ && pwd && git clone -b <branch> "<the bundle as a /mnt/<drive>/... path>" ~/<name>'`.
+     `wsl.exe -e bash -lc 'cd ~ && pwd && git clone -b <branch> "<the bundle as a /mnt/<drive>/... path>" ~/<name>'`.
   3. Prove Linux node there (the call above, with `cd ~/<name>`), then install and test in the
      clone. Edit and commit only in the Windows worktree; after a change, bundle and clone again.
      Remove the clone when the step is done.

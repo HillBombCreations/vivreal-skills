@@ -33,12 +33,15 @@ Resolve it before reading. Never paste the literal placeholder into a Read or Ba
 
 ### Cross-platform note
 - **Windows:** use Git Bash or WSL, backslashes in paths are NOT cross-platform; always use forward slashes when invoking the Bash tool
-- **WSL steps: read [references/wsl.md](references/wsl.md) first.** One quoted `wsl.exe bash -lc`
-  command that changes folder first; Linux node proven first (the vivreal-skills `SETUP.md` WSL
-  step); any `$`, `$(...)` included, in a script file; `setsid -f`; installs and tests on WSL's own
-  disk (a `git bundle` clone when WSL git cannot read the worktree), never on Windows instead.
-- **MSYS path mangling reaches further than the AWS CLI.** The known case is an `aws` argument
-  that starts with `/` coming back as a bogus `AccessDenied`. The case that is missed: **MSYS
+- **WSL steps: read [references/wsl.md](references/wsl.md) first.** One quoted `wsl.exe -e bash -lc`
+  command that changes folder first (`-e`, so no outer shell expands a `$` before your `cd`); Linux
+  node proven first (the vivreal-skills `SETUP.md` WSL step); a long step in a script file;
+  `setsid -f`; installs and tests on WSL's own disk (a `git bundle` clone when WSL git cannot read
+  the worktree), never on Windows instead.
+- **MSYS path mangling reaches further than the AWS CLI.** The known cases are an `aws` argument
+  that starts with `/` coming back as a bogus `AccessDenied`, and a log group name (`/aws/lambda/...`,
+  `/aws/amplify/...`) turned into a Windows path, so a log read answers "does not exist" or reads
+  nothing (it bit a release B design review and a reviewer again on 2026-11-18). The case that is missed: **MSYS
   also rewrites a `/` INSIDE a `jq` expression**, and inside a `git show ref:path` argument, so
   `jq '.a/.b'` and `git show origin/main:file.md` both silently operate on a mangled string.
   A `git show` mangled this way fails loudly, but a mangled `jq` filter can simply select
@@ -83,7 +86,7 @@ agent acts on itself, by ID:
 - **P-skills-push-after-review:** vivreal-skills changes are committed to a LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`, fixed and re-reviewed locally, and pushed with ONE PR per batch only when that batch is ready to merge (reviewed, gates green, merge GO in hand), because CI runs on every push and every PR; later work for the same batch folds into that PR, never a second stacked PR.
 - **P-shared-checkout:** agents share one checkout's stash and scratchpad; never `git stash`, `reset --hard`, `checkout --` or `restore` a file you did not write.
 - **P-allow-refuse:** pair every ALLOW test with a REFUSE test on the same mechanism; a one-sided gate test passes when the gate never engages.
-- **Every WSL step starts by changing into the worktree,** inside one quoted login-shell command (`wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout, and a plain `bash -c` runs the Windows npm ([references/wsl.md](references/wsl.md)).
+- **Every WSL step starts by changing into the worktree,** inside one quoted login-shell command (`wsl.exe -e bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout, a plain `bash -c` runs the Windows npm, and without `-e` an outer shell expands every `$` in the calling folder first ([references/wsl.md](references/wsl.md)).
 
 ## Two rules that outrank every fact below
 
@@ -132,16 +135,16 @@ three searches returned three different incomplete answers.
 | MongoDB queries, indexes, write concerns | "Optimization principles" + the `vivreal-db` skill + dev docs `02-architecture/data-and-tenancy.md` |
 | About to use the Mongo MCP tools (`mcp__plugin_vivreal-db-explorer_mongodb__*` from the vivreal-db-explorer plugin, or `mcp__mongodb__*` where a project `.mcp.json` declares `mongodb`) | Read the `vivreal-db` skill first, it carries the multi-tenant routing + dbKey/group.key/bucketname rules. Prefer `/db-query` over raw `mcp__mongodb__find`. |
 | `useAuth()` in app layout, hydration, SSR | [references/portal.md](references/portal.md): "Hydration & SSR rules" |
-| Lambda env vars, function names, CloudFormation | "AWS Lambda & Infrastructure Reference" + dev docs `05-reference/aws-estate.md` |
+| Lambda env vars, function names, CloudFormation | [references/aws-infra.md](references/aws-infra.md) + dev docs `05-reference/aws-estate.md` |
 | CSP, cookies, CSRF, security headers | "Security non-negotiables" |
 | Any AWS CLI command (its `--profile`), AWS or Amplify reads (`get-app`, `get-function-configuration`, `get-secret-value`, `ssm get-parameter`), env vars, secrets | "Security non-negotiables" |
-| Any test files, e2e, unit, or backend (writing OR editing) | "Testing rules" + "Backend testing conventions" |
+| Any test files, e2e, unit, or backend (writing OR editing) | [references/testing.md](references/testing.md) + "Backend testing conventions" |
 | Integration manifests (`src/data/manifests/`), portal component patterns, shared sheet/dialog renderers | [references/portal.md](references/portal.md): "Conventions you'll see" + "Default-renderer fallbacks" |
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
 | A `wsl` or `wsl.exe` step: a Linux install, test, gate or pack on a Windows machine | [references/wsl.md](references/wsl.md) |
-| Dispatching a deploy workflow, or claiming a stack updated | "Reading and verifying a CloudFormation deploy" |
-| Backports, cherry-picks, "did this fix reach `release/*`" | "Proving a fix reached a line" |
+| Dispatching a deploy workflow, or claiming a stack updated | [references/aws-infra.md](references/aws-infra.md): "Reading and verifying a CloudFormation deploy" |
+| Backports, cherry-picks, "did this fix reach `release/*`" | [references/aws-infra.md](references/aws-infra.md): "Proving a fix reached a line" |
 | Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog", which points to [references/anti-patterns.md](references/anti-patterns.md) |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
 
@@ -216,6 +219,12 @@ const dbKey = resolvePlacement(group); // throws PlacementMissingError if group.
   `basicAuthCredentials` (base64 `user:password`); for a key list ask for names only (`keys(Environment.Variables)`,
   `keys(app.environmentVariables)`). Every Bash-capable agent in vivreal-principal, vivreal-workflow, vivreal-infra and vivreal-ops
   carries this as a DON'T.
+- **Never print any part of a secret's value, not even in a format or shape check** (release B,
+  L-B-16). A check that classed an `@` in a password as an email address printed the rest of the
+  password (2026-11-17). A shape check prints only key names and booleans: `typeof`, a length band
+  (`length > 20`), a `startsWith` result, a count; never a slice, a mask with real characters, a
+  regex match group or an error message that quotes the value. The same holds for a page that lists
+  customers or credentials: read it by locator and named fields, never as whole-page text.
 - **AWS commands name the agent profile.** When `VIVREAL_AGENT_PROFILES` is set (`printenv
   VIVREAL_AGENT_PROFILES` lists profile names, which are not secrets), the agent roles are live:
   every AWS CLI command names one of those profiles with `--profile <name>`, spelled out, the
@@ -333,117 +342,11 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   neither.
 
 ## Testing rules
-- All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
-- **Logged-in specs authenticate with REAL signed ctx cookies**, `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses, `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
-- **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope, the proxy route applies the envelope on top, same as it does against the real backends.
-- Reuse the api-mock functions in `e2e/fixtures/api-mocks.ts` before adding (don't trust any hardcoded count, check the file).
-- React 19: wait for `__reactProps` on elements before clicking. Use `pressSequentially()` for stubborn controlled inputs.
-- **Coverage map**: `e2e/coverage-map.json` + `scripts/check-coverage-map.mjs --strict` (run in pre-push) is a mechanical evidence gate over **rendered pages only**. Its walk collects `page.tsx` and nothing else, so a `route.ts` proxy handler is structurally invisible to it. **Do not add a coverage-map entry for a proxy route**: the key can never appear in the checker's route list, so the gate fails with "STALE map entry: route no longer exists". Proxy routes have no evidence gate today. Building one is new tooling, not a claim about this one.
-- **A gate being enabled does not make it capable of failing.** Before you trust any gate in
-  this fleet, make it fail once on purpose. Live examples from this codebase: a coverage
-  script that ran with checking disabled, a lint rule whose options exempted the exact
-  character it existed to catch, a test that fed a value in and read it back, and a full
-  branch-coverage number produced by executing a stub because the real module was never
-  loaded. See the `verification-discipline` skill.
-- **`e2e/BASELINE.md` is the authoritative test inventory**, and the filesystem outranks it. Re-measure before quoting any number, and never trust a remembered one. A baseline is only comparable to a run made under the same conditions: the same worker count, no sibling agent holding the shared ports, and the same machine awake throughout.
-- Sites/integrations pages serialized under parallel workers, don't break that.
-- **`Object.freeze` on a `Readonly<Record<Union, T>>` lets a stray key compile,** so `tsc` cannot
-  prove a tier or enum key was removed. Add a test over the key set.
-- **Red proof, the one rule every agent follows.** A guard, validation or fix is proven by a
-  direct REFUSE test (feeds the bad input or bad object, asserts the exact refusal) paired with an
-  ALLOW test (valid input, asserts success). Nothing in the working tree is ever reverted, mutated
-  or stashed to see red (owner, 2026-10-06). That includes the "mutation check": deleting or
-  commenting out a line of the fix, watching the test fail, and putting the line back is the
-  banned revert cycle under another name, and agents did it repeatedly on 2026-10-15. The two
-  rules were reconciled 2026-10-15 on the owner's delegation (owner rule P-one-suite,
-  vivreal-hq `docs/standards/process.md`): **the coder owns the red proof and does it at the base
-  commit; the reviewer checks the record and never repeats the cycle.** Red is established by
-  (b) or (a) for code in a repository, and by (c) for a one-shot ops script outside every
-  repository; the report names which:
-  - **(b) Red at the base commit, in a separate read-only worktree** (owner decision D1,
-    2026-10-14, the standard proof and the coder's default). `git worktree add --detach <scratch
-    path> <base sha>` (detached is right here: nothing is ever committed in it), copy in ONLY the
-    new or changed test files and their test-only helpers, never source, `npm ci`, run those
-    files by name, record the result, then `git worktree remove --force <scratch path>`. Then
-    the same files pass on the fix.
-  - **(a) Test first** (added by the 2026-10-14 skills audit; neither D1 nor the 2026-10-15
-    reconciliation names it). The new test ran red before any fix code existed in the tree, then green
-    after it. Same counting rule as (b). It is valid only when the run really came first;
-    removing fix code to recreate "before" is the banned in-place mutation, so use (b).
-  - **(c) Mutation on a scratch COPY, for one-shot ops scripts only** (owner, 2026-10-20,
-    standard practice). A production data-step script that lives outside every repository has
-    no base commit, so red is proved by copying the script into a scratch directory outside
-    every working tree, removing one guard at a time in the COPY, and showing that guard's
-    named test go red. **Keep the harness and the per-guard log with the script**, naming the
-    source line each mutation removed, so the reviewer can reproduce it; a deleted harness is a
-    CONCERN in review (v7 scratch-2 restore, C1). Never in a working tree, never on product code.
-
-  **What the reviewer does with it.** It confirms the `Red:` line is recorded, names the REFUSE
-  assertion, and failed for the right reason; it reads the tests; and it runs each relevant test
-  file at most once, at the head. It does not rerun the base-commit cycle. A missing or doubtful
-  `Red:` line is a FAIL that goes back to the coder, and "by reading" alone, with no recorded
-  red at base, is not proof.
-
-  **Red counts only when the REFUSE assertion itself fails.** A load, import or environment
-  failure is not red: a test that cannot import an export the fix adds, a missing `.env.local`,
-  a fixture that does not exist at the base. Those fail on any code and prove nothing about the
-  guard; make the test load at the base (stub only what the fix ADDS, never the guard) or say red
-  could not be established. "By reading" is not a proof, and a report never says "verified it
-  fails" for it. The report line names the failing assertion:
-  `Red: (a|b|c) <test file> "<REFUSE test name>" at <sha>: failed on <expect line>; green at <head
-  sha>: <k> passed`. A REFUSE test that is still green at the base commit pins nothing; rewrite
-  it.
-- **A test must INVOKE the real code path, never REPLICATE it.** A test that hand-rebuilds the logic it checks passes against broken code and still reads as coverage. Three instances found in one session: a `layout.test.ts` that replicated a metadata spread instead of calling `generateMetadata`, so it could not see the demo-safety bug it existed to rule out; a staging-evidence test that mutated the *declared* field instead of the bytes, so it passed on a fail-open gate; and a 409 test whose two fixtures each failed on several fields at once, isolating nothing. **The fixture is half the test**: per-field discrimination needs one fixture per field, mismatching that field ALONE. The check is the red proof above, never an edit to the implementation: a mirroring test stays green at the base commit, so run (b) and it shows.
-- **A defect old enough to have tests has tests DEFENDING it.** Four instances in one week, the worst being a bug fix that correctly spotted a value had gone undefined, made it work again, and **re-armed a dormant account-disclosure while adding three assertions pinning it**. So when you remove a behaviour and a test goes red, the red test is evidence to READ, not an obstacle to update. Ask what the assertion was protecting and whether anyone ever decided it was correct. A green suite after a fix is not proof; it is equally consistent with the suite having been written around the defect.
-- **A faked layer hides the failure it fakes** (v7, 2026-10-19/20). A stubbed Mongoose model never runs the schema cast, so a write on an undeclared path passes; a mocked network never runs the next hop's validator; a test of what is DECLARED (a `@font-face`) passes while the element resolves to something else; a spy that matches any call passes on broken code. So: one test of any write runs through the REAL schema model; when a change alters what a client sends, one test goes through the real next hop with only the far upstream mocked; assert what renders or resolves; assert the exact call. Cases and rules: `verification-discipline`, "A faked layer hides exactly the failure it fakes".
-- **A tool that compares a live AWS answer with a planned shape tests against a fixture recorded
-  from a real answer** (release B, 2026-11-17). A planned shape written by hand only proves the
-  comparison agrees with itself. CloudFront returns every part a policy leaves unset as an empty
-  `{}` block: front-door-hsts created the right response headers policy at BR-18, then refused it as
-  different, because its tests only ever compared the planned config with itself; the
-  front-door-help-path origin request policy check had the same gap (F441). Save one real answer
-  from a read-only call as the fixture (nothing secret in it), test that the planned shape matches
-  it, and pair that with a REFUSE test of a real answer changed in one field.
-- **A test mock answers in the shape the deployed backend sends** (release B, L-B-15). Build each
-  mock from the deployed line's handler (quote the file and the ref) or a recorded real answer, one
-  mock per shape the route can send. The site picker's e2e mock answered both creates in the hosted
-  shape, while VR_Secure_API's blank create answers with the site document itself, so "Create my
-  site" read as tested and left the owner on the old page (portal #496 item 7).
-- **A copy check that names a control reads the screen where the copy shows** (L-B-15): the
-  control's label and place on THAT screen, never the form where it is first named. A sales-tax
-  line said "Choose Connect with Stripe above" on a board whose only such control reads "Switch to
-  signing in with Stripe", below it; its STOP check had read the connect form.
-- **A fix can be inert and still pass its tests.** Two shapes seen here: a fix whose tests fed a state the product cannot actually produce, and a guard repaired whose triggering write was itself a silent no-op, so the guard could never have fired either way. Prove the fixed path runs in the real product, not only in the harness.
-- **Assert CORRECT behavior, never current behavior.** Expected values come from the spec/intent, NEVER from pasting whatever the code currently emits. Snapshotting output freezes the bug into a "requirement."
-- **A failing test means the CODE is wrong until proven otherwise.** Fix the code. Change a test ONLY to correct a genuinely-wrong expectation, with a one-line reason in a comment. NEVER weaken an assertion (`toBe`→`toContain`, exact→`anything()`, deleting a check) or align new code to a buggy expectation just to go green, the reviewer treats that as test-tampering and FAILs the pass.
-- **A green suite is not a building repo, because nothing in the suite runs the build.**
-  Unit and e2e runs import modules directly; they never execute `next build` or `tsc -b`, so a
-  type error or a build-time-only failure sails straight through a fully green run. **This
-  shipped an unbuildable `main`.** When a change touches config, imports, module boundaries or
-  anything the bundler resolves, run the actual build before you call it done. A test suite
-  and a build are two different questions.
-- **A control can go VACUOUS without failing.** A negative control that compares two refs
-  stops proving anything the moment those refs converge: it keeps passing, and the pass now
-  means "nothing to compare" rather than "the difference is absent". The same shape shows up
-  in any control keyed on a condition that can quietly stop holding. **State the control's
-  precondition and assert it**, for example assert the two refs still differ before trusting
-  that the comparison between them means anything.
-- No `.only`, no `sleep()`, use `waitFor()`.
-- **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
-- **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`, except inside a NAMED portal-coder mode that authorises it (PARALLEL, or FOLLOWUP on a branch that already passed the full gate) or a dispatch that says so. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
-- **Portal release-head check (owner, 2026-10-10): no full e2e, walk instead.** Before a portal
-  release, the check is eslint, BOTH `tsc` configs, and every unit test file the release added
-  or changed, all green. Do not schedule the full e2e suite, the full vitest run or the
-  Playwright smoke as a separate "one full gate". The local QA walks on the guarded stack
-  (APIs, the portal installed app and desktop, the Templates sites the release touched) are not
-  optional; they replace the confidence the e2e run gave. Fix-ups after a branch passed the full
-  gate are dispatched to portal-coder in FOLLOWUP mode, never SOLO.
-- **The pre-push hook is the one full run, owner rule (2026-10-06).** While iterating, run only
-  the test files for what you're changing. Don't manually run the full suite, the coverage map,
-  lint, or the build before a push, the hook already runs all of it once; a manual run duplicates
-  that and is most of why pushes were taking far longer than they needed to. A reviewer does the
-  same: it does not rerun the full suite, coverage, lint, or build on a head the hook already
-  passed, it reads the diff and runs only the specific test file a named doubt requires.
+Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the e2e
+harness rules, the red proof every agent follows (forms (a), (b) and (c), and the `Red:` line), real
+code paths and real layers over fakes, fixtures recorded from real answers, mocks in the deployed
+shape, inert fixes, honest assertions, the build-is-not-the-suite rule, vacuous controls, and the
+hook-is-the-one-full-run rule.
 
 ## Site media rule
 - Site media (logos, etc.) requires signed URLs via `GET /api/proxy/get-media`
@@ -483,135 +386,11 @@ All backends: Express + serverless-express, JavaScript (not TS), Mongoose, Pino,
 **Citation rule for docs in this plugin repo:** cite function/route/file names, not line numbers, `src/foo.js:123` rots in weeks. Stamp `Last synced: YYYY-MM-DD` when syncing a doc to source (log in vivreal-skills `docs/SYNC.md`).
 
 ## AWS Lambda & Infrastructure Reference
-
-**The estate:** `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/05-reference/aws-estate.md` (with `05-reference/resource-to-template-map.md` and `04-operations/standalone-stacks.md`), READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. A count or a name there is a pointer to re-derive from the stack, never a value to quote.
-
-### Function rosters: count them, do not quote them
-Do not quote a function count from this file or from any CLAUDE.md. Both go stale between
-one release and the next, and a stale roster reads exactly like a current one. Produce the
-number when you need it, from the deployed line:
-
-| API | Where the roster lives | Has WebSocket | Deploy trigger |
-|---|---|---|---|
-| VR_Secure_API | `cloudYamls/allRoutes.yaml` (NOT `allRoutes.packaged.yaml`; the websocket stack is separate and is not part of this count) | Some of them | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_CMS_API | `cloudformation/` | All of them | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_Main_API | `sam-template.yaml` | One of them | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_Outreach_API | `template.yaml` | No | Push to `main`, which IS the deploy for this repo, by design |
-| VR_Client_API | `sam-template.yaml`, which also holds the CloudFront edge distribution in front of the API | No | Release train: push to `stable`; see repo `docs/RELEASE.md` |
-| VR_Client_Auth | `serverless.yml` (Serverless Framework, not SAM) | No | Push to `main` |
-| EventHandler | `serverless.yml`, count `handler:` keys. Three state machines: deploy, purchase saga, transfer saga | No | Push to `main` |
-| VR_Analytics_API | `template.yaml`, stack `vr-analytics-api` | No | Push to `main` |
-| VR-MCP-Server | its deploy workflow (`deploy.yaml`) | No | Push to `main`, by design; ships after the CMS it calls |
-| VR-Outreach-MCP-Server | its deploy workflow | No | Push to `main` |
-| VR_Insights_Scan | `deploy.yml` | No | Push to `main`; a manual dispatch needs `-f mode=deploy` |
-| vivreal-domain-search | `lambda_api.yml` | No | Merge to `main`, then dispatch `lambda_api.yml --ref main` |
-| Vivreal_Templates | n/a (Amplify apps, one per site) | No | Dispatch `promote-stable.yml`; `fleet-build.mjs` builds the `live` tier (see `vivreal-infra:vivreal-site-deploy-pipeline`) |
-| vivreal-hq | admin app plus fleet-ops stacks | No | Merge deploys nothing; fast-forward `deploy/admin-app`, stacks by hand |
-
-### Release trains (2026-08-15)
-
-**"Merge to `main` = prod deploy" is DEAD in five repos: Vivreal_Portal_Mobile, VR_Secure_API
-VR_CMS_API, VR_Main_API, VR_Client_API.** Production now deploys from the fixed `stable` branch
-via a release train. Merging `main` in those repos deploys NOTHING, portal's `main` is an
-Amplify build canary with no traffic; the four backends fire zero workflow runs on a `main`
-push. Still deploying on push to `main` (unchanged): VR_Outreach_API, VR_Client_Auth, and
-everything else.
-
-The train is the same shape in all five repos. **Nothing ships without a dispatch.** The weekly
-crons (a Friday cut, staggered Monday promotes) are retired (owners, 2026-11-04): releases are
-owner-approved batches, and `promote.yml` and `release-cut.yml` rest disabled, enabled only for the
-one dispatch a release step makes and disabled again in the same step (`vivreal-workflow:release-engineer`
-owns that protocol and the lock). The 2026-11 batch deletes their `schedule:` lines (TD-2); until a
-repo's change is on its `main`, read `on.schedule` there, because an old cron is live whenever the
-workflow is enabled.
-- `release-cut.yml`, dispatched, cuts `release/vX.Y` from `main`, bumps `package.json` on the line
-  only, and tags `vX.Y.0`. Portal's cut also writes a served `public/release.json` marker.
-- `promote.yml`, dispatched, force-with-lease moves `stable` to the newest line's tip (or the
-  `target` line), a tagged cut ships as `vX.Y.0`; an untagged tip (backports landed after the cut)
-  auto-mints, tags, and ships the next PATCH `vX.Y.Z+1` (since 2026-08-19; it refuses only when
-  the line's last tag is yanked). The promote order is a cross-repo contract: backends ahead of
-  portal.
-- Incremental release / backport = PATCH, never a new minor (2026-08-19, all five repos).
-  `backport.yml` cherry-picks main-merged commits onto a line (`-m 1` for PR merges) and pushes
-  - no tag, no bump, no deploy. A backport ships only when `promote.yml` is dispatched with
-  `target=release/vX.Y` (tags `vX.Y.Z+1`); nothing picks it up on its own. Hand-written fixes
-  still go local: commit on the line, push (husky gate runs), then dispatch the promote.
-  **NEVER dispatch `release-cut.yml` to ship a backport**, a cut forks a NEW minor line off
-  ALL of `main` (the 2026-08-19 v2.3.1→v2.4.0 mistake).
-- `rollback.yml` (dispatch-only) moves `stable` back to a prior `v*` tag and yanks it
-  (`yanked-vX.Y.Z` tags stop a later promote re-deploying that version).
-- Deployed-version check: portal `curl https://vivreal.io/app/release.json`; backends
-  `git ls-remote origin refs/heads/stable` + the tag + the deploy run log.
-- Each repo's `docs/RELEASE.md` is the full runbook, read it before touching that repo's
-  deploy config.
-
-**Two platform gotchas proven in the live drills:**
-1. **Amplify autobuild fires only for never-built commits** (portal). A rollback, or a
-   re-promote to an already-built commit, repoints `stable` but triggers NO build, prod keeps
-   serving the old build. Mandatory after a portal rollback:
-   `aws amplify start-job --app-id <portal-amplify-app-id> --branch-name stable --job-type RELEASE`.
-2. **GitHub Actions fires NO push run for a force-push that REWINDS a branch to an ancestor**
-   (Client drill), which is every backend rollback (forward re-points, even of already-pushed
-   commits, DO fire). Mandatory after any backend rollback:
-   `gh workflow run lambda_api.yml --ref stable`.
-
-Portal's prod path: CloudFront distribution `<vivreal-io-distribution-id>`'s origin is
-`stable.<portal-amplify-app-id>.amplifyapp.com` (swapped from `main.`, the distro is NOT CFN-managed). The real ids live in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`.
-
-### Proving a fix reached a line: `git cherry`, never `merge-base --is-ancestor`
-
-**A backported fix is patch-equivalent without being an ancestor.** Cherry-picks and squash
-merges both rewrite the commit, so `git merge-base --is-ancestor <fix> <ref>` answers "no" for
-fixes that are demonstrably present, and a sweep built on it reports healthy branches as
-missing the fix. Use patch-equivalence instead:
-
-```bash
-git cherry -v <upstream> <branch>   # '-' = already upstream (patch-equivalent), '+' = not
-```
-
-Two limits to keep in mind, because `git cherry` is necessary but not sufficient: it will
-miss a **reimplementation** (same effect, different patch), and it says nothing about whether
-the line still BUILDS. For anything that matters, confirm by behaviour on the line itself.
-
-### Infrastructure stacks (workflow_dispatch: manual trigger from GitHub Actions)
-| Stack | Repo Location | Workflow |
-|---|---|---|
-| `vivreal-websocket` | `VR_Secure_API/websocket/` | `.github/workflows/websocket.yml` |
-| `Vivreal-Media-CDN` | `VR_Secure_API/cloudformation/media-cdn.yaml` | `.github/workflows/media-cdn.yml` |
-
-### Secrets Manager (per-service `<secret-prefix>/*`: secrets-audit Phase 2, 2026-07)
-**Names are written with a placeholder prefix, because this repository is PUBLIC.** Each value is a key of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json` (names only, never values): `<secret-prefix>/` is the Secrets Manager prefix, key `secretPrefix`; `<ssm-prefix>/` the SSM parameter prefix (it has a leading slash), key `ssmPrefix`; `<qa-secret-prefix>/` the QA secret prefix, key `qaSecretPrefix`; "the QA account bundle" is key `qaAccountBundle`; the db-explorer secret is key `dbSecretId`. Read the file; nothing needs setting. To confirm a name exists, list names only: `aws secretsmanager list-secrets --query 'SecretList[].Name'`. Never write a real prefix back into this repo: its check-definitions gate fails on one.
-
-The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`<secret-prefix>/secure-api`, `<secret-prefix>/cms-api`, `<secret-prefix>/client-api`, `<secret-prefix>/client-auth`, `<secret-prefix>/main-api`, `<secret-prefix>/analytics`, `<secret-prefix>/oncall`, `<secret-prefix>/site-deployment`) plus shared secrets (`<secret-prefix>/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `<ssm-prefix>/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
-
-### Reading and verifying a CloudFormation deploy
-
-- **`describe-stack-resources` TRUNCATES SILENTLY.** It returns one page and no error, so a
-  resource audit built on it quietly under-reports. Use **`list-stack-resources`**, which
-  paginates. Note the second half of the trap: because it paginates, a
-  `--query 'length(StackResourceSummaries)'` prints **once per page**, so a stack with three
-  pages prints three numbers and a script reading "the" number takes the first one. Sum the
-  pages, or page explicitly with `--no-paginate` plus `--starting-token`.
-- **A green workflow run is NOT a deploy.** The workflow can succeed while the stack update
-  rolls back, and it can succeed having deployed nothing at all. Verify against **stack
-  state**, not against the run:
-  1. Baseline `StackStatus` and `LastUpdatedTime` from `describe-stacks` BEFORE dispatching.
-  2. Wait for `LastUpdatedTime` to MOVE and for `StackStatus` to reach a terminal state.
-  3. **Assert the terminal status BY NAME.** "Moved and terminal" is not success:
-     `UPDATE_ROLLBACK_COMPLETE` is also moved and terminal. Require
-     `CREATE_COMPLETE` or `UPDATE_COMPLETE` explicitly.
-  4. Assert the new value of whatever you changed is actually present in the stack.
-
-  Related, and the same class of error: `gh run watch` can return `rc=0` against a run from
-  days ago when a dispatch was rejected, because the rejected dispatch never created a new
-  run and the old one is still newest.
-
-### When to consult the Lambda inventory
-- **Env var mismatch bugs**, check which functions have which vars, verify against CloudFormation fragment
-- **"Function not found" errors**, get the exact function name (they have random suffixes)
-- **Cross-function invokes**, `CREATE_UPDATE_COL_GROUPS_FUNCTION_NAME`, `GET_COLLECTION_INFO_FUNCTION_NAME`, `UPDATE_SITE_ENV_VARS_LAMBDA` are env vars pointing to other Lambdas
-- **WebSocket issues**, 10 functions across 3 APIs have `WS_ENDPOINT` + `WS_TABLE`
-- **Deployment failures**, check which stack owns the function and how it deploys
+Read [references/aws-infra.md](references/aws-infra.md) for Lambda config, deploys and release lines. Its
+sections: Function rosters (count them, do not quote them), Release trains, Proving a fix reached a line
+(`git cherry`), Infrastructure stacks, Secrets Manager, Reading and verifying a CloudFormation deploy,
+and When to consult the Lambda inventory. The estate itself is vivreal-hq
+`docs/dev-docs/05-reference/aws-estate.md`.
 
 ## Cross-repo documentation (the hq dev docs)
 The standing description of how the system works across repos lives in vivreal-hq, `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/README.md`, and is
