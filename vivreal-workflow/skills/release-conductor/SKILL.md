@@ -36,6 +36,45 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
 4. **Read `vivreal-workflow:fleet-concurrency`** for the machine-side limits (ports, gates, stash,
    scratchpad, the orphan sweep).
 
+## 1a. The shape of a release: one deployment per repo (P-one-promote, amended 2026-11-18)
+
+The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
+one deployment per repo per release, we validate everything locally and once validate then we
+deploy" and "we'll validate locally and if we find defects we fix them and rerun locally until it
+passes the valdiation then one deployment per repo". It applies to every plan and every step from
+now, the rest of release B included ("Like all these BR23 and BR33 as well"). Only release B's
+deployments already made before the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are
+exempt; BR-30's alarm flips, Main's BR-35c and BR-35d, the help move and the rebuild steps ride each
+repo's one batch. Staging a repo across deployments is an exception an owner must approve, never the
+plan's default.
+
+1. **Every repo deploys at most ONCE per release.** Everything a repo needs in the release is built
+   into its one batch, one PR: features, fixes, a runtime move, alarm actions, a help or site move,
+   IAM conditions. A find mid-batch joins that repo's PR as another commit. Parameter and data
+   flips, one-shots such as indexes and kits, package publishes under P-packages and docs merges are
+   not deployments, and a repo whose several stacks deploy back to back in one step counts as one
+   deployment.
+2. **Walk the whole batch on the local stack, on the runtime it deploys on, until it passes**
+   (P-local-validate). Anything that makes a local walk row fail (a broken flow, wrong behaviour, a
+   defect against what the batch promises) is fixed in that repo's batch, with a delta review, and
+   the walk runs again, until it passes; a note or nit that fails no row goes to the backlog
+   (P-ship-first). Only when the walk passes do the deployments start. A runtime move is
+   validated on the new runtime locally, never proven by a tier in production.
+3. **Then deploy the backends back to back,** each proven live
+   (`vivreal-infra:vivreal-deploy-proof`) and watched for 1 hour before the next, **the portal
+   last** (P-api-first).
+4. **A timed soak that must stay is a flip, not a deployment.** A watch-only or shadow mode, an
+   allowlist, a rate limit's mode: ship it in the one deploy behind a parameter or data value, and
+   turn it on later with a parameter or data flip. Never a second promote to flip an alarm or a
+   mode.
+5. **An alarm is created with its actions on when nothing can breach before its soak ends.** No
+   follow-up promote flips an alarm's actions. An alarm that could page at its own creation (an
+   absence alarm with no datapoint yet) is a design question the plan answers without a second
+   deployment, or an owner exception in `decisions.md` (`vivreal-infra:vivreal-observability`).
+6. **Check every plan before you run it:** its table of deployments per repo says at most 1 for
+   every repo. More than 1 for any repo needs an owner's exception recorded in hq `decisions.md`;
+   without it, send the plan back (the reviewer FAILs it too).
+
 ## 2. Slots: the check before every dispatch
 
 The cap and its counting rule are P-cap (the live value `agent-cap`, per machine): count every
@@ -53,7 +92,10 @@ local runs have their own limit (P-heavy-runs), whatever the agent count.
 2. **Does every path step wait on an owner?** Then ask that owner for the GO now (section 4),
    in the same turn. While you wait, a free slot may take side work: no slot is held empty for the
    path. The moment a path step can start, it takes the next free slot.
-3. **Never stop a running agent to make room** (P-cap).
+3. **Does a path step wait on another running agent** (the live walk that follows a release
+   engineer's ship, say)? Hold no slot for it either: it takes that agent's slot when the agent
+   finishes, and the free slot runs post-release work now.
+4. **Never stop a running agent to make room** (P-cap).
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
 planning for the next release. A repo already in flight runs to approval before any new repo
@@ -78,7 +120,7 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
-- **Content adds go through the product's own screens** (owner, 2026-11-17). A new help page, a
+- **Content adds go through the product's own screens** (P-content-through-ui). A new help page, a
   blog post or a collection item is added in Studio or the portal's content editor by an agent
   acting as an owner would, signed in as `vivreal-knowledge:vivreal-accounts-and-writes` says, under
   the owner's GO quoted in its dispatch; for a help or vivreal.io page that agent is
@@ -86,11 +128,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   (`vivreal-workflow:ops-one-shot`) only for a step those screens cannot do, and name that step and
   why in the brief.
 - **Every WSL step in a brief starts by changing into the worktree** inside one quoted login-shell
-  command, `wsl bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
-  runs in the folder the Bash call reset to, which is often an owner's own checkout, and a plain
-  `bash -c` (several briefs on 2026-11-17) runs the Windows npm. The other WSL traps (prove Linux
-  node first, `$` in a script file, `setsid -f`) are in `vivreal-workflow:shared-standards`,
-  "Cross-platform note".
+  command, `wsl.exe -e bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
+  runs in the folder the Bash call reset to, which is often an owner's own checkout, a plain
+  `bash -c` (several briefs on 2026-11-17) runs the Windows npm, and without `-e` an outer shell
+  expands every `$` there first. A brief puts a long step in a script file, and for a worktree WSL
+  git cannot read it names a clone made from a
+  `git bundle` on WSL's own disk, never a Windows install as the fallback (two slips on 2026-11-17).
+  The rest (prove Linux node first, which needs the vivreal-skills `SETUP.md` WSL step, and
+  `setsid -f`) is in `vivreal-workflow:shared-standards`, `references/wsl.md`.
 
 ## 4. Owners
 
@@ -100,20 +145,34 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   quote `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of
   the dispatch. For a portal release, ask for the walk sign-off on the exact head in the same
   question.
+- **A blocking question stalls everything behind it, so at night only release-path questions go
+  in a dialog** (release B main thread, 2026-11-18). A dialog the owner has not answered holds every
+  other action of the session, including the free slots' work. When an owner may be away, ask in a
+  dialog only for what the release path needs next (a GO, a STOP decision); put every other question
+  (backlog placement, wording, next-release scope) in the session's report or the release state, and
+  keep the slots working while it waits.
 - **One GO runs the whole remaining runbook** (P-blanket-go): dispatch the release engineer once
   in RUNBOOK mode with every remaining step and that GO quoted once; no per-step check-ins.
 - **An owner-gated command** (a deploy-role change set, a typed confirmation) wants the owner's
   approval, not their typing: re-check its shape, then run it yourself (P-owner-gated-yourself).
-- Warn the owners before any Sentry test event (P-sentry-warn). Report unusual CI, build or agent
-  spend the first time it shows (P-flag-cost). In a live support chat, type the reply and never
-  press send (P-chat-drafts). No added WAF spend (P-no-waf-cost). No new QA users or businesses
-  (P-no-new-qa-users).
+- Warn the owners before any Sentry test event or a probe that can trip a paging alarm
+  (P-sentry-warn). Report unusual CI, build or agent spend the first time it shows (P-flag-cost).
+  In a live support chat, type the reply and never press send (P-chat-drafts). No added WAF spend
+  (P-no-waf-cost). No new QA users or businesses (P-no-new-qa-users).
 
 ## 5. Walks
 
 - **A reviewed walk plan first** (P-walk-plan): every change in the release maps to a row with
   preconditions, steps, the expected result, a REFUSE check and the view, and every blocker is
   cleared before the walk GO. Walk the exact flows before any recording (P-walk-before-footage).
+- **A copy row that names a control is checked on the screen where the copy shows** (release B,
+  L-B-15). Its expected result names the control as THAT screen labels it, and where it sits, read
+  at the walk's head, never from the form where the control is first named: release B's sales-tax
+  line said "Choose Connect with Stripe above" on a board whose only Stripe sign-in control reads
+  "Switch to signing in with Stripe", below it, and the plan's STOP check had compared the words
+  with the connect form. A row whose evidence is a test names the deployed handler its mock was
+  built from (`vivreal-workflow:shared-standards`, Testing rules): a mock in the wrong shape is how
+  "Create my site" read as tested while it failed.
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
   defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each
@@ -122,6 +181,13 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   stalled walk), and say so in the walk report.
 - **Keep the walk's known errors off the Sentry quota:** add the project's IP inbound filter for
   the walk machine before the walk, and remove it after.
+- **Warn the owners before a walk's refusal and membership rows, and read Sentry right after**
+  (release B, L-B-18). The IP filter stops only the walk browser's own events; a refusal by design
+  (a removed member's open session, a view-only member on an owner screen) or a real bug is logged
+  by the backend, files a NEW issue and pages the owners (P-sentry-warn): three Secure issues came
+  from one day's walks unannounced. Before the walk GO, name those rows to the owners; after the
+  walk's end marker, list the issues first seen in its window per project the walk touched, tie
+  each to its row, and resolve the test-caused ones with that reason (P-sentry-clean).
 
 ## 6. Records
 
@@ -206,9 +272,15 @@ node --test "packages/fleet-ops/standards-lint/test/**/*.test.js"
 git diff --numstat origin/main
 ```
 
-**The worktree starts clean.** The `status --porcelain` line exits non-zero when `$W` holds any
-change: another session's flip in flight, or a STOP that was never restored. STOP there, leave
-the file alone (P-shared-checkout), and tell the owner what `git -C "$W" status --porcelain` printed.
+**The worktree starts clean.** The `status --porcelain` chain exits non-zero when `$W` holds any
+change, and also when its `git fetch` or its `git checkout` fails. Tell which by running
+`git -C "$W" status --porcelain` on its own:
+- **It prints anything:** the worktree is dirty (another session's flip in flight, or a STOP that
+  was never restored). STOP there, leave the file alone (P-shared-checkout), and tell the owner what
+  it printed.
+- **It prints nothing:** the fetch or the checkout failed. Read that command's own error (no
+  network, or a lock another git process holds, which you wait out and never delete), then run the
+  chain again; never edit until it exits 0.
 
 The last command must print exactly one line, `1<TAB>1<TAB>docs/standards/live-values.md`.
 **STOP on a non-zero exit or any other diff output, and do not commit:** tell the owner which check

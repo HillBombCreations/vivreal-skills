@@ -47,6 +47,9 @@ producer → vivreal-notification-queue (SQS, batch size 1, + DLQ) → Notificat
 ## Gotchas
 
 - **Don't confuse the three channels**: WebSocket (live, in-app, `WS_ENDPOINT`/`WS_TABLE`), web-push (this pipeline, offline), email (Main's EmailConsumer/lifecycle templates). A "user wasn't notified" bug needs the channel identified first.
+- **Release B added two EMAILS, not pushes** (live 2026-11-17), both through the email queue to Main's EmailConsumer, which owns the send:
+  - **The sign-in code** (VR_Main_API template `signin-code`, transactional): sent only when Main's sign-in code mode is `on` and a sign-in is held; in `shadow` the gate only logs `signin.code.would_challenge`. Read the live mode before saying whether any is sent (the main-api skill names the read). A code that cannot be sent lets the person in with an alert once Main #137 ships (BR-35c). Detail: `vivreal-knowledge:vivreal-main-api-knowledge`.
+  - **The yearly usage notice** (VR_Secure_API `closeUsageMonths.js`, words in `shared/usageMonthWords.js` `noticeEmail`, queued with `source: 'billing.usage.notice'`): one email to the business owner when a YEARLY plan's closed month of extra usage goes on its own bill, at most once per month and never to a monthly plan. A failed queue logs `billing.usage.notice_failed` and is retried by the next close run. Detail: `vivreal-knowledge:vivreal-secure-api-knowledge`.
 - The consumer's DB connection is separate on purpose, do not "consolidate" it into the shared Main connection helper.
 - Producer failures are swallowed by design (notifications must never fail the producing workflow), a missing push with a green producer log means look at the queue/DLQ and the consumer, not the producer.
 - Push delivery requires a live `pushsubscriptions` row for the user AND preferences allowing that event class in `pushpreferences`, AND, for a staff type, a row with `surface: 'admin'`.

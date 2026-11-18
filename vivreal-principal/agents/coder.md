@@ -440,16 +440,31 @@ to land. Sources: `vivreal-hq/docs/projects/walk-fixes-and-recipes-release/`
   `wsl` starts in the calling shell's folder, and every Bash call of mine starts in the session's
   folder, often the owner's checkout: a coder's WSL probe rewrote an owner's root `package.json`,
   lockfile and `node_modules`, and an `npm ci` ran on a Windows-mounted worktree. So each step is
-  `wsl.exe bash -lc 'cd "<my worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
+  `wsl.exe -e bash -lc 'cd "<my worktree as /mnt/<drive>/...>" && pwd && <command>'`, one call, and I
   stop if `pwd` is not my worktree. Installs and packs run on WSL's own disk from a `git archive`
-  of the head, never on `/mnt/<drive>` (`vivreal-workflow:shared-standards`, "Cross-platform note").
+  of the head, never on `/mnt/<drive>` (`vivreal-workflow:shared-standards`, `references/wsl.md`).
 - **A WSL step is a login shell, `bash -lc`, never `bash -c`** (release B, 2026-11-17). A plain
   `bash -c` loads no profile, so nvm never starts and `npm` is the Windows npm under `/mnt/`. Before
-  any install or test, one call `wsl.exe bash -lc 'cd "<my worktree>" && pwd && command -v node npm'`
+  any install or test, one call `wsl.exe -e bash -lc 'cd "<my worktree>" && pwd && command -v node npm'`
   must print my worktree and two paths, neither under `/mnt/` (read them: `command -v` exits 0 with
-  one name missing). Anything holding a `$` goes in a script file run with `bash <file>`, because
-  the shell `wsl.exe` starts expands `$` first. A long-running process starts with `setsid -f`,
-  never `nohup ... &`, which dies when `wsl.exe` returns.
+  one name missing). A path under `/mnt/` or a missing line means the machine lacks the WSL step of
+  the vivreal-skills `SETUP.md` (nvm's lines in `~/.profile`): I stop and report it. A long-running
+  process starts with `setsid -f`, never `nohup ... &`, which dies when `wsl.exe` returns.
+- **`wsl.exe -e`, so no outer shell expands a `$`** (release B, 2026-11-17 and 2026-11-18, the
+  root-cause fix for a repeat on the day the first rule shipped). Without `-e`, the shell `wsl.exe`
+  hands its line to expands every `$` first, in the folder the call started in, before my `cd` runs:
+  a coder's `$(...)` on a `wsl.exe bash -lc` line ran two `git diff`s in the owner's checkout. With
+  `-e`, bash runs directly and the `$` reaches it intact (measured 2026-11-18). A long step still
+  goes in a script file I write with the Write tool and run as
+  `wsl.exe -e bash -lc 'cd "<my worktree>" && pwd && bash "<script>"'`.
+- **When WSL git cannot read my worktree, I test in a WSL-native clone, never on Windows** (release
+  B, 2026-11-17: a coder ran `npm ci` on Windows for that reason, a slip with the lockfile
+  unchanged). A worktree's `.git` file names a Windows path, so WSL git answers `not a git
+  repository`. I bundle the branch from Git Bash (`git -C <my worktree> bundle create
+  <scratch>/<name>.bundle <branch>`), clone it on WSL's own disk (`wsl.exe -e bash -lc 'cd ~ && pwd &&
+  git clone -b <branch> "<the bundle as /mnt/<drive>/...>" ~/<name>'`), prove Linux node there, and
+  install and test in that clone; I edit and commit only in my worktree, and bundle again after a
+  change. Never install on Windows in its place (`references/wsl.md`).
 
 ## Hard rules
 

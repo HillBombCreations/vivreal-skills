@@ -171,7 +171,7 @@ Each of these cost a session a false conclusion.
   the main session, a `cd` in an earlier call does not carry over. Write every command as `cd "<worktree or scratch folder>" && <command>`, even
   a folder listing or a process check (release B: a capture session's process and folder listings ran
   in the owner's checkout; harmless that time, but an install or a write there is not). WSL steps
-  follow `vivreal-workflow:shared-standards`, "Cross-platform note".
+  follow `vivreal-workflow:shared-standards`, `references/wsl.md`.
 - **An open native select list can be captured page only, in a visible browser.** The list a native
   `<select>` opens is drawn outside the page, so a headless screenshot shows the closed box. In a
   non-headless browser, a page-only screenshot (`page.screenshot`) does include the open list, so no
@@ -257,6 +257,16 @@ Each of these cost a session a false conclusion.
   project's IP inbound filter for the walk machine before the walk and removes it after
   (`vivreal-workflow:release-conductor`, Walks; message filters need a higher Sentry plan). If
   your brief does not say the filter is on, say so in the walk report's first lines.
+- **A refusal row can page the owners even with that filter on** (release B, L-B-18). The filter
+  stops only what the walk machine's browser sends; a refusal a BACKEND logs (a removed member's
+  open session, a view-only member opening an owner screen, a real bug) reaches Sentry from the
+  service and files a NEW issue, and a new issue pages the owners (P-sentry-warn): three Secure
+  issues came from one day's walks unannounced. So: list the walk's refusal and membership rows in
+  the report's first lines so the dispatching thread can warn the owners before you run them; read
+  Sentry for every project the walk touched right after the walk (issues first seen in the walk's
+  window, by title and count, no event bodies); and report each one the walk caused, with the row
+  that caused it, so it can be resolved with that reason. An issue you cannot tie to a row is a
+  finding, not noise.
 - **A shared Playwright profile is single-user, with no lock-awareness.** The
   tutorial harness's profile (`vivreal-hq/.agent-cache/tutorial-profiles/`) is one
   Chrome user-data-dir; a `launchPersistentContext` against it while another
@@ -283,6 +293,14 @@ owned the question "can somebody type the URL and get the page".
 **Verify against the product's own promise, not the pipeline's status.** The
 publish button said "puts it on the web at your Vivreal address", so the check
 is a DNS lookup and an HTTP fetch of that address, not a green job.
+
+**A green test is no evidence for a flow whose mock answers in the wrong
+shape** (release B, L-B-15). "Create my site" on Start blank had tests and an
+e2e spec, and still left the owner on the old site's page: the e2e mock
+answered both creates in the hosted shape, while the deployed blank create
+answers with the site document itself (portal #496 item 7). Walk the flow on
+the real backend whatever the suite says, and when a test is cited as
+evidence, ask which deployed handler its mock was built from.
 
 For anything deploy-shaped, **Step Functions execution history is the best
 evidence available** and it is one command:
@@ -383,7 +401,11 @@ process before reporting a sign-in as unavailable (a v7 release step was wrongly
 exactly this, 2026-10-20).
 
 **Never print or store a whole group document, a secret value or a key.** Project named fields
-only, in every database read and every API read. A walker once printed one group's API key into
+only, in every database read and every API read. **Not even part of one in a shape check** (release
+B, L-B-16): a check that classed an `@` in a password as an email address printed the rest of the
+password. A check prints key names and booleans only (`typeof`, a length band, a `startsWith`
+result), and a page that lists customers or logins is read by locator and named fields, never as
+whole-page text. A walker once printed one group's API key into
 its own tool output while listing a group document's fields (v7 retest walk). Name the fields you
 need; never read a group without a projection.
 
@@ -564,6 +586,13 @@ in every walk:
   screen or the article, filed live.
 - **Every new or changed owner promise** (Plans, help, a toast, a hint) gets a row that does the
   promised thing end to end in the product, not just reads the words.
+- **Copy that names a control is checked on the screen where the copy shows** (release B,
+  L-B-15). Find the control it names on THAT screen, by its label there and where it sits ("above",
+  "below"), read from the accessibility tree, never from the form where the control is first named.
+  Release B's sales-tax line told a key-connected shop to "Choose Connect with Stripe above"; the
+  plan's check had compared the name with the connect form's button, and the board where the line
+  shows has only "Switch to signing in with Stripe", below the line. A name the screen does not
+  carry is a defect, filed live, even when the plan's own check said PASS.
 - **Plan-gated controls are walked in each plan state**, on a paid (or comped) QA business too.
 - **A visitor-facing form counts only when submitted once and its stored record read back** (on
   a QA site, then removed).

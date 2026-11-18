@@ -53,7 +53,7 @@ writes a row of either site.
   lists.
 - **A new page is a site-document write** (pages keep `blocks` and a mirror `collections` array),
   never a row write, so `help-page-producer`'s PUBLISH mode cannot make it. It is a content add,
-  and content adds go through the product's own screens (owner, 2026-11-17): the page in Studio,
+  and content adds go through the product's own screens (owner rule P-content-through-ui): the page in Studio,
   its lists, rows and index card in the portal's content editor, by an agent acting as an owner
   would under a GO (`help-page-producer`'s ADD dispatch), before PUBLISH mode can fill it. A
   reviewed one-shot (`vivreal-workflow:ops-one-shot`) is only for a step those screens cannot do,

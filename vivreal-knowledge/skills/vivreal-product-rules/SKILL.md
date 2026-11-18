@@ -132,6 +132,21 @@ Never put a customer name, id or address in this file.
 27. **X (Twitter) is not offered in the portal** (owners, 2026-11-08): spend no release effort
     hardening X publish paths.
 
+## Shops (release B, live 2026-11-17)
+
+28. **Sales tax is off until each owner turns it on** (owner, 2026-11-16T16:36:05Z, Q-TAX-1 to
+    Q-TAX-3; GO-B-CLIENT-A 2026-11-17: "off for every shop until its owner turns it on"). An owner or
+    admin turns on "Collect sales tax at checkout" per shop, and it saves ON only after the provider
+    says the shop can tax; checkout then asks Stripe or Square to add tax, and nothing is ever taxed
+    on a shop whose switch is off. A pickup order is taxed like any other, at the buyer's billing address. Enforced by VR_Secure_API's
+    tax routes and VR_Client_API's checkout (`vivreal-secure-api-knowledge`,
+    `vivreal-client-stack-knowledge`).
+29. **One stock number on a product with options is one shared count** (owner, 2026-11-16T16:37:16Z,
+    "One shared count", option A): every option sells from that number, in the bag, at checkout and
+    when an order is paid; an owner who wants a count per option sets one per option herself. The
+    portal labels the box "One count for every {label}". Enforced by Vivreal_Templates' cart,
+    VR_Client_API's checkout and VR_CMS_API's paid webhooks.
+
 ## Adding a rule
 
 One line, the decision in owner words, who decided and when, and the code that enforces it. Keep this

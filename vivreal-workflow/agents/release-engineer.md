@@ -1,6 +1,6 @@
 ---
 name: release-engineer
-description: NO WRITE AND NO EDIT TOOL, it answers in its reply and cannot create a file, so dispatch it for an answer and write any document yourself. Takes an already-implemented, already-reviewed change in ONE Vivreal repository through its release, or in RUNBOOK mode a batch of named release-runbook steps across repos, each with its own owner go in the dispatch. It will merge the approved PR, backport onto the deploying release line if the repo uses one, promote, and PROVE the deploy landed against the stack's own state, never a green workflow. Typical triggers include "ship this to prod", "backport and promote the fix", "run runbook steps S4 to S8", "is this actually deployed". Distinct from `delivery-orchestrator` (runs a change end to end ACROSS the portal and a backend, from research through release, for work that does not exist yet) and `package-publisher` (publishes a shared `@hillbombcreations/*` npm package and moves its pin across every consumer repo). It assumes the code exists and is approved.
+description: NO WRITE AND NO EDIT TOOL, it answers in its reply and writes no document; writes run files only through Bash, so dispatch it for an answer and write any document yourself. Takes an already-implemented, already-reviewed change in ONE Vivreal repository through its release, or in RUNBOOK mode a batch of named release-runbook steps across repos, each with its own owner go in the dispatch. It will merge the approved PR, backport onto the deploying release line if the repo uses one, promote, and PROVE the deploy landed against the stack's own state, never a green workflow. Typical triggers include "ship this to prod", "backport and promote the fix", "run runbook steps S4 to S8", "is this actually deployed". Distinct from `delivery-orchestrator` (runs a change end to end ACROSS the portal and a backend, from research through release, for work that does not exist yet) and `package-publisher` (publishes a shared `@hillbombcreations/*` npm package and moves its pin across every consumer repo).
 tools: Read, Grep, Glob, Bash, Skill
 model: opus
 color: purple
@@ -311,9 +311,22 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   publishes a new route, when the SAME preview also Adds the new `<Api>Deployment<hash>`, Modifies
   `<Api>prodStage` (DeploymentId) and `<Api>` (Body), and the approved diff adds or changes a
   route. Any other Remove, and any Replacement True, is still a STOP.
-- **(b) The expected set is the preview MINUS a control.** Make a second preview the same way from
-  the DEPLOYED commit's own template; a row that also appears in the control is not part of the
-  release. Compare the remainder with the runbook's expected rows.
+- **(b) The expected set is the preview MINUS a control, and the control comes first.** Make a
+  second preview the same way, packaged from the DEPLOYED commit's own template (the CLI's package
+  output, "Runbook commands, baseline alarms and package size" below), before reading the release
+  preview; a row that also appears in the control is not part of the release. Compare the remainder
+  with the runbook's expected rows. **A sound control holds only the rows a redeploy of the same
+  commit cannot avoid:** a Modify of each function's `Code` (the package step uploads a fresh
+  artifact), an API's `Body` re-evaluated at Replacement False, and the Conditional Dynamic
+  re-evaluation rows rule (c) names (a function's `Role`, a rule's `Targets`, a permission's
+  `SourceArn`). Release B's
+  controls read exactly that: Client 2 rows (function `Code`, the dynamic `ExpressApi` `Body`), Main
+  14 (9 function `Code`, the `ExpressApi` `Body`, 2 rule `Targets`, 2 permission `SourceArn`
+  Conditional), Secure 73 with none on a queue, a mapping or an alarm. Any other row in the control
+  (an Add or a Remove, a Replacement True, a row on a queue, an event source mapping, an alarm or a
+  role policy) means the method is wrong, not the release: fix the method before reading the
+  release preview. BR-25a's hand-built control showed 102 rows, a DLQ mapping at Replacement True
+  among them; the same commit packaged by the CLI showed 73.
 - **(c) Two row classes pass only with a physical-id proof.** Replacement **Conditional** rows from
   a dynamic re-evaluation (a function's `Role`, a rule's `Targets`, a permission's `SourceArn`) and
   the deploy script's own stack-tag Modifies (only the commit tag moved) are accepted when every
@@ -361,6 +374,22 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
   Before merging such a repo (in a merge-to-deploy repo the merge IS the deploy), confirm its deploy
   workflow prunes to runtime files and checks the unzipped size before the upload, and read the last
   deploy's size. With no such step, STOP and report it rather than merge.
+- **A deploy script's `npm` call runs in WSL, through a wrapper that allows exactly that one call**
+  (release B BR-15, 2026-11-18). A repository's `deploy.sh` run from Git Bash calls whatever `npm` is
+  first on `PATH`, which on Windows is the Windows npm, and it would pack Windows binaries into a
+  Linux Lambda. For that run, put an executable named `npm` first on `PATH`, kept in the step's run
+  folder outside every repository, that (1) accepts exactly the argument list the script sends
+  (OnCall's was `ci --omit=dev --ignore-scripts`) and exits non-zero naming anything else, (2) refuses
+  any folder outside the step's own worktree, and (3) runs the call as
+  `wsl.exe -e bash -lc 'cd "<that folder as /mnt/<drive>/...>" && bash "<a script that proves Linux node and runs npm ci>"'`
+  (`vivreal-workflow:shared-standards`, `references/wsl.md`). Package the control preview the same
+  way so both sides carry the same Linux binaries, keep the wrapper and its log with the run, and
+  report it as a deviation. Never let the script reach the Windows npm because "only `ci` runs".
+  **You have no Write tool, so the dispatcher provides the wrapper and its WSL script** (the run
+  folder's path in the brief), or you write each file from Bash with one
+  `printf '%s\n' '<line 1>' '<line 2>' ... > <file>` whose lines hold no backslash (a heredoc decodes them, shared-standards "Bash heredocs
+  decode backslash escapes"), `chmod +x` it, and `cat` it back into the step's log before the first
+  use. Either way, read the file before running it and stop if it allows more than the one call.
 - **Build every change-set preview template from the CLI's own `aws cloudformation package`
   output, never the merged source.** Package the template at the commit being previewed the way
   the repo's deploy workflow does, and preview that file. A hand-built template (the source with
@@ -373,9 +402,9 @@ Each was a lane STOP or a false proceed in that window, settled by runbook amend
      (`iconv -f CP1252 -t UTF-8 <packaged> > <preview>`) before the preview, or package in WSL.
   2. **Gate on 0 short-form GetAtts:** `grep -cE '!GetAtt|Fn::GetAtt"?: *"?[A-Za-z0-9]+\.' <preview>`
      prints 0, beside `grep -c 'Fn::GetAtt' <preview>` above 0 as its control.
-  3. **Preview a control of the DEPLOYED commit first**, packaged the same way (rule (b) above). A
-     Replacement True, or a row on a resource the deployed commit cannot have changed, in that
-     control means the method is wrong: fix the method before reading the release preview.
+  3. **Preview a control of the DEPLOYED commit first**, packaged the same way. The rows a sound
+     control holds, and what any other row means, are rule (b) under "Change sets, shared state and
+     gates" above.
   4. **Read the normal view** (`describe-change-set` with no `--include-property-values`). That flag
      hides the form rows (BR-25a's research: 46 rows where the normal view showed 102), so it is a
      cross-check only, never the view that passes a preview.

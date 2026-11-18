@@ -197,6 +197,9 @@ the row file also ships `previewImageKey: null`. A kit is registered only when a
 `site_templates` returns it: count before and after. See
 `docs/template-flow.md` §6b leg (3b). A registered look with no real screenshot falls back to
 the portal's CSS vignette, which is a registration gap, not a done state.
+**Republishing a kit that already has a published row** (a fix merged to Migrator master) is staged
+by the `kit-stager` agent under an owner GO (new content-hash prefixes, proven, row move dry-run
+only), and the row move itself is a separate GO; never by hand-written scripts in a session.
 **A look is offered only after its instantiated demo site passes the Blank-buildable census**
 (validation step 8, 0 NOT BUILDABLE): stand up the demo site, run the census on it, and insert the
 `site_templates` row only on a pass. A template nobody can rebuild from Blank is not offered in

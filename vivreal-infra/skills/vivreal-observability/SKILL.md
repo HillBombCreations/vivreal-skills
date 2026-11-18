@@ -1,6 +1,6 @@
 ---
 name: vivreal-observability
-description: 'Use when reasoning about whether Vivreal would actually FIND OUT about a failure: CloudWatch alarms and why one that looks healthy may be latched silent, alarm periods and thresholds, AWS Budgets against cost alarms, log groups and retention, API Gateway access logging, CloudFront logging and origin verification, or any question shaped like "why did nothing page us" or "is this alarmed". Teaches that an alarm notifies on a TRANSITION and never on a state, that a threshold is a claim about traffic volume, and the shapes where a failure is invisible to the thing meant to catch it. Triggers on: CloudWatch alarm, alarm latched, alarm did not fire, notification, SNS, put-metric-alarm, describe-alarms, AWS Budgets, cost alarm, billing alarm, log retention, put-retention-policy, never expire, filter-log-events, access logging, API Gateway logging role, CloudFront logging, origin verification, on-call, did we get alerted, is this monitored.'
+description: 'Use when reasoning about whether Vivreal would actually FIND OUT about a failure: CloudWatch alarms and why one that looks healthy may be latched silent, alarm periods and thresholds, AWS Budgets against cost alarms, log groups and retention, API Gateway access logging, CloudFront logging and origin verification, or any question shaped like "why did nothing page us" or "is this alarmed". Teaches that an alarm notifies on a TRANSITION and never on a state, that a threshold is a claim about traffic volume, and the shapes where a failure is invisible to the thing meant to catch it. Triggers on: CloudWatch alarm, alarm latched, alarm did not fire, notification, SNS, put-metric-alarm, describe-alarms, AWS Budgets, cost alarm, billing alarm, log retention, put-retention-policy, never expire, filter-log-events, access logging, API Gateway logging role, CloudFront logging, origin verification, on-call, did we get alerted, is this monitored, WAF custom response, CORS on a 429.'
 ---
 
 **This skill states mechanisms, not inventory.** Every roster and count below is something the AWS
@@ -110,6 +110,41 @@ a total-spend budget and a tighter infrastructure-only one. **Read the current a
 
 ---
 
+## A new alarm must not page at its own creation
+
+An absence alarm (a "no run in 2 hours" alarm, a missed-run alarm) reads ALARM the moment it is
+created, because no datapoint exists yet, and pages the owners at its own creation:
+`live-rebuild-sweep-missed-run` paged 12 minutes after it was made and stayed in ALARM (backlog
+F343). **Release B's answer:** every new alarm was created with `ActionsEnabled: false`, and a
+reviewed one-line commit switched its actions on after it had read `OK` for 24 hours, proven with
+`describe-alarms --query 'MetricAlarms[].[AlarmName,StateValue,ActionsEnabled]'`. Each repo pins it
+with a test that holds the list of alarms allowed actions (VR_Secure_API
+`test/unit/alarms/alarmActionsGate.test.js`, VR_Client_API `test/checkoutTaxAlarm.test.js`, and the
+same in CMS and Main); a flip edits that list.
+
+**The flip is not a deployment** (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18:
+one deployment per repo per release, for every plan from now; parameter and data flips, one-shots
+such as indexes and kits, package publishes under P-packages and docs merges are not deployments,
+and a repo whose several stacks deploy back to back in one step counts as one deployment). Release
+B's plan flipped its alarms with follow-up commits and promotes (BR-30); a plan no longer does: only
+release B's deployments already made before the owners' decision (hq `decisions.md`,
+2026-11-18T16:48:03Z) are exempt, and BR-30's flips now ride each repo's one batch, walked on the
+local stack until the walk passes, before that repo's one deployment. An alarm whose metric cannot
+breach before its soak ends is created with its actions on; one that could page at its own creation
+is shaped by the design so it cannot, inside the one deployment, or carries an owner exception
+recorded in hq `decisions.md`.
+
+**Release B's alarms created this way** (actions off on 2026-11-18; their flip, BR-30, rides each
+repo's one batch once they have read `OK` for 24 hours): `VR-CMS-API-caller-rate-refused`,
+`VR-Secure-API-caller-rate-refused`,
+`VR-Client-API-checkout-tax-dropped`, `VR-Secure-API-UsageMonths-errors`,
+`VR-Secure-API-UsageMonths-no-run-2h`, `VR-Secure-API-usage-absorbed`, EventHandler's six site
+rebuild alarms (the rebuild's R-B5, in the same step), and Main's sign-in code send-failed alarm
+(BR-35d). Read the live set with that query, not this list. **The cost of the rule:** Secure's
+AlarmVerifier counts an actions-off alarm as undeliverable, so
+`VR-Secure-API-AlarmVerifier-undeliverable-alarms` flips to ALARM every few hours and notifies the
+owners until the flips (backlog F499). Expect it, and say so when it fires.
+
 ## What v7 deployed (2026-10-20), and how to check it
 
 The estate grew in the v7 release. These are pointers to the templates and checks, not a roster;
@@ -203,13 +238,37 @@ one as a security control.
 shorter expiry than the shared bucket's policy, and nothing records whether that was deliberate.
 Read the lifecycle rule rather than assuming the fleet policy applies.
 
+**A WAF block a browser cannot read looks like the user's own network** (release B live walk M1,
+2026-11-17). A WAF rule's `CustomResponse` (a 429 or a 403) REPLACES the answer API Gateway or the
+origin would have sent, so it carries none of the API's CORS headers. The browser then reports a
+network failure, the app shows its offline or "check your connection" text, and nothing in the app's
+own error handling, Sentry included, sees a refusal. So:
+- **Every custom response a browser can reach names its CORS headers:**
+  `access-control-allow-origin` (one origin: a WAF cannot echo the request's `Origin`, so any other
+  origin the app answers on stays unreadable), `access-control-allow-credentials: true` when the app
+  sends credentials, and `vary: Origin`. Custom responses and their headers add no WAF cost.
+- **A preflight blocked by a rate rule hides the answer too.** A custom header on the call (the
+  portal's `X-App-Source`) makes the browser preflight it, and a preflight answered with any non-2xx
+  status fails whatever headers it carries. Where the CORS layer answers `OPTIONS` before any route
+  runs, a rule scoped to routes can skip the exact `OPTIONS` method and open no door; a whole-API
+  rule that still counts it can still block a preflight at its limit. VR_Main_API #137 (approved,
+  unmerged at this writing) skips it in two route rules and adds the headers to all of them
+  (`vivreal-knowledge:vivreal-main-api-knowledge`, the WAF bullets).
+- **Prove it with the app's real `Origin`** (next section).
+
 ---
 
-## Audits and walks: three ways to be wrong quietly
+## Audits and walks: four ways to be wrong quietly
 
 - **Amplify access-log audits have two silent false negatives.** Logs are partitioned per domain,
   so read every custom domain AND the default app domain; and a range over 7 days returns nothing
   rather than partial data, so split the range and keep a known-hit control.
+- **A WAF walk row reads the block with the app's real `Origin`.** Send the `Origin` the app
+  sends (for the portal, `https://vivreal.io`) on the blocked call and on its preflight, and compare
+  `access-control-allow-origin` with it byte for byte. A read with no `Origin` cannot tell whether a
+  browser accepts the answer, and the app's own screen is the proof that it did: the expected
+  result is the app's refusal text, never its offline text. Driving the block can trip the rule's
+  alarm, which can page the owners: warn them in chat first (owner rule P-sentry-warn).
 - **Older Sentry traces can hold session cookies and query-string emails.** The server-side
   scrubbing rules drop them now; treat traces from before those rules as sensitive.
 - **Keep a walk's known errors off the Sentry quota:** add the project's IP inbound filter for the

@@ -69,6 +69,18 @@ Only through `VR_Secure_API/scripts/purge-closed-group.js` (dry run by default),
   editor is promoted on save was not settled at portal `origin/stable` (2026-11-17), so look in
   the saved HTML for a `preupload-` key.
 
+## Deploy and runtime of the edge function (read 2026-11-18)
+
+- **`media-cdn.yml` deploys from `main` only, by a dispatch** (VR_Secure_API: `workflow_dispatch`, and
+  the deploy job runs only when `github.ref` is `refs/heads/main`), so the media stack is not on
+  Secure's release train. A dispatch on another ref is skipped and reads green.
+- **Node 24 is not live here yet.** `cloudformation/media-cdn.yaml` on `origin/main` says
+  `nodejs22.x` for `MediaRouterFn` (Lambda@Edge). Release B moves it with Secure's runtime row (#401,
+  BR-25b) and a `media-cdn.yml` dispatch after it. An edge function serves the version its
+  distribution's cache behaviours name, so prove a move from the association ARN's version
+  (`vivreal-infra:vivreal-deploy-proof`, "Prove the serving version"), and read its logs in the
+  regions that served the test requests (`/aws/lambda/us-east-1.<function name>`).
+
 ## Debugging media issues
 
 - **Image 403 on a site** → expired/unsigned URL, or the bucket OAC policy. Check `signCloudFrontUrl` config + the key pair in Secrets Manager.

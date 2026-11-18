@@ -48,6 +48,8 @@ The rules as a reviewer walks them, one line per entry.
 27. **A limit that reaches zero written as a quantity.** A cap that can reach zero refuses the action or removes the line, never writes zero as the amount.
 28. **A move that leaves the repository's own guide behind.** A change that moves what the repository's guide files state updates them in the same change.
 29. **An enforcement row true only on paper.** A register row says a limit is enforced only when the path the product actually calls runs the gate.
+30. **Output read by its position while a logger can still write.** A test picks a child process's result line by its keys or a marker, never as the first or last line.
+31. **A guard narrowed to one read with no tripwire.** A guard rewritten from "any read counts" to "one read counts" names every way that read can miss and adds a tripwire for each, failing toward the safe side.
 
 ---
 
@@ -396,3 +398,27 @@ The rules as a reviewer walks them, one line per entry.
 **How to spot it:** A row flipped to enforced in a change that names no caller. A gate added to one of two routes that write the same thing. A backend that accepts a new shape while the client's own route in front of it still refuses it.
 
 **Guard shape:** The change that flips a row cites the client file and line that reaches the gated route, found by a search with a positive control; one test runs through that route with the gate's refusal; every sibling write path has a refusal test.
+
+---
+
+## 30. Output read by its position while a logger can still write
+
+**Rule:** A test that reads a child process's or a stream's output selects the line it wants by its content (its keys, a fixed marker), never by its position, whenever an asynchronous logger can write to the same stream before or after it.
+
+**Why it hurts:** An asynchronous logger can flush its line after the result line on some runs and before it on others, so a test that takes the last line passes most of the time and fails at random, which reads as flakiness rather than as the test's own defect, and a deploy gate that runs the suite fails a fraction of deploys.
+
+**How to spot it:** A test that splits a child's stdout into lines and takes the first, the last or a fixed index, in a process that also logs. A change that adds a log line to a path such a test runs.
+
+**Guard shape:** Select the result by its keys (parse each line and take the one that carries the expected fields) and throw when none or more than one matches; run the test many times in a loop once, with the new log line present, to show it no longer varies.
+
+---
+
+## 31. A guard narrowed to one read with no tripwire
+
+**Rule:** When a design narrows a guard from "any of these reads counts" to "this one read counts" (to drop false positives), it lists every way that one read can miss a real case, and each gets its own tripwire that fails toward the safe side (counting, refusing) rather than toward silence.
+
+**Why it hurts:** The broad read was also the fail-safe: it caught the cases nobody had named. Once it goes, a case the one read cannot see lands in the "nothing here" bucket with a reason that is false, and the report states it as checked.
+
+**How to spot it:** A design or diff that replaces a coarse read with a precise one and names one or two refusal paths for it. A new name, path or shape a service can choose freely (a variable name, a secret reference resolved at deploy time) that the precise read keys on.
+
+**Guard shape:** For each way the precise read can miss, a tripwire beside it (for example, every name matching a broad pattern must be classified in exactly one of two lists, and an unclassified one is an error that counts the item); a REFUSE test that plants such an unseen case and asserts it is counted, and a mutation that removes the tripwire and turns that test red.

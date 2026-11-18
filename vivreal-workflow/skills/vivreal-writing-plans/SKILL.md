@@ -47,6 +47,35 @@ A plan that touches more than one repo carries both of these, so no builder wait
   the plan, with the version each moves to and the PR that moves it. Naming only Templates and
   the portal for the renderer left Secure and Client API on 1.97.0 until the walk readiness check.
 
+## Deployments per repo (REQUIRED in every release plan)
+
+The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
+one deployment per repo per release, we validate everything locally and once validate then we
+deploy" and "we'll validate locally and if we find defects we fix them and rerun locally until it
+passes the valdiation then one deployment per repo". A release plan carries this table, and every
+row's count is at most 1:
+
+| Repo | What its one batch carries (features, fixes, runtime move, alarm actions, help or site move, IAM conditions) | Deployments in this release | Flips after the deploy (parameter or data only) |
+|---|---|---|---|
+
+- **Everything a repo needs rides its one batch.** The whole batch is walked on the local stack, on
+  the runtime it deploys on (P-local-validate); anything that makes a local walk row fail (a broken
+  flow, wrong behaviour, a defect against what the batch promises) is fixed in that repo's batch,
+  with a delta review, and the walk runs again, until it passes; a note or nit that fails no row
+  goes to the backlog (P-ship-first). Only then do the backends deploy back to back, each proven and
+  watched 1 hour, the portal last (P-api-first).
+- **What is not a deployment.** Parameter and data flips, one-shots such as indexes and kits,
+  package publishes under P-packages and docs merges are not deployments, and a repo whose several
+  stacks deploy back to back in one step counts as one deployment.
+- **A timed soak is a flip, not a step that deploys.** A watch-only or shadow mode, an allowlist, a
+  rate limit's mode ships in the one deploy behind a parameter or data value; the plan's later step
+  is the flip, with its GO and its undo.
+- **An alarm is created with its actions on** when nothing can breach before its soak ends; an alarm
+  that could page at its own creation is shaped so it cannot, inside the one deployment.
+- **A count above 1 needs an owner exception recorded in hq `decisions.md`**, cited in that row;
+  without it the plan review FAILs (trap 10 below). Only release B's deployments already made before
+  the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are exempt.
+
 ## Runbook commands and STOP conditions (REQUIRED in a release plan)
 
 - **Every command carries every argument its script needs**, checked against the script's own
@@ -66,7 +95,8 @@ A plan that touches more than one repo carries both of these, so no builder wait
 Each was a NEW CLASS blocker in a release B plan review (vivreal-hq
 `docs/projects/next-release-B/review-*.md`). Walk the list over the plan before dispatching the
 reviewer. The general forms are the shared-standards anti-pattern catalog's "Plan steps that cannot
-run as written" and "Plan rows that drift from settled answers".
+run as written", "Plan rows that drift from settled answers" and "A guard narrowed to one read
+with no tripwire".
 
 **Steps that cannot run as written**
 1. **A stop rule pinned to a remembered number.** A STOP said "54 of 60" from memory; the base
@@ -95,6 +125,25 @@ run as written" and "Plan rows that drift from settled answers".
    certificate monitor and a crawler need).
 8. **Scope beyond an owner answer.** A row the owner's answer did not name goes to the next release,
    or back to the owner as a question, never into the plan by default.
+
+**Guards that lose their fail-safe**
+9. **A guard narrowed to one read with no tripwire** (release C F222 design review, 2026-11-18, NEW
+   CLASS). A design swapped a coarse "any code read counts" for one precise read (a secret grant)
+   and named two refusal paths, but a template that resolves the secret into an environment variable
+   at deploy time needs no grant, so a real user would have been counted 0 with a false reason. When
+   a row narrows a guard, list every way the one read can miss, give each a tripwire that fails
+   toward counting or refusing, and pair it with a REFUSE test that plants the unseen case
+   (catalog entry "A guard narrowed to one read with no tripwire").
+
+**Releases staged across deployments**
+10. **A repo deployed more than once in one release** (owner rule P-one-promote, amended 2026-11-18,
+    during release B). Release B moved runtimes in tiers with day gates between repos, split each
+    release-line API into a features promote and a runtime promote, and flipped alarms with
+    follow-up promotes. From now, in every plan, the "Deployments per repo" table above says at most
+    1 for every repo; runtime moves, alarm actions, help moves and IAM conditions join each repo's
+    one batch; and a soak that must stay is a parameter or data flip after the deploy, never another
+    deployment. Only release B's deployments already made before the owners' decision (hq
+    `decisions.md`, 2026-11-18T16:48:03Z) are exempt.
 
 ## Task right-sizing & bite-sized steps
 
@@ -150,7 +199,9 @@ prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
   vs the spec/research, scope correctness (no creep, nothing missing), risk and
   blast-radius coverage, convention fit, missing edge cases / failure modes,
   testability of the plan, and every item of the vivreal-writing-plans skill's
-  "Runbook commands and STOP conditions" and "Plan traps" lists. Verdict PASS or
+  "Deployments per repo", "Runbook commands and STOP conditions" and "Plan traps"
+  lists (FAIL a plan that deploys a repo more than once in the release unless an owner
+  exception is recorded in hq decisions.md). Verdict PASS or
   FAIL with section citations. Write to
   docs/projects/<slug>/plan-review-N.md.
 ```

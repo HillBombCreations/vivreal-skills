@@ -13,6 +13,17 @@ How live updates flow from the backends to the portal. Used for site-deploy prog
 - Active connections are tracked in a **DynamoDB table** (`WS_TABLE`, resolved from SSM `<ssm-prefix>/shared/ws-table`). `$connect` writes the `connectionId`; `$disconnect` removes it.
 - The endpoint backends post to is **`WS_ENDPOINT`** (the API Gateway Management API endpoint, resolved from SSM `<ssm-prefix>/shared/ws-endpoint`; `hb-api-secrets` is deleted).
 
+## Deploy and runtime (read 2026-11-18)
+
+- **The stack deploys from `main` only, by a dispatch.** VR_Secure_API's `websocket.yml` is
+  `workflow_dispatch` only, and its deploy job runs only when `github.ref` is `refs/heads/main`: a
+  dispatch on `stable` or a release tag is skipped and still reads green. So the websocket stack is
+  NOT on Secure's release train; it ships what `main` holds when someone dispatches it.
+- **Node 24 is not live here yet.** `websocket/cfn-template.yaml` on `origin/main` says `nodejs22.x`.
+  Release B moves it with Secure's runtime row (#401, BR-25b): that merge to `main`, then a
+  `websocket.yml` dispatch on `main`. Read the template and the functions' runtime before you say
+  which runs.
+
 ## How backends push a message
 
 - A backend posts to a connection via the **API Gateway Management API** (`postToConnection`), which requires the **`execute-api:ManageConnections`** IAM permission, granted by the **`Lambda-Webhook`** managed policy (attached to all 5 CMS Lambdas + Secure createSites; it also grants DynamoDB CRUD for the connection table). See `vivreal-iam-secrets`.
