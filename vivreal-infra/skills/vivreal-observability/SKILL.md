@@ -122,16 +122,21 @@ with a test that holds the list of alarms allowed actions (VR_Secure_API
 `test/unit/alarms/alarmActionsGate.test.js`, VR_Client_API `test/checkoutTaxAlarm.test.js`, and the
 same in CMS and Main); a flip edits that list.
 
-**The flip is not a deployment** (hq `docs/standards/process.md`, P-one-promote, amended
-2026-11-18: one deployment per repo per release, for every plan from now). Release B's plan
-flipped its alarms with follow-up commits and promotes (BR-30); a plan no longer does, and
-release B's steps already staged before 2026-11-18 are the owners' recorded exception (hq
-`decisions.md`, 2026-11-18). An alarm whose metric cannot breach before its soak ends is created with its actions on; one that could page at its own creation is
-shaped by the design so it cannot, inside the one deployment, or carries an owner exception
+**The flip is not a deployment** (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18:
+one deployment per repo per release, for every plan from now; parameter and data flips, one-shots
+such as indexes and kits, package publishes under P-packages and docs merges are not deployments,
+and a repo whose several stacks deploy back to back in one step counts as one deployment). Release
+B's plan flipped its alarms with follow-up commits and promotes (BR-30); a plan no longer does: only
+release B's deployments already made before the owners' decision (hq `decisions.md`,
+2026-11-18T16:48:03Z) are exempt, and BR-30's flips now ride each repo's one batch, walked on the
+local stack until the walk passes, before that repo's one deployment. An alarm whose metric cannot
+breach before its soak ends is created with its actions on; one that could page at its own creation
+is shaped by the design so it cannot, inside the one deployment, or carries an owner exception
 recorded in hq `decisions.md`.
 
-**Release B's alarms created this way** (actions off on 2026-11-18, switched on at release B's BR-30
-after their 24 quiet hours): `VR-CMS-API-caller-rate-refused`, `VR-Secure-API-caller-rate-refused`,
+**Release B's alarms created this way** (actions off on 2026-11-18; their flip, BR-30, rides each
+repo's one batch once they have read `OK` for 24 hours): `VR-CMS-API-caller-rate-refused`,
+`VR-Secure-API-caller-rate-refused`,
 `VR-Client-API-checkout-tax-dropped`, `VR-Secure-API-UsageMonths-errors`,
 `VR-Secure-API-UsageMonths-no-run-2h`, `VR-Secure-API-usage-absorbed`, EventHandler's six site
 rebuild alarms (the rebuild's R-B5, in the same step), and Main's sign-in code send-failed alarm

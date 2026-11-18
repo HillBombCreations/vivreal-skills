@@ -40,29 +40,40 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
 
 The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
 one deployment per repo per release, we validate everything locally and once validate then we
-deploy". It applies to every plan and every step from now, the rest of release B included ("Like
-all these BR23 and BR33 as well"); release B's steps already staged before 2026-11-18 are the
-owners' recorded exception (hq `decisions.md`, 2026-11-18). Staging a repo across deployments is an
-exception an owner must approve, never the plan's default.
+deploy" and "we'll validate locally and if we find defects we fix them and rerun locally until it
+passes the valdiation then one deployment per repo". It applies to every plan and every step from
+now, the rest of release B included ("Like all these BR23 and BR33 as well"). Only release B's
+deployments already made before the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are
+exempt; BR-30's alarm flips, Main's BR-35c and BR-35d, the help move and the rebuild steps ride each
+repo's one batch. Staging a repo across deployments is an exception an owner must approve, never the
+plan's default.
 
-1. **Every repo deploys ONCE per release.** Everything a repo needs in the release is built into its
-   one batch, one PR: features, fixes, a runtime move, alarm actions, a help or site move, IAM
-   conditions. A find mid-batch joins that repo's PR as another commit.
-2. **Validate the whole batch end to end on the local stack once** (P-local-validate), on the runtime
-   it will deploy on (a runtime move is validated on the new runtime locally, not proven by a tier in
-   production).
-3. **Then deploy the backends back to back**, each proven live (`vivreal-infra:vivreal-deploy-proof`)
-   and watched for 1 hour before the next, **the portal last** (P-api-first).
+1. **Every repo deploys at most ONCE per release.** Everything a repo needs in the release is built
+   into its one batch, one PR: features, fixes, a runtime move, alarm actions, a help or site move,
+   IAM conditions. A find mid-batch joins that repo's PR as another commit. Parameter and data
+   flips, one-shots such as indexes and kits, package publishes under P-packages and docs merges are
+   not deployments, and a repo whose several stacks deploy back to back in one step counts as one
+   deployment.
+2. **Walk the whole batch on the local stack, on the runtime it deploys on, until it passes**
+   (P-local-validate). Anything that makes a local walk row fail (a broken flow, wrong behaviour, a
+   defect against what the batch promises) is fixed in that repo's batch, with a delta review, and
+   the walk runs again, until it passes; a note or nit that fails no row goes to the backlog
+   (P-ship-first). Only when the walk passes do the deployments start. A runtime move is
+   validated on the new runtime locally, never proven by a tier in production.
+3. **Then deploy the backends back to back,** each proven live
+   (`vivreal-infra:vivreal-deploy-proof`) and watched for 1 hour before the next, **the portal
+   last** (P-api-first).
 4. **A timed soak that must stay is a flip, not a deployment.** A watch-only or shadow mode, an
    allowlist, a rate limit's mode: ship it in the one deploy behind a parameter or data value, and
-   turn it on later with a parameter or data flip. Never a second promote to flip an alarm or a mode.
+   turn it on later with a parameter or data flip. Never a second promote to flip an alarm or a
+   mode.
 5. **An alarm is created with its actions on when nothing can breach before its soak ends.** No
    follow-up promote flips an alarm's actions. An alarm that could page at its own creation (an
    absence alarm with no datapoint yet) is a design question the plan answers without a second
    deployment, or an owner exception in `decisions.md` (`vivreal-infra:vivreal-observability`).
-6. **Check every plan before you run it:** its table of deployments per repo says 1 for every repo.
-   More than 1 for any repo needs an owner's exception recorded in hq `decisions.md`; without it,
-   send the plan back (the reviewer FAILs it too).
+6. **Check every plan before you run it:** its table of deployments per repo says at most 1 for
+   every repo. More than 1 for any repo needs an owner's exception recorded in hq `decisions.md`;
+   without it, send the plan back (the reviewer FAILs it too).
 
 ## 2. Slots: the check before every dispatch
 

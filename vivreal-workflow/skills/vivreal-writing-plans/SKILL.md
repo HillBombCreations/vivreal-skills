@@ -51,21 +51,30 @@ A plan that touches more than one repo carries both of these, so no builder wait
 
 The owners' rule (hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18): "it should be
 one deployment per repo per release, we validate everything locally and once validate then we
-deploy". A release plan carries this table, and every row's count is 1:
+deploy" and "we'll validate locally and if we find defects we fix them and rerun locally until it
+passes the valdiation then one deployment per repo". A release plan carries this table, and every
+row's count is at most 1:
 
 | Repo | What its one batch carries (features, fixes, runtime move, alarm actions, help or site move, IAM conditions) | Deployments in this release | Flips after the deploy (parameter or data only) |
 |---|---|---|---|
 
-- **Everything a repo needs rides its one batch**, validated end to end on the local stack once,
-  on the runtime it deploys on (P-local-validate); then the backends deploy back to back, each
-  proven and watched 1 hour, the portal last (P-api-first).
+- **Everything a repo needs rides its one batch.** The whole batch is walked on the local stack, on
+  the runtime it deploys on (P-local-validate); anything that makes a local walk row fail (a broken
+  flow, wrong behaviour, a defect against what the batch promises) is fixed in that repo's batch,
+  with a delta review, and the walk runs again, until it passes; a note or nit that fails no row
+  goes to the backlog (P-ship-first). Only then do the backends deploy back to back, each proven and
+  watched 1 hour, the portal last (P-api-first).
+- **What is not a deployment.** Parameter and data flips, one-shots such as indexes and kits,
+  package publishes under P-packages and docs merges are not deployments, and a repo whose several
+  stacks deploy back to back in one step counts as one deployment.
 - **A timed soak is a flip, not a step that deploys.** A watch-only or shadow mode, an allowlist, a
   rate limit's mode ships in the one deploy behind a parameter or data value; the plan's later step
   is the flip, with its GO and its undo.
-- **An alarm is created with its actions on** when nothing can breach before its soak ends; an
-  alarm that could page at its own creation is shaped so it cannot, inside the one deployment.
+- **An alarm is created with its actions on** when nothing can breach before its soak ends; an alarm
+  that could page at its own creation is shaped so it cannot, inside the one deployment.
 - **A count above 1 needs an owner exception recorded in hq `decisions.md`**, cited in that row;
-  without it the plan review FAILs (trap 10 below).
+  without it the plan review FAILs (trap 10 below). Only release B's deployments already made before
+  the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are exempt.
 
 ## Runbook commands and STOP conditions (REQUIRED in a release plan)
 
@@ -129,12 +138,12 @@ with no tripwire".
 **Releases staged across deployments**
 10. **A repo deployed more than once in one release** (owner rule P-one-promote, amended 2026-11-18,
     during release B). Release B moved runtimes in tiers with day gates between repos, split each
-    release-line API into a features promote and a runtime promote, and flipped alarms with follow-up
-    promotes. From now, in every plan, the "Deployments per repo" table above says 1 for every repo;
-    runtime moves, alarm actions, help moves and IAM conditions join each repo's one batch; and a soak
-    that must stay is a parameter or data flip after the deploy, never another deployment. Release
-    B's steps already staged before 2026-11-18 are the owners' recorded exception (hq `decisions.md`,
-    2026-11-18).
+    release-line API into a features promote and a runtime promote, and flipped alarms with
+    follow-up promotes. From now, in every plan, the "Deployments per repo" table above says at most
+    1 for every repo; runtime moves, alarm actions, help moves and IAM conditions join each repo's
+    one batch; and a soak that must stay is a parameter or data flip after the deploy, never another
+    deployment. Only release B's deployments already made before the owners' decision (hq
+    `decisions.md`, 2026-11-18T16:48:03Z) are exempt.
 
 ## Task right-sizing & bite-sized steps
 
