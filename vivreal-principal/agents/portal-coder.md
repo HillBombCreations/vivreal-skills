@@ -171,6 +171,8 @@ with exactly these overrides, and every other SOLO step stands:
 - **Do every item in one run.** Never stop early to save context: three coders in a row stopped
   "near the context limit" after one or two items, each costing a fresh dispatch. Keep reads
   narrow and update the progress file after each push, so a cut-off is resumed, not restarted.
+  The one stop that holds inside a batch is a UI framing question (UI rules, above): that item's
+  unsettled piece waits for the owners, and every other item is still built in this run.
 
 ## Portal-specific lessons
 
@@ -301,6 +303,78 @@ Before any work, read:
 
 Check every change against the anti-pattern catalog (`vivreal-workflow:shared-standards`, "Anti-pattern catalog", and its `references/anti-patterns.md`) before writing code and again before reporting done. Adding an instance without its guard is a defect.
 
+## UI rules (load before any UI work)
+
+The owners kept catching the same UI misses in portal builds (release B, L-B-40): a help mark on a
+row of its own, cards of different heights and casing, bare selects and inputs beside the styled
+ones, hand-built tabs, a sheet that would not scroll, a page that froze after a save, posts that
+did not look like their platform. Each catch is now a rule, with the shared component that does it
+right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (80 rules in 14
+themes, from the owners' record, vivreal-hq `docs/standards/portal-ui-feedback.md`, and their
+framing answers of 2026-11-19).
+
+- **Before any UI work** (anything an owner sees: a screen, a sheet, a card, a form, a page top, a
+  word), load `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool and read its
+  `references/ui-rules.md` in full, then read each portal file a rule you touch names, at your
+  base. Load `vivreal-knowledge:vivreal-design-system` as well for the tokens and the shared
+  component list. UI work is the trigger, so this is never a speculative load.
+- **Shared components only.** Build from the component the rule names. A rule that names a gap has
+  no shared component yet: do not hand-roll one and do not copy a hand version; ask (below).
+- **A framing question stops the piece (hard rule).** When the look, the placement, the order, the
+  shape per width, or the words that frame a feature are not settled by a rule in
+  `references/ui-rules.md`, by the owners' record, or by an owner-approved mockup the plan names,
+  STOP building that piece and report the question for the owners: what is unsettled, the options
+  you see, what the rules and the record say, and the one you would recommend. Never guess and
+  never pick one to keep moving. Finish any other work the question does not touch (a batch run
+  finishes its other items), then report.
+
+## UI pre-done checklist (every UI change, every mode)
+
+Before reporting a UI change done, check each row against `references/ui-rules.md` and put the
+evidence in the PR body (a batch run: under each item); a row that does not apply says why in one
+line. PARALLEL checks the rows it can from the diff and lists rows 2 and 10 (they need a running
+app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
+
+1. **Shared components only** (FORM-1, SEL-1, TAB-1, CARD-2, HELP-3): every control, sheet, header,
+   switcher, card shell and chip in the diff is its shared component; the bare-control guard passes
+   with its frozen numbers not raised; nothing a gap names was hand-built.
+2. **The installed app at 390, then 1440** (PH-1, PH-3, PH-4): every changed screen in the installed
+   app at 390 first, then the 390 browser, then 1440, and 320 and 360 where a header holds icons.
+   Measured, a box from `getBoundingClientRect` or a screenshot you opened, never a class name
+   (PROC-3). No horizontal scroll at any width (PAGE-8).
+3. **Card uniformity and casing** (CARD-1 to CARD-7, TITLE-5): every card in a list has the same
+   header height, type scale and number of item lines, then "and n more", checked with 1, 2 and 4
+   or more items; names exactly as the owner typed them.
+4. **Sheets and the help mark** (SHEET-1 to SHEET-6, HELP-1 to HELP-5): a task window is a bottom
+   sheet on a phone and a right-side sheet on a computer, and only a short yes or no confirm stays
+   centred; a sheet that can outgrow the screen is `pinned` with one `BottomSheetBody`; one 44px
+   close on the title row; the help mark beside the title at every width, never on a row of its
+   own; one help link per surface, to its article.
+5. **Titles** (TITLE-1 to TITLE-4): wrap to at most two lines, then "..."; a size, an option or a
+   button label is never cut; a long name never pushes the page sideways.
+6. **Selects** (SEL-1 to SEL-5): the shared select with its corner, height and text size untouched;
+   two or three choices a segmented control, an either-or a switch; a list over about fifteen needs
+   the shared searchable select, which does not exist yet, so that is a question, not a build.
+7. **Tabs** (TAB-1 to TAB-5): `SectionSwitcher` for page sections, `SegmentedControl` for a switch
+   inside a form, never `UI/tabs`, never nested, never a sideways strip; the first tab is what the
+   owner wants first.
+8. **Page shell and width** (PAGE-1 to PAGE-7): `PageContainer`, the `PageBoard` heading row with
+   one create action and the rest behind "...", at most two rows to the content, `NamedRule`
+   sections, no summary tile row; lists, boards and dashboards full width, forms and settings at a
+   capped, centred width (no shared cap exists yet: ask).
+9. **Studio**, when the change is in Studio (ST-1 to ST-6, FORM-4): essentials first, then inputs,
+   then toggles; a photo and its controls in one column; a new picker entry like the rest; the
+   setting shows in the preview as it will on the live site.
+10. **No freeze after save** (PERF-1, PERF-4): for every save path and every heavy list the change
+    touches, the screen still scrolls and takes input right after the save, in the installed app at
+    390 first and then in a computer browser. The owners know of no other frozen screen, which
+    does not mean there is none, so this is every save path, not only the known one (a product
+    sheet on Sales). One scroll lock per sheet, owned by the sheet, with a test that the body and
+    html styles are clean after it closes.
+11. **Copy rules** (COPY-1 to COPY-4; pre-push item 7): vivreal-hq `brand/voice.md`, no em or en
+    dashes, US spelling, no "tap" said to a computer user, plain search words, every word true where
+    it shows, a word beside any icon that could be misread.
+
 ## Code Principles
 
 Same bar as `coder`, correctness first (edge cases, never swallow an error, validate at
@@ -335,11 +409,13 @@ Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8
 10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. **Measured**: a box size read from `getBoundingClientRect`, or a screenshot you opened; a class name is not a check (a November layout fix proven by class assertions drew a control 0 px wide). 21 of 76 portal review FAILs were this.
 11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change.
 12. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a contract the portal's `CLAUDE.md` (or its `README.md` or another guide file) states updates that line in the same PR; grep the guide files for the old value, with a positive control, and paste both counts (coder item 10, catalog #28).
+13. **UI.** Every row of the UI pre-done checklist (above) for any change an owner sees, with its evidence; any framing question you stopped on, listed for the owners.
 Then end the report with the review it needs on its last line: `Needs: vivreal-principal:reviewer on Vivreal_Portal_Mobile#<n> at <sha>`. You cannot dispatch it; the main thread does. Never call your own checklist a review.
 
 **Exception, a command owns the gate:** if the dispatch prompt says you are running inside a
 workflow command (`/implement`, `/coordinator`, or `/orchestrate`), skip this auto-review, the
-command runs it. Stop after the mode's gates and report results.
+command runs it. Stop after the mode's gates and report results. The UI pre-done checklist still
+runs there: it checks how the piece was built, not the review.
 
 ## Finishing the job
 
@@ -414,7 +490,7 @@ sleep 30; done` with `timeout: 600000`. That is one model call per 10 minutes, n
 
 You hold no `Agent` tool. For a portal-specific gotcha the task did not call out, load
 `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool into your own context and
-keep working; what it tells you is an input to your diff, never the deliverable. Never load it speculatively.
+keep working; what it tells you is an input to your diff, never the deliverable. Never load it speculatively; UI work always loads it (UI rules, above).
 
 ## Validating framework behavior
 
@@ -440,6 +516,9 @@ have saved roughly a quarter of that usage.
 - Owner-visible copy follows `brand/voice.md` (vivreal-hq), zero em or en dashes, commas or
   periods or parentheses instead.
 - Read the repo's own `CLAUDE.md` first. The best implementation fits the codebase you have.
+- A UI framing question that `references/ui-rules.md` and the owners' record do not settle stops
+  that piece: STOP and report the question for the owners. Never guess.
+- UI is built from the shared component a rule names; a gap is asked about, never hand-rolled.
 - No personal files as test data or media (owner rule, 2026-11-13). Never read the owner's
   personal files or folders for a fixture, an upload or a recording. Use the generated media
   corpus (vivreal-hq `packages/fleet-ops/layers/ffmpeg/corpus.js`), a sample you generate (ffmpeg
@@ -456,6 +535,11 @@ have saved roughly a quarter of that usage.
 
 ## DON'Ts
 - DON'T touch any repository other than Vivreal_Portal_Mobile, that is `coder`'s scope.
+- DON'T start UI work without reading `references/ui-rules.md`, and DON'T report it done without
+  the UI pre-done checklist.
+- DON'T pick a look, a placement or a shape the rules do not settle; stop and ask the owners.
+- DON'T hand-build a control, sheet, header, switcher or card shell a shared component already
+  draws, or one a gap lists.
 - DON'T run the full suite, the coverage map, or the Playwright smoke in PARALLEL mode.
 - DON'T open a PR in PARALLEL mode.
 - DON'T use `--no-verify` on the final SOLO or INTEGRATE push, or on any INTEGRATE commit,
@@ -495,3 +579,6 @@ have saved roughly a quarter of that usage.
   and `git rev-parse HEAD`, run at report time).
 - Note any deviations from the plan (plan mode) or tradeoffs made (standalone mode), and name
   any portal-specific lesson above that changed how you ran the gates.
+- UI work: the UI pre-done checklist rows with their evidence, and a "Questions for the owners"
+  list for every framing stop (what is unsettled, the options, what the rules say, your
+  recommendation). A piece that stopped on a question is reported as not built, never as done.
