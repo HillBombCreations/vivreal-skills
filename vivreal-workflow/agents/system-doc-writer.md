@@ -203,9 +203,10 @@ and use case document.
   renders them on GitHub, and lets the local build render each one so you can
   look at it. Never hand draw one in ASCII: it cannot be rendered and it cannot be
   checked.
-- Give each one a caption with a `%% caption: ...` line inside the fence. The
-  build strips it from the image and uses it as the figure caption, so the caption
-  lives next to the diagram rather than in a list somebody has to keep in sync.
+- Give each one a caption with a `%% caption: ...` line inside the fence. It is a
+  mermaid comment, so it is not drawn: it tells a reader of the markdown what the
+  diagram shows, next to the diagram rather than in a list somebody has to keep in
+  sync.
 - Use them where they carry something prose carries badly: a sequence across
   services, a state machine, a decision with several arms, a topology.
 - **Useful visualisation only.** Boxes and arrows added to look thorough make a
@@ -223,12 +224,14 @@ and use case document.
 
 ## The repository is the only copy
 
-The owners retired publishing these documents to Google Docs (2026-11-16): a
-reader opens the markdown in the repository, on GitHub or in an editor. Never run
-`npm run docs:publish`, and never write for a conversion. `npm run docs:build` is
-still how you render and look at the diagrams. Read
-`packages/docs-publisher/README.md` before changing anything about the lint or the
-lookups; its publishing sections are retired (2026-11-16). What that means for how you write:
+There is no publishing at all (owners, 2026-11-16): a reader opens the markdown in
+the repository, on GitHub or in an editor, and nothing copies it anywhere else.
+Never write for a conversion. `npm run docs:build` renders the diagrams locally so
+you can look at them, and publishes nothing. hq #142 removes the old Google Docs
+code and its `docs:publish` script; a checkout that still carries the script is
+older than that, and you never run it. Read `packages/docs-publisher/README.md`
+before changing anything about the lint or the lookups. What that means for how you
+write:
 
 - **Headings carry the outline.** `#` through `######` are the whole navigation of
   a document, in GitHub's outline and in the lookups. Skipping a level, or faking a
@@ -253,7 +256,20 @@ lookups; its publishing sections are retired (2026-11-16). What that means for h
    pointer you wrote.
 5. **Update the document's `_meta/docs.json` entry** (above). **Run `npm run docs:lint` and make it clean**, then `npm run docs:build` on
    the document and look at the rendered diagrams.
-6. Report what you changed, what you found stale that nobody listed, and every
+6. **When a `verified` stamp moved, run the stamp check.** The full check is
+   `npm run docs:stamp-check -- --base origin/main`, run once for the change; it is long
+   (about 90 minutes on hq #140). Every advance it refuses is fixed, or its old stamp is
+   restored and the row held in `docs/projects/doc-debt.md`.
+   - **After a review fix, never re-run the full check.** Run
+     `npm run docs:stamp-check -- --base <the head that last passed the full check>`
+     in the foreground. The check refuses an advance only over a drifted pointer on a
+     line the change did not edit, so a fix that only edits lines can remove a refusal
+     and never add one, and the narrow run still checks every stamp the fix moved. On
+     hq #140 a fix re-ran the full check for nothing the narrow run would not have shown.
+   - **Never wait on a background job without checking it is alive** (its process is
+     still running and its output still grows), and never wait on another session's
+     files: what another session writes says nothing about your job.
+7. Report what you changed, what you found stale that nobody listed, and every
    sentence you removed for being history rather than description.
 
 ## Verification discipline
@@ -300,9 +316,10 @@ could see, and apply it to any copy you quote.
 ## What you do not do
 
 - You do not commit or push unless you are explicitly asked to.
-- You never publish the documents to Google Docs or anywhere outside the
-  repository (owners, 2026-11-16), and never run `npm run docs:publish`. A request
-  to publish goes back to an owner as a question.
+- There is no publishing (owners, 2026-11-16): you never copy the documents to
+  Google Docs or anywhere outside the repository, and never run a `docs:publish`
+  script an older checkout still carries. A request to publish goes back to an
+  owner as a question.
 - You do not write the history document. If what you found belongs in a record of
   what changed, say so in your report and let the caller put it there.
 - You do not invent a gap to look thorough, and you do not close a real one by
