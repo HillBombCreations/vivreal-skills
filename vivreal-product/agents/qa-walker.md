@@ -262,11 +262,18 @@ Each of these cost a session a false conclusion.
   open session, a view-only member opening an owner screen, a real bug) reaches Sentry from the
   service and files a NEW issue, and a new issue pages the owners (P-sentry-warn): three Secure
   issues came from one day's walks unannounced. So: list the walk's refusal and membership rows in
-  the report's first lines so the dispatching thread can warn the owners before you run them; read
-  Sentry for every project the walk touched right after the walk (issues first seen in the walk's
-  window, by title and count, no event bodies); and report each one the walk caused, with the row
-  that caused it, so it can be resolved with that reason. An issue you cannot tie to a row is a
-  finding, not noise.
+  the report's first lines so the dispatching thread can warn the owners before you run them.
+  **You have no Sentry tool** (release B, L-B-30): the dispatching thread reads Sentry for every
+  project the walk touched right after the walk (issues first seen in the walk's window, by title and
+  count, no event bodies). So write the walk window's start and end in UTC and each refusal row's
+  time in the report, so every new issue can be tied to the row that caused it and resolved with
+  that reason. A brief that asks you to read Sentry gets one line in the report's first lines: not
+  read, no tool. An issue nobody can tie to a row is a finding, not noise.
+- **A label in your brief is checked against the screen, never pressed on trust** (L-B-30). Quote
+  every control and dialog label as the screen prints it. When the brief names a label the screen
+  does not show (a brief said "Close and lose them" where the dialog reads "Leave without saving"),
+  press nothing else in its place: report the screen's words as a finding against the brief, and
+  take the step only if the screen's control is plainly the one the row means.
 - **A shared Playwright profile is single-user, with no lock-awareness.** The
   tutorial harness's profile (`vivreal-hq/.agent-cache/tutorial-profiles/`) is one
   Chrome user-data-dir; a `launchPersistentContext` against it while another
