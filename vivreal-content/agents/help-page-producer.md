@@ -363,6 +363,26 @@ section 7 ledger routes to this article (cite each, `C3.2a:1` style): answered i
 `#<anchor>`, routed to `<article>#<anchor>`, or `BLOCKED #N`. Every routed question appears
 exactly once. A question you cannot answer honestly is routed or filed, never padded.
 
+**The publish path names every place the change must reach** (two release B review blockers,
+2026-11-18). PUBLISH mode, an ADD and the main session act on the defects file's publish path and
+nothing else, so it names each of these, from a fresh read:
+
+- **A REWRITE that gives an existing address a new title** leaves the old title in five fields of
+  the page record, `name`, `labels.title`, `hero.title`, `labels.subtitle` and `hero.subtitle` (plus
+  any SEO title or description the record holds), in the article's index card (its title,
+  description and `aiContext`), and as fixed link text on other pages. Name each field with its old
+  and new value, the index card, and every other page whose stored text links this address under
+  the old title: search the raw page data of every help page for the address, with a control that
+  must hit. Miss one of a pair and the new article shows under the old heading. The page record is
+  not a PUBLISH row; list it for the main session (PUBLISH mode, PLAN step 4).
+- **A band that needs a NEW section on an existing page** is a Studio add first (ADD, below), and
+  the publish path names both settings it needs. On each new prose section, **Give each band its own
+  link** on: it is off unless turned on, and without it the band gets no link id and no entry in the
+  page's contents. On the page's contents section, **Sections it covers** raised to count the new
+  sections too, or left blank for all: a count that stops short leaves the later sections outside
+  the article column and out of "On this page". A band added to an existing section that already
+  gives each band its own link, and already sits inside the contents section's count, needs neither.
+
 **Shape of each band:** a one-paragraph direct answer first, then steps for a procedure,
 then the detail. A "no" stated plainly with what to do instead beats a workaround.
 
@@ -485,9 +505,10 @@ group id live after the switch for `--business`. Delete the session file at the 
    with no PUBLISH NOW mark line or with two or more (step 1), a draft that does not hold the quoted source, and a change that zero or
    two rows match. A stopped change is reported with the tool's reason, never forced: never edit an
    approved draft to clear any stop.
-4. List what this mode will not do (new pages, new lists, site document writes, media) for the
-   main session. A change aimed at a page that does not exist yet waits for that page's ADD
-   dispatch (or a one-shot, for a step the screens cannot do).
+4. List what this mode will not do (new pages, new lists, new sections, site document writes such
+   as a REWRITE's page record title fields from Step 6, media) for the main session. A change
+   aimed at a page that does not exist yet waits for that page's ADD dispatch (or a one-shot, for
+   a step the screens cannot do).
 5. Report the plan path and the sha256 the tool printed, ending
    `Needs: vivreal-principal:reviewer on <plan path>`.
 
@@ -505,12 +526,12 @@ GO relayed mid-task, or one with no name or exact time, is refused.
    which says PENDING until you do.
 4. Report under 250 words: the exit code, the log path, the counts, and the live read-back.
 
-## ADD (a new page or list, through the product)
+## ADD (a new page, section or list, through the product)
 
 **A fresh dispatch whose first prompt quotes the owner's GO verbatim**, `GO: "<exact words>" from
 <Justin|Hunter>, <ISO time>, <source>`, and names each thing to add: the page (its address and
-title) and any lists, rows or index card. A GO relayed mid-task, or one with no name or exact time,
-is refused. This is owner rule P-content-through-ui (2026-11-17): content adds go through the
+title), a section on an existing page, and any lists, rows or index card. A GO relayed mid-task,
+or one with no name or exact time, is refused. This is owner rule P-content-through-ui (2026-11-17): content adds go through the
 product's own screens, as an owner would, never behind them.
 1. Sign in and switch to the Vivreal business as PUBLISH mode's session paragraph says. An add is
    "the kept add" of `vivreal-knowledge:vivreal-accounts-and-writes`, "The write protocol": the
@@ -523,9 +544,10 @@ product's own screens, as an owner would, never behind them.
    ("Proxy routes" in `vivreal-knowledge:vivreal-portal-knowledge`). Then admit exactly that one save with its own allow-list entry,
    anchored on host, method and route (the model is footage-recorder's `WRITE_A_POST_WRITES`),
    and remove the entry once the save answers. Every other write still gets its 403. Add the page
-   in Studio, and the lists, rows and index card in the portal's content editor, exactly as the
-   dispatch names them. The only press is that screen's own save for the item being added: no
-   other page, no channel's buttons.
+   or section in Studio, and the lists, rows and index card in the portal's content editor, exactly
+   as the dispatch names them. A new section on an existing page gets the two settings Step 6 names
+   (Give each band its own link, Sections it covers). The only press is that screen's own save
+   for the item being added: no other page, no channel's buttons.
 3. A step a screen cannot do is never written to the database here: report it with what the
    screen showed, for the main session's reviewed one-shot.
 4. Read each add back from a fresh process, and on the live site after the edge cache's minute,
