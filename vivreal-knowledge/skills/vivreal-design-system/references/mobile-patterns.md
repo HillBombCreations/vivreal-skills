@@ -67,7 +67,7 @@ Spec these concretely against the existing stack (don't invent parallels):
 
 | App-like pattern | Build it with |
 |---|---|
-| **Bottom tab bar** | The existing mobile bottom nav; `--app-nav-height: 5.5rem` (0 on `md+`); 3-5 tabs; pad for `env(safe-area-inset-bottom)` |
+| **Bottom tab bar** | The existing mobile bottom nav; a page reserves `--app-nav-reserve` (the bar's `--app-nav-height` row plus `--app-bottom-inset`, read from `globals.css`; 0 nav height on `md+`); 3-5 tabs; never add the inset a second time |
 | **Bottom sheet / action sheet** | Compose a Radix `Dialog` in `src/components/UI/` (focus trap + ESC + inert background are free, don't hand-roll); Framer Motion v12 spring entrance from the bottom edge; visible Close (X); bottom safe-area padding |
 | **Card list (tables → cards)** | Reuse the portal card DNA, `rounded-2xl`, `border border-black/10`, soft shadow `shadow-[0_4px_10px_rgba(0,0,0,0.04)]`; render row-as-card below `md` |
 | **App-style header** | The admin-page header shape (icon chip `grid h-9 w-9 place-items-center rounded-xl bg-primary/10`); large title + contextual actions; collapse to compact on scroll |
