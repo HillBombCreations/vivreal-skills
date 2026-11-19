@@ -501,6 +501,7 @@ source first, then this plugin copy), with its evidence and its guard.
 ## Workflow rules: additions to the original 7
 8. Read the hq dev docs (the README's symptom table, `npm run docs:route`, and `npm run docs:impact` on the files in play) and the relevant repo CLAUDE.md before forming hypotheses. They contain knowledge that grep cannot surface.
 9. Cite an industry standard (OWASP, AWS Well-Architected, Web.dev, MDN, RFC, Google Eng Practices) for any non-obvious technical decision. "Best practice" without a citation is not a justification.
+10. **Wait on a log only after proving the log and its writer exist, and always with a bound** (release B, L-B-37). Before any wait on a background run's log, check that the file exists and that the process writing it is still running, or has already written its end marker. Then wait with a timeout and one end-marker match, for example `timeout 170 tail -n +1 -f <log> | grep -m1 '<end marker>'`, never an open `tail -f` or a loop with no cap. If the file is missing or its writer is gone, re-run the generator with its output to a fresh log rather than wait. An unbounded wait on a log nobody was writing held a run for a long while; the same wait, bounded, ended in about a minute.
 
 ## Backend testing conventions (different from frontend!)
 

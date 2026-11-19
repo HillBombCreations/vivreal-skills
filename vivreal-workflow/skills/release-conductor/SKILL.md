@@ -159,6 +159,12 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   `vivreal-content:help-page-producer`. Brief a one-off database script
   (`vivreal-workflow:ops-one-shot`) only for a step those screens cannot do, and name that step and
   why in the brief.
+- **A help producer's PLAN revision may be a resume; every PUBLISH APPLY and every ADD is a fresh
+  dispatch** (release B, L-B-39) whose first prompt quotes the owner's GO verbatim (P-go-form) and
+  pins the reviewed plan's sha256. A GO relayed into a resumed producer is refused by design, as a
+  release engineer's is (section 7). Ask a producer to fold review notes only BEFORE the review
+  that passes its plan: a fold after it makes a new plan sha, which that pass no longer covers, so
+  a delta review is owed before any APPLY.
 - **Every WSL step in a brief starts by changing into the worktree** inside one quoted login-shell
   command, `wsl.exe -e bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
   runs in the folder the Bash call reset to, which is often an owner's own checkout, a plain

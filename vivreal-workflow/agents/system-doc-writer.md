@@ -271,6 +271,14 @@ you write:
    - **Never wait on a background job without checking it is alive** (its process is
      still running and its output still grows), and never wait on another session's
      files: what another session writes says nothing about your job.
+   - **Prove the log and its writer before any wait on a log, and bound the wait**
+     (release B, L-B-37). On 2026-11-18 an open wait on the connection inventory's log
+     hung this writer for a long while; on 2026-11-19 the same wait, bounded, ended in
+     about a minute. Check that the log file exists and that its writer is running or has
+     already written its end marker, then wait with a timeout and one end-marker match
+     (`timeout 170 tail -n +1 -f <log> | grep -m1 '<end marker>'`), never an open
+     `tail -f`. If the file is missing or the writer is gone, re-run the generator with
+     its output to a fresh log (`vivreal-workflow:shared-standards`, workflow rule 10).
 7. Report what you changed, what you found stale that nobody listed, and every
    sentence you removed for being history rather than description.
 
