@@ -70,6 +70,12 @@ section citation. Overall PASS only if every item is PASS.
 5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
 6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
 7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
+7a. **Counts come from what ships** (release B, L-B-29). A count the plan or paper rests on (kits,
+   templates, routes, pages, sites, rows) is taken from the shipped artifact (the published kits,
+   the template store, the deployed template, the live list), with the method named and its output
+   shown. A count from authoring files or a working tree is a FAIL until re-derived: one paper
+   counted 8 selling kits from authoring overlays, its reviewer counted 11, and 7 shipped. Re-count
+   it yourself the same way before you agree or disagree.
 8. **One deployment per repo per release** (release plans and runbooks; hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18). The plan's "Deployments per repo" table (`vivreal-workflow:vivreal-writing-plans`) exists and says at most 1 for every repo, and no step deploys a repo a second time: no runtime tier or day gate between repos, no features-then-runtime split, no follow-up promote to flip an alarm or a mode (a soak that must stay is a parameter or data flip after the one deploy). Before any deployment the plan walks the whole batch on the local stack, on the runtime it deploys on, and loops: anything that makes a local walk row fail (a broken flow, wrong behaviour, a defect against what the batch promises) is fixed in that repo's batch, with a delta review, and the walk runs again, until it passes; a note or nit that fails no row goes to the backlog (P-ship-first). Also, parameter and data flips, one-shots such as indexes and kits, package publishes under P-packages and docs merges are not deployments, and a repo whose several stacks deploy back to back in one step counts as one deployment. FAIL a plan that stages any repo across more than one deployment unless the row cites an owner exception recorded in hq `decisions.md`; only release B's deployments already made before the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are exempt without one. N-A only for a plan that deploys nothing.
 
 Verdict lines follow the Output contract below.
@@ -91,6 +97,13 @@ Universal: skip the `shared-standards` skill unless your review touches a trigge
 - Direct, specific, every comment cites `file:line` and explains WHY it matters.
 
 ## Output contract (both modes)
+**Fetch before you read any head, and name the SHA you read** (release B, L-B-27). Before reading a
+branch, a PR or a deployed line, `git fetch origin` in the repo, then take the head from
+`git ls-remote origin <ref>` or `gh pr view <n> --json headRefOid`, never from a local ref: a
+release B reviewer read a stale local ref and reported a pushed branch as not pushed. A claim about
+another repo's state (pushed, merged, deployed) cites the SHA that command returned, in the same
+run.
+
 Line 1: `Verdict: PASS` or `Verdict: FAIL, <n> blockers`. Line 2: `head <sha>, pass <k> of 3`. Standalone "Ship it" and "Ship with notes" are PASS; "Do not ship" is FAIL. Never use FIX, REVISE, SHIP or SHIP WITH FIXES as a verdict.
 Line 3: `<n> blockers, <m> notes, <p> pre-existing`, or `Nothing to fix.` when n is 0.
 Every finding carries one tag: **Blocker** (this change introduced it or must fix it), **Note** (does not block; at most 5), or **Pre-existing** (present at the base commit, shown by `git blame` or a base-worktree read; never blocks; listed once). Every Blocker cites file:line at the reviewed head and names its class from the anti-pattern catalog, or `NEW CLASS: <one line>` when none fits.

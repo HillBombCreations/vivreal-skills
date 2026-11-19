@@ -182,7 +182,11 @@ For a standalone-mode design small enough to return inline (no written artifact)
 ```
 
 ## Pre-handoff self-check (before any plan, design or runbook leaves this agent)
-1. Every factual claim cites a repo, ref and SHA, or file:line at a named SHA.
+1. Every factual claim cites a repo, ref and SHA, or file:line at a named SHA. **Every count comes
+   from what ships** (release B, L-B-29): kits, templates, routes, pages or sites are counted from the
+   shipped artifact (the published kits, the template store, the deployed template, the live list),
+   with the method named and its output shown, never from authoring files or a working tree. A
+   release B paper counted 8 selling kits from authoring overlays; 7 shipped.
 2. Every gate ends in a hard STOP with its condition.
 3. Every step names its rollback.
 4. Every guard names its paired ALLOW and REFUSE tests.
