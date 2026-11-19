@@ -12,7 +12,8 @@ before reporting the change done (`vivreal-principal:portal-coder`, "UI pre-done
 items `UF-001` to `UF-113`, approved agent corrections `A-01` to `A-12`, the 80 rules in 14
 themes, the gaps, and the owners' answers to its framing questions (2026-11-19). The ids after
 each rule cite that record; the owners' own words live only there. Where an answer of 2026-11-19
-changed or settled a rule, the rule says "owners, 2026-11-19".
+changed or settled a rule, the rule says "owners, 2026-11-19". An owner correction that came after
+the record carries its own date and backlog row instead (PAGE-9), making 81 rules here.
 
 **Paths.** Every path is in `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/`, read at `origin/stable`
 `9974e41b` (v0.46.0). Re-read a file at the current deployed line before you rely on it; a moved
@@ -178,6 +179,8 @@ names, stop building that piece and ask the owners (PROC-5). Never pick one to k
 - **SEL-5. Every select and view switch is fully styled, with a pointer cursor.** (UF-045, UF-113)
   Use: `select.tsx`; `SectionSwitcher` for a view switch. The base layer gives every enabled button
   the pointer, so never strip it.
+- **Two short selects that belong together** (Show and Sort by) share one row on a phone, half the
+  width each, when they fit at 390: PAGE-9 under Page layouts.
 
 ## 7. Tabs and section switching (5)
 
@@ -197,7 +200,7 @@ names, stop building that piece and ask the owners (PROC-5). Never pick one to k
 - **TAB-5. Never a sideways-scrolling tab strip,** or any sideways strip of controls. (UF-006) Use:
   `SectionSwitcher`'s chip and sheet when the labels do not fit.
 
-## 8. Page layouts (8)
+## 8. Page layouts (9)
 
 - **PAGE-1. Lay a page out for the owner's job, not by copy and paste:** one heading primitive, one
   header arrangement, one container; a difference is a named variant. (UF-026, UF-027, UF-028,
@@ -227,6 +230,12 @@ names, stop building that piece and ask the owners (PROC-5). Never pick one to k
   `src/components/Dashboard/QuickActions/index.tsx`, in its place.
 - **PAGE-8. Never a horizontal scroll, anywhere.** (UF-006, UF-036, UF-052) Use: `NamedRule` (a long
   name yields) and `SectionSwitcher` (a chip, never a strip).
+- **PAGE-9. Short paired controls share one row on a phone.** A pair like Show and Sort by sits on
+  one row at phone width, half the width each, whenever both fit at 390 with their labels and their
+  longest value; they stack only when they do not fit. (owner feedback 2026-11-19, F566; added after
+  the record's 80) Use: two `UI/select` fields side by side in a two-column grid, each keeping the
+  field box (SEL-2); no wrapper component. Known case: the Sales products list
+  (`src/components/Integrations/Pages/Stripe/Sections/products.tsx`) stacks them today.
 
 ## 9. Performance and freezes (4)
 

@@ -309,9 +309,9 @@ The owners kept catching the same UI misses in portal builds (release B, L-B-40)
 row of its own, cards of different heights and casing, bare selects and inputs beside the styled
 ones, hand-built tabs, a sheet that would not scroll, a page that froze after a save, posts that
 did not look like their platform. Each catch is now a rule, with the shared component that does it
-right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (80 rules in 14
-themes, from the owners' record, vivreal-hq `docs/standards/portal-ui-feedback.md`, and their
-framing answers of 2026-11-19).
+right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (81 rules in 14
+themes, from the owners' record, vivreal-hq `docs/standards/portal-ui-feedback.md`, their framing
+answers of 2026-11-19, and the corrections since).
 
 - **Before any UI work** (anything an owner sees: a screen, a sheet, a card, a form, a page top, a
   word), load `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool and read its
@@ -358,9 +358,10 @@ app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
 7. **Tabs** (TAB-1 to TAB-5): `SectionSwitcher` for page sections, `SegmentedControl` for a switch
    inside a form, never `UI/tabs`, never nested, never a sideways strip; the first tab is what the
    owner wants first.
-8. **Page shell and width** (PAGE-1 to PAGE-7): `PageContainer`, the `PageBoard` heading row with
+8. **Page shell and width** (PAGE-1 to PAGE-9): `PageContainer`, the `PageBoard` heading row with
    one create action and the rest behind "...", at most two rows to the content, `NamedRule`
-   sections, no summary tile row; lists, boards and dashboards full width, forms and settings at a
+   sections, no summary tile row; short paired controls (Show and Sort by) on one row at 390, half
+   the width each, when they fit; lists, boards and dashboards full width, forms and settings at a
    capped, centred width (no shared cap exists yet: ask).
 9. **Studio**, when the change is in Studio (ST-1 to ST-6, FORM-4): essentials first, then inputs,
    then toggles; a photo and its controls in one column; a new picker entry like the rest; the

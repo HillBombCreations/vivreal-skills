@@ -18,9 +18,9 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix), 
 ## Portal UI rules: the owners' corrections (read before any UI work)
 
 **Read [references/ui-rules.md](references/ui-rules.md) in full before any change an owner will
-see** (a screen, a sheet, a card, a form, a page top, a word). It holds 80 rules in 14 themes,
-written from the owners' UI feedback record (vivreal-hq `docs/standards/portal-ui-feedback.md`) and
-their framing answers of 2026-11-19, each with the shared component to use (paths read at
+see** (a screen, a sheet, a card, a form, a page top, a word). It holds 81 rules in 14 themes,
+written from the owners' UI feedback record (vivreal-hq `docs/standards/portal-ui-feedback.md`),
+their framing answers of 2026-11-19 and one later correction, each with the shared component to use (paths read at
 `origin/stable` `9974e41b`) and the record's `UF-` ids. The ones caught most often:
 - Shared components only: the `src/components/UI` form primitives (a guard fails a new bare
   `<input>`, `<select>` or `<textarea>`), `UI/select`, `SectionSwitcher` for page sections, the
@@ -28,7 +28,7 @@ their framing answers of 2026-11-19, each with the shared component to use (path
 - A task window is a bottom sheet on a phone and a right-side sheet on a computer; a long sheet is
   `pinned` and scrolls only its body; the help mark sits beside the title at every width.
 - Titles wrap to at most two lines, then "..."; names show as the owner typed them; every card in
-  a list is the same shape.
+  a list is the same shape; short paired controls (Show and Sort by) share one row at 390.
 - After any save, the screen still scrolls and takes input, in the installed app at 390 first.
 - A rule marked as a gap has no shared component yet: do not hand-roll one; ask. A framing
   question no rule settles: stop and ask the owners, never guess.
