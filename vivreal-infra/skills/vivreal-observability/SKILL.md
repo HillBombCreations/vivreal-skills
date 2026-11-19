@@ -210,6 +210,19 @@ Gateway requires for access logs existed and was correctly configured since 2024
 **never been attached at the account level**. That, and not any per-stage setting, is why the fleet
 had no per-route telemetry at all. It is now connected.
 
+**Connected is not the same as searchable by route (read 2026-11-18).** The CMS, Secure and Client
+REST stages log `resourceId` and no request path; Main's format and the WebSocket stage's log the
+path (`vivreal-knowledge:vivreal-main-api-knowledge`); the MCP server and Outreach have no access
+log. So a search of the first three for a route's name is a false zero: map the route to its
+resource id first, or read the Lambda's own `route` field, and prove the zero with a control row
+in the same query (`vivreal-lambda-logs`, Step 3). The missing path is deliberate, and each
+template's access-log comment says why: `$context.resourcePath` falls back to the full resolved path
+on a request that matches no route, so a probe once put a caller's email address in the log, and an
+access log format has no redaction step. Main logs `$context.path` by a recorded trade-off: its
+catch-all proxy leaves `resourceId` unable to name any route. Adding a path elsewhere is that same
+design decision, never a quick fix; read the stage's `accessLogSettings.format` before relying on
+this paragraph.
+
 The transferable lesson, and it recurs: **a thing wired by hand is a thing nobody can see is
 unwired.** The same shape produced a Cognito trigger that was detached for months. Anything
 configured through a console click and not expressed in a template needs an explicit test that it is
