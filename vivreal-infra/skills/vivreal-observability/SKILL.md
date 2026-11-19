@@ -211,9 +211,9 @@ Gateway requires for access logs existed and was correctly configured since 2024
 had no per-route telemetry at all. It is now connected.
 
 **Connected is not the same as searchable by route (read 2026-11-18).** The CMS, Secure and Client
-REST stages log `resourceId` and no request path; Main's format and the WebSocket stage's log the
-path (`vivreal-knowledge:vivreal-main-api-knowledge`); the MCP server and Outreach have no access
-log. So a search of the first three for a route's name is a false zero: map the route to its
+REST stages log `resourceId` and no request path; Main's format logs the path
+(`vivreal-knowledge:vivreal-main-api-knowledge`) and the WebSocket stage's logs the `routeKey`, both
+searchable by route; the MCP server and Outreach have no access log. So a search of the first three for a route's name is a false zero: map the route to its
 resource id first, or read the Lambda's own `route` field, and prove the zero with a control row
 in the same query (`vivreal-lambda-logs`, Step 3). The missing path is deliberate, and each
 template's access-log comment says why: `$context.resourcePath` falls back to the full resolved path
