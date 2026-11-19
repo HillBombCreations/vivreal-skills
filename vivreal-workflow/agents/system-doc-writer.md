@@ -257,9 +257,9 @@ write:
 5. **Update the document's `_meta/docs.json` entry** (above). **Run `npm run docs:lint` and make it clean**, then `npm run docs:build` on
    the document and look at the rendered diagrams.
 6. **When a `verified` stamp moved, run the stamp check.** The full check is
-   `npm run docs:stamp-check -- --base origin/main`, run once for the change; it is long
-   (about 90 minutes on hq #140). Every advance it refuses is fixed, or its old stamp is
-   restored and the row held in `docs/projects/doc-debt.md`.
+   `npm run docs:stamp-check -- --base origin/main`, run once for the change; it is
+   long (over 90 minutes for hq #140's 60 documents). Every advance it refuses is
+   fixed, or its old stamp is restored and the row held in `docs/projects/doc-debt.md`.
    - **After a review fix, never re-run the full check.** Run
      `npm run docs:stamp-check -- --base <the head that last passed the full check>`
      in the foreground. The check refuses an advance only over a drifted pointer on a
