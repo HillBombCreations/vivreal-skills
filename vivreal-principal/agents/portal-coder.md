@@ -186,6 +186,23 @@ with exactly these overrides, and every other SOLO step stands:
   shared root. The local Templates clone can sit parked on an old branch, so a hooked push that
   runs a Templates parity test needs `VIVREAL_TEMPLATES` (or `VIVREAL_REPOS`) pointed at a
   Templates checkout holding `main` (v7, 2026-10-20).
+- **Never move a shared sibling checkout to make a test run** (release B, L-B-23). FOLLOWUP 5 of
+  #496 fast-forwarded the shared `${VIVREAL_REPOS}/VR_Client_API` 21 commits so one cross-repo test
+  would load. Make a pinned worktree of the sibling instead (`git -C "$VIVREAL_REPOS/<repo>"
+  worktree add --detach <scratch> origin/<line>`), point the test at it with the override above
+  (`VIVREAL_CLIENT_API`, `VIVREAL_TEMPLATES`), and remove it after; or report the stale sibling.
+- **Write a proxy route's URL literally at its caller** (portal #496 delta review, NEW CLASS). The
+  route evidence gate (`tests/unit/app/proxyCoverageMap.test.ts`, `e2e/proxy-coverage-map.json`)
+  finds each route's caller by its literal path, so a URL built from a template
+  (`` `/integrations/${providerKey}/fulfill-order` ``) hides the caller and fails the gate while
+  the call still works. Branch between whole literals:
+  `providerKey === "square" ? "/integrations/square/fulfill-order" : "/integrations/stripe/fulfill-order"`.
+- **Build to the approved mockup, every breakpoint and every live part of it** (portal #495 review,
+  NEW CLASS). When the plan names an owner-approved mockup, its layout per width (a bottom sheet with
+  a pinned footer on a phone and a right-side sheet on a computer, not a centred dialog) and every
+  live preview it shows (a photo picked in a sheet appearing on the card before Save) are part of the
+  spec. Open the mockup's own builder notes and stills, and report any part you build narrower as a
+  deviation before review, never as done.
 - **Test what an element resolves to, not what is declared.** A fonts test passed on the
   `@font-face` declarations while the utility font stack named a literal family, so the
   self-hosted faces never loaded. Assert the computed style. `next/font/local` names the face

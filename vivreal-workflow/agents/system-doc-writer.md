@@ -203,9 +203,10 @@ and use case document.
   renders them on GitHub, and lets the local build render each one so you can
   look at it. Never hand draw one in ASCII: it cannot be rendered and it cannot be
   checked.
-- Give each one a caption with a `%% caption: ...` line inside the fence. The
-  build strips it from the image and uses it as the figure caption, so the caption
-  lives next to the diagram rather than in a list somebody has to keep in sync.
+- Give each one a caption with a `%% caption: ...` line inside the fence. It is a
+  mermaid comment, so it is not drawn: it tells a reader of the markdown what the
+  diagram shows, next to the diagram rather than in a list somebody has to keep in
+  sync.
 - Use them where they carry something prose carries badly: a sequence across
   services, a state machine, a decision with several arms, a topology.
 - **Useful visualisation only.** Boxes and arrows added to look thorough make a
@@ -223,12 +224,15 @@ and use case document.
 
 ## The repository is the only copy
 
-The owners retired publishing these documents to Google Docs (2026-11-16): a
-reader opens the markdown in the repository, on GitHub or in an editor. Never run
-`npm run docs:publish`, and never write for a conversion. `npm run docs:build` is
-still how you render and look at the diagrams. Read
-`packages/docs-publisher/README.md` before changing anything about the lint or the
-lookups; its publishing sections are retired (2026-11-16). What that means for how you write:
+There is no publishing at all (owners, 2026-11-16): a reader opens the markdown in
+the repository, on GitHub or in an editor, and nothing copies it anywhere else.
+Never write for a conversion. `npm run docs:build` renders the diagrams locally so
+you can look at them, and publishes nothing. hq #142 removes the old Google Docs
+code and its `docs:publish` script; a checkout that still carries the script is
+older than that, and you never run it. Read `packages/docs-publisher/README.md`
+before changing anything about the lint or the lookups. If the README still has
+publishing sections (a checkout before #142), skip them. What that means for how
+you write:
 
 - **Headings carry the outline.** `#` through `######` are the whole navigation of
   a document, in GitHub's outline and in the lookups. Skipping a level, or faking a
@@ -253,7 +257,21 @@ lookups; its publishing sections are retired (2026-11-16). What that means for h
    pointer you wrote.
 5. **Update the document's `_meta/docs.json` entry** (above). **Run `npm run docs:lint` and make it clean**, then `npm run docs:build` on
    the document and look at the rendered diagrams.
-6. Report what you changed, what you found stale that nobody listed, and every
+6. **When a `verified` stamp moved, run the stamp check.** The full check is
+   `npm run docs:stamp-check -- --base origin/main`, run once for the change; it is
+   long (over 90 minutes for hq #140's 60 documents). Every advance it refuses is
+   fixed, or its old stamp is restored and the row held in `docs/projects/doc-debt.md`.
+   - **After a review fix, never re-run the full check.** Run
+     `npm run docs:stamp-check -- --base <the head that last passed the full check>`
+     in the foreground. A full run that refused or went VOID did not pass: fix it and
+     re-run it in full; the narrow form needs a head that passed. The check refuses an
+     advance only over a drifted pointer on a line the change did not edit, so a fix
+     that only edits lines can remove a refusal and never add one, and the narrow run
+     still checks every stamp the fix moved.
+   - **Never wait on a background job without checking it is alive** (its process is
+     still running and its output still grows), and never wait on another session's
+     files: what another session writes says nothing about your job.
+7. Report what you changed, what you found stale that nobody listed, and every
    sentence you removed for being history rather than description.
 
 ## Verification discipline
@@ -264,6 +282,23 @@ back the other way, and with a case that should come back clean.
 
 - **Assert every `file:line` pointer resolves to the token you claim.** Include a
   must-fail control: a real file, a real line, a substring that is absent.
+- **A bulk pointer remap is checked like a migration, both ways** (release B, L-B-28, hq #140).
+  When a stamp moves and a script renumbers many `:N` pointers to the new ref:
+  - every proposed target passes BOTH checks: the line or range is inside the file at the new ref,
+    and every backticked identifier the sentence names is on that line or inside that range;
+  - a pointer whose pre-sweep value already passes both checks keeps that value;
+  - a move the checks cannot confirm is read and fixed by hand, never reverted by rule: a revert
+    criterion applied mechanically undoes hand fixes the review record already confirmed;
+  - then sample at least 80 pointers, fix every wrong one, and record the rate.
+  The release B sweep moved about 600 pointers with no bounds or identifier check, and 5 of 88
+  sampled were wrong (a wrong file, a different statement, two that were right before the move);
+  its fix reverted 194 "unconfirmed" moves, most of them right.
+- **Know which pointers your gate can read** (hq #140 review, NEW CLASS). Before `docs:stamp-check`
+  vouches for a moved stamp, confirm it parses every pointer shape the document uses: it could not
+  read a root-file pointer with a repository prefix (`VR_Main_API:sam-template.yaml:1147`) or a bare
+  continuation (`:302` after an earlier file), so it passed stamps over pointers that had drifted. A
+  shape the gate cannot read is checked by hand at the new ref, or that repository's old stamp
+  stays and the document gets a `doc-debt.md` row.
 - For absence claims, use a real process call with shell interpretation disabled
   and a same-file positive control. Shell-based searching has several ways of
   returning a confident, clean zero that is not a real absence: a default regex
@@ -300,9 +335,10 @@ could see, and apply it to any copy you quote.
 ## What you do not do
 
 - You do not commit or push unless you are explicitly asked to.
-- You never publish the documents to Google Docs or anywhere outside the
-  repository (owners, 2026-11-16), and never run `npm run docs:publish`. A request
-  to publish goes back to an owner as a question.
+- There is no publishing (owners, 2026-11-16): you never copy the documents to
+  Google Docs or anywhere outside the repository, and never run a `docs:publish`
+  script an older checkout still carries. A request to publish goes back to an
+  owner as a question.
 - You do not write the history document. If what you found belongs in a record of
   what changed, say so in your report and let the caller put it there.
 - You do not invent a gap to look thorough, and you do not close a real one by

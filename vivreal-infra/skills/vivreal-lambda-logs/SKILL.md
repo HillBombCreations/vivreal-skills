@@ -1,6 +1,6 @@
 ---
 name: vivreal-lambda-logs
-description: 'Use when you need to READ or COUNT what a Vivreal Lambda (or an Amplify site''s compute) actually logged, to prove a hotfix is working, to find the error behind a 500, to check a scheduled job ran, or to answer "how many times did X happen". Teaches the method that does not return a false zero, listing the newest log streams and paging get-log-events to the end, counting with Logs Insights instead of filter-log-events, resolving the right log group, account and Lambda version, and the Windows shell traps that silently rewrite a log group path. Triggers on: CloudWatch logs, log stream, get-log-events, filter-log-events, Logs Insights, start-query, is it in the logs, prove from the logs, read the logs, hourly run logged, count errors, Lambda log group, REPORT line, false zero, recordsScanned, skipped query, INIT_START, cold start line.'
+description: 'Use when you need to READ or COUNT what a Vivreal Lambda (or an Amplify site''s compute) actually logged, to prove a hotfix is working, to find the error behind a 500, to check a scheduled job ran, or to answer "how many times did X happen". Teaches the method that does not return a false zero, listing the newest log streams and paging get-log-events to the end, counting with Logs Insights instead of filter-log-events, resolving the right log group, account and Lambda version, and the Windows shell traps that silently rewrite a log group path. Triggers on: CloudWatch logs, log stream, get-log-events, filter-log-events, Logs Insights, start-query, is it in the logs, prove from the logs, read the logs, hourly run logged, count errors, Lambda log group, REPORT line, false zero, recordsScanned, skipped query, INIT_START, cold start line, API Gateway access log, resourceId.'
 ---
 
 # Reading Vivreal Lambda logs without a false zero
@@ -127,6 +127,32 @@ A zero is only evidence when the same query can return a hit for something you k
   as x` field alone was not measured) returned zero on lines that held the text; only a planted line that had to match exposed it. Filter `@message` itself
   (`filter @message like /.../`, or the `=~` form above), and plant a line in each log format the
   group carries, one that must match and one that must not.
+
+### An API Gateway access log that holds no path (measured 2026-11-18)
+
+An access log carries only the fields its stage's format names, and some of the fleet's REST stages
+log `resourceId` and no request path. A search of such a log for a route's name then reads 0 while
+the route was called: on 2026-11-18 that zero was reported as "nothing reached the gateway", and the
+owner's own request was in the same log under its resource id. Read the format before you search:
+
+```bash
+export MSYS_NO_PATHCONV=1
+aws apigateway get-stage --rest-api-id <id> --stage-name <stage> \
+  --query accessLogSettings.format --output text
+# a WebSocket or HTTP API: aws apigatewayv2 get-stage --api-id <id> --stage-name <stage> --query AccessLogSettings.Format
+```
+
+- **The format has no path:** map the route to its resource id first,
+  `aws apigateway get-resources --rest-api-id <id> --query 'items[].[id,path]' --output text`, then
+  filter the log on that `resourceId`. A greedy `{proxy+}` resource gives every path under it one
+  id, so there the id narrows the search to the resource, not the route.
+- **Or read the Lambda's own lines.** The backends' error, refusal and gate lines carry a `route`
+  field (the request path). A request that succeeded can write no such line, so a zero there is no
+  absence either.
+- **Prove the zero with a control row in the same query:** a request known to have happened in the
+  window, on the same stage, found through the same field.
+
+Which stages log which fields, as last read: `vivreal-observability`, Logs.
 
 ## Matching an app's start-up line to cold starts
 

@@ -44,9 +44,10 @@ deploy" and "we'll validate locally and if we find defects we fix them and rerun
 passes the valdiation then one deployment per repo". It applies to every plan and every step from
 now, the rest of release B included ("Like all these BR23 and BR33 as well"). Only release B's
 deployments already made before the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are
-exempt; BR-30's alarm flips, Main's BR-35c and BR-35d, the help move and the rebuild steps ride each
-repo's one batch. Staging a repo across deployments is an exception an owner must approve, never the
-plan's default.
+exempt. BR-30's alarm flips and Main's BR-35c and BR-35d rode each repo's one batch; the help move
+(a window of reviewed edge one-shots) and the rebuild's pilot and fleet steps (parameter flips) run
+after the deployments and are not deployments (item 1). Staging a repo across deployments is an
+exception an owner must approve, never the plan's default.
 
 1. **Every repo deploys at most ONCE per release.** Everything a repo needs in the release is built
    into its one batch, one PR: features, fixes, a runtime move, alarm actions, a help or site move,
@@ -61,8 +62,13 @@ plan's default.
    (P-ship-first). Only when the walk passes do the deployments start. A runtime move is
    validated on the new runtime locally, never proven by a tier in production.
 3. **Then deploy the backends back to back,** each proven live
-   (`vivreal-infra:vivreal-deploy-proof`) and watched for 1 hour before the next, **the portal
-   last** (P-api-first).
+   (`vivreal-infra:vivreal-deploy-proof`) with an immediate alarm and Sentry read, the next
+   starting once the last is proven, **the portal last** (P-api-first). **No staged soak or
+   calendar gate between deployments unless the owners ask for one** (release B deploy day: the
+   owners waived the tier gate and dropped the 1-hour watch, GO-B-WAIVE-TIER2B and
+   GO-B-NO-WAITS). Only a watch window that protects customers stays, and it is a flip after the
+   deploy (item 4): a rate limit's week in shadow, a new check's days in shadow or watch-only. The
+   hq rule text (P-one-promote) follows in its own PR.
 4. **A timed soak that must stay is a flip, not a deployment.** A watch-only or shadow mode, an
    allowlist, a rate limit's mode: ship it in the one deploy behind a parameter or data value, and
    turn it on later with a parameter or data flip. Never a second promote to flip an alarm or a
@@ -83,8 +89,27 @@ any agent whose own background run is still going. A granted extra slot replaces
 never stacks. A lowered cap never stops a running agent; it applies to the next dispatch. Heavy
 local runs have their own limit (P-heavy-runs), whatever the agent count.
 
+**A resumed agent takes a slot** (release B, L-B-19). Sending a finished agent new work with
+SendMessage restarts it, and it counts toward the cap exactly like a new dispatch. Count running
+work, resumed agents included, before EVERY dispatch and EVERY resume, call by call: in a turn that
+makes several calls, recount before each one, never once for the turn. Release B went one over the
+cap twice that way (L-B-19, then L-B-25: two resumes in one turn beside three running agents).
+
+**Over the cap by a slip: stop one agent, do not leave it running** (owner amendment to P-cap,
+2026-11-19: "ok so lets stop an agent dont just leace it running"; the hq rule text follows in its
+own PR). Stop the agent whose stop loses the least (one that has written nothing yet, or a read
+whose output is already saved), never a release engineer mid-deploy, and re-dispatch its work when
+a slot frees. This is the only stop the cap allows; it corrects a slip and never makes room for new
+work (item 4 below).
+
+**A slot stays with its piece until that piece is approved** (owner, 2026-11-18, L-B-21). The
+builder, then its reviewer, then the same builder for the findings, then the re-review, until PASS,
+one after another in that one slot; only then does the slot take new work. The walk takes the next
+slot an approved piece frees, and does not wait for the other pieces.
+
 **The slot check (P-release-focus), in the session of the owner who runs the current release**
-(the live value `release` names who). Before any dispatch that is not on the release's path:
+(the live value `release` names who). A slot held by an unapproved piece (above) is not free; the
+check decides only a slot no piece holds. Before any dispatch that is not on the release's path:
 
 1. **Is a step on the release path ready with no running agent on it?** A step is a build, a
    review, a fix, a walk, a release step, or a precondition of one. If yes, that step takes this
@@ -95,7 +120,14 @@ local runs have their own limit (P-heavy-runs), whatever the agent count.
 3. **Does a path step wait on another running agent** (the live walk that follows a release
    engineer's ship, say)? Hold no slot for it either: it takes that agent's slot when the agent
    finishes, and the free slot runs post-release work now.
-4. **Never stop a running agent to make room** (P-cap).
+4. **Never stop a running agent to make room** for new work (P-cap); the one stop is the slip
+   correction above.
+5. **The one exception to items 2 and 3: while a walk runs, one slot is held for its fixes**
+   (release B, L-B-22). A walk's fix has to start while the walker is still running, and item 4
+   means no running agent can make room: on release B the last free slot went to a post-release
+   coder minutes before the walk's first finds, and their builder waited for a slot. From the walk's
+   start to its end marker, the next slot that frees is held for the walk's fix loop, never given to
+   side work; side work takes only the slots beyond it.
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
 planning for the next release. A repo already in flight runs to approval before any new repo
@@ -153,6 +185,11 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   keep the slots working while it waits.
 - **One GO runs the whole remaining runbook** (P-blanket-go): dispatch the release engineer once
   in RUNBOOK mode with every remaining step and that GO quoted once; no per-step check-ins.
+- **A GO covers the door it names.** A GO recorded for one way of making a change (in Studio,
+  through help-publish, by a deploy) does not cover another (a one-off script, a different route):
+  ask the owners for that door, and for a one-shot have them approve its exact dry-run pin line
+  (`vivreal-workflow:ops-one-shot`, "Who runs it"). A release B search change approved as a Studio
+  change was planned as a one-shot under the same GO, and its review stopped it (F541 B3).
 - **An owner-gated command** (a deploy-role change set, a typed confirmation) wants the owner's
   approval, not their typing: re-check its shape, then run it yourself (P-owner-gated-yourself).
 - Warn the owners before any Sentry test event or a probe that can trip a paging alarm
@@ -165,6 +202,17 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **A reviewed walk plan first** (P-walk-plan): every change in the release maps to a row with
   preconditions, steps, the expected result, a REFUSE check and the view, and every blocker is
   cleared before the walk GO. Walk the exact flows before any recording (P-walk-before-footage).
+- **A row names the account state its expected result rests on** (which payments provider is
+  active, the plan, a connection, a sandbox item), and the walk reads that state before the row
+  runs. A release B row expected one QA business to sell through Square in the same session that
+  used its Stripe, which one provider at a time makes impossible (walk coverage review B1).
+- **A brief quotes a control or dialog label only as the screen prints it** (release B, L-B-30),
+  read at the walk's head from the screen or its code, never from memory or another dialog: a brief
+  asked the walker to press "Close and lose them" on a dialog whose button reads "Leave without
+  saving".
+- **The walker has no Sentry tool** (L-B-30). Never brief `vivreal-product:qa-walker` to read
+  Sentry; the main thread reads each project the walk touched for the walk's window (below), and
+  the walk report says it did not.
 - **A copy row that names a control is checked on the screen where the copy shows** (release B,
   L-B-15). Its expected result names the control as THAT screen labels it, and where it sits, read
   at the walk's head, never from the form where the control is first named: release B's sales-tax
@@ -173,6 +221,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   with the connect form. A row whose evidence is a test names the deployed handler its mock was
   built from (`vivreal-workflow:shared-standards`, Testing rules): a mock in the wrong shape is how
   "Create my site" read as tested while it failed.
+- **From the walk's start to its end marker, the next slot that frees is held for its fixes,**
+  never given to side work (section 2, item 5); the walk itself never waits for it.
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
   defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each
@@ -208,24 +258,50 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **A "stalled" notice describes the output stream, not the process.** Before relaunching, check
   the agent list and the agent's working directory for new writes; a relaunch beside a live
   agent in the same directory races it toward the same irreversible step.
-- **Resume a rate-limited agent with SendMessage**, never a duplicate dispatch. An agent cut off
+- **Resume a rate-limited agent with SendMessage**, never a duplicate dispatch, and count it first:
+  a resumed agent takes a slot (section 2). An agent cut off
   by a usage limit while the live `model` changed is re-dispatched fresh on the current model from
   its progress file (P-model).
-- **A resumed release engineer only narrows.** After a STOP, resume it with SendMessage only for
-  read-only follow-ups (a proof, a record, a read the STOP asks for). Any new production write
-  after a STOP (a merge, a fix-forward PR, a deploy, a promote) is a FRESH dispatch whose first
+- **A resumed or running release engineer only narrows.** After a STOP, resume it with SendMessage
+  only for read-only follow-ups (a proof, a record, a read the STOP asks for). Any new production
+  write after a STOP (a merge, a fix-forward PR, a deploy, a promote) is a FRESH dispatch whose first
   prompt quotes every GO it relies on verbatim (P-go-form), including the GOs of the first
   dispatch; a release engineer declines a write asked for in a resume message, rightly.
+- **The same holds while it runs** (release B, L-B-24). A GO that widens a RUNNING release
+  engineer's timing, scope or proof (a waived gate, a dropped watch) is never sent by message: it
+  declines it and stops. Ask it to stop at a safe point (or let it reach one), then make a fresh
+  RUNBOOK dispatch quoting every GO. On release B's deploy day two widening GOs sent mid-run were
+  declined and cost about 20 minutes before any write.
+- **Narrowing by message works, and so do hold files** (L-B-35). "Stop after FIN-D7" sent by
+  SendMessage was accepted. A main-thread step between two runbook steps (a one-shot, a data fix)
+  is a hold: the dispatch names a marker file the engineer waits on before the next step, and the
+  main thread writes the done marker when its own step has ended and been checked.
 
 ## 8. Close-out
 
 - Ship first (P-ship-first): once shipping, an unapproved repo gets exactly its reviewer's
   blockers fixed; an approved repo is not reopened for notes; new non-blocking finds go to the
   backlog with their evidence.
-- The post-release list fixes every dev doc the release made untrue (P-post-release-docs,
-  dispatch `vivreal-workflow:system-doc-writer`) and re-syncs the skills and tightens agents from
-  the release's slips (P-post-release-skills; skills changes are reviewed on a local branch and
-  pushed as one PR only when ready to merge, P-skills-push-after-review).
+- The post-release list (`post-release-list.json`) has three groups that keep what the release
+  changed true, beside the release's own rows:
+  - **Docs** (`DOC:` rows, P-post-release-docs): every dev doc the release made untrue, by
+    `vivreal-workflow:system-doc-writer`.
+  - **Skills** (`SK:` rows, P-post-release-skills): re-sync the skills and tighten agents from the
+    release's slips; skills changes are reviewed on a local branch and pushed as one PR only when
+    ready to merge (P-skills-push-after-review).
+  - **Help** (`HELP:` rows, P-post-release-help): one row per public help page (the help site, and
+    vivreal.io pages that teach owners how to do something) that a release change made untrue, and
+    one per new page a new feature or changed screen needs, taken from the release plan's "Help this
+    release makes untrue or adds" section. Each page is drafted by
+    `vivreal-content:help-page-producer` (verify-first, one article per run), reviewed, and published
+    under an owner GO through its PUBLISH mode, after an ADD in Studio or the content editor for a
+    new page or section. A page for a screen that changes at a deploy publishes after that deploy. A draft that
+    finds the feature off, or not buildable as written, STOPs and becomes a backlog row, never a page
+    describing what an owner cannot do.
+  - **Every help draft's defects file is triaged the same day** (L-B-36): each find becomes a
+    backlog row with an owner placement question, or joins its repo's running batch when it fails a
+    walk row. Help work is a product audit: release B's drafts and the regular-user question pass
+    found eleven product defects, a lost paid sign-up among them (F537, F539, F540, F542 to F549).
 - Drain the `## Lessons` list (section 9): the release is not closed while a row is `owed`.
 - Each owner runs `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/agent-usage/memory-audit.js" --count`
   on their own machine; the target is `memory-only=0 broken=0`.

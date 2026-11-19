@@ -43,7 +43,9 @@ Before reasoning, pull **`vivreal-unit-economics`** (it loads passively from int
 - **The live metered AI-adjacent axis is `mcpToolCalls`**, and it bounds something different:
   **Vivreal's own infrastructure** (Lambda invocations and Mongo work), not inference. It is a HARD
   STOP with no entry in `OVERAGE_RATES`, so over-quota is an unpriced refusal rather than billable
-  revenue. Model it as a capacity bound, never as a margin lever.
+  revenue. Model it as a capacity bound, never as a margin lever. Since MCP-ALL (owner 2026-11-17,
+  live on the MCP server 2026-11-19) Free and Basic carry an allowance too, so the bound covers every
+  business; read each plan's number from the package.
 - **Read every value from the package, never from here.** `TIER_QUOTAS` and `TIER_ORDER` in
   `src/tierQuotas.ts` of `@hillbombcreations/tier-quotas` (sentinels: `-1` unlimited, `0` no
   access). The tier ladder has lost a member, and the binary capability flags `TIER_FLAGS`

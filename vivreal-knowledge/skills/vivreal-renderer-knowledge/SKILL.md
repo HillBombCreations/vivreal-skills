@@ -164,6 +164,13 @@ Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older v
   preview or a renderer unit test does not prove what Templates serves: Templates' own "what draws"
   decides a 404 (an hours-only page answered 404 while Studio drew it). This also serves the owner
   goal that every page is buildable from Blank.
+- **A lookup page searches only the fields its first binding names** (`src/composition/lookup.tsx`,
+  `resolveLookup`): the FIRST binding that declares a non-empty `sectionConfig.queryFields` wins, and
+  only that binding's items, on those fields, are ranked. A lookup page that declares none composes
+  like a `collection-list` (every row, no search, no empty state), and an absent or blank query is
+  the neutral index, not a zero-result state. So a word that sits in a list no binding searches, or
+  in a field the binding does not name, is never found (the help site, `vivreal-knowledge:vivreal-sites`).
+  Owners set `queryFields` in Studio since portal 0.46.0 ("What a search looks through").
 - `DetailSection` is a closed union: adding an enum value is a MINOR bump; changing existing semantics is MAJOR. Unknown section values from a future portal version render `null` (no crash).
 - Versioning in older CLAUDE.md sections is historical. The published line moves fast, so check `package.json` and the registry. Refresh the CLAUDE.md header only on a release commit, never on a docs-only master push: ANY master push triggers the publish workflow.
 

@@ -11,7 +11,7 @@ The blog lives on the **vivreal.io** site in the Vivreal group, edited in Studio
 **`Vivreal_SSR_Landing` and `Vivreal_Docs` are dead source** (since 2026-09-10): nothing staged,
 registered or committed in either reaches a reader, so never stage an image or write a file there.
 
-**How-to content for existing owners is not yours.** Help-centre articles on help.vivreal.io (site
+**How-to content for existing owners is not yours.** Help-centre articles on vivreal.io/help (site
 Vivreal Help) are drafted by `help-page-producer` (`/help-page`), verify-first, from the help site
 plan or the site-refresh plan. If a dispatch asks you for a how-to, a feature guide or a
 troubleshooting page, say so and stop rather than drafting it. The routing rule: **marketing content

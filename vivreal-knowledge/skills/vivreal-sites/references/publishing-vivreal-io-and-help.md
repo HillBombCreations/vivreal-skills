@@ -1,7 +1,7 @@
 # Publishing to vivreal.io and the help site
 
 The one home for what a script, a runner or an agent needs to know before it writes content,
-images or captures into vivreal.io or help.vivreal.io (both are Vivreal sites built from
+images or captures into vivreal.io or the help centre at vivreal.io/help (both are Vivreal sites built from
 Templates, with content in the CMS). Learned on the v6 help publishing batches and the
 vivreal.io screenshot swap, 2026-10-15. `help-page-producer`, `footage-recorder` and the
 marketing agents point here rather than keeping their own copy.
@@ -67,6 +67,29 @@ writes a row of either site.
 - **Table rows share a band.** Many rows sit in one `band`, so a "does this row already exist"
   check needs `band` AND `order`, not the band alone. A band-only check matched the row before it
   and stopped a real publish with a false duplicate on 2026-10-15.
+- **A row's place in its section is a stored number no screen sets** (release B help publish,
+  2026-11-19). A Sections list's schema carries no `order` field, `order` is a system key the
+  portal's content editor never shows (portal `src/lib/schema/i17FieldTables.ts`), and a published
+  list sorts by `objectValue.order`, then `objectValue._system.order`, then `_id`, with a MISSING
+  order sorting FIRST (VR_Client_API `src/services/tenant/HelpFunctions/collectionObjectOrder.js`).
+  So a row added in the content editor draws at the TOP of its section, and its long-text box also
+  adds `target="_blank"` and `rel` to every link. A new row on an existing help page is therefore a
+  step the screens cannot do: plan it as help-publish's create (the same portal route), which lands
+  LAST in its section (`nextOrder`, the highest order plus one), and name that reason.
+- **Never leave a bound section empty.** A bound steps section with no rows still draws its title
+  and an empty message, so create the replacement rows before deleting the old ones, never after.
+- **Stored forms:** help step rows hold their text in `description` and their `step` as text
+  ("1" to "5"), never a number; band bodies store `&` as `&amp;` (plain-text card fields such as
+  `aiContext` keep a bare `&`); a band row has ONE `imageAlt` and ONE `imageCaption` for its phone and
+  computer pictures, so write words true of both.
+- **The help search reads only the index cards** (release B triage, 2026-11-19). The `/search`
+  page's first binding that declares `queryFields` wins (`vivreal-knowledge:vivreal-renderer-knowledge`),
+  and the help site's names `title`, `description` and `section` over the Help Articles list.
+  Article text lives in each article's Sections list, which search never reads, so a search miss
+  proves only that no card holds the word; read candidate pages' bodies before calling a topic
+  absent. Since portal 0.46.0 (F550) Studio sets `queryFields`: "What a search looks through" on a
+  search page's layout section, one tick per part of an item, so changing what the help search
+  reads is a Studio change, never a script.
 - **A plain curl of a help page finds almost no words.** The server HTML is a streamed skeleton;
   the text sits in entries, table rows and aside notes inside the page's React payload. Read the
   settled page in a browser, or parse the payload.

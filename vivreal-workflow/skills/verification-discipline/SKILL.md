@@ -369,9 +369,9 @@ review, the renderer 1.88.2 review, and the release runbook.
 
 ---
 
-## A live proof that passes on a broken query (release B reviews, 2026-11-16)
+## A live proof that passes on a broken query (release B reviews, 2026-11-16 and 2026-11-18)
 
-Four shapes, each a NEW CLASS blocker a review caught before the proof ran. In each, the proof as
+Six shapes, each a NEW CLASS blocker a review caught before the proof ran. In each, the proof as
 written would have passed with the query or the write it checks broken.
 
 1. **An expected bucket a broken query fills.** A proof split cold starts into served and
@@ -396,9 +396,21 @@ written would have passed with the query or the write it checks broken.
    do not own. **Rule:** a proof's write target is named in advance, by id, from what we own, and read
    back before the write; a step that would pick from a list stops instead.
 
+5. **A proof whose PASS needs less evidence than the plan asks for** (release B one-shot review,
+   2026-11-18). A plan said "the first 10 replays, or every replay of the first 7 days if fewer"; the
+   script passed on one replay at any time. **Rule:** the script's PASS condition is the plan's,
+   word for word, and anything short of it reads VOID (not enough evidence yet), with a REFUSE test
+   at just under the bar and an ALLOW at it.
+6. **A list filter trusted without checking its rows, beside a control blind to the same filter.**
+   A scan asked an API for a time window and never checked the rows it got were inside it, and its
+   control used a different window parameter, so an API that ignored the window would have passed
+   both. **Rule:** check every returned row against the filter you asked for, drop and count the
+   ones outside it, VOID when nothing in range remains, and test with a fake that ignores the filter.
+
 Sources, all in vivreal-hq `docs/projects/next-release-B/`: `review-billing-key-delta.md` (B2, B3,
-B4), `review-lf322-cell.md` (C1, C2) and `review-plan-delta-2026-11-16b.md` (B2). The Logs Insights
-forms of 1 to 3 are in `vivreal-infra:vivreal-lambda-logs`.
+B4), `review-lf322-cell.md` (C1, C2), `review-plan-delta-2026-11-16b.md` (B2) and
+`review-kops-oneshots-2026-11-18.md` (B2, B3). The Logs Insights forms of 1 to 3 are in
+`vivreal-infra:vivreal-lambda-logs`.
 
 ---
 

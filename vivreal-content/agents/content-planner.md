@@ -515,7 +515,7 @@ Rules for the block:
   posted as made. No new script, beat sheet, voiceover, trim or re-cut.
 - **The draft carries:** the tutorial path and its length, a hook line (the first line of the
   caption, inside the platform's cutoff below), the caption, and the link.
-- **Every link carries campaign tags.** Each vivreal.io or help.vivreal.io link gets
+- **Every link carries campaign tags.** Each vivreal.io link, help centre links at vivreal.io/help included, gets
   `?utm_source=<platform>&utm_medium=social&utm_campaign=<yyyy>-w<ww>`, the platform lowercase
   (`linkedin`, `instagram`, `facebook`, `tiktok`, `youtube`). A post with an untagged link is not
   ready.
