@@ -92,7 +92,9 @@ Three specific traps this table used to walk into:
    it. **Do not model it, and do not answer a question that presupposes an AI quota exists.**
    What survives is `mcpToolCalls`, which meters something else entirely: Vivreal's own Lambda and
    Mongo work. It is a HARD STOP with no overage rate, so treat it as a capacity bound, not
-   revenue. Verify both against `src/tierQuotas.ts` on the deployed line before quoting either.
+   revenue. Since MCP-ALL (owner 2026-11-17, live on the MCP server 2026-11-19) every plan carries
+   an allowance, Free and Basic included, so the exposure is every business, not only the paid top
+   plans. Verify both against `src/tierQuotas.ts` on the deployed line before quoting either.
 
 ### Overage billing: priced quota headroom
 
