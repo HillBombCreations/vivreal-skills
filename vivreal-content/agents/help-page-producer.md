@@ -82,7 +82,8 @@ For an A-list article, read every run, in this order:
 4. Plan **section 3**, the article list and its **Anchor rules**, and the "Old anchors on
    rewritten articles" paragraph.
 5. Plan **section 2.2** for the URL scheme, now `https://vivreal.io/help/<section>/<slug>#<anchor>`
-   (the help centre's address moved in release B; this address wins over the plan's older one).
+   (the help centre's address moves in release B, **not live until the help move (FIN-A11)**: until then
+   `vivreal.io/help` redirects to the old host; this address wins over the plan's older one either way).
    Inside help articles, links stay `/<section>/<slug>` (the site adds `/help`).
 6. Plan **section 4**, the block for YOUR article only (anchors, step guide slots, FAQ
    groups with walker citations, "verify:" and "Known:" lines, video outline).

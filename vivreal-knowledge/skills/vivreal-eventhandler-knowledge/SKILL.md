@@ -102,7 +102,7 @@ Every schedule is a classic EventBridge rule (`rate(...)`/`cron(...)`), each ove
 - Don't rename `checkDomainAssociaion` (typo in state machine + handler).
 - "Render differently for ecommerce vs showcase" belongs in Vivreal_Templates + site-renderer, NOT here (runtime ignores `templateType`).
 - Seed builders + template manifests live ONLY here (`src/shared/seeding/`, `src/shared/templates/`); the old `VR_Secure_API/src/createSites/services/templates` + `buildCollectionGroups`/`buildPages` files no longer exist. VR_Secure_API keeps only integration helpers under `services/HelperFunctions/` and a hardcoded `countExpectedSeeds()` per template, bump that count if you add seeds here.
-- **After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves.
+- **After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves (**not live until BR-33**, the fleet rebuild step; read the live lever, `siteRebuildSweeper` above).
 
 ## Before you report an absence
 

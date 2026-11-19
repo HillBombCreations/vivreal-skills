@@ -35,7 +35,7 @@ Three rules that follow from how it is fed:
 - **Never call `POST /api/revalidate` by hand.** A hand-called hard invalidation broke `robots.txt` at the origin (its first statement binds `connection()`, and its cache entry did not survive), CloudFront cached the 500, and the whole host looked dead while the home page was fine at `stable.<appId>.amplifyapp.com`. The remedy, and the better tool for a site-record change anyway, is an Amplify `start-job --job-type RELEASE` on the same commit. Check the origin directly before concluding a site is down.
 - **A revalidation clears only the compute instance that received it**, with CloudFront on top, so after a BULK change (many records, a re-seed) rebuild the site with a RELEASE job rather than trusting tags.
 
-**After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves.
+**After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves (**not live until BR-33**, the fleet rebuild step; read the live lever, `vivreal-knowledge:vivreal-eventhandler-knowledge`).
 
 ## ISR render mode (`SITE_RENDER_MODE`), and the trap that froze vivreal.io's home page (2026-09-16)
 
