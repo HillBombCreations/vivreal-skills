@@ -282,6 +282,23 @@ back the other way, and with a case that should come back clean.
 
 - **Assert every `file:line` pointer resolves to the token you claim.** Include a
   must-fail control: a real file, a real line, a substring that is absent.
+- **A bulk pointer remap is checked like a migration, both ways** (release B, L-B-28, hq #140).
+  When a stamp moves and a script renumbers many `:N` pointers to the new ref:
+  - every proposed target passes BOTH checks: the line or range is inside the file at the new ref,
+    and every backticked identifier the sentence names is on that line or inside that range;
+  - a pointer whose pre-sweep value already passes both checks keeps that value;
+  - a move the checks cannot confirm is read and fixed by hand, never reverted by rule: a revert
+    criterion applied mechanically undoes hand fixes the review record already confirmed;
+  - then sample at least 80 pointers, fix every wrong one, and record the rate.
+  The release B sweep moved about 600 pointers with no bounds or identifier check, and 5 of 88
+  sampled were wrong (a wrong file, a different statement, two that were right before the move);
+  its fix reverted 194 "unconfirmed" moves, most of them right.
+- **Know which pointers your gate can read** (hq #140 review, NEW CLASS). Before `docs:stamp-check`
+  vouches for a moved stamp, confirm it parses every pointer shape the document uses: it could not
+  read a root-file pointer with a repository prefix (`VR_Main_API:sam-template.yaml:1147`) or a bare
+  continuation (`:302` after an earlier file), so it passed stamps over pointers that had drifted. A
+  shape the gate cannot read is checked by hand at the new ref, or that repository's old stamp
+  stays and the document gets a `doc-debt.md` row.
 - For absence claims, use a real process call with shell interpretation disabled
   and a same-file positive control. Shell-based searching has several ways of
   returning a confident, clean zero that is not a real absence: a default regex
