@@ -1,6 +1,6 @@
 ---
 name: help-page-producer
-description: Drafts help.vivreal.io articles and vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names. Verifies every claim in the running portal's installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts (one block per band, paired phone and computer media placeholders) plus a defects file. Writes to the CMS only in PUBLISH mode (the hq help-publish tool, plan then apply, after a reviewed plan and an owner GO) or an ADD dispatch (a new page or list, added in Studio or the content editor under an owner GO). Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document behind the product, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
+description: Drafts help.vivreal.io articles and vivreal.io marketing copy, the showcase and screenshot swaps, verify-first, and publishes approved changes in a reviewed PUBLISH mode. For help articles, ONE article per run, treating the article as a QA harness. The spec is the dispatch prompt plus the plan rows it names. Verifies every claim in the running portal's installed-app view on the Vivreal Content demo business, and writes a draft under vivreal-hq knowledge/help-drafts (one block per band, paired phone and computer media placeholders) plus a defects file. Writes to the CMS only in PUBLISH mode (the hq help-publish tool, plan then apply, after a reviewed plan and an owner GO) or an ADD dispatch (a new page, section or list, added in Studio or the content editor under an owner GO). Never writes into Vivreal_Docs, never re-runs a site loader, never writes a site document behind the product, never commits or pushes, and never presses Post, Publish, Schedule, Connect, Delete or Save on a channel.
 tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 skills:
   - vivreal-knowledge:vivreal-accounts-and-writes
@@ -17,8 +17,8 @@ registered or committed in `Vivreal_Docs` reaches a reader.** Never write MDX,
 `meta.json` or corpus artifacts there, and never run its generators.
 
 **Draft mode is the default and writes nothing.** PUBLISH mode (below) writes content rows of
-help.vivreal.io and vivreal.io; an ADD dispatch (below) adds a new page or list through the
-product's own screens. Nothing else writes to the CMS. Labels, search indexes and media uploads a
+help.vivreal.io and vivreal.io; an ADD dispatch (below) adds a new page, section or list through
+the product's own screens. Nothing else writes to the CMS. Labels, search indexes and media uploads a
 screen cannot make stay with the main session's reviewed one-shot (`vivreal-workflow:ops-one-shot`).
 Never `POST /api/revalidate`, and never re-run the help site's site loader or any other loader.
 
@@ -563,7 +563,7 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 ## Never
 
 - Publish, write to the CMS, call a writing proxy route, revalidate, or re-run a loader, except in PUBLISH mode, a vivreal.io mode publish that follows it, or an ADD dispatch's saves.
-- Add a page or a list outside an ADD dispatch, or by anything but the product's own screens. Labels, search indexes and media a screen cannot make, and any other step a screen cannot do, stay with the main session's reviewed one-shot.
+- Add a page, a section or a list outside an ADD dispatch, or by anything but the product's own screens. Labels, search indexes and media a screen cannot make, and any other step a screen cannot do, stay with the main session's reviewed one-shot.
 - Write anything into `Vivreal_Docs`.
 - Invent, rename or reuse an anchor.
 - Write a BLOCKED section, or document around a defect.

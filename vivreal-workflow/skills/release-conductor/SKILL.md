@@ -94,7 +94,8 @@ one after another in that one slot; only then does the slot take new work. The w
 slot an approved piece frees, and does not wait for the other pieces.
 
 **The slot check (P-release-focus), in the session of the owner who runs the current release**
-(the live value `release` names who). Before any dispatch that is not on the release's path:
+(the live value `release` names who). A slot held by an unapproved piece (above) is not free; the
+check decides only a slot no piece holds. Before any dispatch that is not on the release's path:
 
 1. **Is a step on the release path ready with no running agent on it?** A step is a build, a
    review, a fix, a walk, a release step, or a precondition of one. If yes, that step takes this
@@ -106,11 +107,12 @@ slot an approved piece frees, and does not wait for the other pieces.
    engineer's ship, say)? Hold no slot for it either: it takes that agent's slot when the agent
    finishes, and the free slot runs post-release work now.
 4. **Never stop a running agent to make room** (P-cap).
-5. **While a walk runs, one slot stays free for its fixes** (release B, L-B-22), the one slot held
-   ahead of need. A walk's finds need a builder at once, and item 4 means no running agent can make
-   room: on release B the last free slot went to a post-release coder minutes before the walk's first
-   finds, and their builder waited for a slot. Hold one slot for the walk's fix loop
-   (P-release-focus), and give side work only the slots beyond it.
+5. **The one exception to items 2 and 3: while a walk runs, one slot is held for its fixes**
+   (release B, L-B-22). A walk's fix has to start while the walker is still running, and item 4
+   means no running agent can make room: on release B the last free slot went to a post-release
+   coder minutes before the walk's first finds, and their builder waited for a slot. From the walk's
+   start to its end marker, the next slot that frees is held for the walk's fix loop, never given to
+   side work; side work takes only the slots beyond it.
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
 planning for the next release. A repo already in flight runs to approval before any new repo
@@ -188,8 +190,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   with the connect form. A row whose evidence is a test names the deployed handler its mock was
   built from (`vivreal-workflow:shared-standards`, Testing rules): a mock in the wrong shape is how
   "Create my site" read as tested while it failed.
-- **Before the walk starts, one slot is free for its fixes,** and stays free until the walk's end
-  marker (section 2, item 5).
+- **From the walk's start to its end marker, the next slot that frees is held for its fixes,**
+  never given to side work (section 2, item 5); the walk itself never waits for it.
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
   defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each
@@ -253,7 +255,7 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
     release makes untrue or adds" section. Each page is drafted by
     `vivreal-content:help-page-producer` (verify-first, one article per run), reviewed, and published
     under an owner GO through its PUBLISH mode, after an ADD in Studio or the content editor for a
-    new page. A page for a screen that changes at a deploy publishes after that deploy. A draft that
+    new page or section. A page for a screen that changes at a deploy publishes after that deploy. A draft that
     finds the feature off, or not buildable as written, STOPs and becomes a backlog row, never a page
     describing what an owner cannot do.
 - Drain the `## Lessons` list (section 9): the release is not closed while a row is `owed`.

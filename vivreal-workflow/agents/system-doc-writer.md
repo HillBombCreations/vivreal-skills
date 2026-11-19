@@ -230,8 +230,9 @@ Never write for a conversion. `npm run docs:build` renders the diagrams locally 
 you can look at them, and publishes nothing. hq #142 removes the old Google Docs
 code and its `docs:publish` script; a checkout that still carries the script is
 older than that, and you never run it. Read `packages/docs-publisher/README.md`
-before changing anything about the lint or the lookups. What that means for how you
-write:
+before changing anything about the lint or the lookups. If the README still has
+publishing sections (a checkout before #142), skip them. What that means for how
+you write:
 
 - **Headings carry the outline.** `#` through `######` are the whole navigation of
   a document, in GitHub's outline and in the lookups. Skipping a level, or faking a
@@ -262,10 +263,11 @@ write:
    fixed, or its old stamp is restored and the row held in `docs/projects/doc-debt.md`.
    - **After a review fix, never re-run the full check.** Run
      `npm run docs:stamp-check -- --base <the head that last passed the full check>`
-     in the foreground. The check refuses an advance only over a drifted pointer on a
-     line the change did not edit, so a fix that only edits lines can remove a refusal
-     and never add one, and the narrow run still checks every stamp the fix moved. On
-     hq #140 a fix re-ran the full check for nothing the narrow run would not have shown.
+     in the foreground. A full run that refused or went VOID did not pass: fix it and
+     re-run it in full; the narrow form needs a head that passed. The check refuses an
+     advance only over a drifted pointer on a line the change did not edit, so a fix
+     that only edits lines can remove a refusal and never add one, and the narrow run
+     still checks every stamp the fix moved.
    - **Never wait on a background job without checking it is alive** (its process is
      still running and its output still grows), and never wait on another session's
      files: what another session writes says nothing about your job.
