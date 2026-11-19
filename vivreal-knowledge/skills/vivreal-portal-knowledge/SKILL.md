@@ -65,6 +65,12 @@ Each is a tag on `release/v0.37` promoted to `stable`; `git log --first-parent v
 - **The Detail pages switch** clears `detailEligible` on the bindings that draw the named list and hides `itemKeyField` wherever it is declared (`src/lib/sites/sectionConfigControls.ts`). The model is `vivreal-knowledge:vivreal-sites` `references/detail-pages.md`.
 - **`sites/update` requires only `mode`.** The name fields are sent only when the owner changed them, so a Studio save without a Business-info edit cannot rewrite the name.
 - **Fonts are self-hosted with `next/font/local`** (`src/app/layout.tsx`, `src/app/(studio-frame)/layout.tsx`, the studio-demo layout). The const name IS the declared family, so it must not collide, case-insensitively, with a literal family loaded elsewhere.
+- **There is no "Settings, Billing".** Settings' Business group holds **Business details** ("Name,
+  team, usage and billing", which opens `/group`) and **Plan** (`/tier-select`); usage billing is the
+  **Overage Billing** card on that Business page, with **Spending Caps** inside it (owners and admins,
+  `src/components/Group/OverageBillingSection/`). Phone: More, then Business; computer: Everything
+  else, then Business. Any copy or help that says "Settings, Billing" names a path the app does not
+  have (release B help drafts, 2026-11-19).
 - **The business time zone (v7.1).** Business details carries a time zone row (`src/components/Group/BusinessDetailsSection/BusinessTimeZoneRow.tsx`, who may change it in `src/lib/permissions/businessTimeZone.ts`), saved through the factory proxy `group/timezone` (PUT, `timezone` plus `expectedTimezone`, the zone last seen or `null`) to VR_Secure_API's compare-and-set. `use-auto-set-business-time-zone.ts` sets the browser's zone once per business per device when none is stored; a lost race keeps the stored zone. The Studio preview reads the site clock through `src/lib/sites/siteClockZone.ts` in the live site's order: the business zone, then the site's own legacy value, then the renderer's fallback, so preview and live agree.
 - **Import copy (V7.221).** People an owner imports or adds are still asked to confirm by email; `src/components/Subscribers/importPeople.ts` words the result lines (what Main did about the confirmation email). Site sign-ups are one step and never reach this path.
 
