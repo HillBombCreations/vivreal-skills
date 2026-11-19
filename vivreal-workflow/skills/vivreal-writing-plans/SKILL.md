@@ -62,8 +62,11 @@ row's count is at most 1:
   the runtime it deploys on (P-local-validate); anything that makes a local walk row fail (a broken
   flow, wrong behaviour, a defect against what the batch promises) is fixed in that repo's batch,
   with a delta review, and the walk runs again, until it passes; a note or nit that fails no row
-  goes to the backlog (P-ship-first). Only then do the backends deploy back to back, each proven and
-  watched 1 hour, the portal last (P-api-first).
+  goes to the backlog (P-ship-first). Only then do the backends deploy back to back, each proven live
+  with an immediate alarm and Sentry read, the next starting once the last is proven, the portal
+  last (P-api-first). No staged soak or calendar gate between deployments unless the owners ask
+  for one (the owners dropped the 1-hour watch on release B's deploy day, GO-B-NO-WAITS; hq
+  P-one-promote); a watch window that protects customers stays as a flip after the deploy.
 - **What is not a deployment.** Parameter and data flips, one-shots such as indexes and kits,
   package publishes under P-packages and docs merges are not deployments, and a repo whose several
   stacks deploy back to back in one step counts as one deployment.
