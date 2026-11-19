@@ -55,7 +55,7 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix), 
 - **The AI connection on every plan, the portal half** (MCP-ALL Task P): Channels offers Connect on every plan, Allow access drops the plan name, and the plan cards say each plan's monthly AI agent actions, read from tier-quotas `mcpToolCalls`.
 - **Studio sets what a search page searches** (F550): "What a search looks through" on a search page's layout section, one tick per part of an item (`src/lib/sites/lookupSearchFields.ts`); with none ticked, every item shows for every search. The renderer reads the first section that has a tick (`vivreal-knowledge:vivreal-renderer-knowledge`).
 - **A help mark sits in a phone sheet's title row** (P-435, GO-B-PORTAL-FU8): below 768 px the Studio sheet, Add a page and the photo sheet a picture field opens draw the title, the help mark and the close on one row (`src/components/UI/sheet-title-row.ts`); a sheet with no help keeps its header, and nothing changes from 768.
-- Also: Main's `tooManyCodes` words, "Too many codes. Wait a while and try again." (F482, `src/lib/auth/signInCode.ts`), and the throttled sign-up words (L-F367 b); Spending Caps switched off and saved; the closed-shop line on the Stripe board; an email-shaped username refused on its step (F545); app links that keep `/app` (F537).
+- Also: Main's `tooManyCodes` words, "Too many codes. Wait a while and try again." (F482, `src/lib/auth/signInCode.ts`), and the throttled sign-up words (L-F367 b); Spending Caps can be switched off and saved (F473, F480); the closed-shop line on the Stripe board; an email-shaped username refused on its step (F545); app links that keep `/app` (F537).
 
 ## v0.37.2 to v0.37.9 (hotfixes on the v0.37 line, 2026-10-21 to 2026-10-27)
 
