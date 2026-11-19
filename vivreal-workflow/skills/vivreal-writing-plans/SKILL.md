@@ -72,6 +72,9 @@ row's count is at most 1:
   is the flip, with its GO and its undo.
 - **An alarm is created with its actions on** when nothing can breach before its soak ends; an alarm
   that could page at its own creation is shaped so it cannot, inside the one deployment.
+- **One row per repo.** Every stack, app and dated step of a repo is in its one row. Splitting a
+  repo across rows (an app or a stack in a row of its own, so each reads 1 or 0) hides a count of 2:
+  a release B final plan did that for one repo and its review failed it (NEW CLASS).
 - **A count above 1 needs an owner exception recorded in hq `decisions.md`**, cited in that row;
   without it the plan review FAILs (trap 10 below). Only release B's deployments already made before
   the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are exempt.
@@ -108,6 +111,10 @@ with no tripwire".
 3. **An expected set the tooling cannot produce.** A preview's expected rows were written for one
    deploy path and applied to a stack whose deploy script also changes a stack tag (a Modify on every
    taggable resource). Write each expected set from a preview, or the script, of the SAME path.
+   **A batch delta that adds a template change updates the pinned set in the same change** (release
+   B backend delta review, NEW CLASS): a near-cap alarm's threshold joined a batch after its deploy
+   step pinned "197 of 197 ids unchanged apart from the six alarms", so that step would have STOPPED
+   a correct deploy. Whoever adds the change names the new rows in the deploy step and its proof.
 4. **A stop action the repository's own gate refuses.** A STOP's revert would have dropped coverage
    under a floor set with zero headroom, so CI would refuse the deploy in the middle of an incident.
    Run every stop and rollback action through the repository's gates (coverage floors, size checks,
@@ -125,6 +132,10 @@ with no tripwire".
    certificate monitor and a crawler need).
 8. **Scope beyond an owner answer.** A row the owner's answer did not name goes to the next release,
    or back to the owner as a question, never into the plan by default.
+8a. **An owner rule applied from before the owner's latest answer on it** (release B final plan
+   review, NEW CLASS). Read hq `decisions.md` to its last line before writing a rule into the plan,
+   and cite the newest entry on that rule: a plan read the record only to an earlier line and routed
+   walk finds by origin when the owners had just said "fix what fails the walk".
 
 **Guards that lose their fail-safe**
 9. **A guard narrowed to one read with no tripwire** (release C F222 design review, 2026-11-18, NEW
