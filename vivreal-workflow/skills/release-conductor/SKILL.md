@@ -83,6 +83,16 @@ any agent whose own background run is still going. A granted extra slot replaces
 never stacks. A lowered cap never stops a running agent; it applies to the next dispatch. Heavy
 local runs have their own limit (P-heavy-runs), whatever the agent count.
 
+**A resumed agent takes a slot** (release B, L-B-19). Sending a finished agent new work with
+SendMessage restarts it, and it counts toward the cap exactly like a new dispatch. Count running
+work, resumed agents included, before every dispatch AND every resume: one step that resumed a
+finished coder and dispatched a reviewer together went one over the cap.
+
+**A slot stays with its piece until that piece is approved** (owner, 2026-11-18, L-B-21). The
+builder, then its reviewer, then the same builder for the findings, then the re-review, until PASS,
+one after another in that one slot; only then does the slot take new work. The walk takes the next
+slot an approved piece frees, and does not wait for the other pieces.
+
 **The slot check (P-release-focus), in the session of the owner who runs the current release**
 (the live value `release` names who). Before any dispatch that is not on the release's path:
 
@@ -96,6 +106,11 @@ local runs have their own limit (P-heavy-runs), whatever the agent count.
    engineer's ship, say)? Hold no slot for it either: it takes that agent's slot when the agent
    finishes, and the free slot runs post-release work now.
 4. **Never stop a running agent to make room** (P-cap).
+5. **While a walk runs, one slot stays free for its fixes** (release B, L-B-22), the one slot held
+   ahead of need. A walk's finds need a builder at once, and item 4 means no running agent can make
+   room: on release B the last free slot went to a post-release coder minutes before the walk's first
+   finds, and their builder waited for a slot. Hold one slot for the walk's fix loop
+   (P-release-focus), and give side work only the slots beyond it.
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
 planning for the next release. A repo already in flight runs to approval before any new repo
@@ -173,6 +188,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   with the connect form. A row whose evidence is a test names the deployed handler its mock was
   built from (`vivreal-workflow:shared-standards`, Testing rules): a mock in the wrong shape is how
   "Create my site" read as tested while it failed.
+- **Before the walk starts, one slot is free for its fixes,** and stays free until the walk's end
+  marker (section 2, item 5).
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
   defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each
@@ -208,7 +225,8 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **A "stalled" notice describes the output stream, not the process.** Before relaunching, check
   the agent list and the agent's working directory for new writes; a relaunch beside a live
   agent in the same directory races it toward the same irreversible step.
-- **Resume a rate-limited agent with SendMessage**, never a duplicate dispatch. An agent cut off
+- **Resume a rate-limited agent with SendMessage**, never a duplicate dispatch, and count it first:
+  a resumed agent takes a slot (section 2). An agent cut off
   by a usage limit while the live `model` changed is re-dispatched fresh on the current model from
   its progress file (P-model).
 - **A resumed release engineer only narrows.** After a STOP, resume it with SendMessage only for
@@ -222,10 +240,22 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - Ship first (P-ship-first): once shipping, an unapproved repo gets exactly its reviewer's
   blockers fixed; an approved repo is not reopened for notes; new non-blocking finds go to the
   backlog with their evidence.
-- The post-release list fixes every dev doc the release made untrue (P-post-release-docs,
-  dispatch `vivreal-workflow:system-doc-writer`) and re-syncs the skills and tightens agents from
-  the release's slips (P-post-release-skills; skills changes are reviewed on a local branch and
-  pushed as one PR only when ready to merge, P-skills-push-after-review).
+- The post-release list (`post-release-list.json`) has three groups that keep what the release
+  changed true, beside the release's own rows:
+  - **Docs** (`DOC:` rows, P-post-release-docs): every dev doc the release made untrue, by
+    `vivreal-workflow:system-doc-writer`.
+  - **Skills** (`SK:` rows, P-post-release-skills): re-sync the skills and tighten agents from the
+    release's slips; skills changes are reviewed on a local branch and pushed as one PR only when
+    ready to merge (P-skills-push-after-review).
+  - **Help** (`HELP:` rows, P-post-release-help): one row per public help page (the help site, and
+    vivreal.io pages that teach owners how to do something) that a release change made untrue, and
+    one per new page a new feature or changed screen needs, taken from the release plan's "Help this
+    release makes untrue or adds" section. Each page is drafted by
+    `vivreal-content:help-page-producer` (verify-first, one article per run), reviewed, and published
+    under an owner GO through its PUBLISH mode, after an ADD in Studio or the content editor for a
+    new page. A page for a screen that changes at a deploy publishes after that deploy. A draft that
+    finds the feature off, or not buildable as written, STOPs and becomes a backlog row, never a page
+    describing what an owner cannot do.
 - Drain the `## Lessons` list (section 9): the release is not closed while a row is `owed`.
 - Each owner runs `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/agent-usage/memory-audit.js" --count`
   on their own machine; the target is `memory-only=0 broken=0`.
