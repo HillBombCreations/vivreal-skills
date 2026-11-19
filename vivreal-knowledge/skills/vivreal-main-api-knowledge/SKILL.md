@@ -59,7 +59,7 @@ Since v7 the roster also carries `SubscriberConfirmFunction` and `SubscriberConf
 - **"Too many tries":** every WAF rate rule blocks with a 429 whose body is Main's own `{"errorCode":"tooManyAttempts"}` (`waf-template.yaml`, MA-367), the code the portal already words; the CORS headers that make it readable in a browser are Gotchas, below.
 - Also live: CORS allows `https` vivreal.io origins only (MA-CO1, Gotchas); the access log carries the request path after `resourceId` (MA-342); a Joi 400 escaping a controller is a warn line, never a Sentry capture (MA-363); a new alarm is created with its actions off until proven (MA-343, `vivreal-infra:vivreal-observability`).
 - **v2.21.0, the rest of release B (live 2026-11-19, read at `origin/stable` `6055f905`, merge `19768877`).** Node 24 and the workload permissions boundary on every role (#136). #137: the WAF 429 headers (Gotchas), at most five codes per account an hour with a 429 `tooManyCodes` past it, a code that cannot be sent letting the person in with an alert (F386), and a narrower count for the takeover alarm (F421). `VR-Main-API-sign-in-code-send-failed` was created with its actions on, inside the same deployment.
-- **Still its own release B step:** the code's TTL index (BR-35b, not run on 2026-11-19). The portal's code screen is live since portal v0.45.0; its words for `tooManyCodes` ship with portal 0.46.0.
+- **Still its own release B step:** the code's TTL index (BR-35b, not run on 2026-11-19). The portal's code screen is live since portal v0.45.0, and its words for `tooManyCodes` since v0.46.0.
 
 ## Patterns
 

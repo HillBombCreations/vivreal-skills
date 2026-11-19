@@ -87,9 +87,9 @@ writes a row of either site.
   and the help site's names `title`, `description` and `section` over the Help Articles list.
   Article text lives in each article's Sections list, which search never reads, so a search miss
   proves only that no card holds the word; read candidate pages' bodies before calling a topic
-  absent. Studio shows `queryFields` read only until portal 0.46.0 (`src/lib/sites/sectionConfigCopy.ts`
-  on `origin/stable`), whose F550 adds "What a search looks through" on a lookup page's layout
-  section, so changing what the help search reads is a Studio change from then on, never a script.
+  absent. Since portal 0.46.0 (F550) Studio sets `queryFields`: "What a search looks through" on a
+  search page's layout section, one tick per part of an item, so changing what the help search
+  reads is a Studio change, never a script.
 - **A plain curl of a help page finds almost no words.** The server HTML is a streamed skeleton;
   the text sits in entries, table rows and aside notes inside the page's React payload. Read the
   settled page in a browser, or parse the payload.
