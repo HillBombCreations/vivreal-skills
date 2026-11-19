@@ -13,7 +13,7 @@ Source of truth: `VR_CMS_API` `CLAUDE.md` (and the docs it links) at `origin/sta
 
 Last synced: 2026-10-28 against `origin/stable` at `37a7e71` (tag v2.17.2; read the tag; per-skill baseline in vivreal-skills `scripts/skill-sources.json`)
 
-The CMS backend: collections, collection objects, integrations, media uploads, inbound platform webhooks, audit logging, content versioning, content go-live scheduling. Maps to `NEXT_PUBLIC_CMS_URL`. Express + serverless-express on Lambda (Node 22 on every function since 2026-10-02, CMS CLAUDE.md:41; arm64), JavaScript, MongoDB/Mongoose, Cognito JWT via API Gateway, SAM. `CLAUDE.md` at `origin/stable` (`git show origin/stable:CLAUDE.md`) is the first read; source wins wherever the two disagree.
+The CMS backend: collections, collection objects, integrations, media uploads, inbound platform webhooks, audit logging, content versioning, content go-live scheduling. Maps to `NEXT_PUBLIC_CMS_URL`. Express + serverless-express on Lambda (Node 24 on every function since v2.25.0, 2026-11-19, CMS CLAUDE.md:41; arm64), JavaScript, MongoDB/Mongoose, Cognito JWT via API Gateway, SAM. `CLAUDE.md` at `origin/stable` (`git show origin/stable:CLAUDE.md`) is the first read; source wins wherever the two disagree.
 
 ## Architecture, several Lambdas
 
@@ -124,7 +124,8 @@ A product list carries `collection_groups.commerce { state: selling | paused | m
 - **No browser origin in production** (C-CO1): `src/shared/allowedOrigins.js` allows none; the portal reaches this API from its server with no `Origin`. Loopback origins come only from `LOCAL_CORS_ORIGINS`, which nothing deployed sets. A refused origin is answered quietly with one sampled `cors.origin_refused` line. `enableCors.js` is deleted; `createApp`'s `cors()` is the only CORS layer.
 - **A Joi 400 is a warn line, never a Sentry capture** (C-363), pinned for every controller; a `validation.rejected` here goes to CloudWatch only, so a Sentry alert on "Validation failed" can never fire for this API.
 - **zod 4.6.7 through jimp** (C-DB1): the lock pins it, with real pictures at every jimp call site in the tests.
-- **Not live yet (2026-11-18): Node 24 and the workload permissions boundary**, v2.24.1 (#274, release B BR-26b), built and held. Until it ships, every "Node 22" line in this skill is true; change them with it.
+- **v2.25.0, the rest of release B (live 2026-11-19, read at `origin/stable` `0d6ab4f7`, merge `97bad334`).** Node 24 on every function and the workload permissions boundary on every role (#274; CodeDeploy gets an explicit role, because `Globals` does not reach SAM's generated one). `integration.created` and `integration.deleted` name a product's type too (#275, F399), so a site's cache tag follows a product added or removed the way C-398 made it follow an edit. `VR-CMS-API-caller-rate-refused` has its actions on; the mode above stays the lever.
+- **Ready for pickup** (F521, F522, `70bfdec1`; CLAUDE.md, the order fulfilment rows). A Stripe order's fulfil value is exactly `true`, `false`, `ready` or `unready`. On a pickup, `ready` stamps `readyAt` once and emails the customer once per order (a claim keyed by the group and the checkout session, never sent again on an undo), and is refused with 409 `ORDER_NOT_PICKUP`, `ORDER_ALREADY_PICKED_UP` or `ORDER_REFUNDED`, or 404 `ORDER_NOT_FOUND`. A pickup waits until it is marked ready wherever orders are counted (the light read, the snapshot window, Square's twins and an unarchive), and the light read answers `toSendCount` and `toGetReadyCount`, whose sum is `waitingCount`. `true` on a pickup never sends the "on its way" email. The screens that drive it ship with portal 0.46.0 (`vivreal-knowledge:vivreal-portal-knowledge`).
 
 ## Insights: who produces what
 
@@ -194,7 +195,7 @@ packaging and limits in `vivreal-infra:vivreal-lambda`; they are not repeated he
 
 ### AWS Lambda best-practice alignment
 
-- All functions on Node.js 22.x (`test/unit/runtime-node22.test.js` binds the claim to both templates); the five API functions carry WebSocket integration (`WS_ENDPOINT` + `WS_TABLE`).
+- All functions on Node.js 24.x (`test/unit/runtime-node24.test.js` binds the claim to both templates); the five API functions carry WebSocket integration (`WS_ENDPOINT` + `WS_TABLE`).
 - Heavy Mongoose models loaded per-Lambda, verify schemas package version is consistent across all 5 (`@hillbombcreations/schemas`).
 - ColObjects Lambda: bulk import handles up to 1000 docs per call, verify chunking and timeout headroom.
 - WebSocket broadcast on create/update: must be non-blocking; if WS table is unavailable, the main op proceeds.

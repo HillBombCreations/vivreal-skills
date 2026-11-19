@@ -134,16 +134,24 @@ breach before its soak ends is created with its actions on; one that could page 
 is shaped by the design so it cannot, inside the one deployment, or carries an owner exception
 recorded in hq `decisions.md`.
 
-**Release B's alarms created this way** (actions off on 2026-11-18; their flip, BR-30, rides each
-repo's one batch once they have read `OK` for 24 hours): `VR-CMS-API-caller-rate-refused`,
-`VR-Secure-API-caller-rate-refused`,
+**Release B's alarms created this way** (actions off from 2026-11-17 and 2026-11-18, each switched
+on inside its repo's one deployment on 2026-11-19 after reading `OK` for 24 hours):
+`VR-CMS-API-caller-rate-refused`, `VR-Secure-API-caller-rate-refused`,
 `VR-Client-API-checkout-tax-dropped`, `VR-Secure-API-UsageMonths-errors`,
-`VR-Secure-API-UsageMonths-no-run-2h`, `VR-Secure-API-usage-absorbed`, EventHandler's six site
-rebuild alarms (the rebuild's R-B5, in the same step), and Main's sign-in code send-failed alarm
-(BR-35d). Read the live set with that query, not this list. **The cost of the rule:** Secure's
-AlarmVerifier counts an actions-off alarm as undeliverable, so
-`VR-Secure-API-AlarmVerifier-undeliverable-alarms` flips to ALARM every few hours and notifies the
-owners until the flips (backlog F499). Expect it, and say so when it fires.
+`VR-Secure-API-UsageMonths-no-run-2h`, `VR-Secure-API-usage-absorbed` and EventHandler's six site
+rebuild alarms (the rebuild's R-B5). Main's `VR-Main-API-sign-in-code-send-failed` was created with
+its actions on, inside Main's one deployment (BR-35d joined the batch). Read the live set with that
+query, not this list. **The cost of the rule:** while any alarm's actions are off, Secure's
+AlarmVerifier counts it as undeliverable, so `VR-Secure-API-AlarmVerifier-undeliverable-alarms`
+flips to ALARM every few hours and notifies the owners (backlog F499). Expect it while an alarm is
+held off, and say so when it fires.
+
+**Read the AlarmVerifier from its sweep line, never by a word** (release B deploy day). Each run
+writes one `alarm.verify.sweep_complete` line (VR_Secure_API `src/alarmVerifier/main.js`) carrying
+`alarms_checked`, `alarms_failing`, `by_class` and the failing alarm names. The word
+"undeliverable" is in the alarm's NAME and its metric's (`UndeliverableAlarms`), never in the
+sweep line, so a log filter on it reads a false zero (it did on 2026-11-19, while the sweep line
+itself read 0 failing). Filter on the event name and read `alarms_failing`.
 
 ## What v7 deployed (2026-10-20), and how to check it
 
@@ -264,8 +272,8 @@ own error handling, Sentry included, sees a refusal. So:
   portal's `X-App-Source`) makes the browser preflight it, and a preflight answered with any non-2xx
   status fails whatever headers it carries. Where the CORS layer answers `OPTIONS` before any route
   runs, a rule scoped to routes can skip the exact `OPTIONS` method and open no door; a whole-API
-  rule that still counts it can still block a preflight at its limit. VR_Main_API #137 (approved,
-  unmerged at this writing) skips it in two route rules and adds the headers to all of them
+  rule that still counts it can still block a preflight at its limit. VR_Main_API v2.21.0 (live
+  2026-11-19) skips it in two route rules and adds the headers to all of them
   (`vivreal-knowledge:vivreal-main-api-knowledge`, the WAF bullets).
 - **Prove it with the app's real `Origin`** (next section).
 
