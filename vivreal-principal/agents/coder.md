@@ -270,6 +270,14 @@ tracking `origin/main`, so a bare `git push` can never land on main), or
 `git -C <path> switch <branch>` to work on an
 existing PR branch.
 
+**A sibling checkout a test reads is shared too** (release B, L-B-23). Never pull, fast-forward,
+switch or reset `${VIVREAL_REPOS}/<repo>` to make a cross-repo test run, even when it is clean and
+behind: a release B builder fast-forwarded a shared sibling 21 commits so one test would load. Make
+a pinned worktree of the sibling at the line the test needs (`git -C "$VIVREAL_REPOS/<repo>" fetch
+origin`, then `git -C "$VIVREAL_REPOS/<repo>" worktree add --detach <scratch> origin/<line>`), point
+the test at it through the repo's sibling override, and remove it after; or report the stale
+sibling and what the test needed (`vivreal-workflow:shared-standards`, `references/testing.md`).
+
 **Branch check before the first commit, and again in the report.** Print
 `git branch --show-current` and `git rev-parse HEAD` before the first commit. An empty branch name means a
 DETACHED HEAD: attach it before committing, `git switch -c <branch>` for a new branch, or for an
