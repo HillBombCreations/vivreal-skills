@@ -152,6 +152,15 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
+- **hq reads in a brief name a kept hq worktree, never `$VIVREAL_REPOS/vivreal-hq`** (release B,
+  L-B-45). `$VIVREAL_REPOS/vivreal-hq` IS an owner's own checkout, so a brief that says to read
+  code with `git -C "$VIVREAL_REPOS/<repo>" ...` sends every hq read there: on 2026-11-20 three
+  agents ran a read-only fetch or command in it although the same brief said to run nothing there,
+  and the main thread ran a `worktree list` in it. Nothing was written, and it still breaks the
+  owners' rule. Every brief names the hq worktree path for hq reads (a kept one under
+  `$VIVREAL_REPOS/_wt/`, at the line the read needs), and says plainly that nothing runs in
+  `$VIVREAL_REPOS/vivreal-hq`; the `git -C "$VIVREAL_REPOS/<repo>"` form stays only for the
+  other repos.
 - **Content adds go through the product's own screens** (P-content-through-ui). A new help page, a
   blog post or a collection item is added in Studio or the portal's content editor by an agent
   acting as an owner would, signed in as `vivreal-knowledge:vivreal-accounts-and-writes` says, under
