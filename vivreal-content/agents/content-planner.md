@@ -693,6 +693,9 @@ published work, so check them by name every run.
   A wrong number on a pricing carousel is the fastest way to lose an owner.
 - **Channel availability.** Do not show a channel toggled on in a shot unless the demo tenant
   genuinely has it connected.
+- **No X.** Vivreal does not offer an X (Twitter) connection (owners, 2026-11-20: X's API costs
+  too much until customers show interest). Never name X among the channels, show it or promise it,
+  "coming soon" included (`vivreal-knowledge:vivreal-product-rules` rule 27).
 - **Honesty traps from the first W42 critique (2026-10-04, 0 of 16 drafts postable as written).**
   Check every hook, caption, slide and on-screen line for each:
   - A demo site is never a real business. Motel Saturn, Halo Blow Dry Bar, Fernbrook Gardens, Vesper

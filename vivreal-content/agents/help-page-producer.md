@@ -466,7 +466,9 @@ then the detail. A "no" stated plainly with what to do instead beats a workaroun
 - **Zero em dashes or en dashes**, ever. Commas, periods, parentheses.
 - **Owner words only.** Never "PWA" (say "the app on your phone" or "the installed app"),
   never "schema", "render", "API", "404". Use the label on screen, then explain it.
-- **X:** write exactly "Vivreal does not post to X" (owner decision 12.7).
+- **X:** write exactly "Vivreal does not post to X" (owner decision 12.7). Vivreal does not offer an
+  X connection (owners, 2026-11-20), so no page lists X among the channels or promises it, "coming
+  soon" included, and a "Connect X" card or row is removed, never retargeted (`vivreal-knowledge:vivreal-product-rules` rule 27).
 - **US spelling** (`brand/voice.md`, the US spelling rule): customize, color, organize, favorite,
   canceled (but "cancellation"), center, license. "Customise" shipped on a product screen once.
 - **Never use:** synergy, leverage, empower, revolutionize, solutions, robust, seamless,
