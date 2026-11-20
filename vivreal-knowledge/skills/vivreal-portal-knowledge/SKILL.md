@@ -1,6 +1,6 @@
 ---
 name: vivreal-portal-knowledge
-description: 'Use when working in the Vivreal Portal (Vivreal_Portal_Mobile), a Next.js 16 App Router web app despite the "Mobile" name. Covers the proxy-route layer (createProxyHandler factory vs hand-written), the three-tier API client rule (createAuthAxios / publicAxios / fetch), the four backend upstreams, auth cookies (token + active_ctx), the retired in-app agent (AI is MCP only), feature flags, PWA shell traps, offline honesty, the Socials and Channels screens, SSR-safe patterns, and e2e/unit test gates. Triggers on: portal, Vivreal_Portal_Mobile, proxy route, createAuthAxios, createProxyHandler, active_ctx, AuthContext, edge runtime, basePath /app, site analytics dashboard, social hub, UI rules, EditPlan, feature flags, Instagram inbox, reach-out console (formerly cold-call), demo-account claim flow, site template picker, Studio editor, dashboard insights, account deletion, e2e testing, coverage map. Source of truth: `Vivreal_Portal_Mobile` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
+description: 'Use when working in the Vivreal Portal (Vivreal_Portal_Mobile), a Next.js 16 App Router web app despite the "Mobile" name. Covers the proxy-route layer (factory vs hand-written routes), the three-tier API client rule (createAuthAxios / publicAxios / fetch), the four backend upstreams, auth cookies (token + active_ctx), the retired in-app agent (AI is MCP only), feature flags, PWA shell traps, offline honesty, the Socials and Channels screens, SSR-safe patterns, and e2e/unit test gates. Triggers on: portal, Vivreal_Portal_Mobile, proxy route, createAuthAxios, createProxyHandler, active_ctx, AuthContext, edge runtime, basePath /app, site analytics dashboard, social hub, AI FAB, agent drawer, UI rules, EditPlan, feature flags, Instagram inbox, reach-out console (formerly cold-call), demo-account claim flow, site template picker, Studio editor, dashboard insights, account deletion, e2e testing, coverage map. Source of truth: `Vivreal_Portal_Mobile` `CLAUDE.md` (and the docs it links) at `origin/stable`.'
 ---
 
 # Vivreal Portal (Vivreal_Portal_Mobile): knowledge digest
@@ -31,7 +31,8 @@ their framing answers of 2026-11-19 and one later correction, each with the shar
   a list is the same shape; short paired controls (Show and Sort by) share one row at 390.
 - After any save, the screen still scrolls and takes input, in the installed app at 390 first.
 - A rule marked as a gap has no shared component yet: do not hand-roll one; ask. A framing
-  question no rule settles: stop and ask the owners, never guess.
+  question no rule, record entry or approved plan settles: stop and report it to whoever
+  dispatched you, who asks the owners; never guess.
 
 ## API layer: pick the right client
 

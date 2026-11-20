@@ -23,8 +23,9 @@ path is a reason to look, never a reason to hand-build.
 hand-roll one and do not copy a hand version: ask the owners first (the list is at the end).
 
 **Framing.** When the look, the placement, the order, the shape per width or the words that frame
-a feature are not settled by a rule here, by the record, or by an owner-approved mockup the plan
-names, stop building that piece and ask the owners (PROC-5). Never pick one to keep moving.
+a feature are not settled by a rule here, by the record, by an owner-approved mockup the plan
+names, or by the owner-approved plan's own words, stop building that piece and report the question
+to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep moving.
 
 ## 1. Cards: products and orders (7)
 
@@ -220,8 +221,11 @@ names, stop building that piece and ask the owners (PROC-5). Never pick one to k
   space or a column of air. Lists, boards and dashboards stay full width; forms, settings and long
   text cap at a readable width, centred (owners, 2026-11-19). (UF-002, UF-004, UF-037, UF-046,
   UF-082) Use: `PageContainer` for the full width. Gap: no shared capped width for forms and
-  settings exists, and `PageContainer`'s own note puts a measure on the field, not the page. Ask
-  before setting one.
+  settings exists. `PageContainer`'s own note says a paragraph and a lone form field "keep their
+  own measure (about 68 characters, about 480px) INSIDE a full-width section whose named rule spans
+  the whole width", set on the paragraph or the field, because "nothing is centred in air". The
+  owners' answer replaces PageContainer's note for forms and settings; ask only how wide, and where
+  the cap lives.
 - **PAGE-6. One create action on the heading row, the rest behind "...", every button in the
   product's style.** (UF-038, UF-042, UF-076) Use: `PageBoard`'s `primary` and `more`
   (`src/components/Universal/PageMoreMenu/index.tsx`); `Button` (`src/components/UI/Button/index.tsx`).
@@ -234,8 +238,9 @@ names, stop building that piece and ask the owners (PROC-5). Never pick one to k
   one row at phone width, half the width each, whenever both fit at 390 with their labels and their
   longest value; they stack only when they do not fit. (owner feedback 2026-11-19, F566; added after
   the record's 80) Use: two `UI/select` fields side by side in a two-column grid, each keeping the
-  field box (SEL-2); no wrapper component. Known case: the Sales products list
-  (`src/components/Integrations/Pages/Stripe/Sections/products.tsx`) stacks them today.
+  field box (SEL-2); no wrapper component. Known cases, both named by F566: the Sales products list
+  (`src/components/Integrations/Pages/Stripe/Sections/products.tsx`), which stacks them today, and
+  the same controls on Orders (`src/components/Integrations/Pages/Stripe/Sections/orders.tsx`).
 
 ## 9. Performance and freezes (4)
 
@@ -331,7 +336,7 @@ names, stop building that piece and ask the owners (PROC-5). Never pick one to k
 - **PROC-4. A look change gets an owner-approved mockup first.** (UF-098, UF-105, UF-108) Use: no
   component.
 - **PROC-5. When the framing is not settled, ask the owners before building.** Stop that piece and
-  report the question; never pick. (UF-112) Use: no component.
+  report the question to whoever dispatched you, who asks the owners; never pick. (UF-112) Use: no component.
 
 ## Gaps: no shared component yet; do not hand-roll; ask
 

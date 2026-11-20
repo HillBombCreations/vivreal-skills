@@ -171,7 +171,7 @@ with exactly these overrides, and every other SOLO step stands:
 - **Do every item in one run.** Never stop early to save context: three coders in a row stopped
   "near the context limit" after one or two items, each costing a fresh dispatch. Keep reads
   narrow and update the progress file after each push, so a cut-off is resumed, not restarted.
-  The one stop that holds inside a batch is a UI framing question (UI rules, above): that item's
+  The one stop that holds inside a batch is a UI framing question (UI rules, below): that item's
   unsettled piece waits for the owners, and every other item is still built in this run.
 
 ## Portal-specific lessons
@@ -322,8 +322,9 @@ answers of 2026-11-19, and the corrections since).
   no shared component yet: do not hand-roll one and do not copy a hand version; ask (below).
 - **A framing question stops the piece (hard rule).** When the look, the placement, the order, the
   shape per width, or the words that frame a feature are not settled by a rule in
-  `references/ui-rules.md`, by the owners' record, or by an owner-approved mockup the plan names,
-  STOP building that piece and report the question for the owners: what is unsettled, the options
+  `references/ui-rules.md`, by the owners' record, by an owner-approved mockup the plan names, or
+  by the owner-approved plan's own words, STOP building that piece and report the question to your
+  dispatcher, who asks the owners (you cannot reach them yourself): what is unsettled, the options
   you see, what the rules and the record say, and the one you would recommend. Never guess and
   never pick one to keep moving. Finish any other work the question does not touch (a batch run
   finishes its other items), then report.
@@ -518,7 +519,7 @@ have saved roughly a quarter of that usage.
   periods or parentheses instead.
 - Read the repo's own `CLAUDE.md` first. The best implementation fits the codebase you have.
 - A UI framing question that `references/ui-rules.md` and the owners' record do not settle stops
-  that piece: STOP and report the question for the owners. Never guess.
+  that piece: STOP and report the question to your dispatcher, who asks the owners. Never guess.
 - UI is built from the shared component a rule names; a gap is asked about, never hand-rolled.
 - No personal files as test data or media (owner rule, 2026-11-13). Never read the owner's
   personal files or folders for a fixture, an upload or a recording. Use the generated media
@@ -538,7 +539,8 @@ have saved roughly a quarter of that usage.
 - DON'T touch any repository other than Vivreal_Portal_Mobile, that is `coder`'s scope.
 - DON'T start UI work without reading `references/ui-rules.md`, and DON'T report it done without
   the UI pre-done checklist.
-- DON'T pick a look, a placement or a shape the rules do not settle; stop and ask the owners.
+- DON'T pick a look, a placement or a shape the rules, the record or the approved plan do not
+  settle; stop and report the question to your dispatcher, who asks the owners.
 - DON'T hand-build a control, sheet, header, switcher or card shell a shared component already
   draws, or one a gap lists.
 - DON'T run the full suite, the coverage map, or the Playwright smoke in PARALLEL mode.
@@ -582,4 +584,4 @@ have saved roughly a quarter of that usage.
   any portal-specific lesson above that changed how you ran the gates.
 - UI work: the UI pre-done checklist rows with their evidence, and a "Questions for the owners"
   list for every framing stop (what is unsettled, the options, what the rules say, your
-  recommendation). A piece that stopped on a question is reported as not built, never as done.
+  recommendation), for your dispatcher to put to the owners. A piece that stopped on a question is reported as not built, never as done.
