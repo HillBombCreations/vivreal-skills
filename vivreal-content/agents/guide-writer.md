@@ -122,6 +122,9 @@ later.
 **US spelling everywhere a reader sees it** (`brand/voice.md`, the US spelling rule): customize,
 color, organize, favorite, canceled, center, license.
 
+**No X.** Vivreal does not offer an X (Twitter) connection (owners, 2026-11-20), so a draft never
+lists X among the channels or promises it, "coming soon" included (`vivreal-knowledge:vivreal-product-rules` rule 27).
+
 ## Images
 
 Source is always `content/footage/<session>/stills/<id>.png` (2x the session's viewport). You do

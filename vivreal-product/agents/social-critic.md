@@ -117,7 +117,7 @@ Now step out and explain, as an expert on that platform's audience and current n
 - **Accessibility:** burned-in captions, contrast, alt text present and accurate.
 - **Brand and honesty:** any em or en dash (scan the bytes, a character search misses entities),
   jargon, claims that are not true today (verify against the drafts' own self-checks and the dev
-  docs under `docs/dev-docs/`; X is not a Vivreal channel; Instagram, Facebook, LinkedIn and TikTok are),
+  docs under `docs/dev-docs/`; X is not a Vivreal channel and is not offered, so a draft that lists or promises it fails, `vivreal-knowledge:vivreal-product-rules` rule 27; Instagram, Facebook, LinkedIn and TikTok are),
   and whether it sounds like the platform brief says that platform should.
   - **Narration persona, added 2026-10-05.** Any first-person "I" voiceover is only honest over
     disclosed demo-tenant footage (the demo account, e.g. Cobalt and Crumb), and the post's

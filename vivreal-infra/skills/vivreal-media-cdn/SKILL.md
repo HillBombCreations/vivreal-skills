@@ -1,6 +1,6 @@
 ---
 name: vivreal-media-cdn
-description: 'Use when working with Vivreal media / images / file uploads at the infra level, S3 bucket naming, presigned upload URLs, the CloudFront CDN (media.vivreal.io) and signed-URL generation, the media-router Lambda, the SignedUrlTtlSeconds cache-invalidation lever, or the array-signing latent-bug class where galleries silently come back unsigned. Use when an image 403s, a signed URL expired, media isn''t loading on a customer site, or you need to know which bucket a group''s media lives in. Triggers on: media, image not loading, S3 bucket, presigned URL, presignUpload, CloudFront, signed URL, media.vivreal.io, signCloudFrontUrl, buildMediaUrl, SignedUrlTtlSeconds, CDN, bucketname, vivreal- bucket, gallery not signed, MediaRouter, FFmpeg.'
+description: 'Use when working with Vivreal media / images / file uploads at the infra level, S3 bucket naming, presigned upload URLs, the CloudFront CDN (media.vivreal.io) and signed-URL generation, the media-router Lambda, the SignedUrlTtlSeconds cache-invalidation lever, or the array-signing latent-bug class where galleries silently come back unsigned. Use when an image 403s, a signed URL expired, media isn''t loading on a customer site, or you need to know which bucket a group''s media lives in. Triggers on: media, image not loading, S3 bucket, presigned URL, presignUpload, CloudFront, signed URL, media.vivreal.io, signCloudFrontUrl, buildMediaUrl, SignedUrlTtlSeconds, CDN, bucketname, vivreal- bucket, gallery not signed, MediaRouter, FFmpeg, CloudFront Function, TestFunction, query order.'
 ---
 
 # Vivreal Media / CDN / S3
@@ -81,6 +81,24 @@ Only through `VR_Secure_API/scripts/purge-closed-group.js` (dry run by default),
   distribution's cache behaviours name, so prove a move from the association ARN's version
   (`vivreal-infra:vivreal-deploy-proof`, "Prove the serving version"), and read its logs in the
   regions that served the test requests (`/aws/lambda/us-east-1.<function name>`).
+
+## Testing a CloudFront Function: TestFunction reorders query names (2026-11-20)
+
+- **CloudFront's `TestFunction` answers a request's query names in an order that varies from run
+  to run** (sent `q,url,w`, it came back `url,q,w` in one call and `w,url,q` in the next), while the
+  function itself builds a query or a `Location` in the order it is handed. A corpus or test that
+  compares a function's query output in order then fails at random with the function correct: the
+  help move's step 9 STOPPED on 1 of 21 corpus rows (`pass-asset: query changed`, FIN-A11 run 2).
+- **Compare query names order-free, and keep a repeated name's values in arrival order.** Distinct
+  names in any order, with the same names and the same raw values (never decoded, so `a%20b` and
+  `a%2520b` stay different); a repeated name's values compare in received order, because the reader
+  takes the first. A stable sort of the pairs by name only does it; sorting the values too was a
+  review BLOCK on the fix. Everything else (uri, method, status, Location origin and path, headers)
+  stays exact. Pair it with REFUSE tests that a swapped repeated value, a changed value and an
+  added or dropped name still fail.
+- **Never retry until green.** A flaky comparison is a STOP fixed in the comparison: the publish
+  step re-runs the same corpus, so a retry that passes proves nothing about the next run. The fix
+  that shipped: vivreal-hq `packages/fleet-ops/front-door-help-redirect/src/corpus.js` (hq #148).
 
 ## Debugging media issues
 

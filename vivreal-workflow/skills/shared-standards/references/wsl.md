@@ -45,6 +45,23 @@ trap below cost a release step, a false result or a write in an owner's checkout
   its own first line changes folder too. Without `-e`, a script file is the only safe home for a `$`.
 - **`nohup <command> &` dies when `wsl.exe` returns.** Start a long-running process with
   `setsid -f <command> > <log> 2>&1`, which outlives the call.
+- **`wsl.exe` inside a shell loop swallows the loop's input** (release B, L-B-42). In
+  `while read x; do wsl.exe ...; done < list`, the first `wsl.exe` reads the rest of the list as its
+  own input, so the loop runs once and exits 0. Give every `wsl.exe` in a loop `< /dev/null`.
+
+## Node in WSL and paths on the Windows side (release B, L-B-42)
+
+- **Node 22 in WSL can drop a slow IPv4 connect and fall back to IPv6, which WSL's network cannot
+  reach.** Its address-family autoselection gives each connect attempt 250 ms; on a kit stage's
+  media checks about 1 in 100 sources failed with `ETIMEDOUT` that way. Run such a step with
+  `NODE_OPTIONS=--no-network-family-autoselection` (put it in the step's env file): it changes only
+  how a socket connects, never what is sent, and with it 666 of 666 sources answered on two passes.
+- **With path conversion off (`MSYS_NO_PATHCONV=1`), a Windows program gets your path exactly as
+  written.** Git Bash's `/<drive>/...` form then reaches Windows git as a path on the current drive,
+  so `git worktree add /<drive>/<clones>/_wt/<name>` lands in a doubled folder,
+  `<drive>:/<drive>/<clones>/_wt/<name>`. While conversion is off, give Windows git the Windows form
+  (the drive letter, a colon, then forward slashes), and read where it landed with
+  `git worktree list` before you use it.
 
 ## Installs, tests and packs run on WSL's own disk, never on Windows instead
 

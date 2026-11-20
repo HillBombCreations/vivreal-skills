@@ -9,7 +9,8 @@ coverage map); gates that cannot fail; the test inventory; the red proof (forms 
 `Red:` line); real code paths, tests defending a defect, faked layers; fixtures recorded from real
 answers; mocks in the deployed shape; copy checks on the screen that shows the copy; inert fixes;
 honest assertions; a green suite is not a build; vacuous controls; child output read by content;
-lint, the hook gates, the portal release-head check and the one full run.
+lint, the hook gates, the portal release-head check and the one full run; targeted runs under a
+timeout.
 
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
 - **Logged-in specs authenticate with REAL signed ctx cookies**, `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses, `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
@@ -134,3 +135,17 @@ lint, the hook gates, the portal release-head check and the one full run.
   that and is most of why pushes were taking far longer than they needed to. A reviewer does the
   same: it does not rerun the full suite, coverage, lint, or build on a head the hook already
   passed, it reads the diff and runs only the specific test file a named doubt requires.
+- **Run the specs that touch your files, each under a timeout; a full suite only when the brief
+  asks or P-one-suite needs it, and never two at once** (release B, L-B-43; owner rules
+  P-touching-specs, P-heavy-runs and P-one-suite,
+  vivreal-hq `docs/standards/process.md`). A coder ran a repository's whole suite twice in WSL, at
+  the branch and at the base, for a change to record files only; both hung over an hour on tests
+  that need a live browser, and the agent sat idle "waiting on background work", which the agent
+  list shows as completed. Pick the test files that import or read the files you changed, not only
+  the feature's; run each in the foreground under `timeout <seconds>`, below the tool call's own
+  limit, so a hang ends the run and not the agent; report a run that times out with the test it
+  stuck on. Otherwise a full suite (a repo's whole-suite script, or the same at the base commit)
+  runs only when the brief asks, one at a time, with one exception: in a repo whose pre-push hook
+  runs no tests, P-one-suite's single full run at the PR head (`npm test`, its summary in the PR
+  body) still happens, once, under a timeout, never beside another heavy run. Everything else
+  stays targeted; a full suite and a red proof are both heavy runs.

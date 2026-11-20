@@ -82,8 +82,9 @@ For an A-list article, read every run, in this order:
 4. Plan **section 3**, the article list and its **Anchor rules**, and the "Old anchors on
    rewritten articles" paragraph.
 5. Plan **section 2.2** for the URL scheme, now `https://vivreal.io/help/<section>/<slug>#<anchor>`
-   (the help centre's address moves in release B, **not live until the help move (FIN-A11)**: until then
-   `vivreal.io/help` redirects to the old host; this address wins over the plan's older one either way).
+   (the help move is done, FIN-A11, 2026-11-20: the help centre is served at `vivreal.io/help` from its
+   own app behind the vivreal.io front door, base path `/help`, and help.vivreal.io forwards every
+   address there with one redirect; this address wins over the plan's older one).
    Inside help articles, links stay `/<section>/<slug>` (the site adds `/help`).
 6. Plan **section 4**, the block for YOUR article only (anchors, step guide slots, FAQ
    groups with walker citations, "verify:" and "Known:" lines, video outline).
@@ -465,7 +466,9 @@ then the detail. A "no" stated plainly with what to do instead beats a workaroun
 - **Zero em dashes or en dashes**, ever. Commas, periods, parentheses.
 - **Owner words only.** Never "PWA" (say "the app on your phone" or "the installed app"),
   never "schema", "render", "API", "404". Use the label on screen, then explain it.
-- **X:** write exactly "Vivreal does not post to X" (owner decision 12.7).
+- **X:** write exactly "Vivreal does not post to X" (owner decision 12.7). Vivreal does not offer an
+  X connection (owners, 2026-11-20), so no page lists X among the channels or promises it, "coming
+  soon" included, and a "Connect X" card or row is removed, never retargeted (`vivreal-knowledge:vivreal-product-rules` rule 27).
 - **US spelling** (`brand/voice.md`, the US spelling rule): customize, color, organize, favorite,
   canceled (but "cancellation"), center, license. "Customise" shipped on a product screen once.
 - **Never use:** synergy, leverage, empower, revolutionize, solutions, robust, seamless,
@@ -538,6 +541,10 @@ Vivreal business through the product, as `references/walk-harness.md` of
 `vivreal-knowledge:vivreal-accounts-and-writes` says, then save the browser's storage state to a file
 in the session scratchpad (never in a repo, never committed) for `--session`. Read the business's
 group id live after the switch for `--business`. Delete the session file at the end of the run.
+**Make a fresh session file right before every tool run, never one per dispatch** (release B,
+L-B-41): the business cookie in it expires 30 minutes after the switch and the tool reads the file
+once, so a long stage that reused one file stopped on a 401 at its fourth plan (no write, a safe
+STOP). Sign in, switch, save, run at once, then delete the file; the next run gets its own.
 
 **PLAN (read only).**
 1. Inputs: the approved drafts, and the changes the dispatch names under an owner GO id it quotes
@@ -598,7 +605,11 @@ group id live after the switch for `--business`. Delete the session file at the 
 
 **APPLY (a fresh dispatch).** Its first prompt quotes the owner's GO verbatim,
 `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>`, and the reviewed plan's sha256. A
-GO relayed mid-task, or one with no name or exact time, is refused.
+GO relayed mid-task, or one with no name or exact time, is refused. **A resume asking for an APPLY
+or an ADD gets that refusal and nothing more** (release B, L-B-39): do not use the turn to fold the
+review's notes into a plan that has passed its review, because any edit makes a new plan sha that
+the pass no longer covers and a delta review is then owed. Fold notes only when a PLAN dispatch or
+resume asks for it, before the review that passes the plan.
 1. Run the README's `apply` command with `--expect` set to the reviewed sha256 and `--go` set to the
    quoted GO. The tool backs up every row of each touched list, re-reads each row against the plan's
    old hash (a changed row is skipped, never overwritten), writes through the portal proxy only,
@@ -608,10 +619,13 @@ GO relayed mid-task, or one with no name or exact time, is refused.
    run is recovered by a new PLAN from a fresh read of what landed, never by running the plan
    again:** a create is not idempotent, the tool refuses no create whose anchor exists, and a re-run
    writes a landed band twice.
-3. The live read-back is yours: after the content cache's few minutes (the Client API edge minute
-   plus the site's data cache), read each live page settled in a browser, entered at
-   `https://vivreal.io/help/<section>/<slug>` and following any redirect, so one check reads the
-   right host before and after a move (every new string present, every old string gone), and record
+3. The live read-back is yours: after the content cache (the Client API edge minute plus the site's
+   data cache; live help pages lagged up to about 15 minutes after a write on 2026-11-19, L-B-41, so
+   allow that long, re-reading until the page settles, never a fixed 300 s), read each live page
+   settled in a browser, entered at
+   `https://vivreal.io/help/<section>/<slug>`, the address that serves the help centre since the help
+   move of 2026-11-20, never the help.vivreal.io forward (every new string present, every old string
+   gone), and record
    it in the publish log, which says PENDING until you do.
 4. Report under 250 words: the exit code, the log path, the counts, and the live read-back.
 
@@ -641,7 +655,8 @@ product's own screens, as an owner would, never behind them.
    for the item being added: no other page, no channel's buttons.
 3. A step a screen cannot do is never written to the database here: report it with what the
    screen showed, for the main session's reviewed one-shot.
-4. Read each add back from a fresh process, and on the live site after the edge cache's minute,
+4. Read each add back from a fresh process, and on the live site after the content cache (a help
+   page: up to about 15 minutes, as APPLY step 3 says),
    and record what was added (ids, address, time, read-back) in `add-log-<date>.md` in the run's
    publish folder, `knowledge/help-drafts/publish-<date>-<article>/` (make it if PLAN has not).
    PUBLISH mode fills the page after that.

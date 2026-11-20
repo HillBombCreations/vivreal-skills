@@ -111,22 +111,33 @@ A zero is only evidence when the same query can return a hit for something you k
   same truncated page, not the same wrong account. Two checks that fail the same way are one check.
 - Name the group, account, window and command in the report, so the next reader can re-run it.
 
-### Two Logs Insights zeros that are not absences (measured 2026-11-16)
+### Logs Insights zeros that are not absences (measured 2026-11-16 and 2026-11-19)
 
 - **A skipped query is not a scanned negative.** Read the `statistics` block of `get-query-results`,
   not only `results`. No rows with `recordsScanned: 0`, or with `estimatedRecordsSkipped` above 0,
   means Insights skipped the events instead of reading them, so the zero says nothing about them.
   In one session `filter @message like /literal/` and `filter strcontains(@message, "literal")` were
-  both skipped this way over the same group and window, and only the case-insensitive regex
-  `filter @message =~ /(?i)literal/` scanned. Use the form that scans for a negative you will cite,
-  write the positive control in that SAME form, and record both queries' statistics: a control in a
-  different form can scan while the measurement skips. AWS documents this skip as a field-index skip,
-  and `like` as always scanning; on 2026-11-16 it did not, so treat it as measured, not documented.
+  both skipped this way over the same group and window, while the case-insensitive regex
+  `filter @message =~ /(?i)literal/` scanned. **No `filter` form is safe** (release B, L-B-38): on
+  2026-11-19 the `=~` form skipped too, 4,637 of about 10,500 records on one access log and
+  178,273 on another group with two `=~` joined by `and`. AWS documents this skip as a field-index
+  skip, and `like` as always scanning; it did not, so treat it as measured, not documented.
+- **Every Logs Insights read records its `recordsScanned` and `estimatedRecordsSkipped`, and a read
+  that skipped any records is re-run as a full scan before its verdict counts.** A full scan has no
+  `filter` at all: `parse` the fields from `@message`, then count the condition inside `stats`, for
+  example `parse @message /"event":"(?<e>[^"]+)"/ | stats count(*) as all, sum(e = "<event>") as hits`.
+  It reads every record (0 skipped both times on 2026-11-19, with the same answers), and `all` is its
+  own control that the window held records. The bare boolean inside `sum` counts, measured: on
+  2026-11-19 a reply-size full scan's `sum(rid = "<resource id>")` returned 491, and the same form
+  over its control window returned 845, with `sum(rid = "<resource id>" and len > 100000)` 50
+  (vivreal-hq `docs/projects/next-release-B/sweep-live-checks-2026-11-19.md`, L-F325). Keep that
+  form; a non-zero control in the same form is what shows it still counts. Write the positive control in the same form, and record
+  both queries' statistics: a control in a different form can scan while the measurement skips.
 - **`like` on a computed field matches nothing.** A filter on a field the same query built
   (`fields concat(a, b) as x` or `coalesce(...)` over fields a `parse` extracted; a plain `parse ...
-  as x` field alone was not measured) returned zero on lines that held the text; only a planted line that had to match exposed it. Filter `@message` itself
-  (`filter @message like /.../`, or the `=~` form above), and plant a line in each log format the
-  group carries, one that must match and one that must not.
+  as x` field alone was not measured) returned zero on lines that held the text; only a planted line that had to match exposed it. Match on `@message` itself
+  (the full-scan form above, or a `filter @message` form whose statistics show 0 skipped), and plant
+  a line in each log format the group carries, one that must match and one that must not.
 
 ### An API Gateway access log that holds no path (measured 2026-11-18)
 

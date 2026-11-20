@@ -72,7 +72,9 @@ Three rules that follow from that:
      on 2026-09-28. Never reintroduce it.
    - **Instagram is APPROVED and connectable** as of 2026-09-28. Never caption it as
      coming soon. **X has been removed from the product entirely**: it is not a channel,
-     it must not appear in a channel list, and it must not be filmed.
+     it must not appear in a channel list, and it must not be filmed. Vivreal does not offer an
+     X connection (owners, 2026-11-20, the cost of X's API), so never promise it, "coming soon"
+     included (`vivreal-knowledge:vivreal-product-rules` rule 27).
    - **TikTok is audited and approved** (owner, 2026-10-04): public posting is available,
      not a private/test mode. Privacy options on the composer are Everyone, Friends, Only
      me, so "Everyone" is real public reach, caption it that way.

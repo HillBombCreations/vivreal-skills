@@ -1,6 +1,6 @@
 ---
 name: vivreal-product-rules
-description: 'Use before filing, describing or changing Vivreal behaviour that looks wrong but was decided on purpose, when walking the product, writing help pages or copy, reviewing a diff or fixing a reported defect, covering the owner-decided rules for item detail links, list archived filters, Clear the examples, business rename, the public sign-up answer, outreach exclusion and opt-out wording, staff surfaces and staff alarm pushes.'
+description: 'Use before filing, describing or changing Vivreal behaviour that looks wrong but was decided on purpose, when walking the product, writing help pages or copy, reviewing a diff or fixing a reported defect, covering the owner-decided rules for item detail links, list archived filters, Clear the examples, business rename, the public sign-up answer, outreach exclusion and opt-out wording, staff surfaces and staff alarm pushes, and that Vivreal offers no X (Twitter) connection.'
 ---
 
 # Vivreal product rules (decided, not defects)
@@ -129,8 +129,14 @@ Never put a customer name, id or address in this file.
     and shoppers never need to use AI or know it is there.
 26. **Remove a field an owner does not need** (owner rule): drop it from the object (system values
     become hidden metadata), never show it with a "don't fill this" flag.
-27. **X (Twitter) is not offered in the portal** (owners, 2026-11-08): spend no release effort
-    hardening X publish paths.
+27. **Vivreal does not offer an X (Twitter) connection** (owners, 2026-11-20: "we don't offer x
+    because of the costs with their api until we start to see interest"; since 2026-11-08 no release
+    effort hardens X publish paths). X is not a channel: no copy, help page, tutorial, video, content
+    plan or calendar names it among the channels, shows it, or promises it ("coming soon" included).
+    Help pages say exactly "Vivreal does not post to X" where the question comes up, and a stored
+    "Connect X" card or row is removed, never retargeted. It changes only on an owner's word once
+    customers ask for it. Enforced by the portal, which has no X channel (removed from posting, the
+    terms and the privacy page in portal v0.33.0, `vivreal-brand-voice`).
 
 ## Shops (release B, live 2026-11-17)
 

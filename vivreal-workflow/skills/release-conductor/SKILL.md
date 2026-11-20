@@ -152,6 +152,15 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
+- **hq reads in a brief name a kept hq worktree, never `$VIVREAL_REPOS/vivreal-hq`** (release B,
+  L-B-45). `$VIVREAL_REPOS/vivreal-hq` IS an owner's own checkout, so a brief that says to read
+  code with `git -C "$VIVREAL_REPOS/<repo>" ...` sends every hq read there: on 2026-11-20 three
+  agents ran a read-only fetch or command in it although the same brief said to run nothing there,
+  and the main thread ran a `worktree list` in it. Nothing was written, and it still breaks the
+  owners' rule. Every brief names the hq worktree path for hq reads (a kept one under
+  `$VIVREAL_REPOS/_wt/`, at the line the read needs), and says plainly that nothing runs in
+  `$VIVREAL_REPOS/vivreal-hq`; the `git -C "$VIVREAL_REPOS/<repo>"` form stays only for the
+  other repos.
 - **Content adds go through the product's own screens** (P-content-through-ui). A new help page, a
   blog post or a collection item is added in Studio or the portal's content editor by an agent
   acting as an owner would, signed in as `vivreal-knowledge:vivreal-accounts-and-writes` says, under
@@ -159,6 +168,12 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   `vivreal-content:help-page-producer`. Brief a one-off database script
   (`vivreal-workflow:ops-one-shot`) only for a step those screens cannot do, and name that step and
   why in the brief.
+- **A help producer's PLAN revision may be a resume; every PUBLISH APPLY and every ADD is a fresh
+  dispatch** (release B, L-B-39) whose first prompt quotes the owner's GO verbatim (P-go-form) and
+  pins the reviewed plan's sha256. A GO relayed into a resumed producer is refused by design, as a
+  release engineer's is (section 7). Ask a producer to fold review notes only BEFORE the review
+  that passes its plan: a fold after it makes a new plan sha, which that pass no longer covers, so
+  a delta review is owed before any APPLY.
 - **Every WSL step in a brief starts by changing into the worktree** inside one quoted login-shell
   command, `wsl.exe -e bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`. A bare `wsl ...`
   runs in the folder the Bash call reset to, which is often an owner's own checkout, a plain
@@ -262,6 +277,12 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   a resumed agent takes a slot (section 2). An agent cut off
   by a usage limit while the live `model` changed is re-dispatched fresh on the current model from
   its progress file (P-model).
+- **"Completed" with no final report is a stall, not done** (release B, L-B-43). A coder whose two
+  full-suite runs hung sat "waiting on background work" while the agent list showed it completed.
+  Treat any agent the list shows completed without its final report as stalled: check its runs
+  (the processes it started, its newest writes and logs), stop a hung run, and resume it with
+  SendMessage to finish and report (it takes a slot, section 2). Its piece is not done until the
+  report is in.
 - **A resumed or running release engineer only narrows.** After a STOP, resume it with SendMessage
   only for read-only follow-ups (a proof, a record, a read the STOP asks for). Any new production
   write after a STOP (a merge, a fix-forward PR, a deploy, a promote) is a FRESH dispatch whose first

@@ -23,7 +23,7 @@ Curated from June-2026 research (full source with URLs: `Vivreal_Portal_Mobile/d
 
 | Product | Borrow specifically |
 |---|---|
-| **Linear** | Quiet interface; accent rationed to a **single primary action** per view. Cards get presence from **1px inset borders + soft shadows**, not fills (Vivreal cards use the same DNA: `border border-black/10` + a soft shadow). Dense, instrument-panel typography. |
+| **Linear** | Quiet interface; accent rationed to a **single primary action** per view. Cards get presence from **1px inset borders + soft shadows**, not fills (generic craft: a Vivreal card is `Card variant="tile"`, a border and no shadow, never hand-written classes; `references/portal-components.md`, "Shared components"). Dense, instrument-panel typography. |
 | **Stripe** | One anchored brand typeface everywhere ("reads as considered"); measured accent on neutral grounds; **color = meaning, not decoration**. |
 | **Vercel** | High-contrast monochrome foundation; blueprint-grid structural rigor; restrained mono/sans pairing. |
 | **Height / Notion** | Calm density, generous line-height in content areas, restrained chrome so content is the hero. |

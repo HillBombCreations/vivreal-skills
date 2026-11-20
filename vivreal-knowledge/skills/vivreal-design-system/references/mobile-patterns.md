@@ -67,10 +67,10 @@ Spec these concretely against the existing stack (don't invent parallels):
 
 | App-like pattern | Build it with |
 |---|---|
-| **Bottom tab bar** | The existing mobile bottom nav; `--app-nav-height: 5.5rem` (0 on `md+`); 3-5 tabs; pad for `env(safe-area-inset-bottom)` |
-| **Bottom sheet / action sheet** | Compose a Radix `Dialog` in `src/components/UI/` (focus trap + ESC + inert background are free, don't hand-roll); Framer Motion v12 spring entrance from the bottom edge; visible Close (X); bottom safe-area padding |
-| **Card list (tables → cards)** | Reuse the portal card DNA, `rounded-2xl`, `border border-black/10`, soft shadow `shadow-[0_4px_10px_rgba(0,0,0,0.04)]`; render row-as-card below `md` |
-| **App-style header** | The admin-page header shape (icon chip `grid h-9 w-9 place-items-center rounded-xl bg-primary/10`); large title + contextual actions; collapse to compact on scroll |
+| **Bottom tab bar** | The existing mobile bottom nav; a page reserves `--app-nav-reserve` (the bar's `--app-nav-height` row plus `--app-bottom-inset`, read from `globals.css`; 0 nav height on `md+`); 3-5 tabs; never add the inset a second time |
+| **Bottom sheet / action sheet** | The shared sheets, never a new one: `BottomSheet` with `BottomSheetContent pinned` and one `BottomSheetBody` below `md` (`src/components/UI/bottom-sheet.tsx`; the title and the action stay put and only the body scrolls), and `Sheet side="right"` from `md` (`src/components/UI/sheet.tsx`), picked with `useIsMobile` (`src/hooks/use-mobile.tsx`). Both sit on the Radix dialog and portal to the body, so the focus trap, ESC and the inert background come with them; the order view (`src/components/Integrations/Pages/Stripe/Dialogs/ViewOrderDialog/index.tsx`) is the reference. The close and help mark sit on the title row (`src/components/UI/sheet-title-row.ts`) |
+| **Card list (tables → cards)** | `Card variant="tile"` (`src/components/UI/card.tsx`: `border bg-card` with the tile's `rounded-2xl shadow-none`), `Chip` and `StateChip` for states; never hand-written card classes (the product card's hand-written tile is the known gap, not a pattern); render row-as-card below `md` |
+| **App-style header** | `PageBoard` (`src/components/Universal/PageBoard/index.tsx`): one heading row with back, the sentence or the page's name, help, one create action and the rest behind "...", over `PageContainer`; it does not collapse on scroll. The old admin-page header is deleted; never copy it |
 | **Segmented control** | A connected-track toggle in `src/components/UI/` (2-5 options); active segment uses `--primary`; Lucide 16/20 icons |
 | **Rounded surfaces / glass** | `--radius` (0.75rem) / `rounded-2xl`; `.bg-glass` for layered sheets |
 | **Motion** | `--motion-base 250ms` sheet entrance, spring feel; honor `prefers-reduced-motion` (keep opacity, drop transform) |

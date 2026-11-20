@@ -60,6 +60,18 @@ rows and the Migrator's capture folders, and have every step's script read it, s
 flag. On Windows, run the Bash tool with `MSYS_NO_PATHCONV=1` for the whole block (an S3 key or a
 `git show <ref>:<path>` starting with `/` is otherwise rewritten).
 
+**On a Windows machine, three traps the release B stage hit** (L-B-42; the detail and the rest of
+the WSL rules are `vivreal-workflow:shared-standards`, `references/wsl.md`):
+- With `MSYS_NO_PATHCONV=1` on, `git worktree add` needs the Windows form of the path (the drive
+  letter, a colon, forward slashes); the `/<drive>/...` form lands in a doubled folder. Read
+  `git worktree list` before working in it.
+- Every Node step that fetches (the media source checks, the publish commands) runs in WSL with
+  `NODE_OPTIONS=--no-network-family-autoselection` in the run's env file, or about 1 in 100
+  fetches fails with `ETIMEDOUT` on an IPv6 fallback WSL cannot reach, and step 2's "every source
+  answers 200" fails for no reason in the kit.
+- A `wsl.exe` inside a shell loop (one call per kit) gets `< /dev/null`, or it swallows the loop's
+  input and the loop stops after the first kit with exit 0.
+
 ## Steps (each PASS before the next; any FAIL is a STOP)
 
 1. **Baseline, read only.**
