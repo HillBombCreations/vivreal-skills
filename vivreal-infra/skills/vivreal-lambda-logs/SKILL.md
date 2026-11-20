@@ -127,7 +127,11 @@ A zero is only evidence when the same query can return a hit for something you k
   `filter` at all: `parse` the fields from `@message`, then count the condition inside `stats`, for
   example `parse @message /"event":"(?<e>[^"]+)"/ | stats count(*) as all, sum(e = "<event>") as hits`.
   It reads every record (0 skipped both times on 2026-11-19, with the same answers), and `all` is its
-  own control that the window held records. Write the positive control in the same form, and record
+  own control that the window held records. The bare boolean inside `sum` counts, measured: on
+  2026-11-19 a reply-size full scan's `sum(rid = "<resource id>")` returned 491, and the same form
+  over its control window returned 845, with `sum(rid = "<resource id>" and len > 100000)` 50
+  (vivreal-hq `docs/projects/next-release-B/sweep-live-checks-2026-11-19.md`, L-F325). Keep that
+  form; a non-zero control in the same form is what shows it still counts. Write the positive control in the same form, and record
   both queries' statistics: a control in a different form can scan while the measurement skips.
 - **`like` on a computed field matches nothing.** A filter on a field the same query built
   (`fields concat(a, b) as x` or `coalesce(...)` over fields a `parse` extracted; a plain `parse ...
