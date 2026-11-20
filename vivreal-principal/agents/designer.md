@@ -96,6 +96,59 @@ tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query
 - **React 19 Server Components by default.** `'use client'` only where interactivity is needed. Design docs should distinguish which components are client vs. server.
 - **Framer Motion v12** is already installed (12.38.0). Use it, don't re-introduce CSS-only animation helpers.
 
+## The owners' UI rules (read before any portal or customer-site screen design)
+
+The owners' UI rules are `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md`
+(81 rules in 14 themes, each with the shared component that does it right; if the path is not
+expanded for you, glob for `**/vivreal-portal-knowledge/references/ui-rules.md`). The same file binds
+`portal-coder` when it builds, `reviewer` when it reviews and `qa-walker` when it walks, so a design
+that skips it is caught later, at a higher cost (release B, L-B-46). Before designing any portal or
+customer-site screen, read it in full, then read each portal file a rule you touch names, at the
+deployed line. Cite the rule ids each screen follows in the design's "Owners' UI rules, screen by
+screen" table (Output Format). On a customer-site screen, the copy, phone, title and process rules
+apply; mark the portal-only themes `n/a (customer site)`. A look, a placement, an order, a shape
+per width or the words that frame a feature that no rule, no owner-approved mockup and no
+owner-approved plan settles is an Open Question for the owners (PROC-5), never your pick.
+
+**The misses that recur.** Release C's design reviews and regular-user runs caught these after a
+designer had done a rules pass. Check each one before you hand the design over:
+
+1. **Every word true, on every screen it shows** (COPY-3, the most frequent catch: six designs'
+   reviews found an untrue word). One name per state: reuse the word the product already shows for
+   that state (a chip, a tile) rather than a new one, and never two words for one state across the email, the page and
+   the app. A sentence never claims more than the data ("every visitor", not "everyone", when staff
+   and bots are left out); counts agree wherever the same set is counted, plurals included. Words
+   that ship in this release describe this release's screens, never a later one's. A sentence with
+   a date or time is computed for each date it covers (a season that crosses a daylight saving
+   change gets two sentences), in the business time zone.
+2. **The installed app at 390 first** (PH-1, PH-3). Say what the phone shows, not only the computer:
+   an explanation that is `hidden md:flex` beside a button that drops work leaves the phone with
+   the button and no sentence. One surface per message: never a toast beside a bar that says
+   something else. A walk row names a view the stack it runs on has (the local stack has a 390
+   browser; a phone's own Settings is an owner-device row).
+3. **No "tap" in words a computer shows** (COPY-1), emails included: an owner reads mail on a
+   computer too. "Choose", "press" or the control's name.
+4. **A look change names its owner-approved mockup** (PROC-4). A new tile row, a switch or a
+   sheet that changes the look either names the approved mockup or adds itself to one, and the
+   owners see it before build: the checkout follow-ups design added both with no mockup named.
+5. **Measure the fit, never argue it** (TITLE-1, TITLE-4, PROC-3). A title under the two-line clamp
+   is measured in a browser with the portal's own font at the component's real size and the title's
+   real width on a 320 and a 390 phone (272 and 342 px in a padded dialog), with the worst real input composed through the real
+   helper (the longest name, our words around it). The words that tell things apart, ours included
+   ("changed while you were editing"), are never the part cut. Under a clamp the line height is at
+   least 1.3: a primitive with `leading-none` (`UI/dialog`'s title) makes two lines touch and clips
+   the descenders.
+6. **The mockup is drawn at the real size.** The same font, size and box width as the component it
+   stands for, cut at a word boundary: a sheet header mockup at 15 px in a 340 px box hid a
+   three-line title that the real 18 px dialog drew.
+7. **Order in a settings panel** (FORM-4, ST-1). A new control never sits between a toggle and the
+   input that belongs to it; it goes after that group, and the panel's essentials stay first.
+8. **A shared component that replaces a hand-built one keeps what the old one did.** List the
+   behaviour the old one had and the tests that pin it, and say how each stays true: Studio's sheet
+   header lets the title drag the sheet while Back, help and Close do not (`data-vaul-no-drag` and a
+   stopped pointer down on the controls only), and the first shared header design could express
+   neither.
+
 ## Design Protocol
 
 1. **Understand the user task**, what are they trying to accomplish? In what context (mobile/desktop, first-time/expert, high-stakes/exploratory)?
@@ -182,6 +235,13 @@ tools: Read, Grep, Glob, Bash, Write, Edit, mcp__plugin_context7_context7__query
 - [ ] No color-only meaning conveyance
 - [ ] Works in both light and dark mode
 
+### Owners' UI rules, screen by screen
+| Screen | Rules checked | How it meets them |
+|---|---|---|
+| <screen, as it titles itself> | <ids from `ui-rules.md`, e.g. FORM-4, TITLE-1> | <the measurement or the component that meets each; a rule that does not apply says why in a few words> |
+
+Then the eight recurring misses above, one line each: met, with the evidence, or n/a and why.
+
 ### Privacy (Vivreal-specific)
 - Chrome to unmask (`{...privacyUnmask}`): <list static strings>
 - User data to leave masked: <list dynamic fields>
@@ -218,6 +278,7 @@ Any Chromium you launch from a script (beyond the Playwright MCP browser) gets `
 
 ## Hard Rules
 
+- **The owners' UI rules before any portal or customer-site screen.** Read `ui-rules.md` in full first, cite the ids each screen follows, and check the eight recurring misses (above) before handing over.
 - **Read before designing.** Audit the existing screen, read the existing components in `src/components/UI/` and `src/components/Universal/`. Never design in a vacuum.
 - **Reuse before inventing.** New primitive components require three genuine use-cases. Two is coincidence.
 - **Accessibility is not optional.** WCAG 2.2 AA is the floor, not the ceiling. Every spec includes the accessibility checklist.
