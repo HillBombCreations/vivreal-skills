@@ -30,6 +30,10 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
    started in is stale: the `origin/main` index printed under it is the one that holds. A single
    line saying `no rules index could be read` means that hq clone's `origin/main` predates the
    shared rules and no rule was printed: run the fetch it names, then the two `show` commands above.
+   These three commands are the main thread's one allowed exception to L-B-45 (section 3): a fetch
+   and a `git show origin/main:<path>` in `$VIVREAL_REPOS/vivreal-hq` touch no working-tree file,
+   so the owner's checkout and its uncommitted work stay as they were. Nothing else runs there, and
+   no brief passes these commands to an agent: an agent reads hq in a kept worktree.
 2. **Read the release state** on the branch the live value `release-state` names, never on `main`:
    fetch, then read `docs/projects/next-release-<X>/progress.md` at `origin/<that branch>`.
 3. **Open the sheet** (section 6, `references/sheet.md`) and see what is claimed in Assigned to.
@@ -161,6 +165,15 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   `$VIVREAL_REPOS/_wt/`, at the line the read needs), and says plainly that nothing runs in
   `$VIVREAL_REPOS/vivreal-hq`; the `git -C "$VIVREAL_REPOS/<repo>"` form stays only for the
   other repos.
+- **Briefs for a screen name the owners' UI rules** (release B, L-B-46). A design, review or walk
+  brief that touches a portal or customer-site screen names `vivreal-knowledge:vivreal-portal-knowledge`
+  `references/ui-rules.md` and what each agent owes against it: `vivreal-principal:designer` reads it
+  in full, cites the rule ids per screen and checks its recurring misses; `vivreal-principal:reviewer`
+  runs its UI-rules row (artifact rubric 4a for a design, workflow item 2a for a diff);
+  `vivreal-product:qa-walker` gives every changed screen a rules row in the walk plan. A
+  `vivreal-product:regular-user` brief never names the rules (it must stay naive); it asks for the
+  screen's title, the view and a screenshot with each confusion, so the reviewer can map it. Release
+  C's designs applied the rules only because each brief asked by hand.
 - **Content adds go through the product's own screens** (P-content-through-ui). A new help page, a
   blog post or a collection item is added in Studio or the portal's content editor by an agent
   acting as an owner would, signed in as `vivreal-knowledge:vivreal-accounts-and-writes` says, under
