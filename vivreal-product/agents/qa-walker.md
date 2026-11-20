@@ -1,7 +1,7 @@
 ---
 name: qa-walker
 description: Walks the Vivreal product against a validation matrix and reports what is actually broken, in the installed iPhone app (PWA) as the primary mobile view on the portal and at 1440, with a 390 mobile-browser secondary check. Drives the live portal and customer sites in a real browser, exercises create/update/delete where the matrix calls for it, screenshots every surface in every view, audits each screen for customer data that must never reach a recording, and writes findings that survive the session. Read-mostly by default; every write it makes is labelled and reversed. Use it for release validation, regression sweeps, and "does this actually work" passes. It reports defects, it does not fix them.
-tools: Read, Write, Edit, Bash, Glob, Grep
+tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 skills:
   - vivreal-knowledge:vivreal-accounts-and-writes
 color: yellow
@@ -603,10 +603,11 @@ in every walk:
   plan's check had compared the name with the connect form's button, and the board where the line
   shows has only "Switch to signing in with Stripe", below the line. A name the screen does not
   carry is a defect, filed live, even when the plan's own check said PASS.
-- **Every changed portal screen gets an owners' UI rules row** (release B, L-B-46). Read
-  `vivreal-knowledge`'s `skills/vivreal-portal-knowledge/references/ui-rules.md` in full before you
-  write or take the walk plan (if the path is not expanded for you, glob for
-  `**/vivreal-portal-knowledge/references/ui-rules.md`). The walk plan has one row per changed
+- **Every changed portal screen gets an owners' UI rules row** (release B, L-B-46). Load
+  `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool and read its
+  `references/ui-rules.md` in full before you write or take the walk plan; if it cannot be loaded
+  or the file cannot be read, stop and say so in your report, never walk on without the rows (a
+  glob from a portal worktree finds nothing and skips the read silently). The walk plan has one row per changed
   screen, named as the screen titles itself, listing the rule ids that can be seen on a running
   screen, each with its measurement: the installed app at 390 first, then the 390 browser, then
   1440, and 320 and 360 where a header holds icons (PH-1, PH-3, PH-4); no horizontal scroll at any

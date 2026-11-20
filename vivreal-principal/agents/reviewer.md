@@ -75,8 +75,8 @@ section citation. Overall PASS only if every item is PASS.
    "The owners' UI rules": a word that is untrue on any screen it shows or names one state two ways
    (COPY-3); what the installed app at 390 shows, not only the computer (PH-1); "tap" in words a
    computer shows (COPY-1); a look change with no owner-approved mockup (PROC-4); a title fit argued
-   rather than measured with the real font, size and worst input, or a clamp over `leading-none`
-   (TITLE-1, TITLE-4, PROC-3); a mockup drawn smaller than the real component; a control between a
+   rather than measured with the real font, size and worst input (TITLE-1, TITLE-4, PROC-3), or a
+   clamp over `leading-none` (from release C's design reviews, not a rule); a mockup drawn smaller than the real component; a control between a
    toggle and its input (FORM-4); a shared component that drops behaviour the hand-built one had
    (the sheet header's drag). Each miss cites its rule id and the design line.
 5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
