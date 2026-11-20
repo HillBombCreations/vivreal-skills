@@ -386,6 +386,7 @@ Stripe active and Square inactive.
 | **QA scratch-2** | **The one business where tests write freely** (owners, 2026-11-04): create, update, delete, orders, refunds, checkout on Stripe TEST, destructive checks | Its Stripe test account cannot charge. Sign in as its owner (below); permission and role tests sign in as its non-admin member `canlook` |
 | **Vivreal Content** | Read-mostly walks, the filming business | A **prospect** business, so search-visibility UI is hidden there by design. Its channels are Vivreal's own real accounts. Never leave QA objects on it |
 | **Vivreal** | Surfaces Vivreal Content hides | A real live business: read only. Staff surfaces are in the admin app, not in its portal nav |
+| **QA scratch-owner** | Walks that need a shop selling through Stripe by sign-in in test mode: test checkouts (its Stripe test account takes test charges), the sales tax board, a finished move from Square to Stripe | Not a free-write business: every write needs the owner's named approval. Its business name carries a person's name, so crop it from every still. Sign in with its `scratch-owner` key (below) |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
 or written to a file). Four test identities exist and no others (owners, 2026-11-04; QA scratch-owner's removal

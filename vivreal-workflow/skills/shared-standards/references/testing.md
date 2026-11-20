@@ -136,12 +136,16 @@ timeout.
   same: it does not rerun the full suite, coverage, lint, or build on a head the hook already
   passed, it reads the diff and runs only the specific test file a named doubt requires.
 - **Run the specs that touch your files, each under a timeout; a full suite only when the brief
-  asks, and never two at once** (release B, L-B-43; owner rules P-touching-specs and P-heavy-runs,
+  asks or P-one-suite needs it, and never two at once** (release B, L-B-43; owner rules
+  P-touching-specs, P-heavy-runs and P-one-suite,
   vivreal-hq `docs/standards/process.md`). A coder ran a repository's whole suite twice in WSL, at
   the branch and at the base, for a change to record files only; both hung over an hour on tests
   that need a live browser, and the agent sat idle "waiting on background work", which the agent
   list shows as completed. Pick the test files that import or read the files you changed, not only
   the feature's; run each in the foreground under `timeout <seconds>`, below the tool call's own
   limit, so a hang ends the run and not the agent; report a run that times out with the test it
-  stuck on. A full suite (a hookless repo's whole-suite script, or the same at the base commit)
-  runs only when the brief asks, one at a time: a full suite and a red proof are both heavy runs.
+  stuck on. Otherwise a full suite (a repo's whole-suite script, or the same at the base commit)
+  runs only when the brief asks, one at a time, with one exception: in a repo whose pre-push hook
+  runs no tests, P-one-suite's single full run at the PR head (`npm test`, its summary in the PR
+  body) still happens, once, under a timeout, never beside another heavy run. Everything else
+  stays targeted; a full suite and a red proof are both heavy runs.
