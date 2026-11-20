@@ -6,7 +6,12 @@ builds: a help mark on a row of its own, cards of different heights and casing, 
 inputs beside the styled ones, hand-built tabs, a sheet that would not scroll, a page that froze
 after a save, posts that did not look like their platform. Each rule below is one of those
 catches. Read every theme a change touches before any portal UI work, and check those rules again
-before reporting the change done (`vivreal-principal:portal-coder`, "UI pre-done checklist").
+before reporting the change done (`vivreal-principal:portal-coder`, "UI pre-done checklist"). The
+same rules bind every step, so design, build, review and walk hold one idea (release B, L-B-46):
+`vivreal-principal:designer` reads this file in full before a portal or customer-site screen design
+and cites the ids each screen follows; `vivreal-principal:reviewer` checks every changed screen
+against it in a design review (artifact rubric 4a) and a diff review (workflow item 2a);
+`vivreal-product:qa-walker` gives every changed screen a rules row in the walk plan.
 
 **Source.** The owners' record, vivreal-hq `docs/standards/portal-ui-feedback.md` (private): owner
 items `UF-001` to `UF-113`, approved agent corrections `A-01` to `A-12`, the 80 rules in 14

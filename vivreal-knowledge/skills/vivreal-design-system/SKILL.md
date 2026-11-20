@@ -9,6 +9,10 @@ Last synced: 2026-10-15 (portal `origin/stable` v0.36.0). Tokens and shared comp
 
 The opinionated rules + REAL conventions for any Vivreal portal interface work. This is a lean selector; the depth lives in the three references, read the one your task needs. Grounded in the actual portal source (cited paths below) and curated June-2026 design/UX research.
 
+## The owners' rules come first
+
+The owners' UI rules are `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md`: 81 rules in 14 themes, each the owners' own correction with the shared component that does it right. Read it in full before any portal or customer-site screen is designed, built, reviewed or walked; the designer, portal-coder, reviewer and qa-walker each check their screens against it and cite misses by rule id (release B, L-B-46). Where a craft rule below and an owners' rule differ, the owners' rule holds. This skill carries the tokens, the patterns and the craft; the rules file carries what the owners decided.
+
 ## The strongest rules (internalize these even before opening a reference)
 
 1. **Mobile-first, thumb-first, app-like.** Design the 360px view first, enhance up. Over half of SaaS logins are on mobile. Primary nav + the primary action live in the bottom **thumb zone** (bottom ~25-40% of the screen, ~96% tap accuracy vs ~61% at the top). The portal reserves `--app-nav-reserve` for the mobile bottom nav: `--app-nav-height` (the bar's own row, `3.125rem`) plus `--app-bottom-inset` (the home indicator, or a small cushion), with the nav height 0 on `md+` (`src/styles/globals.css`). Cap a bottom nav at **3-5 tabs**. **The mobile default is native-app patterns, not a shrunk website**, bottom tab bar, bottom/action sheets, card lists, app-style headers, segmented controls. Reason about **device mode** (touch vs pointer): keep one identity (tokens, type, spacing), swap the *interaction pattern*. Pattern picks live in `references/mobile-patterns.md`.
@@ -39,6 +43,7 @@ The opinionated rules + REAL conventions for any Vivreal portal interface work. 
 ## Who consults this skill
 
 - The **`designer`** agent, it DESIGNS and BUILDS; this skill is its Vivreal-specific token/pattern grounding.
+- The **`reviewer`** agent, on a design or a diff that changes a screen, beside `references/ui-rules.md` (its artifact rubric 4a and workflow item 2a).
 - The **`designer`** agent also CRITIQUES usability read-only when asked only to critique; `references/ux-psychology.md` is its primary lens there.
 - Companions: `vivreal-sites` (the customer-site product/authoring model, distinct from portal chrome), `vivreal-portal-knowledge` (the portal's API/proxy/auth internals).
 
