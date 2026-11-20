@@ -247,7 +247,9 @@ anyway.
 ### What the 2026-09-10 release changed for a shoot
 
 The help centre shipped: **renderer 1.71.1**, portal **v0.20.0**, Templates `stable`
-`a7d8104`. `help.vivreal.io` is now a 71-page site with a working search, and three
+`a7d8104`. `help.vivreal.io` is now a 71-page site with a working search (history: since the help
+move of 2026-11-20 the help centre is served at `vivreal.io/help` and help.vivreal.io forwards
+there, so film it at vivreal.io/help), and three
 contrast defects were fixed across the fleet. Walk 11 (2026-09-10) is the pass that
 measured it. **Where walk 11 disagrees with walk 10, walk 11 wins.**
 

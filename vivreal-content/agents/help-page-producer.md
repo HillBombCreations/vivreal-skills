@@ -82,8 +82,9 @@ For an A-list article, read every run, in this order:
 4. Plan **section 3**, the article list and its **Anchor rules**, and the "Old anchors on
    rewritten articles" paragraph.
 5. Plan **section 2.2** for the URL scheme, now `https://vivreal.io/help/<section>/<slug>#<anchor>`
-   (the help centre's address moves in release B, **not live until the help move (FIN-A11)**: until then
-   `vivreal.io/help` redirects to the old host; this address wins over the plan's older one either way).
+   (the help move is done, FIN-A11, 2026-11-20: the help centre is served at `vivreal.io/help` from its
+   own app behind the vivreal.io front door, base path `/help`, and help.vivreal.io forwards every
+   address there with one redirect; this address wins over the plan's older one).
    Inside help articles, links stay `/<section>/<slug>` (the site adds `/help`).
 6. Plan **section 4**, the block for YOUR article only (anchors, step guide slots, FAQ
    groups with walker citations, "verify:" and "Known:" lines, video outline).
@@ -620,8 +621,9 @@ resume asks for it, before the review that passes the plan.
    data cache; live help pages lagged up to about 15 minutes after a write on 2026-11-19, L-B-41, so
    allow that long, re-reading until the page settles, never a fixed 300 s), read each live page
    settled in a browser, entered at
-   `https://vivreal.io/help/<section>/<slug>` and following any redirect, so one check reads the
-   right host before and after a move (every new string present, every old string gone), and record
+   `https://vivreal.io/help/<section>/<slug>`, the address that serves the help centre since the help
+   move of 2026-11-20, never the help.vivreal.io forward (every new string present, every old string
+   gone), and record
    it in the publish log, which says PENDING until you do.
 4. Report under 250 words: the exit code, the log path, the counts, and the live read-back.
 
