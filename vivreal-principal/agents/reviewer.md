@@ -67,6 +67,18 @@ section citation. Overall PASS only if every item is PASS.
 2. **Scope correctness**, no scope creep (tasks the spec didn't ask for) and nothing missing. Cross-reference the spec's success criteria.
 3. **Risk & blast radius**, high-risk changes (auth, billing, multi-tenant routing, public read path, deploy pipeline, shared schemas) are called out with mitigations.
 4. **Convention fit**, the plan respects the three-tier API rule, proxy factory, multi-tenancy scoping, hydration/SSR rules where relevant (consult shared-standards if a trigger area is touched, Vivreal repos only).
+4a. **The owners' UI rules** (release B, L-B-46; N-A when no portal or customer-site screen changes).
+   Load `vivreal-knowledge:vivreal-portal-knowledge` and read `references/ui-rules.md` in full; a
+   screen in the design is the trigger, so this is never a speculative load. Every screen the
+   design adds or changes has a row in its rules table naming the ids it follows, and every id
+   exists and fits. Then check the misses that recur, the eight in `vivreal-principal:designer`,
+   "The owners' UI rules": a word that is untrue on any screen it shows or names one state two ways
+   (COPY-3); what the installed app at 390 shows, not only the computer (PH-1); "tap" in words a
+   computer shows (COPY-1); a look change with no owner-approved mockup (PROC-4); a title fit argued
+   rather than measured with the real font, size and worst input (TITLE-1, TITLE-4, PROC-3), or a
+   clamp over `leading-none` (from release C's design reviews, not a rule); a mockup drawn smaller than the real component; a control between a
+   toggle and its input (FORM-4); a shared component that drops behaviour the hand-built one had
+   (the sheet header's drag). Each miss cites its rule id and the design line.
 5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
 6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
 7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
@@ -122,6 +134,18 @@ Diff contains ONLY the changes from the approved plan. No drive-by refactors. No
 ### 2. Convention adherence
 Three-tier axios rule honored. Edge proxy handlers use the factory or have justified manual reason. CSRF on state-changing handlers. Edge runtime preserved.
 **How to verify:** Grep the diff for `fetch(`, `axios.create`, `createAuthAxios`, `runtime`. Confirm each is correct context.
+
+### 2a. The owners' UI rules (every portal or customer-site screen the diff changes)
+The owners' UI rules bind the build and the review alike (release B, L-B-46). N-A when the diff
+changes no screen.
+**How to verify:** load `vivreal-knowledge:vivreal-portal-knowledge` and read
+`references/ui-rules.md` in full. List each screen the diff changes, as it titles itself, and check
+it against every rule its themes hold: the shared component each rule names is the one used (no
+hand-built twin, nothing a gap names hand-rolled), the coder's UI pre-done checklist
+(`vivreal-principal:portal-coder`) is in the PR body with measured evidence (a box from the
+browser or a screenshot opened, PROC-3, never a class name), and the misses that recur (artifact
+rubric 4a) are absent. FAIL each miss with its rule id and `file:line`. The approved design's rules
+table is the spec; a screen that departs from it is a FAIL unless the PR reports the deviation.
 
 ### 3. Type safety
 No new `any` types. No `as` casts without inline comment justification. Generics used appropriately.
@@ -358,6 +382,7 @@ For each dimension, assign a rating: SOLID / CONCERN / BLOCK.
 - Comments: are non-obvious decisions explained? are comments accurate?
 - Type safety: proper TypeScript types, no unnecessary `any`
 - Test coverage: are the right things tested? (behavior, not implementation)
+- A diff that changes a portal or customer-site screen runs workflow item 2a (the owners' UI rules) here too; each miss is at least a CONCERN, cited by rule id
 
 ### 8. System Design & Architecture
 - Does this change fit the existing architecture? Or is it fighting it?
@@ -546,6 +571,7 @@ rewriting it.
 - DON'T soften feedback ("LGTM with nits"). FAIL/BLOCK means FAIL/BLOCK.
 - DON'T approve with caveats. Either every item PASSes/is SOLID or overall is FAIL/Do not ship.
 - DON'T skip the knowledge-skill review item for high-risk changes.
+- DON'T pass a design or a diff that changes a portal or customer-site screen without the owners' UI rules row (artifact rubric 4a, workflow item 2a), every miss cited by rule id.
 - DON'T approve work that wasn't tested.
 - DON'T trust the commit message, verify the diff against the claim.
 - DON'T accept an empty grep, an empty query or a skipped gate as evidence. Require a positive control on the same query.
