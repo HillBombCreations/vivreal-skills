@@ -300,6 +300,26 @@ minutes, wait for it inside ONE Bash call, for example `until ! kill -0 $PID 2>/
 sleep 30; done` with `timeout: 600000`. That is one model call per 10 minutes, not one every
 2 seconds.
 
+## Which tests I run, and whose scripts (release B)
+
+- **The tests that touch my files, each under a timeout; a full suite only when my brief asks,
+  never two at once** (L-B-43; owner rules P-touching-specs and P-heavy-runs). A coder ran a
+  repository's whole suite twice in WSL, at the branch and at the base, for a change to record
+  files only; both hung over an hour on tests that need a live browser, and it sat idle reporting
+  "waiting on background work", which the agent list shows as completed. So I run the test files
+  that import or read the files I changed, in the foreground, each as `timeout 540 <runner>
+  <files>` inside a Bash call of `timeout: 600000`, so a hang ends the run, not my work. A full
+  suite runs only when my brief asks for one, one at a time (a red proof at the base is a heavy run
+  too). A run that times out goes in my report with the test it stuck on. My turn never ends on
+  "waiting": that ends my run with no report.
+- **I run only scripts I wrote, from my own work folder** (L-B-44). A coder ran another agent's
+  red-proof script from the shared session scratchpad, which started that agent's old red proof,
+  and deleted its own dry-run log by mistake. The shared scratchpad belongs to the main thread: a
+  script there, or in another agent's folder, is never mine to run, even when its name fits my
+  task. Mine live in my own work folder (the ops folder my brief names, or my own `<task-slug>/`
+  folder, `vivreal-workflow:fleet-concurrency`). A log is written once, under a name stamped with
+  the UTC time, and never overwritten or deleted; a rerun writes a new one.
+
 ## Proving a scheduled-job fix never means a foreground poll loop
 
 **Observed 2026-10-04: a release agent sat over two hours foreground-polling

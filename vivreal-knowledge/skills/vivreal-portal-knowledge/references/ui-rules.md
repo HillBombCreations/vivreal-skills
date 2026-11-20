@@ -240,7 +240,8 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
   the record's 80) Use: two `UI/select` fields side by side in a two-column grid, each keeping the
   field box (SEL-2); no wrapper component. Known cases, both named by F566: the Sales products list
   (`src/components/Integrations/Pages/Stripe/Sections/products.tsx`), which stacks them today, and
-  the same controls on Orders (`src/components/Integrations/Pages/Stripe/Sections/orders.tsx`).
+  Orders' Show select, once a second control joins it
+  (`src/components/Integrations/Pages/Stripe/Sections/orders.tsx`, which has Show alone today).
 
 ## 9. Performance and freezes (4)
 

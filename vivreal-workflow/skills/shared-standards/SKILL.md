@@ -85,6 +85,7 @@ agent acts on itself, by ID:
 - **P-no-waf-cost:** no new web ACL, WAF logging, Bot Control or other managed rule group as a fix; fix abuse in code, existing access logs or Cognito's own protections, and price and ask before adding a rule to an existing ACL.
 - **P-skills-push-after-review:** vivreal-skills changes are committed to a LOCAL branch, reviewed there by `vivreal-agent-review:definition-reviewer`, fixed and re-reviewed locally, and pushed with ONE PR per batch only when that batch is ready to merge (reviewed, gates green, merge GO in hand), because CI runs on every push and every PR; later work for the same batch folds into that PR, never a second stacked PR.
 - **P-shared-checkout:** agents share one checkout's stash and scratchpad; never `git stash`, `reset --hard`, `checkout --` or `restore` a file you did not write.
+- **Scripts and logs in shared folders** (release B, L-B-44, in P-shared-checkout's spirit): run only scripts you wrote, from your own work folder. The shared session scratchpad belongs to the main thread; a script there, or in another agent's folder, is never yours to run, even when its name fits your task (one started another agent's old red proof). Write a log once, under a name stamped with the UTC time, and never overwrite or delete it; a rerun writes a new one.
 - **P-allow-refuse:** pair every ALLOW test with a REFUSE test on the same mechanism; a one-sided gate test passes when the gate never engages.
 - **Every WSL step starts by changing into the worktree,** inside one quoted login-shell command (`wsl.exe -e bash -lc 'cd /mnt/<drive>/<clones>/_wt/<worktree> && <command>'`); a bare `wsl` call runs in whatever folder the shell is in, often an owner's own checkout, a plain `bash -c` runs the Windows npm, and without `-e` an outer shell expands every `$` in the calling folder first ([references/wsl.md](references/wsl.md)).
 
@@ -345,8 +346,8 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the e2e
 harness rules, the red proof every agent follows (forms (a), (b) and (c), and the `Red:` line), real
 code paths and real layers over fakes, fixtures recorded from real answers, mocks in the deployed
-shape, inert fixes, honest assertions, the build-is-not-the-suite rule, vacuous controls, and the
-hook-is-the-one-full-run rule.
+shape, inert fixes, honest assertions, the build-is-not-the-suite rule, vacuous controls, the
+hook-is-the-one-full-run rule, and the specs that touch your files, each under a timeout.
 
 ## Site media rule
 - Site media (logos, etc.) requires signed URLs via `GET /api/proxy/get-media`

@@ -388,10 +388,12 @@ Stripe active and Square inactive.
 | **Vivreal** | Surfaces Vivreal Content hides | A real live business: read only. Staff surfaces are in the admin app, not in its portal nav |
 
 **Sign-ins** (Secrets Manager, read in process, never printed, logged, passed on a command line
-or written to a file). Three test identities exist and no others (owners, 2026-11-04): Vivreal Content's
-agent sign-in, `<secret-prefix>/agent-walk-user`, the default for read-only walks; and two KEYS of one secret,
-the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): `scratch2-owner` (QA scratch-2's owner) and `canlook` (its non-admin member, for permission and
-role tests). Read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)[key]`, or the e2e harness
+or written to a file). Four test identities exist and no others (owners, 2026-11-04; QA scratch-owner's removal
+never ran, and release B walks use it by the owners' GOs): Vivreal Content's
+agent sign-in, `<secret-prefix>/agent-walk-user`, the default for read-only walks; and three KEYS of one secret,
+the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): `scratch2-owner` (QA scratch-2's owner), `canlook` (its non-admin member, for permission and
+role tests) and `scratch-owner` (QA scratch-owner's owner: a shop selling through Stripe by sign-in in test
+mode; a write there needs the owner's named approval). Read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)[key]`, or the e2e harness
 resolver for that key), never `--output text` on the bundle, which would print every login in it.
 `<qa-secret-prefix>/square-sandbox` and `admin-operator` (TOTP) stay separate secrets. Every other QA login, its
 business and the platform review accounts are deleted; never look for them. **Empty-state and first-run tests

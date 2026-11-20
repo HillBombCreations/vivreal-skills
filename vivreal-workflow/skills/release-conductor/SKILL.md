@@ -268,6 +268,12 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   a resumed agent takes a slot (section 2). An agent cut off
   by a usage limit while the live `model` changed is re-dispatched fresh on the current model from
   its progress file (P-model).
+- **"Completed" with no final report is a stall, not done** (release B, L-B-43). A coder whose two
+  full-suite runs hung sat "waiting on background work" while the agent list showed it completed.
+  Treat any agent the list shows completed without its final report as stalled: check its runs
+  (the processes it started, its newest writes and logs), stop a hung run, and resume it with
+  SendMessage to finish and report (it takes a slot, section 2). Its piece is not done until the
+  report is in.
 - **A resumed or running release engineer only narrows.** After a STOP, resume it with SendMessage
   only for read-only follow-ups (a proof, a record, a read the STOP asks for). Any new production
   write after a STOP (a merge, a fix-forward PR, a deploy, a promote) is a FRESH dispatch whose first
