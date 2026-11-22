@@ -263,6 +263,8 @@ Each of these was a real STOP or correction in the v7 window (vivreal-hq
   shows a Modify on every resource, including conditional permission replacements (66 Modify rows
   around 7 real adds on 10-20). Allow such a tag-only cascade only when a SECOND preview made with
   the LIVE tags shows exactly the expected rows (the control). Anything else stops for the owner.
+  The tag read rule (shared-standards `references/aws-infra.md`) keeps the cascade from starting:
+  read the stack's tags first and pass them back.
 - **A preview does not check service string limits.** CloudWatch caps `AlarmDescription` at 1024
   characters and `AlarmName` at 255, and a composite `AlarmRule` at 10240. Unit tests, lint, review
   and the change-set preview all pass an over-long string; the real update fails on that one

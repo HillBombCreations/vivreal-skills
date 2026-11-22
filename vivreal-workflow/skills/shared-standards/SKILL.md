@@ -144,7 +144,7 @@ three searches returned three different incomplete answers.
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
 | A `wsl` or `wsl.exe` step: a Linux install, test, gate or pack on a Windows machine | [references/wsl.md](references/wsl.md) |
-| Dispatching a deploy workflow, or claiming a stack updated | [references/aws-infra.md](references/aws-infra.md): "Reading and verifying a CloudFormation deploy" |
+| Dispatching a deploy workflow, building a change set, or claiming a stack updated | [references/aws-infra.md](references/aws-infra.md): "Reading and verifying a CloudFormation deploy" (the tag read rule first) |
 | Backports, cherry-picks, "did this fix reach `release/*`" | [references/aws-infra.md](references/aws-infra.md): "Proving a fix reached a line" |
 | Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog", which points to [references/anti-patterns.md](references/anti-patterns.md) |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
@@ -343,8 +343,8 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
   neither.
 
 ## Testing rules
-Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the e2e
-harness rules, the red proof every agent follows (forms (a), (b) and (c), and the `Red:` line), real
+Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the test
+guard rule (no unit test reaches real AWS or the network), the e2e harness rules, the red proof every agent follows (forms (a), (b) and (c), and the `Red:` line), real
 code paths and real layers over fakes, fixtures recorded from real answers, mocks in the deployed
 shape, inert fixes, honest assertions, the build-is-not-the-suite rule, vacuous controls, the
 hook-is-the-one-full-run rule, and the specs that touch your files, each under a timeout.
@@ -522,7 +522,8 @@ The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` 
 - Tests are unit-style with **heavy mocking** via `test/helpers/loadWithMocks.js`
 - Mock DB adapters, AWS SDK clients, sockets, service dependencies
 - **An unstubbed AWS SDK client runs with the machine's real credentials** and can write
-  production. Stub every client, and make a test that reaches the network fail.
+  production. Stub every client, and keep the test guard rule ([references/testing.md](references/testing.md)):
+  fake credentials, and every outbound connection but loopback blocked, in the bootstrap.
 - Endpoint-focused: cover route wiring, handlers, controllers, validators, services
 - Branch coverage required: success path, validation failure, empty response, error branches
 - Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate)

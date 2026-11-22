@@ -111,6 +111,19 @@ The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets a
 
 ## Reading and verifying a CloudFormation deploy
 
+- **The tag read rule (F311, SW-C19): read a stack's tags before every change set, then pass them
+  back or refuse.** `aws cloudformation deploy` with no `--tags` sends an empty tag list and
+  REMOVES every stack tag, so each taggable resource shows an update and a reviewed preview grows
+  rows nobody planned (a permissions preview came back with 7 rows instead of 5, one of three hits
+  on 2026-11-14). Every supervised deploy path (a script, a runbook step, a workflow) first reads
+  the tag VALUES, `aws cloudformation describe-stacks --stack-name <stack> --query 'Stacks[0].Tags'`,
+  never only `length(Stacks[0].Tags)`: a count cannot tell the same keys from different ones. It
+  then passes exactly that list back (`--tags Key=Value ...` on `deploy`, `--tags` on
+  `create-change-set`) or refuses, printing the list it read. A stack with no tags reads `[]` and
+  passes none. Compare by key and value. A tool that builds the command gets an ALLOW test (the
+  stack's tags passed back unchanged) and a REFUSE test (a command built with no tags while the
+  stack holds some).
+
 - **`describe-stack-resources` TRUNCATES SILENTLY.** It returns one page and no error, so a
   resource audit built on it quietly under-reports. Use **`list-stack-resources`**, which
   paginates. Note the second half of the trap: because it paginates, a
