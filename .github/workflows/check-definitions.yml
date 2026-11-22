@@ -23,6 +23,10 @@ jobs:
         run: node scripts/check-definitions.mjs
       - name: check-definitions self-test
         run: node scripts/check-definitions.mjs --self-test
+      - name: definitions against the owner-checkout guard
+        run: node scripts/check-guard-commands.mjs
+      - name: definitions against the owner-checkout guard, self-test
+        run: node scripts/check-guard-commands.mjs --self-test
       - name: hook and script tests
         # Files named one by one: `node --test <directory>` failed on Windows in the PR #60 review.
         run: >-

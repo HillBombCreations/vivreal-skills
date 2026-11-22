@@ -61,7 +61,8 @@ color: orange
 1. Pose or proportion change: edit numbers in `model/poses.json` (camera azimuth and elevation,
    `lift`, head yaw and pitch, wing `from`/`to`, each foot's `x`, `y`, `yaw`, `tilt`, `spin`).
    A new part or behaviour belongs in `model/duck.py`, driven by a new key in poses.json.
-2. Render: `python brand/mascot/model/render.py [pose]` writes `.work/model-<pose>.png`.
+2. Render: `cd packages/content-studio && python ../../brand/mascot/model/render.py [pose]` writes
+   `.work/model-<pose>.png` (beside the model; `render.py` finds its own folder).
 3. Look at it yourself before showing anyone, next to `source/laptop.png`. Compose a
    side-by-side with PIL and Read the image. Check the line weight, specks, parts poking
    through other parts, and the perspective of the feet.

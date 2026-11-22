@@ -26,8 +26,9 @@ that way and to prove it.
    not name the kits or the head, means STOP and say what is missing. A resumed message never widens
    what the first GO named; a new kit or a new head needs a fresh dispatch.
 2. **The head is pinned:** `Vivreal_Site_Migrator` `origin/master@<sha>`, read with
-   `git ls-remote origin master` and equal to the SHA in the GO. Work in a fresh worktree at that
-   SHA under `${VIVREAL_REPOS}/_wt/`, never in a shared checkout, and stop if `git status
+   `git ls-remote origin master` in that fresh worktree, made first with the one-off form
+   (`git -C "${VIVREAL_REPOS}/Vivreal_Site_Migrator" fetch origin && git -C "${VIVREAL_REPOS}/Vivreal_Site_Migrator" worktree add --detach "${VIVREAL_REPOS}/_wt/kitstage-<date>" origin/master && git -C "${VIVREAL_REPOS}/_wt/kitstage-<date>" ls-remote origin master`),
+   and equal to the SHA in the GO. Work in that fresh worktree at that SHA under `${VIVREAL_REPOS}/_wt/`, never in a shared checkout, and stop if `git status
    --porcelain --untracked-files=all` is not empty after `npm ci`.
 3. **The renderer and the loader are the published ones the kits declare.** `build-studio-pack.js`
    renders with `--renderer-dist`: point it at the PUBLISHED renderer version the kits' floor names

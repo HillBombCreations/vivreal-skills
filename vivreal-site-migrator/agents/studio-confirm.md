@@ -76,7 +76,7 @@ NEVER run `commands/load.js` from this workflow, that is the production cutover.
       `currentFile.source` (Templates reads the source). `serve-preview` answers
       that route from the bundle's key→source index (fixed 2026-08-20; before
       that it returned `{}` and the local Studio was blind to ALL media).
-      Prove it: `curl "http://127.0.0.1:8799/tenant/collectionObjectMedia?key=x&mediaFiles%5B0%5D%5Bkey%5D=syn-logo&mediaFiles%5B0%5D%5Bname%5D=syn-logo"`
+      Prove it: `cd captures && curl "http://127.0.0.1:8799/tenant/collectionObjectMedia?key=x&mediaFiles%5B0%5D%5Bkey%5D=syn-logo&mediaFiles%5B0%5D%5Bname%5D=syn-logo"`
       must return the logo source. Then in the preview-shell frame the brand
       `<img>` must have `naturalWidth > 0`. **A missing logo collapses the
       Navbar to its no-logo height (41 px) and the header reads "squished",
@@ -184,7 +184,8 @@ STOP and flag it, that's a process violation (template sites belong there).
   worked.
 - **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
   tool output stays outside every repo"). Before your first browser tool call,
-  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  `cd captures && printenv PLAYWRIGHT_MCP_OUTPUT_DIR` (from the Vivreal_Site_Migrator clone) must
+  print an absolute folder outside every repository; if it
   is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
   and say so in your report. A file saved by a bare name lands in the session's folder, often an
   owner's checkout. After the run, the session's folder must hold no `.playwright-mcp/` (the
@@ -201,9 +202,9 @@ STOP and flag it, that's a process violation (template sites belong there).
   This cost a long debugging detour on the Example Diner round: the drop was
   real once, then an artifact on every subsequent run.
   **Before concluding a roundtrip FAIL is real, prove the shim still SERVES the
-  field**: `curl -s http://127.0.0.1:8799/api/sites | node -e "…"`. If it does
-  not, restore the fixture (`cp <bundle>/__saves/served-baseline.json
-  <bundle>/siteDetails.json`, it IS the pre-save doc), restart the shim, and
+  field**: `cd captures && curl -s http://127.0.0.1:8799/api/sites | node -e "…"`. If it does
+  not, restore the fixture (`cd captures/<kit>/preview && cp __saves/served-baseline.json
+  siteDetails.json`, the bundle folder; it IS the pre-save doc), restart the shim, and
   re-run a FULL gate to re-snapshot before judging anything.
   Corollary: back up `siteDetails.json` before a walk, and restore it after, so
   the capture is not left mutated by test runs.

@@ -202,9 +202,10 @@ seconds. `close()` only closes the one tab the take opened and disconnects, it n
 the owner's browser; `handoff()` is not supported on a CDP-attached take.
 
 **Driving the take:** `src/tutorial/remote-drive.ts` plus a per-provider script
-(`src/tutorial/scripts/session-e-connect-and-post.ts`), run as:
+(`src/tutorial/scripts/session-e-connect-and-post.ts`), run from `packages/content-studio` as
+(`<provider>` is `instagram`, `facebook`, `linkedIn` or `tiktok`):
 ```bash
-TUTORIAL_PROVIDER=instagram|facebook|linkedIn|tiktok \
+cd packages/content-studio && TUTORIAL_PROVIDER=<provider> \
 REMOTE_DIR=<scratchpad>/remote \
 TUTORIAL_CDP_URL=http://127.0.0.1:9222 \
 npx tsx src/tutorial/run-tutorial.ts src/tutorial/scripts/session-e-connect-and-post.ts --only=desktop
@@ -314,7 +315,7 @@ every screenshot must match the current live product exactly (a stale or confusi
 - **Clear the previous caption at every step change.** A stale "Facebook, after" caption sat over the
   delete screen for 18 s in the submitted take.
 - **Uploading:** Meta expects MP4. Convert without cuts or speed change
-  (`ffmpeg -i take.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart -an take.mp4`) and
+  (`cd <the take's absolute --out folder> && ffmpeg -i take.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart -an take.mp4`) and
   check that the duration is unchanged.
 
 **How review takes are built and run** (2026-10-08, after the r2 abort):
@@ -367,7 +368,7 @@ worked.
 With vivreal-hq #23, `run-tutorial.ts` resolves a relative `--out` from the vivreal-hq repo root
 (`resolveOutDir` in `src/repo-root.ts`), and a relative `--out` that resolves outside the repo
 root, or onto the root itself, is refused with exit 1 before any script loads; an absolute path
-is used as given. On a branch without it (`git grep
+is used as given. On a branch without it (`git -C "$VIVREAL_REPOS/_wt/<hq worktree>" grep
 resolveFromRepoRoot` finds nothing), a relative `--out` resolves from the package you run in, so
 `--out=content/footage/...` lands under `packages/content-studio/content/...` instead of the
 repo's `content/`. An absolute path is right either way. The `*.raw.webm` raws are
@@ -413,7 +414,7 @@ reproduce an old build; then the 47px band is expected and captions move below i
   check; it never quietly shoots a browser take. A dry run therefore opens a window on the phone pass.
 
 **The first run on a machine is `--login`.** The browser profile starts empty.
-`npm run tutorial -- --login` signs it in, with the demo credentials when they resolve
+`cd packages/content-studio && npm run tutorial -- --login` signs it in, with the demo credentials when they resolve
 (`VIVREAL_DEMO_USER` and `VIVREAL_DEMO_PASS`, or `dev/g2-capture/demo-credentials.json`)
 or by waiting for a human, and records nothing. A recording run that meets a login
 screen fails and says so. Sign in as the demo tenant, never as an account that can see

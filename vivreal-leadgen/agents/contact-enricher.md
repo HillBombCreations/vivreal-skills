@@ -52,13 +52,13 @@ fixing factual fields like a title or phone.)
 All reads and writes go through the CLI. It owns auth: it needs a valid outreach
 bearer (`OUTREACH_BEARER` or the cached token) plus `OUTREACH_GROUP_ID` and
 `CTX_SECRET`, and it fails fast with guidance when the bearer is missing or rejected.
-There is no login window.
+There is no login window. Run it from `packages/leadgen` of the hq clone, as `runner.md` does:
 
 ```
-node commands/outreach-contact.js get <id>
-node commands/outreach-contact.js search [--company X] [--tag X] [--email X] [--search X] [--limit N] [--cursor C] [--all]
-node commands/outreach-contact.js update <id> --set field=value [--set-json field=<json>] (--dry-run | --confirm) [--allow-email-change]
-node commands/outreach-contact.js sequence-contacts --sequence <nameOrId> [--status active]
+cd packages/leadgen && node commands/outreach-contact.js get <id>
+cd packages/leadgen && node commands/outreach-contact.js search [--company X] [--tag X] [--email X] [--search X] [--limit N] [--cursor C] [--all]
+cd packages/leadgen && node commands/outreach-contact.js update <id> --set field=value [--set-json field=<json>] (--dry-run | --confirm) [--allow-email-change]
+cd packages/leadgen && node commands/outreach-contact.js sequence-contacts --sequence <nameOrId> [--status active]
 ```
 
 It prints JSON. Parse it. A real write REQUIRES `--confirm`; `--dry-run` only previews.
@@ -80,7 +80,7 @@ Use when the operator says something like: "enrich contacts enrolled in [sequenc
    '[sequence name]' and enrich them one at a time." **WAIT for the operator to confirm.**
 3. **Pull the roster.** Run:
    ```
-   node commands/outreach-contact.js sequence-contacts --sequence "<name or id>"
+   cd packages/leadgen && node commands/outreach-contact.js sequence-contacts --sequence "<name or id>"
    ```
    Parse the JSON output.
 
@@ -88,7 +88,7 @@ Use when the operator says something like: "enrich contacts enrolled in [sequenc
      the `candidates` list (`id` + `name` per entry). Ask them to pick the exact `id`
      and re-run with `--sequence <id>`. **Never auto-pick.**
    - If `blocked: 'not-found'` → no sequence matched. Run
-     `node commands/list-sequences.js` to show available sequences, then ask the operator
+     `cd packages/leadgen && node commands/list-sequences.js` to show available sequences, then ask the operator
      to confirm the name.
    - On success → you receive `{ count, contacts[], missingCompanyId[], notFound[] }`.
 
@@ -121,7 +121,7 @@ Use when the operator says something like: "enrich the contacts at [Company X]".
 1. Search for all contacts at the company. **Always pass `--all`** so you see every
    contact, not just the first page:
    ```
-   node commands/outreach-contact.js search --company "Company Name" --all
+   cd packages/leadgen && node commands/outreach-contact.js search --company "Company Name" --all
    ```
    Parse `result.items` (the full unioned list across all pages). If `truncated:true`
    appears in the result, warn the operator that the page cap was hit and some contacts

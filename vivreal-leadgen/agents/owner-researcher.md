@@ -50,9 +50,10 @@ us the lead.
 
 ## Workflow
 
-1. **Read what we already know** for each domain (never re-derive it):
+1. **Read what we already know** for each domain (never re-derive it), from `packages/leadgen`
+   of the hq clone, where the lead store is:
    ```bash
-   node -e "const s=require('./Data/profiles/<domain>/_social.json'); console.log(JSON.stringify({owners:s.owners, emails:s.emails, links:s.links, instagram:s.instagram}, null, 2))"
+   cd packages/leadgen && node -e "const s=require('./Data/profiles/<domain>/_social.json'); console.log(JSON.stringify({owners:s.owners, emails:s.emails, links:s.links, instagram:s.instagram}, null, 2))"
    ```
    Plus the prospect's `contacts[]` / `profile.founders` if present. Those names,
    and only those, are your subjects. **If a domain has no known owner name,
@@ -122,8 +123,8 @@ us the lead.
 
 6. **Gate + persist it:**
    ```bash
-   node commands/save-owner-research.js Data/reviews/owners-<batch>-<date>.json --dry-run
-   node commands/save-owner-research.js Data/reviews/owners-<batch>-<date>.json
+   cd packages/leadgen && node commands/save-owner-research.js Data/reviews/owners-<batch>-<date>.json --dry-run
+   cd packages/leadgen && node commands/save-owner-research.js Data/reviews/owners-<batch>-<date>.json
    ```
    Run `--dry-run` first and READ the drop reasons. A high drop count means your
    evidence is weak, not that the gate is wrong, fix the research, never loosen

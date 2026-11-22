@@ -75,7 +75,7 @@ already used 1080 x 1350 and that is the live convention.
 | "stat: N ...", "callout with N ..." | `stat-card.html` | `STAT`, `LABEL`, `FOOTER` |
 
 ```bash
-npx tsx src/render-slide.ts \
+cd packages/content-studio && npx tsx src/render-slide.ts \
   packages/content-studio/capture-assets/templates/typography/<template>.html \
   <outputPath> 1080 1350 '<JSON vars>'
 ```
@@ -123,8 +123,8 @@ footage library. **Never capture it yourself.**
    frame from a clip instead, using the clip's own `startMsInSource` and `durationMs` to land
    mid-clip:
    ```bash
-   ffmpeg -ss <seconds> -i content/footage/<session>/clips/<clip>.mp4 -frames:v 1 \
-     .agent-cache/<slug>-base.png
+   cd packages/content-studio && ffmpeg -ss <seconds> -i ../../content/footage/<session>/clips/<clip>.mp4 -frames:v 1 \
+     ../../.agent-cache/<slug>-base.png
    ```
 4. Pass the absolute path as a `file://` URL in `BASE_IMAGE`. Default callout placement is
    top-right (`CALLOUT_X = width - 540`, `CALLOUT_Y = 80`, `ARROW_X = width - 600`,
@@ -154,7 +154,7 @@ a carousel reads as a mistake.
 6. **Render** each slide to `<outputRoot><platform>/slides/slide-NN-<short-slug>.png`.
 7. **Assemble**, LinkedIn only:
    ```bash
-   magick slides/slide-*.png carousel.pdf
+   cd packages/content-studio && magick ../../<outputRoot>linkedin/slides/slide-*.png ../../<outputRoot>linkedin/carousel.pdf
    ```
 8. **Write `slides.json`** next to the deck: platform, variant, and per slide the template or
    `sceneId`, the rendered copy, and the source. This is the re-render input and the lookback
@@ -249,7 +249,7 @@ For LinkedIn, `assetPath` is the `carousel.pdf`.
   `origin/main`), so keep slide templates free of audio and video.
 - DON'T author new templates or edit the SVG scenes inline. No template fits means say so and
   fall back to typography.
-- DON'T edit `brand-tokens.css`. Run `npm run sync-brand-tokens`.
+- DON'T edit `brand-tokens.css`. Run `cd packages/content-studio && npm run sync-brand-tokens`.
 - DON'T mix variants inside one deck, and DON'T invent a fourth variant.
 - DON'T render at a size other than 1080 x 1350.
 - DON'T publish or schedule anything. DRAFT ONLY.

@@ -280,11 +280,11 @@ will NOT reach `live`. Two real failure modes seen in prod (2026-07-10):
    `rm package-lock.json` (portal has a tiptap peer-skew trap).
 2. **`spawn ENOMEM` at the "Running TypeScript" step**, the 8 GiB Standard build box
    is borderline for a large Next.js build: the webpack compile succeeds, then forking
-   `tsc` OOMs. Usually **transient**, retry: `aws amplify start-job --app-id <id>
+   `tsc` OOMs. Usually **transient**, retry: `cd captures && aws amplify start-job --app-id <id>
    --branch-name <br> --job-type RETRY --job-id <n>`. If it recurs, cap Node's heap
    in `amplify.yml` (`NODE_OPTIONS="--max-old-space-size=6144" npm run build`).
 
-Watch/diagnose a build: `aws amplify get-job --app-id <id> --branch-name <br>
+Watch/diagnose a build: `cd captures && aws amplify get-job --app-id <id> --branch-name <br>
 --job-id <n>` → the BUILD step's `logUrl` (curl it). Confirm each customer build
 went green, a "sync succeeded" workflow only means the branch was pushed, NOT that
 its Amplify build passed.
@@ -298,7 +298,7 @@ its Amplify build passed.
 4. Content edits after deploy: the site caches `siteDetails` for the app's own
    `SITE_CACHE_TTL_SECONDS` (Templates `src/lib/api/client.ts` defaults it to 60; the four apps
    read on 2026-10-14 set 300; read it with
-   `aws amplify get-app --app-id <id> --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'`,
+   `cd captures && aws amplify get-app --app-id <id> --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'`,
    then the same on the branch). A Studio save fires the revalidate webhook by itself and lands in
    seconds; a write behind the product (this load included) waits out the TTL. To reflect a
    change now, fire
@@ -309,9 +309,9 @@ its Amplify build passed.
    the BRANCH level, not the app level**, an app-level read returns the literal
    string `None`, which HMACs cleanly into a 401 "Invalid signature" that looks
    like a signing bug. Read it from the branch, projected to that one field and
-   into a variable, never printed:
-   `S=$(aws amplify get-branch --app-id <id> --branch-name stable --query 'branch.environmentVariables.REVALIDATE_WEBHOOK_SECRET' --output text)`,
-   then test it without printing it: `[ -n "$S" ] && [ "$S" != "None" ] && echo set || echo not-set`.
+   into a variable, never printed, and test it without printing it in the same command (a variable
+   does not outlive the command):
+   `cd captures && S=$(aws amplify get-branch --app-id <id> --branch-name stable --query 'branch.environmentVariables.REVALIDATE_WEBHOOK_SECRET' --output text) && { [ -n "$S" ] && [ "$S" != "None" ] && echo set || echo not-set; }`.
    Compare against the literal `None`, never the length: `None` is four characters, so a length
    check reads an unset secret as set. If it is not set there, try the same projection on
    `get-app --query 'app.environmentVariables.REVALIDATE_WEBHOOK_SECRET'`.

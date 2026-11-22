@@ -70,7 +70,11 @@ root, the main thread, the one-off clone form and the three fleets below. So eve
   in `packages/leadgen`, `vivreal-content` agents in `packages/content-studio`, and
   `vivreal-site-migrator` agents in `captures/` and, at the Vivreal_Site_Migrator clone root where
   its `.env` sits, only its own tools (`node commands/...`, `node scripts/...`, `node -e`,
-  `npm run <script>`). A `cd` within that clone runs nothing and is allowed; anything else there
+  `npm run <script>`), with redirections (`2>&1`, `> captures/<kit>/crawl.log`), piped only into
+  `tail`, `head`, `grep`, `wc`, `sort` or `cat` reading stdin, and an `echo "exit=$?"` after it.
+  A content or leadgen agent at the hq root, which holds none of its tools, starts with
+  `cd packages/content-studio &&` or `cd packages/leadgen &&` and reads hq files from there
+  (`ls -t ../../content/calendars/*.md`). A `cd` within that clone runs nothing and is allowed; anything else there
   (`rm -rf docs`, `npm install` at the root, a tool in another package's folder) is refused, and so
   is every step in another repo, which uses a worktree like everyone else. A step of theirs that
   changes a tracked file (the migrator's capability regen in `packages/site-loader`) runs in a
@@ -78,7 +82,10 @@ root, the main thread, the one-off clone form and the three fleets below. So eve
   data folder for that fleet's agents.
 - **What the guard cannot see:** a folder named by a variable the command did not set, a script that
   changes folder itself, a program outside its wrapper list that runs another (`xargs`,
-  `find -exec`, `sudo`), a `cd` that fails or sits in a pipeline, a file a redirection writes, a
+  `find -exec`, `sudo`, `env -S`), a folder a program takes as an option (`npm --prefix`,
+  `make -C`), a script fed on stdin (`bash <<EOF`), a `GIT_*` variable exported through
+  `typeset -x`, PowerShell `iex`, a `cd` in a pipeline or to a missing folder outside the root, a
+  file written through a path argument (`rm -rf <clone>/docs` from a worktree), a file a redirection writes, a
   file read from elsewhere. The rule still holds there.
 
 ### Cross-repo docs: the hq dev docs

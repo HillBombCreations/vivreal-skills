@@ -130,13 +130,14 @@ what it **does**. Open on the second one.
 **Read the nav from the product, every run. This file carries no nav map on purpose.** Five
 agents carried a map from v0.18 to v0.33 and every one went stale (the phone business menu now
 holds only the businesses, the signed-in person, Log out and "Open More"; Content is labelled
-"Lists"). The sources, read with `git show origin/stable:<path>` in `Vivreal_Portal_Mobile`, never
+"Lists"). The sources, read with `git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show origin/stable:<path>` after a fetch
+there (the kept portal read worktree, `vivreal-workflow:shared-standards`, "Path resolution"), never
 from a working checkout: `src/lib/nav/favorites.ts` (`NAV_DESTINATIONS`: every destination and its
 label; `defaultFavorites`), `src/components/NavigationTabs/tabs.ts` (the phone bar),
 `src/components/MobileHeader/index.tsx` (the phone business menu), `src/lib/nav/moreSections.ts`
 (the More page), `src/components/DesktopSidebar/index.tsx` and `src/lib/nav/desktopNav.ts` (the
 sidebar). Then confirm on the running product in the probe, and write the version you walked
-(`curl https://vivreal.io/app/release.json`) into the manifest. The filming account's tab bar is
+(`cd packages/content-studio && curl -s https://vivreal.io/app/release.json`) into the manifest. The filming account's tab bar is
 whatever it last chose (favorites are stored on the account); read it in the probe.
 
 Then read the dated shooting history (below), newest section first.
@@ -516,8 +517,8 @@ site's own pages and interact with nothing.
 ## Capture + split
 
 ```bash
-npx tsx src/portal-capture.ts <session>/sequence.json     # records + markers.json
-npx tsx src/footage-split.ts content/footage/<YYYY-MM-DD>-<topic-slug>
+cd packages/content-studio && npx tsx src/portal-capture.ts ../../content/footage/<YYYY-MM-DD>-<topic-slug>/sequence.json     # records + markers.json
+cd packages/content-studio && npx tsx src/footage-split.ts ../../content/footage/<YYYY-MM-DD>-<topic-slug>
 ```
 
 Session folder: `content/footage/<YYYY-MM-DD>-<topic-slug>/` containing

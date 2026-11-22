@@ -3,9 +3,13 @@
 // owner's own checkout under the clone root. Three agents ran git in the owner's hq checkout on
 // one day although each brief named a kept worktree, so the rule is enforced here, not only written.
 //
-// A command's folders, segment by segment (`&&`, `||`, `;`, `|`, `&`, a newline, a parenthesis):
+// A line continuation (a Bash backslash-newline, a PowerShell backtick-newline) is joined first, and
+// the `&` of a redirection (`2>&1`, `&>`) is no separator. A command's folders, segment by segment
+// (`&&`, `||`, `;`, `|`, `&`, a newline, a parenthesis):
 //   - `cd <dir>`, `pushd`, `chdir`, `Set-Location`, `sl`, `Push-Location` move the folder the next
-//     segments run in, and the folder moved to counts itself; `popd` and `cd -` go back (a folder
+//     segments run in (`cd -- <dir>` too), and the folder moved to counts itself; a folder under the
+//     root that does not exist (and that this command's one-off `worktree add` does not make) is
+//     not moved to, since that `cd` fails; `popd` and `cd -` go back (a folder
 //     stack; with nothing in this command to go back to, the folder stays), and a Bash subshell
 //     `( ... )` restores the folder it started in when it closes;
 //   - the wrappers `timeout`, `nohup`, `env` (with `VAR=x` and `-C <dir>`), `nice`, `setsid` and
@@ -38,8 +42,12 @@
 // What it cannot see, and lets through: a folder named by a variable this command did not set
 // (`cd "$X"` with X from elsewhere), a path the command builds at run time, a script that changes
 // folder itself, a program outside the wrapper list that runs another (`xargs`, `find -exec`,
-// `sudo`), a `cd` that fails or sits in a pipeline, a file a redirection writes, and a file READ
-// in an owner checkout from elsewhere (`cat <owner>/CLAUDE.md`), which runs nothing there. It
+// `sudo`, `env -S`), a folder a program takes as an option (`npm --prefix`, `make -C`), a script
+// fed on stdin (`bash <<EOF`), a `GIT_*` variable exported a way it does not read (`typeset -x`),
+// PowerShell `iex`, a `cd` in a pipeline or to a missing folder outside the root, a file a
+// redirection writes, a file written through a path argument (`rm -rf <clone>/docs` from a
+// worktree), and a file READ in an owner checkout from elsewhere (`cat <owner>/CLAUDE.md`), which
+// runs nothing there. It
 // fails open on its own errors and outside a Vivreal clone root: a broken guard is never a reason
 // a command cannot run, and the definitions say the same rule.
 const fs = require('fs');
@@ -86,8 +94,9 @@ const WORKTREE_FLAGS = new Set([
 // the clone root, lowercase): the lead store under `packages/leadgen` (`Data/`, not regenerable);
 // the content capture session files and fixtures under `packages/content-studio`; the migrator's
 // `captures/`, plus its own tools (`node commands/...`, `node scripts/...`, `node -e`,
-// `npm run <script>`) at the clone root, where its `.env` sits. A `cd` within the clone runs
-// nothing and is allowed (pass 1, fleet-breadth).
+// `npm run <script>`) at the clone root, where its `.env` sits, each optionally piped into a stdin
+// filter and followed by an echo of `$?` (pass 2, E2). A `cd` within the clone runs nothing and
+// is allowed (pass 1, fleet-breadth).
 const HQ_LOW = 'vivreal' + '-hq';
 // `say` is the sentence the refusal adds for that fleet's agents, so a refused agent learns where
 // its tools do run instead of being sent to a worktree its data is not in.
@@ -98,26 +107,68 @@ const FLEET_DATA = Object.freeze({
     clone: 'vivreal_site_migrator',
     dirs: ['vivreal_site_migrator/captures'],
     rootTools: true,
-    say: 'captures/ of the Vivreal_Site_Migrator clone (and, at that clone\'s root, only node commands/..., node scripts/..., node -e and npm run <script>)',
+    say:
+      'captures/ of the Vivreal_Site_Migrator clone. At that clone\'s root it runs only node commands/..., node scripts/..., ' +
+      'node -e and npm run <script>, with redirections (2>&1, > captures/<kit>/x.log), piped only into tail, head, grep, wc, sort or cat reading stdin, ' +
+      'and an echo of $? after it (; echo "exit=$?"); anything else there needs a cd into captures/ or a worktree',
   },
 });
 const MAX_DEPTH = 4;
+const MAX_FORKS = 8;
 
-/** Split at separators outside quotes; keep `$( ... )` whole. `ps` keeps backslashes literal. */
-function splitSegments(command, ps) {
+/** The length of a line end at `i` (`\n` or `\r\n`), else 0. */
+function lineEndAt(s, i) {
+  if (s[i] === '\n') return 1;
+  if (s[i] === '\r' && s[i + 1] === '\n') return 2;
+  return 0;
+}
+
+/**
+ * Split at separators outside quotes; keep `$( ... )` whole. `ps` keeps backslashes literal.
+ * Each segment carries `op`, the operator before it (`|`, `||`, `&`, `&&`, `;`, a newline, `(`,
+ * `)`, or undefined for the first), so a pipeline stage can be told from a separate command.
+ */
+function splitOps(command, ps) {
   const segs = [];
   let cur = '';
   let quote = null;
   let depth = 0;
+  let pending;
+  const flush = (opAfter) => {
+    const text = cur.trim();
+    cur = '';
+    if (text) {
+      segs.push({ text, op: pending });
+      pending = opAfter;
+    } else if (opAfter !== '\n') pending = opAfter;
+    // An empty line after `|`, `&&` or `||` continues that command, so the operator stays.
+  };
   for (let i = 0; i < command.length; i++) {
     const c = command[i];
     const next = command[i + 1];
     if (quote) {
+      // Bash removes a backslash-newline inside double quotes too (pass 2, E1).
+      if (c === '\\' && !ps && quote === '"' && lineEndAt(command, i + 1)) {
+        i += lineEndAt(command, i + 1);
+        continue;
+      }
       cur += c;
       if (c === '\\' && !ps && quote === '"' && next !== undefined) {
         cur += next;
         i++;
       } else if (c === quote) quote = null;
+      continue;
+    }
+    // A line continuation joins the next line to this one before anything is split (pass 2, E1):
+    // Bash removes a backslash-newline outright (so `cd /a\<newline>/b` is `cd /a/b`), and a
+    // PowerShell backtick-newline reads as a space.
+    if (!ps && c === '\\' && lineEndAt(command, i + 1)) {
+      i += lineEndAt(command, i + 1);
+      continue;
+    }
+    if (ps && c === '`' && lineEndAt(command, i + 1)) {
+      i += lineEndAt(command, i + 1);
+      cur += ' ';
       continue;
     }
     if (c === "'" || c === '"') {
@@ -155,8 +206,7 @@ function splitSegments(command, ps) {
           at = end + 1;
           if ((m[1] ? line.trim() : line) === m[2]) break;
         }
-        segs.push(cur);
-        cur = '';
+        flush('\n');
         i = at - 1;
         continue;
       }
@@ -174,17 +224,43 @@ function splitSegments(command, ps) {
       continue;
     }
     if (c === '\n' || c === ';' || c === '|' || c === '&' || c === '(' || c === ')') {
-      segs.push(cur);
-      cur = '';
+      // The `&` of a redirection (`2>&1`, `>&2`, `<&3`, `&>`, `&>>`) is part of it, not a
+      // separator (pass 2, E2): split there and `1` would read as a program.
+      if (c === '&' && (command[i - 1] === '>' || command[i - 1] === '<' || next === '>')) {
+        cur += c;
+        continue;
+      }
       // A subshell's parentheses become markers, so the folder it moved to is restored after it.
-      if (c === '(') segs.push(OPEN);
-      if (c === ')') segs.push(CLOSE);
+      // The `(` marker carries the operator before the group (`cd x && ( ... )`).
+      if (c === '(') {
+        if (cur.trim()) flush('(');
+        cur = '';
+        segs.push({ text: OPEN, op: pending });
+        pending = '(';
+        continue;
+      }
+      if (c === ')') {
+        flush(')');
+        segs.push({ text: CLOSE, op: ')' });
+        continue;
+      }
+      let op = c;
+      if ((c === '|' || c === '&') && next === c) {
+        op = c + c;
+        i++;
+      } else if (c === '|' && next === '&') i++; // `|&` pipes stderr too: still a pipe
+      flush(op);
       continue;
     }
     cur += c;
   }
-  segs.push(cur);
-  return segs.map((s) => s.trim()).filter(Boolean);
+  flush(undefined);
+  return segs;
+}
+
+/** The segments alone (see splitOps). */
+function splitSegments(command, ps) {
+  return splitOps(command, ps).map((s) => s.text);
 }
 
 /** The `$( ... )` bodies in a segment, outermost first, and in Bash the backtick bodies too. */
@@ -309,9 +385,13 @@ function makeResolver({ root, platform, home, env }) {
  * injected so the tests decide which folders are checkouts and which are linked worktrees.
  * @returns {{ refuse: boolean, folder?: string }}
  */
-function decide({ command, cwd, agentId, agentType, toolName, root, platform = process.platform, home = os.homedir(), env = process.env, kindOf = statKind }) {
+function decide({ command, cwd, agentId, agentType, toolName, root, platform = process.platform, home = os.homedir(), env = process.env, kindOf = statKind, isDir = (p) => statKind(p) === 'dir' }) {
   if (typeof agentId !== 'string' || agentId === '') return { refuse: false };
-  if (!root || typeof command !== 'string' || !command.trim()) return { refuse: false };
+  if (typeof root !== 'string' || !root || typeof command !== 'string' || !command.trim()) return { refuse: false };
+  // Fields of another type never reach a string operation (a null-prototype object throws there,
+  // and a throw would fail open): a missing or odd cwd is the hook's own folder, as in main().
+  if (typeof cwd !== 'string' || !cwd) cwd = process.cwd();
+  if (typeof home !== 'string' || !home) home = os.homedir();
   const ps = toolName === 'PowerShell';
   const r = makeResolver({ root, platform, home, env });
   const rootN = r.rootN;
@@ -362,6 +442,8 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
     const refspecs = positional.slice(1);
     // A remote helper (`ext::<command>`) runs a command, wherever it sits (`--multiple` takes several remotes).
     if (positional.some((p) => p.includes('::'))) return false;
+    // `tag <name>` is `refs/tags/<name>:refs/tags/<name>`, a tag write (pass 2 note).
+    if (refspecs.includes('tag')) return false;
     return refspecs.every((spec) => {
       if (!spec.includes(':')) return true;
       const dst = spec.slice(spec.lastIndexOf(':') + 1);
@@ -380,15 +462,17 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
       }
       if (WORKTREE_VALUE_OPTS.has(a)) {
         // A value that looks like an option (`--reason -B`) is not a value this form accepts.
-        if (String(args[++i] || '').startsWith('-')) return false;
+        if (String(args[++i] || '').startsWith('-')) return null;
         continue;
       }
       if (WORKTREE_FLAGS.has(a)) continue;
-      if (a.startsWith('-')) return false;
+      if (a.startsWith('-')) return null;
       positional.push(a);
     }
-    // <path> [<commit-ish>]
-    return positional.length >= 1 && positional.length <= 2 && underKept(r.resolve(clone, positional[0], scope));
+    // <path> [<commit-ish>]; the folder it makes, or null when this is not the one-off form.
+    if (positional.length < 1 || positional.length > 2) return null;
+    const made = r.resolve(clone, positional[0], scope);
+    return underKept(made) ? made : null;
   }
 
   // A data-bearing fleet runs its own tools (never git) only in its data folders (FLEET_DATA).
@@ -402,19 +486,48 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
     const low = rel.toLowerCase();
     if (fleet.dirs.some((d) => low === d || low.startsWith(d + '/'))) return true;
     if (c.prog === 'cd' && low.split('/')[0] === fleet.clone) return true;
-    if (fleet.rootTools && low === fleet.clone) return rootToolAllowed(c.prog, c.args);
+    if (fleet.rootTools && low === fleet.clone) {
+      return rootToolAllowed(c.prog, c.args) || (c.op === '|' && stdinFilter(c.prog, c.args)) || (STATUS_OPS.has(c.op) && statusEcho(c.prog, c.args));
+    }
     return false;
   };
 
   const counted = [];
+  // Folders the one-off `worktree add` in this command makes: a later `cd` into one is followed
+  // although it does not exist yet when the hook runs.
+  const created = new Set();
+  // A `cd` to a missing folder forks the reading in two (see the cd branch); this caps the forks.
+  let forks = 0;
   function scan(cmd, start, vars, depth) {
     if (depth > MAX_DEPTH) return;
-    let cur = start;
+    walk(splitOps(cmd, ps), 0, { cur: start, prev: undefined, dirStack: [], shellStack: [] }, vars, depth, false);
+  }
+  // Reads `segs` from index `from` in folder state `st`. `failing`: the `cd` just before failed, so
+  // the commands joined to it by `&&` or a pipe never run, and the rest run where it left off.
+  function walk(segs, from, st, vars, depth, failing) {
+    let cur = st.cur;
     // The folder before the last `cd`; undefined until this command has changed folder once.
-    let prev;
-    let dirStack = [];
-    const shellStack = [];
-    for (const seg of splitSegments(cmd, ps)) {
+    let prev = st.prev;
+    let dirStack = st.dirStack.slice();
+    const shellStack = st.shellStack.map((s) => ({ ...s, dirStack: s.dirStack.slice() }));
+    // While the failed `cd`'s chain is skipped, a `{ ...; }` or `( ... )` group in it is skipped whole.
+    let skipDepth = 0;
+    const opensGroup = (s) => s === OPEN || /^\{(\s|$)/.test(s);
+    const closesGroup = (s) => s === CLOSE || /^\}/.test(s);
+    for (let at = from; at < segs.length; at++) {
+      const { text: seg, op } = segs[at];
+      if (failing) {
+        if (skipDepth > 0) {
+          if (opensGroup(seg)) skipDepth++;
+          else if (closesGroup(seg)) skipDepth--;
+          continue;
+        }
+        if (op === '&&' || op === '|') {
+          if (opensGroup(seg)) skipDepth = 1;
+          continue;
+        }
+        failing = false;
+      }
       // A Bash subshell gets its own folder, `cd -` target and folder stack, and none of them
       // outlive it. A PowerShell `( ... )` only groups, so a Set-Location inside it stays.
       if (seg === OPEN) {
@@ -498,17 +611,43 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
 
       if (CD_WORDS.has(name) && !wrapped) {
         let target;
-        for (let i = 0; i < args.length && target === undefined; i++) {
-          if (/^-(literal)?path$/i.test(args[i])) target = args[i + 1];
+        // After `--` the next word is the folder, even one named `-` (pass 2 warning: `cd -- <clone>`).
+        let literal = false;
+        for (let i = 0; i < args.length && target === undefined && !literal; i++) {
+          if (args[i] === '--') {
+            literal = true;
+            target = args[i + 1];
+          } else if (/^-(literal)?path$/i.test(args[i])) target = args[i + 1];
           else if (!/^(-[LPe@]|\/d)$/i.test(args[i])) target = args[i];
         }
         const before = cur;
+        const stackBefore = dirStack.slice();
         if (name === 'pushd' || name === 'push-location') dirStack.push(cur);
         // `cd -` before any `cd` in this command goes to an OLDPWD the guard cannot read: the
         // folder stays the one it knows, so the next segment is still checked.
-        if (target === '-') cur = prev === undefined ? cur : prev;
+        if (target === '-' && !literal) cur = prev === undefined ? cur : prev;
         else if (target === undefined) cur = r.clean(home);
-        else cur = r.resolve(cur, target, scope);
+        else {
+          const to = r.resolve(cur, target, scope);
+          cur = to;
+          // A folder under the clone root that does not exist now (pass 2 warning: `cd <missing
+          // worktree>; git status` in a clone): that `cd` fails unless something in this command
+          // makes the folder first, so the rest is read both ways. Here, as written; and in a
+          // second walk where the `cd` failed, its `&&` chain never ran and the rest runs in the
+          // folder it left. A folder this command's one-off `worktree add` makes is not missing;
+          // one outside the root (a WSL home) cannot always be read from here and is followed.
+          const knowable = to !== null && rootN !== null && to.startsWith(rootN + '/');
+          if (knowable && !created.has(to) && !isDir(to)) {
+            if (forks < MAX_FORKS) {
+              forks++;
+              walk(segs, at + 1, { cur: before, prev, dirStack: stackBefore, shellStack }, vars, depth, true);
+            } else {
+              // Past the cap: the folder stays, and the target still counts as this cd's folder.
+              counted.push({ folder: to, git: false, prog: 'cd', args });
+              cur = before;
+            }
+          }
+        }
         prev = before;
         counted.push({ folder: cur, git: false, prog: 'cd', args });
         continue;
@@ -565,14 +704,18 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
         // earlier segment) can name a program git runs (`GIT_SSH_COMMAND`), so it ends the form.
         if (onlyC && dashC !== null && !folders.length && !Object.keys(scope).some((k) => /^GIT_/i.test(k))) {
           if (sub === 'fetch') oneOff = fetchIsOneOff(more);
-          else if (sub === 'worktree' && more[0] === 'add') oneOff = worktreeAddIsOneOff(more.slice(1), dashC, scope);
+          else if (sub === 'worktree' && more[0] === 'add') {
+            const made = worktreeAddIsOneOff(more.slice(1), dashC, scope);
+            oneOff = typeof made === 'string';
+            if (oneOff) created.add(made);
+          }
         }
         if (dashC !== null) folders.push(dashC);
         if (!folders.length) folders.push(segCur);
         for (const folder of folders) counted.push({ folder, git: true, oneOff });
         continue;
       }
-      counted.push({ folder: segCur, git: false, prog: name, args });
+      counted.push({ folder: segCur, git: false, prog: name, args, op });
     }
   }
 
@@ -588,6 +731,48 @@ function rootToolAllowed(prog, args) {
   if (prog === 'node') return /^(\.\/)?(commands|scripts)\//.test(a[0] || '') || a[0] === '-e' || a[0] === '--eval';
   if (prog === 'npm') return a[0] === 'run' && typeof a[1] === 'string' && !a[1].startsWith('-');
   return false;
+}
+
+// Stdin filters a migrator agent may pipe its own tool into at the clone root (pass 2, E2). Each
+// reads stdin only (no file argument: grep takes one pattern, or none after `-e`) and writes only
+// to stdout; an option outside its list, or a word holding `<` or `>` (a redirection), ends it.
+const STDIN_FILTERS = Object.freeze({
+  tail: { flags: /^-(\d+|[nc][+-]?\d+|[qvzfF]+)$|^--(lines|bytes)=[+-]?\d+$/, values: /^-[nc]$|^--(lines|bytes)$/, patterns: 0 },
+  head: { flags: /^-(\d+|[nc]-?\d+|[qvz]+)$|^--(lines|bytes)=-?\d+$/, values: /^-[nc]$|^--(lines|bytes)$/, patterns: 0 },
+  grep: {
+    flags: /^-[ivwxcnoqsEFPaz]+$|^-[mABC]\d+$|^--(ignore-case|invert-match|word-regexp|line-regexp|count|line-number|only-matching|quiet|silent|extended-regexp|fixed-strings|perl-regexp|colou?r(=\w+)?)$/,
+    values: /^-[mABCe]$|^--(max-count|after-context|before-context|context|regexp)$/,
+    patterns: 1,
+  },
+  wc: { flags: /^-[lwcmL]+$|^--(lines|words|bytes|chars|max-line-length)$/, patterns: 0 },
+  sort: { flags: /^-[bdfghiMnRruVsz]+$|^-[kt].+$/, values: /^-[kt]$/, patterns: 0 },
+  cat: { flags: /^-[AbeEnstTuv]+$/, patterns: 0 },
+});
+function stdinFilter(prog, args) {
+  const f = Object.prototype.hasOwnProperty.call(STDIN_FILTERS, prog) ? STDIN_FILTERS[prog] : undefined;
+  const a = args || [];
+  if (!f || a.some((w) => /[<>]/.test(w))) return false;
+  let positional = 0;
+  let patternGiven = false;
+  for (let i = 0; i < a.length; i++) {
+    const w = a[i];
+    if (f.values && f.values.test(w)) {
+      if (i + 1 >= a.length) return false;
+      if (w === '-e' || w === '--regexp') patternGiven = true;
+      i++;
+    } else if (w.startsWith('-') && w !== '-') {
+      if (!f.flags.test(w)) return false;
+    } else if (w !== '-') positional++;
+  }
+  return positional <= (f.patterns && !patternGiven ? 1 : 0);
+}
+
+// An echo of the exit status after a separate command (`; echo "exit=$?"`, `echo $?` on its own
+// line): plain words, at least one holding `$?`, and no redirection or substitution.
+const STATUS_OPS = new Set([';', '\n', '&&', '||']);
+function statusEcho(prog, args) {
+  const a = args || [];
+  return prog === 'echo' && a.some((w) => w.includes('$?')) && a.every((w) => /^[A-Za-z0-9_ =:.,-]*(\$\?[A-Za-z0-9_ =:.,-]*)*$/.test(w));
 }
 
 function statKind(p) {
@@ -641,4 +826,4 @@ if (require.main === module) {
   process.exit(0);
 }
 
-module.exports = { decide, reasonFor, splitSegments, words };
+module.exports = { decide, reasonFor, splitSegments, splitOps, words };

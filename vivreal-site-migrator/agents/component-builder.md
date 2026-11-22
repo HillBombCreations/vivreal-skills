@@ -246,7 +246,8 @@ nobody has written yet.
 - **You measure → build → re-verify against the live target.** Don't theorize past an unverified step.
 - **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
   tool output stays outside every repo"). Before your first browser tool call,
-  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  `cd captures && printenv PLAYWRIGHT_MCP_OUTPUT_DIR` (from the Vivreal_Site_Migrator clone) must
+  print an absolute folder outside every repository; if it
   is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
   and say so in your report. A file saved by a bare name lands in the session's folder, often an
   owner's checkout. After the run, the session's folder must hold no `.playwright-mcp/` (the

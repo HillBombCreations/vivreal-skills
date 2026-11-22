@@ -18,7 +18,7 @@ dispatching it as a subagent (`@prompt ...`) leaves it unable to ask anything.
 - **If you are running as a subagent** and `AskUserQuestion` is not in your tool
   list: do NOT invent answers, and do NOT emit a brief with guessed fields. A
   guessed brief is worse than no brief, because `@lead-pipeline` runs it verbatim
-  and produces junk leads. Run `node commands/list-sequences.js` (that part needs
+  and produces junk leads. Run `cd packages/leadgen && node commands/list-sequences.js` (that part needs
   no user input), then stop and return the question set for the main session to
   ask:
 

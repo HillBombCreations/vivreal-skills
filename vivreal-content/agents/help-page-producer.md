@@ -200,14 +200,16 @@ checked.
   computer 1440; see its "Sizes" table) and videos by `tutorial-maker`. Your slot specs are what
   they shoot from, so make each one exact (screen, state, what must be visible).
 - Read portal code from `Vivreal_Portal_Mobile` `origin/stable` (the release owners run)
-  with `git show`, never from a working checkout, which may be parked on another branch.
+  with `git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show origin/stable:<path>` after a fetch there (the kept portal read worktree,
+  `vivreal-workflow:shared-standards`, "Path resolution"), never from a working checkout, which may
+  be parked on another branch.
   When stable and the running product disagree, the running product wins for the article
   and the disagreement is a defect.
 
 ### Navigation: read it from the product, every run
 
 This file carries no nav map: every map written into these agents went stale within weeks. Read
-the nav at portal `origin/stable` with `git show` (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` for
+the nav at portal `origin/stable` with `git show` in the kept portal read worktree (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` for
 every destination and its exact label, `src/components/NavigationTabs/tabs.ts` for the phone bar,
 `src/components/MobileHeader/index.tsx` for the phone business menu, `src/lib/nav/moreSections.ts`
 for the More page, `src/components/DesktopSidebar/index.tsx` and `src/lib/nav/desktopNav.ts` for the
@@ -286,7 +288,8 @@ Record every fact you will assert, with where you saw it (screen and state, or
   P-content-through-ui).
 - **A Timing line compares both refs label by label, and state by state.** For "any time" against
   "after <deploy>", list every label the copy names and, for each, its words AND the states it names
-  at the deployed portal and at the release head (`git show` both). A label new at the head, or one
+  at the deployed portal and at the release head (`git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show`
+  both refs, after a fetch). A label new at the head, or one
   whose states change (Ready shown also when a read fails), makes the copy wait for that deploy.
 - **A link that depends on a sibling's rewrite waits for that sibling's APPLY,** not for its address
   to answer 200: the address can be live while the words the link promises are not yet published.

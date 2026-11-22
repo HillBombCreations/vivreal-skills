@@ -41,8 +41,11 @@ const AGENT = 'a0123456789abcdef';
 const OWNER = `${WROOT}/${HQ}`;
 const WT = `${WROOT}/_wt/hq-main`;
 const OUTSIDE = DRIVE + '/elsewhere';
+// Folders a `cd` is told do not exist (pass 2): every other folder these tests name exists.
+const MISSING = new Set([`${WROOT}/_wt/missing`, `${WROOT}/_wt/other`, `${WROOT}/Vivreal_Site_Migrator/captures/k/preview`].map((p) => p.toLowerCase()));
+const isDir = (p) => !MISSING.has(String(p).toLowerCase());
 const win = (command, over = {}) =>
-  lib().decide({ command, cwd: WT, agentId: AGENT, toolName: 'Bash', root: WROOT, platform: 'win32', home: DRIVE + '/home', env: {}, kindOf: winKind, ...over });
+  lib().decide({ command, cwd: WT, agentId: AGENT, toolName: 'Bash', root: WROOT, platform: 'win32', home: DRIVE + '/home', env: {}, kindOf: winKind, isDir, ...over });
 
 const REFUSE = [
   ['the brief form: cd into the hq checkout, then git', `cd ${OWNER} && git log -1`, { cwd: OUTSIDE }],
@@ -422,6 +425,7 @@ const iso = path.join(hq, '.claude', 'worktrees', 'agent-1');
 fs.mkdirSync(path.join(iso, 'src'), { recursive: true });
 fs.writeFileSync(path.join(iso, '.git'), 'gitdir: elsewhere\n');
 fs.mkdirSync(path.join(hq, 'packages', 'leadgen'), { recursive: true });
+fs.mkdirSync(path.join(root, 'Vivreal_Site_Migrator', '.git'), { recursive: true });
 const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), 'not-vivreal-'));
 test.after(() => {
   fs.rmSync(root, { recursive: true, force: true });
@@ -725,4 +729,294 @@ test('ALLOW (spawned, pass 1 fleet-breadth): the same leadgen agent in packages/
   const r = run(fill(RECORDED.subagent, { cwd: path.join(hq, 'packages', 'leadgen'), command: 'node commands/stats.js', agentType: 'vivreal-leadgen:runner' }));
   assert.equal(r.status, 0);
   assert.equal(r.stdout, '');
+});
+
+// ------------------------------------------------- definition review pass 2 (review-c-sk.md)
+// Characters built at run time, so no escape in this file is read for the wrong reason.
+const BS = String.fromCharCode(92);
+const NL = '\n';
+const CRLF = '\r\n';
+const BT = '`';
+const MIG_INGEST = 'vivreal-site-migrator:ingest';
+
+// E1: a line continuation (Bash backslash-newline, PowerShell backtick-newline) joins the next
+// line to this one before the command is split, so the strict one-off reading sees every option.
+const PASS2_CONT_REFUSE = [
+  ['fetch, then --upload-pack on the next line', `git -C ${CMS} fetch origin ${BS}${NL}  --upload-pack=x`, WT],
+  ['fetch, then a refspec writing a branch on the next line', `git -C ${CMS} fetch ${BS}${NL}origin +x:main`, WT],
+  ['git, then -C the clone on the next line', `git ${BS}${NL}  -C ${OWNER} log -1`, WT],
+  ['git -C, then the clone on the next line', `git -C ${BS}${NL}  ${OWNER} log -1`, WT],
+  ['cd, then the clone on the next line', `cd ${BS}${NL}  ${OWNER} && git status`, WT],
+  ['worktree add, then -f on the next line', `git -C ${CMS} worktree add --detach ${WROOT}/_wt/x origin/main ${BS}${NL}  -f`, WT],
+  ['worktree add, then -f -B main on the next line', `git -C ${CMS} worktree add ${BS}${NL} -f -B main ${WROOT}/_wt/x`, WT],
+  ['a Windows line end after the backslash', `git -C ${CMS} fetch origin ${BS}${CRLF}  --upload-pack=x`, WT],
+  ['two continuations in a row', `git ${BS}${NL} -C ${BS}${NL} ${OWNER} status`, WT],
+  ['inside double quotes, the path goes on on the next line', `cd "${WT}${BS}${NL}/../../${HQ}" && git status`, OUTSIDE],
+  ['inside a $( ) substitution', `x=$(git ${BS}${NL} -C ${OWNER} log -1)`, WT],
+  ['PowerShell: a backtick at the line end', `git ${BT}${NL}  -C ${OWNER} log -1`, WT, 'PowerShell'],
+  ['PowerShell: fetch, then --upload-pack on the next line', `git -C ${CMS} fetch origin ${BT}${NL}  --upload-pack=x`, WT, 'PowerShell'],
+  ['PowerShell: a backtick and a Windows line end before the folder', `Set-Location ${BT}${CRLF}  ${OWNER}; git status`, WT, 'PowerShell'],
+];
+for (const [name, command, cwd, toolName = 'Bash'] of PASS2_CONT_REFUSE) {
+  test(`REFUSE (subagent, pass 2 E1 line continuation): ${name}`, () => {
+    assert.equal(win(command, { cwd, toolName }).refuse, true, JSON.stringify(command));
+  });
+}
+const PASS2_CONT_ALLOW = [
+  ['portal-coder: worktree add -b, the path on the next line, from a worktree', `git -C "${V}/Vivreal_Portal_Mobile" worktree add -b fix/x --no-track ${BS}${NL}  "${V}/_wt/pc-new" origin/main`, WT, 'vivreal-principal:portal-coder'],
+  ['fetch, --prune and the remote on the next line', `git -C ${CMS} fetch ${BS}${NL}  --prune origin`, WT, 'vivreal-principal:coder'],
+  ['cd into a worktree over two lines, then a two-line git', `cd ${BS}${NL}  ${WT} && git log ${BS}${NL}  --oneline -5`, OWNER, 'vivreal-principal:coder'],
+  ['component-builder: NODE_PATH, then the sweep on the next line, at the migrator root', `export CLUSTER_URL=x${NL}NODE_PATH=${VB}/VR_Secure_API/node_modules ${BS}${NL}  node commands/sweep-renderer-impact.js --layouts a --prod`, MIG, 'vivreal-site-migrator:component-builder'],
+  ['lead-scout: a two-line import in packages/leadgen', `cd packages/leadgen && node commands/import-leads.js Data/exports/c.csv ${BS}${NL}  --campaign n --tags a,b --dry-run`, OWNER, 'vivreal-leadgen:lead-scout'],
+  ['PowerShell: a backtick continuation into a worktree', `Set-Location ${BT}${NL}  ${WT}; git status`, OWNER, 'vivreal-principal:coder', 'PowerShell'],
+];
+for (const [name, command, cwd, agentType, toolName = 'Bash'] of PASS2_CONT_ALLOW) {
+  test(`ALLOW (subagent, pass 2 E1 line continuation): ${name}`, () => {
+    assert.deepEqual(win(command, { cwd, agentType, toolName }), { refuse: false }, JSON.stringify(command));
+  });
+}
+// Kept green: a backslash in a quoted heredoc body is data, so it never swallows the delimiter
+// line and hides the command after it.
+test('REFUSE (control, pass 2 E1): a backslash at a heredoc body line end does not hide the next command', () => {
+  assert.equal(win(`cat > x.txt <<'EOF'${NL}a ${BS}${NL}EOF${NL}git -C ${OWNER} status`, { cwd: WT }).refuse, true);
+});
+
+// E2: the `&` of a redirection is no separator, and at the migrator root its own tool may be
+// followed by stdin filters after a pipe and an echo of the exit status.
+const PASS2_REDIR_ALLOW = [
+  ['2>&1', 'node commands/crawl.js https://x.com --max-pages=120 --deep 2>&1'],
+  ['a log file and 2>&1', 'node commands/crawl.js https://x.com > captures/x.com/crawl.log 2>&1'],
+  ['&> a log file', 'node commands/crawl.js https://x.com &> captures/x.com/crawl.log'],
+  ['&>> a log file', 'node commands/crawl.js https://x.com &>> captures/x.com/crawl.log'],
+  ['>& a log file', 'node commands/crawl.js https://x.com >& captures/x.com/crawl.log'],
+  ['| tail -30', 'node commands/crawl.js https://x.com | tail -30'],
+  ['2>&1 | tail -30', 'node commands/crawl.js https://x.com --deep 2>&1 | tail -30'],
+  ['|& tail -n 5', 'node commands/crawl.js https://x.com |& tail -n 5'],
+  ['| grep -v DEBUG | head -n 40', 'node commands/crawl.js https://x.com 2>&1 | grep -v "DEBUG line" | head -n 40'],
+  ['| wc -l, | sort | cat', 'npm run estimate -- https://x.com 2>&1 | sort -u | cat -n'],
+  ['; echo "exit=$?"', 'node commands/crawl.js https://x.com; echo "exit=$?"'],
+  ['| tail -30; echo "exit=$?"', 'node commands/crawl.js https://x.com 2>&1 | tail -30; echo "exit=$?"'],
+  ['echo $? on the next line', `node commands/crawl.js https://x.com${NL}echo $?`],
+];
+for (const [name, command] of PASS2_REDIR_ALLOW) {
+  test(`ALLOW (subagent, pass 2 E2, ingest at the migrator root): ${name}`, () => {
+    assert.deepEqual(win(command, { cwd: MIG, agentType: MIG_INGEST }), { refuse: false }, command);
+  });
+}
+const PASS2_REDIR_REFUSE = [
+  ['| rm -rf docs', 'node commands/crawl.js https://x.com | rm -rf docs', MIG_INGEST],
+  ['; git status', 'node commands/crawl.js https://x.com; git status', MIG_INGEST],
+  ['2>&1 | sh', 'node commands/crawl.js https://x.com 2>&1 | sh', MIG_INGEST],
+  ['| xargs rm', 'node commands/crawl.js https://x.com | xargs rm', MIG_INGEST],
+  ['a filter reading a file, not stdin (tail)', 'node commands/crawl.js https://x.com | tail -30 .env', MIG_INGEST],
+  ['a filter reading a file, not stdin (cat)', 'node commands/crawl.js https://x.com | cat .env', MIG_INGEST],
+  ['a filter reading a file, not stdin (grep)', 'node commands/crawl.js https://x.com | grep x package.json', MIG_INGEST],
+  ['grep -e and a file', 'node commands/crawl.js https://x.com | grep -e x package.json', MIG_INGEST],
+  ['sort -o writes a file', 'node commands/crawl.js https://x.com | sort -o out.txt', MIG_INGEST],
+  ['sort --compress-program runs a program', 'node commands/crawl.js https://x.com | sort --compress-program=sh', MIG_INGEST],
+  ['a filter writing a file at the root', 'node commands/crawl.js https://x.com | tail -30 > notes.txt', MIG_INGEST],
+  ['a filter after || is no pipe', 'node commands/crawl.js https://x.com || tail -30', MIG_INGEST],
+  ['a filter as the first command', 'head -5 package.json', MIG_INGEST],
+  ['an echo that is not the exit status', 'node commands/crawl.js https://x.com; echo done', MIG_INGEST],
+  ['an exit-status echo written to a file', 'node commands/crawl.js https://x.com; echo "exit=$?" > status.txt', MIG_INGEST],
+  ['an echo of a substitution that runs git', 'node commands/crawl.js https://x.com; echo "$(git status)"', MIG_INGEST],
+  ['& still runs the next command in the background', 'node commands/crawl.js https://x.com 2>&1 & git status', MIG_INGEST],
+  ['>&2 then npm install', 'node commands/crawl.js https://x.com >&2 && npm install', MIG_INGEST],
+  ['a coder at the migrator root with 2>&1', 'node commands/crawl.js https://x.com 2>&1', 'vivreal-principal:coder'],
+  ['a leadgen agent at the migrator root with | tail', 'node commands/crawl.js https://x.com | tail -30', 'vivreal-leadgen:runner'],
+];
+for (const [name, command, agentType] of PASS2_REDIR_REFUSE) {
+  test(`REFUSE (subagent, pass 2 E2, at the migrator root): ${name}`, () => {
+    assert.equal(win(command, { cwd: MIG, agentType }).refuse, true, `${agentType}: ${command}`);
+  });
+}
+test('REFUSE (pass 2 E2): the migrator refusal names what IS allowed at its root, pipes and redirections included', () => {
+  const d = win('rm -rf docs', { cwd: MIG, agentType: MIG_INGEST });
+  assert.equal(d.refuse, true);
+  const reason = lib().reasonFor(d.folder, d.fleet);
+  assert.match(reason, /node commands\/\.\.\., node scripts\/\.\.\., node -e and npm run <script>/);
+  assert.match(reason, /tail, head, grep, wc, sort or cat reading stdin/);
+  assert.match(reason, /echo of \$\?/);
+});
+test('REFUSE (spawned, pass 2 E2): the real hook refuses | rm at the migrator root and names the filters', () => {
+  const r = run(fill(RECORDED.subagent, { cwd: path.join(root, 'Vivreal_Site_Migrator'), command: 'node commands/crawl.js https://x.com | rm -rf docs', agentType: MIG_INGEST }));
+  assert.notEqual(r.stdout, '', 'not refused');
+  assert.match(JSON.parse(r.stdout).hookSpecificOutput.permissionDecisionReason, /tail, head, grep, wc, sort or cat reading stdin/);
+});
+test('ALLOW (spawned, pass 2 E2): the real hook runs the crawl with 2>&1 | tail -30 at the migrator root', () => {
+  const r = run(fill(RECORDED.subagent, { cwd: path.join(root, 'Vivreal_Site_Migrator'), command: 'node commands/crawl.js https://x.com 2>&1 | tail -30', agentType: MIG_INGEST }));
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout, '');
+});
+
+// Warnings: `cd --`, a `cd` to a folder that does not exist, and a `tag` refspec on fetch.
+const PASS2_WARN_REFUSE = [
+  ['cd -- the clone', `cd -- ${OWNER} && git status`, WT],
+  ['cd -- the clone, then ;', `cd -- ${OWNER}; npm test`, WT],
+  ['pushd -- the clone', `pushd -- ${OWNER} && git log`, WT],
+  ['a cd to a missing worktree, then ; keeps the clone', `cd ${WROOT}/_wt/missing; git status`, OWNER],
+  ['a cd to a missing worktree, then a newline keeps the clone', `cd ${WROOT}/_wt/missing${NL}git status`, OWNER],
+  ['a pushd to a missing worktree keeps the clone', `pushd ${WROOT}/_wt/missing; npm test`, OWNER],
+  ['a cd to a missing worktree, its && chain, then ; (runs in the clone when the cd fails)', `cd ${WROOT}/_wt/missing && git status; npm test`, OWNER],
+  ['a cd to a missing worktree, then || (runs in the clone when the cd fails)', `cd ${WROOT}/_wt/missing && ls || npm test`, OWNER],
+  ['a missing folder made at run time is still read as written', `mkdir -p ${WROOT}/_wt/missing; cd ${WROOT}/_wt/missing && git -C ${OWNER} status`, WT],
+  ['a cd from a missing folder into the clone, in its && chain', `cd ${WROOT}/_wt/missing && cd ../../${HQ} && git log`, WT],
+  ['a cd to a missing worktree, a brace group, then ; (runs in the clone when the cd fails)', `cd ${WROOT}/_wt/missing && { test -e .env || cp a .env; }; npm ci`, OWNER],
+  ['a cd to a missing worktree, a subshell, then ; (runs in the clone when the cd fails)', `cd ${WROOT}/_wt/missing && (ls; true); git status`, OWNER],
+  ['PowerShell: Set-Location to a missing worktree keeps the clone', `Set-Location ${WROOT}/_wt/missing; git status`, OWNER, 'PowerShell'],
+  ['a worktree add of ANOTHER path does not make the missing one', `git -C ${CMS} worktree add --detach ${WROOT}/_wt/other origin/main && cd ${WROOT}/_wt/missing; npm ci`, OWNER],
+  ['fetch origin tag v1 (writes a tag)', `git -C ${CMS} fetch origin tag v1`, OUTSIDE],
+  ['fetch --force origin tag v1', `git -C ${CMS} fetch --force origin tag v1`, OUTSIDE],
+  ['fetch origin main tag v1', `git -C ${CMS} fetch origin main tag v1`, OUTSIDE],
+];
+for (const [name, command, cwd, toolName = 'Bash'] of PASS2_WARN_REFUSE) {
+  test(`REFUSE (subagent, pass 2 warnings): ${name}`, () => {
+    assert.equal(win(command, { cwd, toolName }).refuse, true, command);
+  });
+}
+const PASS2_WARN_ALLOW = [
+  ['cd -- a worktree from the clone', `cd -- ${WT} && git status`, OWNER],
+  ['a cd to a worktree that exists, then ;', `cd ${WT}; git status`, OWNER],
+  ['a cd to a missing worktree, then only its && chain and pipes (none runs if the cd fails)', `cd ${WROOT}/_wt/missing && git status | tail -3 && npm test`, OWNER],
+  ['a cd to a missing worktree, then a brace group and more && (none runs if the cd fails)', `cd ${WROOT}/_wt/missing && { test -e .env || cp a .env; } && npm ci`, OWNER],
+  ['a cd to a missing worktree, then a subshell in its chain (none runs if the cd fails)', `cd ${WROOT}/_wt/missing && (ls; git status)`, OWNER],
+  ['a cd to a missing folder in the migrator captures (a kit not made yet)', 'cd captures/k/preview && cp __saves/a.json siteDetails.json', MIG, 'vivreal-site-migrator:studio-confirm'],
+  ['the one-off worktree add of a new path, then a cd into it', `git -C ${CMS} worktree add --detach ${WROOT}/_wt/missing origin/main && cd ${WROOT}/_wt/missing; npm ci`, OWNER],
+  ['fetch origin main (a plain branch name)', `git -C ${CMS} fetch origin main`, OUTSIDE],
+  ['fetch --tags origin', `git -C ${CMS} fetch --tags origin`, OUTSIDE],
+];
+for (const [name, command, cwd, agentType] of PASS2_WARN_ALLOW) {
+  test(`ALLOW (subagent, pass 2 warnings): ${name}`, () => {
+    assert.deepEqual(win(command, { cwd, agentType }), { refuse: false }, command);
+  });
+}
+test('REFUSE (spawned, pass 2 warnings): a cd to a worktree that does not exist keeps the hq clone', () => {
+  const r = run(fill(RECORDED.subagent, { cwd: hq, command: `cd "${path.join(root, '_wt', 'missing')}"; git status` }));
+  assert.equal(JSON.parse(r.stdout || '{}').hookSpecificOutput?.permissionDecision, 'deny');
+});
+test('ALLOW (spawned, pass 2 warnings): the same cd to the worktree that exists', () => {
+  const r = run(fill(RECORDED.subagent, { cwd: hq, command: `cd "${wt}"; git status` }));
+  assert.equal(r.stdout, '');
+});
+
+// E3 and the folder warnings: every line pass 2 found refused for its own agent, read straight
+// out of its definition file as it stands now (so the test follows the file), run through the
+// guard as that agent from the folder its session starts in; the line as it read at a6c47ac is
+// refused beside it.
+const PLUGINS = path.join(__dirname, '..', '..');
+const defText = (rel) => fs.readFileSync(path.join(PLUGINS, rel), 'utf8').split('\r\n').join('\n');
+// The inline code span holding `needle`, its line breaks read as spaces.
+function spanIn(rel, needle) {
+  const text = defText(rel);
+  const at = text.indexOf(needle);
+  assert.ok(at >= 0, `${rel} no longer holds: ${needle}`);
+  const start = text.lastIndexOf(BT, at);
+  const end = text.indexOf(BT, at + needle.length);
+  return text.slice(start + 1, end).split(NL).map((l) => l.trim()).join(' ');
+}
+// The fenced-block line that starts with `needle`, with the lines a backslash continues it onto.
+function lineIn(rel, needle) {
+  const lines = defText(rel).split(NL);
+  let i = lines.findIndex((l) => l.trim().startsWith(needle));
+  assert.ok(i >= 0, `${rel} no longer holds: ${needle}`);
+  const out = [lines[i]];
+  while (lines[i].trimEnd().endsWith(BS) && i + 1 < lines.length) out.push(lines[++i]);
+  return out.map((l) => l.trim()).join(NL);
+}
+const LG = 'vivreal-leadgen/agents/';
+const CT = 'vivreal-content/agents/';
+const MG = 'vivreal-site-migrator/agents/';
+const PORTAL_READ = `${V}/_wt/Vivreal_Portal_Mobile-read`;
+const PASS2_DEFS = [
+  // [definition line, agent_type, start folder, the command now (read from the file), the command at a6c47ac]
+  ['profiler.md: list the crawled domains', 'vivreal-leadgen:profiler', OWNER, () => lineIn(LG + 'profiler.md', 'cd packages/leadgen && ls Data/profiles/'), 'ls packages/leadgen/Data/profiles/'],
+  ['profiler.md: read a domain index', 'vivreal-leadgen:profiler', OWNER, () => lineIn(LG + 'profiler.md', 'cd packages/leadgen && cat Data/profiles/'), 'cat packages/leadgen/Data/profiles/{domain}/_index.json'],
+  ['content-planner.md: the coverage check, manifests', 'vivreal-content:content-planner', OWNER, () => lineIn(CT + 'content-planner.md', 'cd packages/content-studio && cat ../../content/footage/'), 'cat content/footage/*/footage-manifest.json'],
+  ['content-planner.md: the coverage check, listings', 'vivreal-content:content-planner', OWNER, () => lineIn(CT + 'content-planner.md', 'cd packages/content-studio && ls ../../content/tutorials'), 'ls content/tutorials content/help-media'],
+  ['content-planner.md: the lookback (inline)', 'vivreal-content:content-planner', OWNER, () => spanIn(CT + 'content-planner.md', 'ls -t ../../content/calendars'), 'ls -t content/calendars/*.md | head -4'],
+  ['content-planner.md: the lookback (block)', 'vivreal-content:content-planner', OWNER, () => lineIn(CT + 'content-planner.md', 'cd packages/content-studio && ls -t'), 'ls -t content/calendars/*.md | head -4'],
+  ['carousel-editor.md: the slide render', 'vivreal-content:carousel-editor', OWNER, () => lineIn(CT + 'carousel-editor.md', 'cd packages/content-studio && npx tsx src/render-slide.ts'), 'npx tsx src/render-slide.ts packages/content-studio/capture-assets/templates/typography/x.html out.png 1080 1350 {}'],
+  ['carousel-editor.md: the frame pull', 'vivreal-content:carousel-editor', OWNER, () => lineIn(CT + 'carousel-editor.md', 'cd packages/content-studio && ffmpeg -ss'), `ffmpeg -ss 3 -i content/footage/s/clips/c.mp4 -frames:v 1 ${BS}${NL}  .agent-cache/x-base.png`],
+  ['carousel-editor.md: the PDF assembly', 'vivreal-content:carousel-editor', OWNER, () => lineIn(CT + 'carousel-editor.md', 'cd packages/content-studio && magick'), 'magick slides/slide-*.png carousel.pdf'],
+  ['carousel-editor.md: the brand token sync', 'vivreal-content:carousel-editor', OWNER, () => spanIn(CT + 'carousel-editor.md', 'npm run sync-brand-tokens'), 'npm run sync-brand-tokens'],
+  ['carousel-editor.md (linkedin-editor follows it): the PDF assembly', 'vivreal-content:linkedin-editor', OWNER, () => lineIn(CT + 'carousel-editor.md', 'cd packages/content-studio && magick'), 'cd content/social/x/linkedin && magick slide-*.png carousel.pdf'],
+  ['mascot-artist.md: the render', 'vivreal-content:mascot-artist', OWNER, () => spanIn(CT + 'mascot-artist.md', 'render.py [pose]'), 'python brand/mascot/model/render.py standing'],
+  ['footage-recorder.md: the nav read at the deployed portal', 'vivreal-content:footage-recorder', OWNER, () => spanIn(CT + 'footage-recorder.md', 'Vivreal_Portal_Mobile-read" show origin/stable'), `git -C "${V}/Vivreal_Portal_Mobile" show origin/stable:src/lib/nav/favorites.ts`],
+  ['footage-recorder.md: the release read', 'vivreal-content:footage-recorder', OWNER, () => spanIn(CT + 'footage-recorder.md', 'app/release.json'), 'curl https://vivreal.io/app/release.json'],
+  ['footage-recorder.md: capture', 'vivreal-content:footage-recorder', OWNER, () => lineIn(CT + 'footage-recorder.md', 'cd packages/content-studio && npx tsx src/portal-capture.ts'), 'npx tsx src/portal-capture.ts content/footage/s/sequence.json'],
+  ['footage-recorder.md: split', 'vivreal-content:footage-recorder', OWNER, () => lineIn(CT + 'footage-recorder.md', 'cd packages/content-studio && npx tsx src/footage-split.ts'), 'npx tsx src/footage-split.ts content/footage/s'],
+  ['help-page-producer.md: portal code at origin/stable', 'vivreal-content:help-page-producer', OWNER, () => spanIn(CT + 'help-page-producer.md', 'Vivreal_Portal_Mobile-read" show origin/stable'), `git -C "${V}/Vivreal_Portal_Mobile" show origin/stable:src/lib/nav/favorites.ts`],
+  ['help-page-producer.md: both refs of a Timing line', 'vivreal-content:help-page-producer', OWNER, () => `${spanIn(CT + 'help-page-producer.md', 'Vivreal_Portal_Mobile-read" show')} origin/stable:src/x.ts`, 'git show origin/stable:src/x.ts'],
+  ['short-form-editor.md: the render', 'vivreal-content:short-form-editor', OWNER, () => spanIn(CT + 'short-form-editor.md', '--out=../../<outputRoot>'), 'npx tsx src/render-video.ts brief.json --out=content/social/x/tiktok'],
+  ['short-form-editor.md: the contact sheet (block)', 'vivreal-content:short-form-editor', OWNER, () => lineIn(CT + 'short-form-editor.md', 'cd packages/content-studio && ffmpeg -i'), 'ffmpeg -i clip.mp4 -vf "fps=2,scale=150:267,tile=9x3" -frames:v 1 sheet.png'],
+  ['short-form-editor.md: the contact sheet (inline)', 'vivreal-content:short-form-editor', OWNER, () => spanIn(CT + 'short-form-editor.md', 'tile=6x5'), 'ffmpeg -i clip.mp4 -vf "fps=2,scale=150:267,tile=6x5" -frames:v 1 sheet.png'],
+  ['short-form-editor.md: the outro props', 'vivreal-content:short-form-editor', OWNER, () => lineIn(CT + 'short-form-editor.md', "cd packages/content-studio && echo '{"), `echo '{"fps":25}' > .out/outro/props.json`],
+  ['short-form-editor.md: the outro render', 'vivreal-content:short-form-editor', OWNER, () => lineIn(CT + 'short-form-editor.md', 'cd packages/content-studio && npx remotion render'), 'npx remotion render src/remotion/index.ts outro-card .out/outro/outro-card.mp4'],
+  ['tutorial-maker.md: driving the take', 'vivreal-content:tutorial-maker', OWNER, () => lineIn(CT + 'tutorial-maker.md', 'cd packages/content-studio && TUTORIAL_PROVIDER='), `TUTORIAL_PROVIDER=instagram|facebook|linkedIn|tiktok ${BS}${NL}REMOTE_DIR=/tmp/remote ${BS}${NL}npx tsx src/tutorial/run-tutorial.ts x.ts --only=desktop`],
+  ['tutorial-maker.md: the first --login', 'vivreal-content:tutorial-maker', OWNER, () => spanIn(CT + 'tutorial-maker.md', 'npm run tutorial -- --login'), 'npm run tutorial -- --login'],
+  ['contact-enricher.md: the CLI', 'vivreal-leadgen:contact-enricher', OWNER, () => lineIn(LG + 'contact-enricher.md', 'cd packages/leadgen && node commands/outreach-contact.js get'), 'node commands/outreach-contact.js get 1'],
+  ['contact-enricher.md: list the sequences', 'vivreal-leadgen:contact-enricher', OWNER, () => spanIn(LG + 'contact-enricher.md', 'cd packages/leadgen && node commands/list-sequences.js'), 'node commands/list-sequences.js'],
+  ['prompt.md: list the sequences', 'vivreal-leadgen:prompt', OWNER, () => spanIn(LG + 'prompt.md', 'cd packages/leadgen && node commands/list-sequences.js'), 'node commands/list-sequences.js'],
+  ['lead-scout.md: the import (two lines)', 'vivreal-leadgen:lead-scout', OWNER, () => lineIn(LG + 'lead-scout.md', 'cd packages/leadgen && node commands/import-leads.js'), `node commands/import-leads.js Data/exports/c.csv ${BS}${NL}  --campaign n --tags a,b --dry-run`],
+  ['owner-researcher.md: what we already know', 'vivreal-leadgen:owner-researcher', OWNER, () => lineIn(LG + 'owner-researcher.md', 'cd packages/leadgen && node -e'), `node -e "const s=require('./Data/profiles/x/_social.json')"`],
+  ['owner-researcher.md: gate and persist', 'vivreal-leadgen:owner-researcher', OWNER, () => lineIn(LG + 'owner-researcher.md', 'cd packages/leadgen && node commands/save-owner-research.js'), 'node commands/save-owner-research.js Data/reviews/o.json --dry-run'],
+  ['component-builder.md: the live-site sweep (a continuation)', 'vivreal-site-migrator:component-builder', MIG, () => lineIn(MG + 'component-builder.md', 'NODE_PATH='), 'NODE_PATH=x node commands/sweep-renderer-impact.js --prod; printenv NODE_PATH'],
+  ['component-builder.md: the browser output folder', 'vivreal-site-migrator:component-builder', MIG, () => spanIn(MG + 'component-builder.md', 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'), 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'],
+  ['kit-designer.md: the browser output folder', 'vivreal-site-migrator:kit-designer', MIG, () => spanIn(MG + 'kit-designer.md', 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'), 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'],
+  ['page-confirm.md: the browser output folder', 'vivreal-site-migrator:page-confirm', MIG, () => spanIn(MG + 'page-confirm.md', 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'), 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'],
+  ['page-confirm.md: the renderer rebuild', 'vivreal-site-migrator:page-confirm', MIG, () => spanIn(MG + 'page-confirm.md', 'scripts/dev-sync.js'), 'cd vivreal-site-renderer && npm run dev-sync'],
+  ['page-confirm.md: artifact freshness', 'vivreal-site-migrator:page-confirm', MIG, () => spanIn(MG + 'page-confirm.md', 'ls -la qa-*.json'), 'ls -la captures/k/qa-live.json captures/k/blueprint.json'],
+  ['studio-confirm.md: the browser output folder', 'vivreal-site-migrator:studio-confirm', MIG, () => spanIn(MG + 'studio-confirm.md', 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'), 'printenv PLAYWRIGHT_MCP_OUTPUT_DIR'],
+  ['studio-confirm.md: the media route proof', 'vivreal-site-migrator:studio-confirm', MIG, () => spanIn(MG + 'studio-confirm.md', 'collectionObjectMedia?key=x'), 'curl "http://127.0.0.1:8799/tenant/collectionObjectMedia?key=x"'],
+  ['studio-confirm.md: the shim still serves the field', 'vivreal-site-migrator:studio-confirm', MIG, () => spanIn(MG + 'studio-confirm.md', '8799/api/sites'), 'curl -s http://127.0.0.1:8799/api/sites | node -e "console.log(1)"'],
+  ['studio-confirm.md: restore the fixture', 'vivreal-site-migrator:studio-confirm', MIG, () => spanIn(MG + 'studio-confirm.md', 'cp __saves/served-baseline.json'), 'cp captures/k/preview/__saves/served-baseline.json captures/k/preview/siteDetails.json'],
+  ['cutover.md: the build retry', 'vivreal-site-migrator:cutover', MIG, () => spanIn(MG + 'cutover.md', 'aws amplify start-job'), 'aws amplify start-job --app-id x --branch-name b --job-type RETRY --job-id 3'],
+  ['cutover.md: watch a build', 'vivreal-site-migrator:cutover', MIG, () => spanIn(MG + 'cutover.md', 'aws amplify get-job'), 'aws amplify get-job --app-id x --branch-name b --job-id 1'],
+  ['cutover.md: the cache TTL read', 'vivreal-site-migrator:cutover', MIG, () => spanIn(MG + 'cutover.md', "aws amplify get-app --app-id <id> --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'"), "aws amplify get-app --app-id x --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'"],
+  ['cutover.md: the revalidate secret, read and tested in one command', 'vivreal-site-migrator:cutover', MIG, () => spanIn(MG + 'cutover.md', 'S=$(aws amplify get-branch'), `[ -n "$S" ] && [ "$S" != "None" ] && echo set || echo not-set`],
+  ['kit-stager.md: the head read', 'vivreal-site-migrator:kit-stager', MIG, () => spanIn(MG + 'kit-stager.md', 'worktree add --detach "${VIVREAL_REPOS}/_wt/kitstage-<date>"'), 'git ls-remote origin master'],
+];
+for (const [name, agentType, cwd, now, old] of PASS2_DEFS) {
+  test(`ALLOW (pass 2 E3, the definition as it reads now, ${agentType}): ${name}`, () => {
+    const command = now();
+    assert.deepEqual(win(command, { cwd, agentType }), { refuse: false }, command);
+  });
+  test(`REFUSE (pass 2 E3, the definition as it read at a6c47ac, ${agentType}): ${name}`, () => {
+    assert.equal(win(old, { cwd, agentType }).refuse, true, old);
+  });
+}
+
+// Note: every gap the guard lets through is listed where agents read the rule.
+test('the documented gaps: shared-standards and the guard header list every one the review named', () => {
+  const skill = fs.readFileSync(path.join(__dirname, '..', 'skills', 'shared-standards', 'SKILL.md'), 'utf8');
+  const guard = fs.readFileSync(HOOK, 'utf8');
+  const gaps = ['xargs', 'find -exec', 'sudo', 'a path argument', 'npm --prefix', 'make -C', 'bash <<EOF', 'env -S', 'typeset -x', 'iex'];
+  for (const g of gaps) {
+    assert.ok(skill.includes(g), `shared-standards SKILL.md does not list: ${g}`);
+    assert.ok(guard.includes(g), `the guard header does not list: ${g}`);
+  }
+});
+
+// The guard never throws, on random commands from the shapes the review fuzzed and on odd field
+// types (a throw would fail open). Deterministic: a fixed seed.
+test('the guard never throws: fuzzed commands and odd input shapes', () => {
+  const ch = (n) => String.fromCharCode(n);
+  const toks = ['git', '-C', OWNER, CMS, 'fetch', 'worktree', 'add', 'tag', 'cd', 'pushd', 'popd', '-', '--', 'env', '-S', 'timeout', 'wsl', '--cd', 'nice', 'setsid', 'nohup',
+    'eval', 'bash', '-c', '-lc', '(', ')', '$(', BT, ch(34), ch(39), ';', '&&', '||', '|', '|&', '&', '2>&1', '&>', '&>>', '>&', '<&', NL, CRLF, BS + NL, BT + NL, BS + CRLF, '<<EOF', '<<', 'EOF', '#', BS, BS + BS, '$', '${', '}', '{',
+    'X=', 'GIT_DIR=' + OWNER, '__proto__=1', 'constructor=2', 'export', '$env:__proto__ = 1', '%X%', '~', 'tail', 'head', 'grep', 'sort', 'wc', 'cat', 'echo', '"exit=$?"', '-o', '-e',
+    '', ' ', ch(1) + '(', ch(1) + ')', ch(0), ch(9), 'origin', 'x:y', '::', '..', '/', 'C:', '/mnt/q', `${WROOT}/_wt/missing`, WT, MIG, 'node', 'commands/x.js', 'set-location'];
+  let seed = 12345;
+  const rnd = (n) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+  const types = ['vivreal-leadgen:runner', MIG_INGEST, 'vivreal-content:x', 'constructor:x', '__proto__:y', 'x', '', undefined];
+  for (let k = 0; k < 20000; k++) {
+    let command = '';
+    for (let j = 0, len = 1 + rnd(12); j < len; j++) command += toks[rnd(toks.length)] + (rnd(4) ? ' ' : '');
+    const cwd = [OWNER, WT, MIG][rnd(3)];
+    assert.doesNotThrow(() => win(command, { cwd, agentType: types[rnd(types.length)], toolName: rnd(3) ? 'Bash' : 'PowerShell' }), JSON.stringify(command));
+  }
+  for (const f of ['command', 'cwd', 'agentId', 'agentType', 'toolName', 'root', 'home', 'env', 'platform']) {
+    for (const v of [123, null, undefined, true, [], ['a'], Object.create(null), new String('x'), 0, NaN]) {
+      assert.doesNotThrow(() => win('git status', { cwd: OWNER, [f]: v }), `${f} as ${Array.isArray(v) ? 'array' : typeof v}`);
+    }
+  }
 });

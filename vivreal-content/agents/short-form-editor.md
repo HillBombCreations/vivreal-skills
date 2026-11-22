@@ -95,7 +95,7 @@ voice and no music is complete. `tone` never overrides voice rules or the honest
        (`tts/.venv/Scripts/python.exe tts/synthesize.py <in.json> <outdir> --voice af_heart`)
        and read the printed ms,
      - action timestamps: step the clip with
-       `ffmpeg -i clip.mp4 -vf "fps=2,scale=150:267,tile=6x5" -frames:v 1 sheet.png`
+       `cd packages/content-studio && ffmpeg -i ../../content/footage/<session>/clips/<clip>.mp4 -vf "fps=2,scale=150:267,tile=6x5" -frames:v 1 .out/<clip>-sheet.png`
        and read the frame where the selection ring, scroll or type actually lands.
    Two beats may point at the SAME clipId with different windows. Do that whenever a
    capture left a long hold between actions: it is how you cut dead air without a
@@ -104,7 +104,8 @@ voice and no music is complete. `tone` never overrides voice rules or the honest
    After rendering, verify by pulling a frame just before and just after each cue.
    Learned 2026-08-30: the v1 "three steps" Reel set no `inMs` at all, so every clip
    started at frame zero and the narration raced the picture.
-7. **Render:** `npx tsx src/render-video.ts <brief> --out=<outputRoot><platform>`.
+7. **Render**, from `packages/content-studio`, where a relative `--out` resolves first:
+   `cd packages/content-studio && npx tsx src/render-video.ts <brief> --out=../../<outputRoot><platform>`.
    `awaitingVo: true` in the result means a vo-script.md was written, say so.
    Write the brief's `footageManifest` (and `dnaRef`) repo-root-relative
    (`content/footage/…`), never `../../`-prefixed: since 2026-08-07
@@ -144,7 +145,7 @@ Getting this wrong put the caption and the picture in disagreement at two cuts a
 beat its best frame. **Read every anchor off the clip itself:**
 
 ```bash
-ffmpeg -i clip.mp4 -vf "fps=2,scale=150:267,tile=9x3" -frames:v 1 sheet.png
+cd packages/content-studio && ffmpeg -i ../../content/footage/<session>/clips/<clip>.mp4 -vf "fps=2,scale=150:267,tile=9x3" -frames:v 1 .out/<clip>-sheet.png
 ```
 
 Then narrow with single frames (`-ss <t> -frames:v 1`) until the ring, the chip or the scroll is
@@ -185,8 +186,8 @@ needs to read whole.** Always pull a frame afterwards: the visible original rang
 Every video closes on the same card. Render it once and add it as an ordinary clip:
 
 ```bash
-echo '{"fps":25,"durationInFrames":75,"width":1080,"height":1920}' > .out/outro/props.json
-npx remotion render src/remotion/index.ts outro-card .out/outro/outro-card.mp4   --codec=h264 --public-dir=src/assets --props=.out/outro/props.json
+cd packages/content-studio && echo '{"fps":25,"durationInFrames":75,"width":1080,"height":1920}' > .out/outro/props.json
+cd packages/content-studio && npx remotion render src/remotion/index.ts outro-card .out/outro/outro-card.mp4   --codec=h264 --public-dir=src/assets --props=.out/outro/props.json
 ```
 
 `--public-dir=src/assets` is required or the wordmark and font 404 and you get a silent fallback.
@@ -263,7 +264,7 @@ and no recorder runs. `styleDna: auto` picks the best tag-overlap `ready` row
 
 Self-check the beat sheet: no em dashes, no banned words, no 23x or 51%, no
 claim that publishing sends email. Emit `edit-brief.json`, then
-`npx tsx src/render-video.ts <brief> --out=content/social/2026-08-06-content-calendar/tiktok`.
+`cd packages/content-studio && npx tsx src/render-video.ts <brief> --out=../../content/social/2026-08-06-content-calendar/tiktok`.
 Write `post.md` (caption under 150 chars, Audio note, pre-flight block), refresh
 `REVIEW.md`, flip the TikTok cell in `knowledge/08-repurpose-tracker.md`.
 
