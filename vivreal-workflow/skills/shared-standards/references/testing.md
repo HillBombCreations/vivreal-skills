@@ -144,6 +144,14 @@ timeout.
 - No `.only`, no `sleep()`, use `waitFor()`.
 - **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
 - **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`, except inside a NAMED portal-coder mode that authorises it (PARALLEL, or FOLLOWUP on a branch that already passed the full gate) or a dispatch that says so. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **Prove the hooks are installed before you rely on them** (release C, L-C-04; F520). Husky 9
+  runs hooks from its generated folder `.husky/_`, named by `core.hooksPath`; the scripts in
+  `.husky/` itself carry no shebang and no execute bit, so a hooks path of `.husky` runs nothing.
+  A `git clean` that deletes untracked or ignored files deletes `.husky/_` while the config still
+  names it, and from then on every hook is skipped with no warning; a fresh clone has no hooks at
+  all (an EventHandler clone pushed with no pre-push gate in release B). Before a push you rely on
+  a hook for: `npx husky`, then `git config core.hooksPath .husky/_`, then `ls -l .husky/_/pre-push`
+  (present and executable), and read the push log for the hook's own first line.
 - **Portal release-head check (owner, 2026-10-10): no full e2e, walk instead.** Before a portal
   release, the check is eslint, BOTH `tsc` configs, and every unit test file the release added
   or changed, all green. Do not schedule the full e2e suite, the full vitest run or the

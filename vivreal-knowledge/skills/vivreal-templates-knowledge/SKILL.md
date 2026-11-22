@@ -157,6 +157,13 @@ A site can show the owner's synced social posts. `src/lib/api/collections/social
 - **`npm run build` is `scripts/build-with-snapshot.mjs`**, which reads the site's data for `SITE_ID` before `next build` and exits 1 without it. A local compile check with no site uses `npx next build --turbopack` directly; a check of the shipped build sets `SITE_ID` to a real site.
 - **`releaseName.test.ts` fails in WSL on a Windows worktree path**, because Linux git cannot read a worktree whose `.git` file names a Windows path. Run that file in the Windows shell, or from a `git bundle` clone on WSL's own disk (`vivreal-workflow:shared-standards`, `references/wsl.md`); its failure there is not a code defect.
 - **A base path site is the help centre** (`SITE_BASE_PATH`, CLAUDE.md "Base path sites"; the code is live since release B's BR-13): its own Amplify app, `vivreal-help-path`, builds this same `stable` with `/help` (it serves vivreal.io/help since the help move, FIN-A11, 2026-11-20; help.vivreal.io forwards every address there with one redirect); every other site leaves the setting unset and builds unchanged. Never wrap what Next prefixes itself (`withSitePath` is not idempotent); a base path site never mounts the cart.
+- **A site-wide `headers()` rule in `next.config.ts` silently replaces a route handler's header of
+  the same name** (release C, L-C-04, Templates #232 review): Next drops the route's own header
+  (`send-response.js`). F608's site-wide script policy replaced the image routes' `sandbox` policy
+  (`/img/*`, `/brand/logo`, `/og/*`), which would have let an SVG run script on every site. A route
+  that sets its own security header gets its own `headers()` rule AFTER the site-wide one (the last
+  matching rule wins, proven on Next 16.4.5), a test that it is the last match, and a served-header
+  read on one rebuilt site.
 - **`node_modules` here may hold only Linux natives,** so on Windows the dev server answers 500 and the build fails. Fix it with `npm ci`, never `npm install`.
 
 ## Lambda and MongoDB checklist (ported from the retired sites expert agent, 2026-10-20)

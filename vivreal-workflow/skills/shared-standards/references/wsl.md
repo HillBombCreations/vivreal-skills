@@ -81,6 +81,11 @@ trap below cost a release step, a false result or a write in an owner's checkout
   3. Prove Linux node there (the call above, with `cd ~/<name>`), then install and test in the
      clone. Edit and commit only in the Windows worktree; after a change, bundle and clone again.
      Remove the clone when the step is done.
+  4. A clone that pushes (or runs a hook) installs its hooks first, inside the same quoted call:
+     `npx husky && git config core.hooksPath .husky/_ && ls -l .husky/_/pre-push`, the last showing
+     the file present and executable (testing.md, "Prove the hooks are installed"; F520, the
+     release C EventHandler recipe). A clone has no hooks until then, and a later `git clean`
+     removes them again.
 - **Never install on Windows in its place.** When a brief puts an install or a test in Linux, or
   says nothing installs on Windows, a WSL failure is a reason to make the clone above, never to run
   `npm ci` on Windows: release B's VR_Main_API coder did that the same day, "because WSL git cannot
