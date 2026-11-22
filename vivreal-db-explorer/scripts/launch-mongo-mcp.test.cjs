@@ -2,7 +2,7 @@
 // Drives the REAL launcher and the REAL fallback script (cluster-url.cjs) with a fake `aws` and a
 // fake `npx` first on PATH, so every assertion is about what they actually hand the AWS CLI and
 // the MCP server. The secret id resolves, in order, from the VIVREAL_DB_SECRET_ID override, then
-// key `dbSecretId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, else a message
+// key `dbSecretId` of `<clone root>/vivreal-hq/.vivreal/private-names.json`, else a message
 // naming what is missing. Each branch has an ALLOW and a REFUSE case. On Windows both scripts spawn
 // `aws` through a shell, so an id outside the Secrets Manager name alphabet must never reach it.
 const test = require('node:test');

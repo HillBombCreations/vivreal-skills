@@ -50,7 +50,7 @@ the scan STOPs that repo: it is the control that a file kind was not missed.
 | Vivreal-Mongo-Connection | `${VIVREAL_REPOS}/Vivreal-Mongo-Connection` | `main` | a shared package |
 | Vivreal-Tier-Quotas | `${VIVREAL_REPOS}/Vivreal-Tier-Quotas` | `main` | a shared package |
 | Vivreal-Email-Brand | `${VIVREAL_REPOS}/Vivreal-Email-Brand` | `main` | a shared package |
-| vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq` | `main`; the admin app from `deploy/admin-app` | the admin app (Amplify), fleet-ops Lambdas and stacks, and local tools; npm workspaces, each closure from its own `package.json` |
+| vivreal-hq | `${VIVREAL_REPOS}/_wt/hq-main` | `main`; the admin app from `deploy/admin-app` | the admin app (Amplify), fleet-ops Lambdas and stacks, and local tools; npm workspaces, each closure from its own `package.json` |
 | vivreal-skills | `${VIVREAL_REPOS}/vivreal-skills` | `main` | this plugin marketplace: Actions pins only, no npm manifest (its zero alerts are a control) |
 
 Beyond the repos, the scan reads live what no lockfile holds: Lambda runtimes and layers, the
@@ -79,7 +79,7 @@ Shared standards: the `shared-standards` skill, its "Two rules that outrank ever
    - several names → each row
    - `gate <repo(s)> --register <path>` → Phase 5 only, for those repos, against that register
 2. Make a slug, `vuln-<YYYY-MM-DD>-<repo-or-scope>` (e.g. `vuln-2026-11-14-all`).
-3. Create `${VIVREAL_REPOS}/vivreal-hq/docs/projects/<slug>/`. vivreal-hq is private; findings never
+3. Create `${VIVREAL_REPOS}/_wt/<hq worktree>/docs/projects/<slug>/` in an hq worktree on its own branch (never the hq clone). vivreal-hq is private; findings never
    go into a scanned repo or into this public marketplace.
 4. Use `TaskCreate` to add a task per phase.
 5. Tell the user: "Slug `<slug>`. Scanning <N> repo(s) at their deployed lines. Starting Phase 1."
@@ -94,7 +94,7 @@ agents at once than the fleet's cap (`vivreal-workflow:fleet-concurrency`):
 ```
 description: Scan <repo names> at their deployed lines
 subagent_type: vuln
-prompt: --phase=scan. Slug <slug>, folder ${VIVREAL_REPOS}/vivreal-hq/docs/projects/<slug>/. Repos, from the registry: <name, path, deployed line, what ships, one per line>. For each: prove the deployed ref, read every manifest at its SHA (the list must hold every file its registry row names), confirm Dependabot alerts are on, read the open and closed alerts with their controls, test each alert against the deployed lock, run the gap check, read the non-npm kinds. Write scan-<repo>.md for each.
+prompt: --phase=scan. Slug <slug>, folder ${VIVREAL_REPOS}/_wt/<hq worktree>/docs/projects/<slug>/ (the hq worktree from step 3). Repos, from the registry: <name, path, deployed line, what ships, one per line>. For each: prove the deployed ref, read every manifest at its SHA (the list must hold every file its registry row names), confirm Dependabot alerts are on, read the open and closed alerts with their controls, test each alert against the deployed lock, run the gap check, read the non-npm kinds. Write scan-<repo>.md for each.
 ```
 
 Wait for completion. Verify each `scan-<repo>.md` exists. A repo whose scan STOPped (ref not

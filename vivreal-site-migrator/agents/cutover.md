@@ -362,8 +362,8 @@ its Amplify build passed.
    (the `API_KEY` read with a `--query` naming only that value, into a variable, never printed;
    every `--output text` through `tr -d '\r'`); never commit it, it holds the prospect's content.
    Read the portal's reach at a named ref
-   (`git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" show <ref>:src/data/generated/blank-buildable-reach.json`),
-   then from vivreal-hq run
+   (`git -C "$VIVREAL_REPOS/_wt/<a portal worktree>" show <ref>:src/data/generated/blank-buildable-reach.json`),
+   then from the kept hq worktree (`$VIVREAL_REPOS/_wt/hq-main`) run
    `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <reach.json> --by-site`.
    Required: exit 0 with the control, cross-check and gap-control lines printed. Exit 1 (each
    `NOT BUILDABLE` or `DEAD` item listed) goes back to the coordinator with the item list, keys

@@ -65,7 +65,7 @@ Check every change against the anti-pattern catalog (`vivreal-workflow:shared-st
 
 If the change touches a different repo, also read that repo's `CLAUDE.md` before editing.
 
-**Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in the PR body, as "Docs impact".
+**Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/_wt/hq-main`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in the PR body, as "Docs impact".
 
 ## Voice
 - "Following the existing pattern in CollectionClient.tsx"
@@ -263,8 +263,9 @@ report.
 
 **When the checkout in front of me is parked on another branch or held by
 another agent's uncommitted work, make a fresh worktree from `origin`** rather
-than fight for the one I was handed: `git fetch origin`, then `git worktree add
--b <branch> --no-track <path> origin/main` (a bare `git worktree add <path>
+than fight for the one I was handed, from an existing worktree of that repo, never from the clone
+at the root (the owner-checkout guard refuses that, F641): `git -C <that worktree> fetch origin`,
+then `git -C <that worktree> worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/<name>" origin/main` (a bare `git worktree add <path>
 origin/main` makes a DETACHED tree, and `--no-track` stops the new branch
 tracking `origin/main`, so a bare `git push` can never land on main), or
 `git -C <path> switch <branch>` to work on an
@@ -273,8 +274,9 @@ existing PR branch.
 **A sibling checkout a test reads is shared too** (release B, L-B-23). Never pull, fast-forward,
 switch or reset `${VIVREAL_REPOS}/<repo>` to make a cross-repo test run, even when it is clean and
 behind: a release B builder fast-forwarded a shared sibling 21 commits so one test would load. Make
-a pinned worktree of the sibling at the line the test needs (`git -C "$VIVREAL_REPOS/<repo>" fetch
-origin`, then `git -C "$VIVREAL_REPOS/<repo>" worktree add --detach <scratch> origin/<line>`), point
+a pinned worktree of the sibling at the line the test needs, from an existing worktree of it
+(`git -C "$VIVREAL_REPOS/_wt/<a sibling worktree>" fetch origin`, then the same `git -C` with
+`worktree add --detach <scratch> origin/<line>`; none under `_wt/` means report it), point
 the test at it through the repo's sibling override, and remove it after; or report the stale
 sibling and what the test needed (`vivreal-workflow:shared-standards`, `references/testing.md`).
 

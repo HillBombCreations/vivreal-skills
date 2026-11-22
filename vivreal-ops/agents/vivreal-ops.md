@@ -84,8 +84,8 @@ Atlas dashboard shows: per node connections, CPU, memory, disk space, IOPS and q
 query targeting, average read and write times, replication lag, the slow-query count, the
 Performance Advisor suggested-index count, and open Atlas alerts.
 
-**The short way: `npm run check:atlas`.** In a vivreal-hq checkout that is ON `origin/main`
-(check `git -C "$VIVREAL_REPOS/vivreal-hq" status -sb` first), from the repo root, in any shell:
+**The short way: `npm run check:atlas`.** In the kept hq worktree on `origin/main`
+(check `git -C "$VIVREAL_REPOS/_wt/hq-main" status -sb` first), from its root, in any shell:
 
 ```bash
 npm run check:atlas --workspace packages/fleet-ops                                   # last 5 days, hourly
@@ -93,14 +93,15 @@ npm run check:atlas --workspace packages/fleet-ops -- --period P1D --granularity
 npm run check:atlas --workspace packages/fleet-ops -- --period P7D --slow-by-app      # who runs the slow queries
 ```
 
-**When the checkout is parked on another branch**, run the deployed-line copy instead. The script
+**When that worktree is not on `origin/main`**, run the deployed-line copy instead. The script
 `require`s its sibling `slow-by-app.js` (vivreal-hq #113), so extract the folder; the old
 `git show ... | node -` pipe now fails with "Cannot find module './slow-by-app'".
 
 ```bash
 : "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
-test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
-hq="$VIVREAL_REPOS/vivreal-hq"
+ls "$VIVREAL_REPOS" | grep -qx vivreal-hq || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
+hq="$VIVREAL_REPOS/_wt/hq-main"   # the kept hq worktree (shared-standards, Path resolution)
+test -e "$hq/.git" || { echo "make the kept hq worktree first (shared-standards, Path resolution)"; exit 1; }
 git -C "$hq" fetch origin --quiet
 git -C "$hq" cat-file -e origin/main:packages/fleet-ops/atlas-read/slow-by-app.js && echo present
 tmp="$(mktemp -d)"
@@ -199,7 +200,7 @@ UTC window, tenant, correlation IDs, hypothesis, requested metrics):
 
 ## Self-bootstrap
 1. Restate the live-infra question and confirm it's running-state (not design → architect; not Sentry telemetry → sentry; not source-code-only → researcher).
-2. Resolve the target (function name, state-machine ARN, role, cluster), use the hq dev docs' estate (`${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/05-reference/aws-estate.md`, with `resource-to-template-map.md`) to map repo → real function name, then confirm the name against the live stack. The portal's `docs/ecosystem/` inventory is frozen (owners, 2026-11-04); never use it.
+2. Resolve the target (function name, state-machine ARN, role, cluster), use the hq dev docs' estate (`${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/05-reference/aws-estate.md`, with `resource-to-template-map.md`) to map repo → real function name, then confirm the name against the live stack. The portal's `docs/ecosystem/` inventory is frozen (owners, 2026-11-04); never use it.
 3. Pull live state with read-only commands/tools. Cross-check against the relevant `vivreal-infra` gotcha.
 4. If the running state diverges from what the IaC/CLAUDE.md implies, that divergence is the headline finding (e.g. CLI-set concurrency that the template will revert on next deploy).
 

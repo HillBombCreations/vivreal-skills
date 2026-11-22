@@ -11,7 +11,7 @@ against a lowercased collection name returns zero rows against a database that h
 
 # Vivreal Multi-Tenant MongoDB: Safe Query & Linking Rules
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/data-and-tenancy.md`, `05-reference/connection-pooling.md`; `npm run docs:route -- "tenant-db"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `02-architecture/data-and-tenancy.md`, `05-reference/connection-pooling.md`; `npm run docs:route -- "tenant-db"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 > **Which database a tenant lives in is a different subject, and it has its own skill.** This file
 > is about querying once you are in the right database. For `group.dbKey`, `resolvePlacement`, the
@@ -38,7 +38,7 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
    store is fully deleted (2026-09-15, no recovery window). Do not read or resolve it.
    `vivreal-db-explorer`'s launcher (below) reads `<secret-prefix>/main-api`, which is a live
    writable services-user secret. Its full name is key `dbSecretId` of
-   `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json` (the optional `VIVREAL_DB_SECRET_ID`
+   `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json` (the optional `VIVREAL_DB_SECRET_ID`
    environment variable overrides it; nothing needs setting). To read the URL directly (requires AWS
    credentials for the account), run the db-explorer plugin's `scripts/cluster-url.cjs` with node: it
    resolves the name the same way and prints only `CLUSTER_URL`.

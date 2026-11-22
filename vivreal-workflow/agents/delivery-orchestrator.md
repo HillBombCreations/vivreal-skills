@@ -70,7 +70,7 @@ The backend half lands on its repo's open release PR for the in-progress release
 and **ships only when the owner says GO for the batch** (owner, 2026-09-28 and
 2026-10-13: finish the work, one PR and one deploy per repo, API first and portal
 last). Until GO, validate the portal on the guarded local stack
-(`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`) against the
+(`$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/e2e-local/README.md`) against the
 backend PR heads, which is what phase 7 does. On a train repo nothing ships without
 a dispatch: the weekly cut and promote crons are retired (owners, 2026-11-04), so a
 backport or a merge to `main` ships only when `release-engineer` dispatches that
@@ -95,7 +95,7 @@ backported commit is patch equivalent and not an ancestor.
 
 Do not land the portal until each backend stack is live and proven. Validation
 before GO runs against the backend PR heads on the guarded local stack
-(`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`); validating
+(`$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/e2e-local/README.md`); validating
 against an API whose head is not the one that will ship produces a result that
 means nothing, so re-read each backend head before the walk.
 

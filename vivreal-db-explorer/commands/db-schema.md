@@ -14,7 +14,7 @@ Shows the full picture of a MongoDB collection: Mongoose schema definition (from
 The MCP server is normally **already connected**, the `vivreal-db-explorer` plugin launches it via
 `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets Manager
 (named by the optional `VIVREAL_DB_SECRET_ID` override, else by key `dbSecretId` of
-`${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`; no setup needed) at startup. Try your first MCP call directly. If it returns "not connected"
+hq's `.vivreal/private-names.json`, which the launcher reads from the hq clone; no setup needed) at startup. Try your first MCP call directly. If it returns "not connected"
 source the string yourself and call `mcp__mongodb__connect`, do **NOT** ask the user to paste one:
 
 ```bash

@@ -5,7 +5,7 @@ description: 'Use when working in VR-Outreach-MCP-Server, the internal-only remo
 
 # VR-Outreach-MCP-Server: knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U26-outreach-and-campaigns.md`, `03-use-cases/U7-mcp-servers.md`; `npm run docs:route -- "outreach"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U26-outreach-and-campaigns.md`, `03-use-cases/U7-mcp-servers.md`; `npm run docs:route -- "outreach"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 Source of truth: `VR-Outreach-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/main`.
 

@@ -103,7 +103,7 @@ the unit of work changes.
 IS the in-progress release (call it by its version, for example v7), one PR and one deploy per repo, and work
 is finished before anything deploys (owner, 2026-09-28 and 2026-10-13). A backend half that is
 ready lands on its repo's open release PR and waits; it ships on GO, not as soon as it is ready.
-Until GO, the portal is validated on the guarded local stack against the PR heads. Pre-GO portal validation runs on the guarded local stack, `$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`; it needs AWS permission to mint `federated-user/local-e2e-<svc>`. On GO, run the
+Until GO, the portal is validated on the guarded local stack against the PR heads. Pre-GO portal validation runs on the guarded local stack, `$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/e2e-local/README.md`; it needs AWS permission to mint `federated-user/local-e2e-<svc>`. On GO, run the
 runbook's steps in order, API first and portal last, and finish each step (merge, deploy, proof)
 before starting the next.
 
@@ -168,12 +168,12 @@ follows it rather than on the version and silently returns the wrong line.
 2026-10-21 a redeploy of 21 customer sites replaced each app's env map and dropped
 `SITE_RENDER_MODE` from every one, while every check that ran ("the build succeeded, the page
 answers 200") passed. Any change to the Amplify env, a buildSpec or a branch setting on more than
-one site goes through `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/fleet-rollout/cli.js"`:
+one site goes through `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/fleet-rollout/cli.js"`:
 a `--dry-run` first, then the change on one QA canary site, then small batches, with every app
 snapshotted (key names, never values) and diffed before and after each step, stopping on the first
 lost setting. A rollout stop is a STOP for this step. The canary, the flags, the stop rules and
 the documented exception are in the fleet-rollout section of
-`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/CLAUDE.md`; read them there, never from a copied
+`$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/CLAUDE.md`; read them there, never from a copied
 command.
 
 ## Working protocol

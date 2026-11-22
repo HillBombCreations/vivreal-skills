@@ -36,7 +36,7 @@ The MCP server is normally **already connected**: the `vivreal-db-explorer` plug
 through `scripts/launch-mongo-mcp.cjs`, which sources the Atlas `CLUSTER_URL` from AWS Secrets
 Manager at startup, with no setup beyond a vivreal-hq clone beside the session's checkout (the clone
 root is derived; `VIVREAL_REPOS` is an optional override). The secret is named, in order, by the optional
-`VIVREAL_DB_SECRET_ID` override, else by key `dbSecretId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
+`VIVREAL_DB_SECRET_ID` override, else by key `dbSecretId` of hq's `.vivreal/private-names.json` (the launcher reads the hq clone's copy; read it yourself in `${VIVREAL_REPOS}/_wt/hq-main`).
 So your first query usually just works, try it first.
 
 **If a query returns "you need to connect first" / "not connected":** the launcher could not

@@ -2,7 +2,7 @@
 
 The owners pick backlog rows and watch each release in the Next Release Picks sheet, a Sheets
 artifact in a Claude Docs project. Its location is the key `releaseSheetUrl` of
-`${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`; open it by that value, and never write
+`${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`; open it by that value, and never write
 the location into a shared file. The rule behind it is P-sheet (vivreal-hq
 `docs/standards/process.md`).
 

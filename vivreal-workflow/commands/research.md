@@ -36,10 +36,10 @@ subagent_type: researcher
 prompt: Research the bug at docs/bugs/<slug>/issue.md. Slug is <slug>. Read the shared-standards skill first. Trace the full path from UI to DB. Cite file:line for every claim. Check Sentry MCP for any reported errors. Write your findings to docs/bugs/<slug>/research.md. Do not propose fixes, that's the architect's job.
 ```
 
-Include the hq dev docs for the bug area, found from `${VIVREAL_REPOS}/vivreal-hq` with
+Include the hq dev docs for the bug area, found from `${VIVREAL_REPOS}/_wt/hq-main` with
 `npm run docs:route -- "<symptom>"` (or the symptom table in `docs/dev-docs/README.md` when the
 script is missing), and name `npm run docs:impact -- <repo>:<path>` for the files the bug touches.
-Starting points under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`:
+Starting points under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`:
 - Frontend: `02-architecture/the-portal.md`, `02-architecture/platform-and-services.md`
 - Backend: `02-architecture/platform-and-services.md`, the `03-use-cases/U<n>-*.md` the README names for the symptom
 - Database: `02-architecture/data-and-tenancy.md`

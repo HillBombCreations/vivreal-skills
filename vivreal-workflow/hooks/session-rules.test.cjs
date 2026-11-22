@@ -186,24 +186,25 @@ test('no hq clone prints one line that says so', () => {
 
 // F452: an hq clone whose origin/main predates the shared rules, with none in its working tree,
 // printed "the index below is hq origin/main's and wins" and then no index.
-const NO_INDEX_DIR = '/clones/vivreal-hq';
+// The kept hq worktree a fetch line names (F641): never the hq clone itself.
+const NO_INDEX_DIR = '/clones/_wt/hq-main';
 const NO_INDEX_START = "Vivreal shared rules, printed by the vivreal-workflow plugin's session-rules hook: no rules index could be read";
 
 // F467 (2) narrowed the fetch line to an index that is truly absent at origin/main, or live values
 // that are unreadable too, so each case below states which of those two facts makes it absent.
-test('REFUSE (F452): no index anywhere prints one fetch line naming the hq checkout, never "the index below"', () => {
+test('REFUSE (F452): no index anywhere prints one fetch line naming the kept hq worktree, never "the index below"', () => {
   const cases = {
-    'the stale hq checkout itself': facts({ repo: 'vivreal-hq', live: null, index: null, importPresent: false, hqDir: NO_INDEX_DIR }),
-    'another repo reading that clone': facts({ live: null, index: null, hqDir: NO_INDEX_DIR }),
+    'the stale hq checkout itself': facts({ repo: 'vivreal-hq', live: null, index: null, importPresent: false, adviceDir: NO_INDEX_DIR }),
+    'another repo reading that clone': facts({ live: null, index: null, adviceDir: NO_INDEX_DIR }),
     'an hq whose CLAUDE.md imports a file that is not there': facts({
       repo: 'vivreal-hq',
       index: null,
       indexMissingAtOrigin: true,
       importPresent: true,
-      hqDir: NO_INDEX_DIR,
+      adviceDir: NO_INDEX_DIR,
     }),
-    'an empty index file and no live values': facts({ live: null, index: ' \n', hqDir: NO_INDEX_DIR }),
-    'no origin/main ref at all': facts({ index: null, sha: null, source: 'worktree', hqDir: NO_INDEX_DIR }),
+    'an empty index file and no live values': facts({ live: null, index: ' \n', adviceDir: NO_INDEX_DIR }),
+    'no origin/main ref at all': facts({ index: null, sha: null, source: 'worktree', adviceDir: NO_INDEX_DIR }),
   };
   for (const [name, f] of Object.entries(cases)) {
     const out = lib().buildOutput(f);
@@ -211,7 +212,7 @@ test('REFUSE (F452): no index anywhere prints one fetch line naming the hq check
     const lines = out.trim().split('\n');
     assert.equal(lines.length, 1, `${name}: printed ${lines.length} lines`);
     assert.ok(lines[0].startsWith(NO_INDEX_START), `${name}: ${lines[0]}`);
-    assert.ok(lines[0].includes(`git -C "${NO_INDEX_DIR}" fetch origin`), `${name}: no fetch command naming the checkout`);
+    assert.ok(lines[0].includes(`git -C "${NO_INDEX_DIR}" fetch origin`), `${name}: no fetch command naming the kept hq worktree`);
     assert.doesNotMatch(out, /^- (P-|agent-cap:)/m, `${name}: printed a rule or a live value`);
   }
   assert.match(lib().buildOutput(cases['no origin/main ref at all']), /it has no origin\/main ref/);
@@ -221,7 +222,7 @@ test('REFUSE (F452): no index anywhere prints one fetch line naming the hq check
 test('REFUSE (F452): on SubagentStart the fetch line is the whole additionalContext, a current hq included', () => {
   // Both are F452's clone: origin/main lacks the index (F467 keeps the live values otherwise).
   for (const f of [
-    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', index: null, indexMissingAtOrigin: true, hqDir: NO_INDEX_DIR }),
+    facts({ event: 'SubagentStart', agentType: 'vivreal-principal:coder', index: null, indexMissingAtOrigin: true, adviceDir: NO_INDEX_DIR }),
     facts({
       event: 'SubagentStart',
       agentType: 'vivreal-principal:coder',
@@ -229,7 +230,7 @@ test('REFUSE (F452): on SubagentStart the fetch line is the whole additionalCont
       importPresent: true,
       index: null,
       indexMissingAtOrigin: true,
-      hqDir: NO_INDEX_DIR,
+      adviceDir: NO_INDEX_DIR,
     }),
   ]) {
     const raw = lib().buildOutput(f);
@@ -242,7 +243,7 @@ test('REFUSE (F452): on SubagentStart the fetch line is the whole additionalCont
 });
 
 test('ALLOW (F452): an index read from the working tree alone still prints, with no fetch line', () => {
-  const out = lib().buildOutput(facts({ source: 'worktree', hqDir: NO_INDEX_DIR }));
+  const out = lib().buildOutput(facts({ source: 'worktree', adviceDir: NO_INDEX_DIR }));
   assert.match(out, /^- P-cap:/m);
   assert.ok(!out.includes(NO_INDEX_START));
 });
@@ -250,7 +251,7 @@ test('ALLOW (F452): an index read from the working tree alone still prints, with
 // F467 (2): the fetch line fired on ANY failed index read, a 3 s git timeout included, and dropped
 // the live values the hook had read. It belongs only where the live values are unreadable too, or
 // where origin/main truly lacks the index.
-const INDEX_UNREAD = /^The rules index could not be read here \(.+\); read it now with git -C "\$VIVREAL_REPOS\/vivreal-hq" show origin\/main:docs\/standards\/INDEX\.md before the first dispatch\.$/m;
+const INDEX_UNREAD = /^The rules index could not be read here \(.+\); read it now with git -C "[^"]*_wt\/hq-main" show origin\/main:docs\/standards\/INDEX\.md before the first dispatch\.$/m;
 
 test('REFUSE (F467): an index read that failed keeps the live values it read and names the index command', () => {
   const cases = {
@@ -285,10 +286,10 @@ test('REFUSE (F467): an index read that failed keeps the live values it read and
 
 test('ALLOW (F467): the fetch line still replaces everything when the live values are unreadable too, or origin/main lacks the index', () => {
   const cases = {
-    'both reads failed': facts({ live: null, index: null, hqDir: NO_INDEX_DIR }),
-    'live values with no markers': facts({ live: '# Live values\n- agent-cap: 7\n', index: null, hqDir: NO_INDEX_DIR }),
-    'origin/main lacks the index': facts({ index: null, indexMissingAtOrigin: true, hqDir: NO_INDEX_DIR }),
-    'no origin/main ref': facts({ index: null, sha: null, source: 'worktree', hqDir: NO_INDEX_DIR }),
+    'both reads failed': facts({ live: null, index: null, adviceDir: NO_INDEX_DIR }),
+    'live values with no markers': facts({ live: '# Live values\n- agent-cap: 7\n', index: null, adviceDir: NO_INDEX_DIR }),
+    'origin/main lacks the index': facts({ index: null, indexMissingAtOrigin: true, adviceDir: NO_INDEX_DIR }),
+    'no origin/main ref': facts({ index: null, sha: null, source: 'worktree', adviceDir: NO_INDEX_DIR }),
   };
   for (const [name, f] of Object.entries(cases)) {
     const out = lib().buildOutput(f);
@@ -559,10 +560,19 @@ test('ALLOW (F467), gather: a readable index asks nothing more and reads as pres
   assert.ok(!calls.some((c) => c.args[0] === 'cat-file'), 'a readable index paid for an extra git call');
 });
 
-test('outside hq, the rules are read from the clone root, and a missing hq clone is reported', () => {
+test('outside hq, the rules are read through the kept hq worktree, never the clone (F641), and a missing hq clone is reported', () => {
   const other = gatherWith({ repo: 'VR_Client_Auth' });
   assert.equal(other.out.repo, 'VR_Client_Auth');
-  assert.ok(other.calls.some((c) => c.dir === path.join('/root', 'vivreal-hq')));
+  const kept = path.join('/root', '_wt', 'hq-main');
+  assert.ok(other.calls.length > 0 && other.calls.every((c) => c.dir === kept), `read outside ${kept}`);
+  assert.equal(other.out.keptMissing, undefined);
+  // Until the kept worktree exists, the clone is read and one line says so.
+  const early = gatherWith({ repo: 'VR_Client_Auth', inject: { exists: (p) => !p.includes(path.join('_wt', 'hq-main')) } });
+  assert.ok(early.calls.some((c) => c.dir === path.join('/root', 'vivreal' + '-hq')), 'control: the clone fallback read nothing');
+  assert.match(early.out.keptMissing, /\/root\/_wt\/hq-main$/);
+  const said = lib().buildOutput(early.out);
+  assert.match(said.split('\n')[1], /^There is no kept hq worktree at .*_wt\/hq-main, so these rules were read from the hq clone;/);
+  assert.doesNotMatch(said, /git -C "[^"]*vivreal-hq"/, 'a printed command names the hq clone');
   assert.equal(other.out.importPresent, undefined, 'import is an hq-only fact');
   const missing = gatherWith({
     repo: 'VR_Client_Auth',
@@ -571,11 +581,20 @@ test('outside hq, the rules are read from the clone root, and a missing hq clone
   assert.match(missing.out.hqMissing, /no clone root/);
 });
 
-test('gather names the hq checkout for the fetch line, in forward slashes', () => {
-  assert.equal(gatherWith().out.hqDir, '/hq');
-  const other = gatherWith({ repo: 'VR_Client_Auth' }).out.hqDir;
-  assert.ok(!other.includes('\\'), `backslash in ${other}`);
-  assert.match(other, /\/root\/vivreal-hq$/);
+test('gather names the kept hq worktree for every printed command, in forward slashes (F641)', () => {
+  const inHq = gatherWith().out;
+  assert.equal(inHq.hqDir, '/hq');
+  assert.equal(inHq.adviceDir, '/_wt/hq-main', 'the hq clone names the kept worktree beside it');
+  const inWorktree = gatherWith({ inject: { cwd: '/root/_wt/hq-relplan' } }).out;
+  assert.equal(inWorktree.adviceDir, '/root/_wt/hq-relplan', 'an hq worktree names itself');
+  const other = gatherWith({ repo: 'VR_Client_Auth' }).out;
+  for (const d of [other.hqDir, other.adviceDir]) {
+    assert.ok(!d.includes('\\'), `backslash in ${d}`);
+    assert.match(d, /\/root\/_wt\/hq-main$/);
+  }
+  const text = lib().buildOutput({ ...other, fetchAgeHours: 30, index: null });
+  assert.match(text, /run git -C "\/root\/_wt\/hq-main" fetch origin/);
+  assert.match(text, /git -C "\/root\/_wt\/hq-main" show origin\/main:docs\/standards\/INDEX\.md/);
 });
 
 // F443 note 1: each linked worktree has its own FETCH_HEAD, so the common dir's alone can read old.
@@ -795,7 +814,12 @@ test('REFUSE (F452), real hook: an hq clone whose origin/main predates the rules
       assert.ok(lines[0].startsWith(NO_INDEX_START), `${name}: ${lines[0]}`);
       const m = lines[0].match(/git -C "([^"]+)" fetch origin/);
       assert.ok(m, `${name}: no fetch command`);
-      assert.ok(sameDir(m[1], hqOld), `${name}: the fetch names ${m[1]}, not the hq clone`);
+      // F641: the fetch names the kept hq worktree beside the clone, never the clone, and the line
+      // says the worktree is not made yet.
+      const want = path.join(oldRoot, '_wt', 'hq-main').replace(/\\/g, '/').toLowerCase();
+      assert.equal(m[1].replace(/\\/g, '/').toLowerCase(), want, `${name}: the fetch names ${m[1]}`);
+      assert.ok(!sameDir(path.dirname(path.dirname(path.resolve(m[1]))), hqOld), 'control: the kept path sits under the clone');
+      if (cwd === otherOld) assert.match(lines[0], /There is no kept hq worktree at /, `${name}: no make-it sentence`);
     }
   }
 });
@@ -832,5 +856,31 @@ test('REFUSE (F443), real hook: a fetch made in a linked worktree counts, though
     assert.doesNotMatch(out, /last fetched/, "the worktree's own fresh fetch was ignored");
   } finally {
     fs.utimesSync(shared, kept.atime, kept.mtime);
+  }
+});
+
+test('REFUSE (F641), real hook: another repo reads hq through the kept hq worktree once it exists, never the clone', () => {
+  const kept = path.join(root, '_wt', 'hq-main');
+  const shared = path.join(hq, '.git', 'FETCH_HEAD');
+  git(hq, 'fetch', '-q', bare);
+  const was = fs.statSync(shared);
+  const old = new Date(Date.now() - 48 * 3600 * 1000);
+  fs.utimesSync(shared, old, old);
+  try {
+    // Control: with no kept worktree the clone is read, its old FETCH_HEAD prints the note, and the
+    // output says the kept worktree is missing.
+    const before = runHook({ hook_event_name: 'SessionStart', cwd: other });
+    assert.match(before, /There is no kept hq worktree at /);
+    assert.match(before, /hq origin\/main was last fetched 48 hours ago; run git -C "[^"]*_wt\/hq-main" fetch origin/);
+    git(hq, 'worktree', 'add', '-q', '--detach', kept, currentSha);
+    git(kept, 'fetch', '-q', bare);
+    const after = runHook({ hook_event_name: 'SessionStart', cwd: other });
+    assert.equal(firstLineOf(after), REAL_FIRST);
+    assert.doesNotMatch(after, /There is no kept hq worktree/);
+    // Only the kept worktree's own FETCH_HEAD is fresh, so no note means the hook read through it.
+    assert.doesNotMatch(after, /last fetched/, 'the hook did not read through the kept worktree');
+    assert.match(after, /^- P-cap:/m);
+  } finally {
+    fs.utimesSync(shared, was.atime, was.mtime);
   }
 });

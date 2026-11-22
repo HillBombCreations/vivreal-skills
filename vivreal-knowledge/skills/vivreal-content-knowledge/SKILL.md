@@ -9,7 +9,7 @@ Source of truth: `vivreal-hq` `CLAUDE.md` (and the docs it links) at `origin/mai
 
 Last synced: 2026-10-15
 
-**The content studio is part of `${VIVREAL_REPOS}/vivreal-hq` now.** Content tooling left
+**The content studio is part of `${VIVREAL_REPOS}/_wt/hq-main` now.** Content tooling left
 `Vivreal_Portal_Mobile` on 2026-06-25 for a `vivreal-content` repo, and that repo was merged
 with the lead generator into `vivreal-hq` on 2026-08-03 (vivreal-hq `CLAUDE.md`, "What This
 Is"). This skill is a **map, not a copy**: the

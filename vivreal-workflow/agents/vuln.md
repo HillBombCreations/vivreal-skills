@@ -37,8 +37,8 @@ before writing any item that changes a lockfile. Skip the rest.
 
 ## Where the work lands
 
-Every phase writes into `${VIVREAL_REPOS}/vivreal-hq/docs/projects/<slug>/`; the dispatch names
-the slug (`/vuln-fix` makes it `vuln-<date>-<scope>`). vivreal-hq is private. Never write findings
+Every phase writes into `${VIVREAL_REPOS}/_wt/<hq worktree>/docs/projects/<slug>/`, the hq worktree the
+dispatch names, on its branch; the dispatch names the slug (`/vuln-fix` makes it `vuln-<date>-<scope>`). vivreal-hq is private. Never write findings
 into the repo being scanned or into this public marketplace. Everywhere else this agent is read
 only, in every phase: no manifest, lockfile, workflow, alert or setting is changed by it.
 

@@ -91,7 +91,7 @@ function main() {
   const rows = routesFor(loadRoutes(), repo);
   const tail = [
     `Dispatch template: ${TEMPLATE_PATH}`,
-    'Owner rules: printed by the shared-rules hook; the book is $VIVREAL_REPOS/vivreal-hq/docs/standards/process.md',
+    'Owner rules: printed by the shared-rules hook; the book is $VIVREAL_REPOS/_wt/hq-main/docs/standards/process.md',
     doctorLine(env, resolved, exported),
   ];
   const head = [`Vivreal routing for ${repo} (dispatch the owner, general-purpose only when none fits):`];

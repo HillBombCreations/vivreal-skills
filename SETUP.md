@@ -71,11 +71,14 @@ Code fetches them in the background; they are active from the second session on.
 (`vivreal-content`, `vivreal-leadgen`, `vivreal-site-migrator`) run production fleets on real accounts, so they are
 enabled only in the repos that run that work.
 
-Then ask the agent to clone the rest and check the machine. It runs, in Bash:
+Then ask the agent to clone the rest and check the machine. It first makes the kept hq worktree from
+the hq clone the session opened in (the main thread is the one session that may run there; every
+agent works in worktrees, `shared-standards` "Path resolution"), then runs the tools from it, in Bash:
 
 ```bash
-node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/clone-all.js"
-node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo portal
+git worktree add --detach ../_wt/hq-main origin/main
+node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/clone-all.js"
+node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/doctor.js" --repo portal
 ```
 
 ## What is derived, so you never set it
@@ -94,7 +97,7 @@ node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo 
   file. Never `gh auth token`, which carries your whole GitHub access. In your own terminal, run npm commands
   through the agent. A token you set yourself is used for installs and publish only.
 - **Private names** (secret and parameter prefixes, the database secret): keys of
-  `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, which the hq clone carries. Where a skill writes a
+  `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`, which the hq clone carries. Where a skill writes a
   placeholder such as `<secret-prefix>/`, the value is that file's key of the same name.
 - **`/db-query`** reads the database secret named by key `dbSecretId` of that file, through your default AWS
   profile. `VIVREAL_DB_SECRET_ID` is an optional override only. That database user can WRITE, so `/db-query` stays

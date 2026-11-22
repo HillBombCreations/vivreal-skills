@@ -22,18 +22,17 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
    "last fetched" note, fetch and read them yourself:
    ```bash
    export MSYS_NO_PATHCONV=1
-   git -C "$VIVREAL_REPOS/vivreal-hq" fetch origin
-   git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:docs/standards/live-values.md
-   git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:docs/standards/INDEX.md
+   git -C "$VIVREAL_REPOS/_wt/hq-main" fetch origin
+   git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:docs/standards/live-values.md
+   git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:docs/standards/INDEX.md
    ```
    A line `This checkout cannot load the current rules (...)` means the hq checkout the session
    started in is stale: the `origin/main` index printed under it is the one that holds. A single
    line saying `no rules index could be read` means that hq clone's `origin/main` predates the
    shared rules and no rule was printed: run the fetch it names, then the two `show` commands above.
-   These three commands are the main thread's one allowed exception to L-B-45 (section 3): a fetch
-   and a `git show origin/main:<path>` in `$VIVREAL_REPOS/vivreal-hq` touch no working-tree file,
-   so the owner's checkout and its uncommitted work stay as they were. Nothing else runs there, and
-   no brief passes these commands to an agent: an agent reads hq in a kept worktree.
+   They run in the kept hq worktree (shared-standards, "Path resolution"; F641), the main thread's
+   reads too: a fetch there moves the refs every hq worktree shares, and nothing runs in the hq
+   clone itself, which is an owner's checkout with their uncommitted work.
 2. **Read the release state** on the branch the live value `release-state` names, never on `main`:
    fetch, then read `docs/projects/next-release-<X>/progress.md` at `origin/<that branch>`.
 3. **Open the sheet** (section 6, `references/sheet.md`) and see what is claimed in Assigned to.
@@ -156,15 +155,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
-- **hq reads in a brief name a kept hq worktree, never `$VIVREAL_REPOS/vivreal-hq`** (release B,
-  L-B-45). `$VIVREAL_REPOS/vivreal-hq` IS an owner's own checkout, so a brief that says to read
-  code with `git -C "$VIVREAL_REPOS/<repo>" ...` sends every hq read there: on 2026-11-20 three
-  agents ran a read-only fetch or command in it although the same brief said to run nothing there,
-  and the main thread ran a `worktree list` in it. Nothing was written, and it still breaks the
-  owners' rule. Every brief names the hq worktree path for hq reads (a kept one under
-  `$VIVREAL_REPOS/_wt/`, at the line the read needs), and says plainly that nothing runs in
-  `$VIVREAL_REPOS/vivreal-hq`; the `git -C "$VIVREAL_REPOS/<repo>"` form stays only for the
-  other repos.
+- **A brief names a worktree for every repo it touches, never a clone at the root** (release B,
+  L-B-45; release C, L-C-01, F641). The hq clone IS an owner's own checkout, and so is every clone
+  beside it: on 2026-11-20 three agents ran a read-only fetch or command in the hq clone although
+  the same brief said to run nothing there, and on 2026-11-21 three more (a fetch, a worktree add
+  and remove, a `git show`). Every brief names the worktree path under `$VIVREAL_REPOS/_wt/` for each
+  repo (for hq reads, `$VIVREAL_REPOS/_wt/hq-main`), made by the main thread before the dispatch when the
+  repo has none, and says plainly that nothing runs in a clone. The vivreal-workflow owner-checkout
+  guard refuses a subagent's command in one (shared-standards, "Path resolution").
 - **Briefs for a screen name the owners' UI rules** (release B, L-B-46). A design, review or walk
   brief that touches a portal or customer-site screen names `vivreal-knowledge:vivreal-portal-knowledge`
   `references/ui-rules.md` and what each agent owes against it: `vivreal-principal:designer` reads it
@@ -345,7 +343,7 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
     walk row. Help work is a product audit: release B's drafts and the regular-user question pass
     found eleven product defects, a lost paid sign-up among them (F537, F539, F540, F542 to F549).
 - Drain the `## Lessons` list (section 9): the release is not closed while a row is `owed`.
-- Each owner runs `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/agent-usage/memory-audit.js" --count`
+- Each owner runs `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/agent-usage/memory-audit.js" --count`
   on their own machine; the target is `memory-only=0 broken=0`.
 
 ## 9. Where a lesson goes (in the session it is learned)
@@ -381,7 +379,7 @@ have no dependencies.
 ```bash
 export MSYS_NO_PATHCONV=1
 W="$VIVREAL_REPOS/_wt/hq-live-values"
-test -e "$W/.git" || git -C "$VIVREAL_REPOS/vivreal-hq" worktree add --detach "$W" origin/main
+test -e "$W/.git" || git -C "$VIVREAL_REPOS/_wt/hq-main" worktree add --detach "$W" origin/main
 # One chain: a dirty worktree stops it here, before the checkout can carry the edit along.
 test -z "$(git -C "$W" status --porcelain)" && cd "$W" && git fetch origin && git checkout --detach origin/main
 # Edit the ONE line of that key inside the live-values markers, keeping `- <key>: <value> | <source>`.

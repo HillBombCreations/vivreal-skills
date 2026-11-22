@@ -12,7 +12,7 @@ They exist because a reviewer that cannot be tested is a reviewer nobody can tru
 
 ## Provenance
 
-The corpus is the `.claude/` tree of `${VIVREAL_REPOS}/vivreal-hq` at two commits:
+The corpus is the `.claude/` tree of vivreal-hq at two commits, read through the kept hq worktree `${VIVREAL_REPOS}/_wt/hq-main`:
 
 | Ref | Commit | Role |
 |---|---|---|
@@ -27,8 +27,8 @@ never check it out, branch it, or write inside it.
 Reconstruct both trees into a scratch directory:
 
 ```bash
-git -C ${VIVREAL_REPOS}/vivreal-hq archive 29b9404 | tar -x -C <scratch>/hq-before
-git -C ${VIVREAL_REPOS}/vivreal-hq archive HEAD    | tar -x -C <scratch>/hq-head
+git -C ${VIVREAL_REPOS}/_wt/hq-main archive 29b9404 | tar -x -C <scratch>/hq-before
+git -C ${VIVREAL_REPOS}/_wt/hq-main archive HEAD    | tar -x -C <scratch>/hq-head
 ```
 
 **Archive the whole tree, not just `.claude`.** `ref-unresolved` resolves a token

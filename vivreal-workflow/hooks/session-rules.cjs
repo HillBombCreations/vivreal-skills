@@ -22,6 +22,10 @@
 // an index below. A read that failed for another reason (a git timeout, say) keeps the live values
 // it read and ends with the command that reads the index (F467).
 //
+// Outside hq it reads hq through the kept hq worktree, `<clone root>/_wt/hq-main`, and every command
+// it prints names that worktree (F641): the hq clone at the clone root is an owner's own checkout. Until
+// the kept worktree exists it reads the clone and prints one line telling the main thread to make it.
+//
 // It reads, never writes: every git call runs with GIT_OPTIONAL_LOCKS=0 and with every inherited
 // GIT_* variable dropped, it never fetches, and it compares docs/standards by blob hash
 // (ls-tree, ls-files, hash-object without -w), because `git diff` refreshes and rewrites
@@ -48,10 +52,18 @@ const GIT_TIMEOUT_MS = 3000;
 const SKIPS_CLAUDE_MD = new Set(['Explore', 'Plan']);
 const REASON_NO_IMPORT = `no ${IMPORT_LINE} import in CLAUDE.md`;
 const REASON_DIFFERS = 'docs/standards differs from origin/main';
-const HQ_SHOW = 'git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:';
+// The kept hq worktree every agent reads hq through (shared-standards, "Path resolution"; F641):
+// the hq clone at the clone root is an owner's own checkout, so no printed command names it.
+const KEPT_PARTS = ['_wt', 'hq-main'];
+const KEPT_DEFAULT = '$VIVREAL_REPOS/' + KEPT_PARTS.join('/');
 const BY = "printed by the vivreal-workflow plugin's session-rules hook:";
 
+/** The folder every printed git command names: the kept hq worktree, or the hq worktree in use. */
+const adviceOf = (f) => (f && f.adviceDir) || KEPT_DEFAULT;
+const showCmd = (f) => `git -C "${adviceOf(f)}" show origin/main:`;
+
 const lf = (text) => String(text).replace(/\r\n?/g, '\n');
+const slashed = (p) => (path.sep === '\\' ? String(p).replace(/\\/g, '/') : p);
 
 /** The environment for every git child: no inherited GIT_* variable, no optional locks, no prompt. */
 function gitEnv(env) {
@@ -133,12 +145,22 @@ function firstLine(sha, source) {
 
 /** The whole output when no index could be read from origin/main or the working tree. */
 function noIndexLine(f) {
-  const dir = f.hqDir || '$VIVREAL_REPOS/vivreal-hq';
+  const dir = adviceOf(f);
   const where = f.sha ? `hq origin/main@${f.sha.slice(0, 7)}` : 'hq (it has no origin/main ref)';
   return (
     `Vivreal shared rules, ${BY} no rules index could be read from ${where} or from its working tree, ` +
     `so none is printed. Run git -C "${dir}" fetch origin, then read ${LIVE_PATH} and ${INDEX_PATH} ` +
-    `with git -C "${dir}" show origin/main:<path> before the first dispatch.`
+    `with git -C "${dir}" show origin/main:<path> before the first dispatch.` +
+    (f.keptMissing ? ` ${keptMissingLine(f)}` : '')
+  );
+}
+
+/** Said once when the kept hq worktree does not exist yet, so the rules came from the hq clone. */
+function keptMissingLine(f) {
+  return (
+    `There is no kept hq worktree at ${f.keptMissing}, so these rules were read from the hq clone; the main thread ` +
+    `makes it once, in the hq clone: git worktree add --detach ../${KEPT_PARTS.join('/')} origin/main ` +
+    '(vivreal-workflow:shared-standards, Path resolution). No agent runs anything in the hq clone.'
   );
 }
 
@@ -157,7 +179,9 @@ function noIndexLine(f) {
  * @param {boolean} [f.importPresent]  hq only
  * @param {boolean} [f.standardsDiffer]  hq only
  * @param {string} [f.hqMissing]  why no hq clone was found
- * @param {string} [f.hqDir]  the hq checkout the rules were read from, for the fetch line
+ * @param {string} [f.hqDir]  the hq checkout the rules were read from
+ * @param {string} [f.adviceDir]  the hq worktree every printed git command names (never the hq clone)
+ * @param {string} [f.keptMissing]  the kept hq worktree path, when it does not exist yet
  */
 function buildOutput(f) {
   if (!f || !f.repo) return '';
@@ -195,6 +219,7 @@ function buildOutput(f) {
   if (subagent && !needsIndex) return '';
 
   const lines = [firstLine(f.sha, f.source)];
+  if (f.keptMissing) lines.push(keptMissingLine(f));
   if (stale) {
     let tail;
     if (!indexText) tail = "hq origin/main's index wins, and it could not be read here: read it with the command below.";
@@ -203,12 +228,10 @@ function buildOutput(f) {
     lines.push(`This checkout cannot load the current rules (${reasons.join('; ')}); ${tail}`);
   }
   if (live.ok) lines.push(...live.lines);
-  else lines.push(`Live values unreadable (${live.why}); read them with ${HQ_SHOW}${LIVE_PATH}`);
+  else lines.push(`Live values unreadable (${live.why}); read them with ${showCmd(f)}${LIVE_PATH}`);
   if (f.fetchAgeHours === null || f.fetchAgeHours === undefined || f.fetchAgeHours > STALE_FETCH_HOURS) {
     const age = typeof f.fetchAgeHours === 'number' ? `${Math.floor(f.fetchAgeHours)} hours ago` : 'at an unknown time';
-    lines.push(
-      `hq origin/main was last fetched ${age}; run git -C "$VIVREAL_REPOS/vivreal-hq" fetch origin before the first dispatch.`,
-    );
+    lines.push(`hq origin/main was last fetched ${age}; run git -C "${adviceOf(f)}" fetch origin before the first dispatch.`);
   }
   if (!subagent) lines.push('Load vivreal-workflow:release-conductor before the first dispatch.');
 
@@ -216,14 +239,14 @@ function buildOutput(f) {
   if (!indexText) {
     text +=
       '\nThe rules index could not be read here (a git read failed, timed out or came back empty); ' +
-      `read it now with ${HQ_SHOW}${INDEX_PATH} before the first dispatch.`;
+      `read it now with ${showCmd(f)}${INDEX_PATH} before the first dispatch.`;
   } else if (needsIndex) {
     const withIndex = `${text}\n\n${stripIndex(f.index)}`;
     if (withIndex.length <= OUTPUT_BUDGET) text = withIndex;
     else {
       text +=
         `\nThe rules index is too long to print here (${withIndex.length} characters, budget ${OUTPUT_BUDGET}); ` +
-        `read it now with ${HQ_SHOW}${INDEX_PATH}`;
+        `read it now with ${showCmd(f)}${INDEX_PATH}`;
     }
   }
   return wrap(text);
@@ -262,15 +285,28 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
   const isHq = String(repo).toLowerCase() === HQ;
 
   let hqDir = null;
+  let adviceDir = null;
+  let keptMissing = null;
   let missing = null;
   if (isHq) {
     const top = git(cwd, ['rev-parse', '--show-toplevel'], genv);
     // git prints an absolute path (forward slashes on Windows), which path.join accepts.
     hqDir = top.status === 0 && top.stdout.trim() ? top.stdout.trim() : cwd;
+    // An hq worktree under _wt/ names itself; the hq clone (an owner's checkout) names the kept one.
+    const under = String(hqDir).replace(/\\/g, '/').split('/');
+    adviceDir = under[under.length - 2] === KEPT_PARTS[0] ? hqDir : path.join(path.dirname(hqDir), ...KEPT_PARTS);
   } else {
     const r = resolveRoot({ env, starts: [cwd] });
-    if (r.root) hqDir = path.join(r.root, HQ);
-    else missing = r.reason || 'no clone root';
+    if (r.root) {
+      // Read hq through the kept worktree (F641). Until it exists, read the clone, and say so.
+      const kept = path.join(r.root, ...KEPT_PARTS);
+      adviceDir = kept;
+      if (exists(path.join(kept, '.git'))) hqDir = kept;
+      else {
+        hqDir = path.join(r.root, HQ);
+        keptMissing = kept;
+      }
+    } else missing = r.reason || 'no clone root';
   }
   if (!missing && !exists(path.join(hqDir, '.git'))) missing = `${hqDir} is not a git checkout`;
   if (missing) return { event, agentType, repo, hqMissing: missing };
@@ -337,8 +373,10 @@ function gather({ event, cwd, agentType, env, git, readFile, exists, mtimeMs, no
     source: fromWorktree ? 'worktree' : 'origin',
     fetchAgeHours,
     // Printed inside a Bash command, where a Windows backslash path would need escaping.
-    hqDir: path.sep === '\\' ? hqDir.replace(/\\/g, '/') : hqDir,
+    hqDir: slashed(hqDir),
+    adviceDir: slashed(adviceDir),
   };
+  if (keptMissing) out.keptMissing = slashed(keptMissing);
   if (isHq) {
     let claudeMd = null;
     try {

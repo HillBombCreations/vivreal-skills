@@ -180,7 +180,7 @@ goal is a reusable template, not a customer's real content.
 >
 > **[Produce:]** Expand **[calendar row / this brief]** into platform-ready drafts with per-platform limits and the on-voice self-check.
 
-Content work is operated FROM `${VIVREAL_REPOS}/vivreal-hq` (the standalone `vivreal-content` repo was
+Content work is operated FROM vivreal-hq, its agents working in an hq worktree (`${VIVREAL_REPOS}/_wt/<hq worktree>`; shared-standards, "Path resolution") (the standalone `vivreal-content` repo was
 consolidated into it 2026-08-03 and is now dead source, frozen at that commit), its in-repo
 `content-planner` agent and the specialists it directs (`carousel-editor`, `footage-recorder`,
 `short-form-editor`, `linkedin-editor`, `guide-writer`,

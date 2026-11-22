@@ -191,7 +191,7 @@ to catch, and it can lock the owner's account out.
 
 **Attach to the owner's own Chrome, do not launch one.** Start it yourself first:
 ```bash
-chrome.exe --mute-audio --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/vivreal-hq/.agent-cache/tutorial-profiles/chrome-cdp
+chrome.exe --mute-audio --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/_wt/hq-main/.agent-cache/tutorial-profiles/chrome-cdp
 ```
 then run with `TUTORIAL_CDP_URL=http://127.0.0.1:9222` (`tutorial-lib.ts`
 `LaunchOptions.cdpUrl`, `src/tutorial/cdp-screencast.ts` records the tab through Chrome's own
@@ -363,7 +363,7 @@ browser and the CDP Chrome above alike, gets `--mute-audio`: a take records no a
 2026-11-11 a test browser played a Studio sample video's sound on the owner's machine while he
 worked.
 
-**Give `--out` an ABSOLUTE path** (`--out=${VIVREAL_REPOS}/vivreal-hq/content/tutorials/<date>-<slug>`).
+**Give `--out` an ABSOLUTE path** (`--out=${VIVREAL_REPOS}/_wt/<hq worktree>/content/tutorials/<date>-<slug>`, the hq worktree your brief names).
 With vivreal-hq #23, `run-tutorial.ts` resolves a relative `--out` from the vivreal-hq repo root
 (`resolveOutDir` in `src/repo-root.ts`), and a relative `--out` that resolves outside the repo
 root, or onto the root itself, is refused with exit 1 before any script loads; an absolute path

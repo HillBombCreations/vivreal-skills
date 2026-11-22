@@ -14,7 +14,7 @@ walks use it by the owners' GOs). Each is resolved by placeholder, never written
 
 - **The Vivreal Content demo business's agent sign-in**: the default for every read-only walk and every
   shoot. A write needs the owner's go, and its social channels are REAL: never Post, Schedule or Reply.
-- **QA scratch-2**, through the `scratch2-owner` key of the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): the one business
+- **QA scratch-2**, through the `scratch2-owner` key of the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`): the one business
   where tests write freely (orders, refunds, Stripe TEST, destructive checks).
 - **`canlook`**, a key of the same bundle: the non-admin member of QA scratch-2, for permission and role tests.
 - **QA scratch-owner**, through the `scratch-owner` key of the same bundle: a shop selling through
@@ -66,7 +66,7 @@ Not covered by any route guard: WebSocket frames.
 
 - Read the walk secret with the AWS SDK, or `execFileSync` with the output captured, and never
   print it, log it, pass it on a command line or write it to a file. The secret's name comes from
-  `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`, never from a copy in a script.
+  `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`, never from a copy in a script.
 - Use a scratch browser profile folder and delete any saved session state at the end.
 - Allow the token refresh (section 2). A walk that blocks it films a signed-out portal.
 

@@ -528,7 +528,7 @@ Report, under 250 words:
 ## PUBLISH mode (two dispatches: PLAN, then APPLY)
 
 **You run the hq tool; you never hand-write its plan or its log.** The tool is
-`${VIVREAL_REPOS}/vivreal-hq/packages/content-studio/src/help-publish/`. Read its `README.md` in full
+`${VIVREAL_REPOS}/_wt/hq-main/packages/content-studio/src/help-publish/`. Read its `README.md` in full
 before either run: it is the contract (the exact commands, the `changes.json` shape, what each step
 checks, the exit codes), and it outranks this summary. Read the README at hq `origin/main`; if it is
 not there, report BLOCKED and name it. Never write a runner of your own, and never pass a flag the

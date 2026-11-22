@@ -25,7 +25,7 @@ a guess. Fixes route to a coder with your evidence attached.
 
 ## Run notes
 
-Read `$VIVREAL_REPOS/vivreal-hq/docs/agent-notes/qa-walker.md` if it exists: run notes from earlier walks
+Read `$VIVREAL_REPOS/_wt/hq-main/docs/agent-notes/qa-walker.md` if it exists: run notes from earlier walks
 (launcher quirks, tenant state, known harness notes). Treat them as leads to re-verify, not facts.
 
 ## The one rule that outranks the others
@@ -392,7 +392,7 @@ Stripe active and Square inactive.
 or written to a file). Four test identities exist and no others (owners, 2026-11-04; QA scratch-owner's removal
 never ran, and release B walks use it by the owners' GOs): Vivreal Content's
 agent sign-in, `<secret-prefix>/agent-walk-user`, the default for read-only walks; and three KEYS of one secret,
-the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`): `scratch2-owner` (QA scratch-2's owner), `canlook` (its non-admin member, for permission and
+the QA account bundle (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`): `scratch2-owner` (QA scratch-2's owner), `canlook` (its non-admin member, for permission and
 role tests) and `scratch-owner` (QA scratch-owner's owner: a shop selling through Stripe by sign-in in test
 mode; a write there needs the owner's named approval). Read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)[key]`, or the e2e harness
 resolver for that key), never `--output text` on the bundle, which would print every login in it.
