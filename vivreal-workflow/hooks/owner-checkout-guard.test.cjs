@@ -66,7 +66,9 @@ for (const [name, command, over] of REFUSE) {
   test(`REFUSE (subagent): ${name}`, () => {
     const d = win(command, over);
     assert.equal(d.refuse, true, `not refused: ${command}`);
-    assert.match(d.folder, /^q:\/vr\/[^/_][^/]*/);
+    // The refused folder is under the root and outside _wt/ and _ops/.
+    const rel = d.folder.slice(WROOT.toLowerCase().length + 1);
+    assert.ok(d.folder.startsWith(WROOT.toLowerCase() + '/') && rel && !/^_(wt|ops)(\/|$)/.test(rel), d.folder);
   });
 }
 
