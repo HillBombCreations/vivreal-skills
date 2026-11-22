@@ -133,7 +133,8 @@ main session uploads them through the product. Never use the CMS `add-content-me
 
 ## Gate: voice-check, then the checks it cannot do
 
-1. From the vivreal-hq root, `node packages/content-studio/scripts/voice-check.mjs knowledge/draft-<slug>.md`
+1. From the content-studio package (`packages/content-studio`, the content fleet's data folder; the
+   owner-checkout guard refuses the hq root), `cd packages/content-studio && node scripts/voice-check.mjs ../../knowledge/draft-<slug>.md`
    (dashes anywhere, banned words and jargon in the Body, Meta 150-160) until it exits 0. Never
    weaken the script to pass.
 2. Then hand-check what it cannot catch, in exactly the three places past escapes happened: the

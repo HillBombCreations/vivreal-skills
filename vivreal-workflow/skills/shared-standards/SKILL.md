@@ -14,7 +14,10 @@ Every Vivreal repository is cloned side by side directly under one folder, which
 2. Otherwise derive it from the checkout you are in: `git rev-parse --git-common-dir` names the MAIN checkout's `.git`, even from a worktree under `_wt/`, and the folder above that checkout is the root when it holds `vivreal-hq/.git`. From a folder that is not a checkout (`_ops/`), the root is the first ancestor holding `vivreal-hq/.git`.
 3. Otherwise STOP and report "no Vivreal clone root found". Never guess a path and never write a literal drive or home path into a command.
 
-Once the vivreal-workflow plugin is loaded (on a fresh machine, from the second session on), its SessionStart hook exports the derived value to every Bash command of the session, subagents included (measured 2026-11-04), so `$VIVREAL_REPOS` just works in Bash. The PowerShell tool never receives it, so do repo work in Bash. Hooks and the db-explorer MCP server derive it themselves (`repos-root.cjs`). In a first session, or any shell without it, the two lines below derive it the same way:
+Once the vivreal-workflow plugin is loaded (on a fresh machine, from the second session on), its SessionStart hook exports the derived value to every Bash command of the session, subagents included (measured 2026-11-04), so `$VIVREAL_REPOS` just works in Bash. The PowerShell tool never receives it, so do repo work in Bash. Hooks and the db-explorer MCP server derive it themselves (`repos-root.cjs`). In a first session, or any shell without it, the two lines below derive it the same way. As written they are for
+the main thread only: both lines run in the folder the session started in, which the owner-checkout
+guard refuses for a subagent. A subagent that lacks the variable runs them after a `cd` into the
+worktree its brief names (from a worktree under `_wt/` the first line still finds the root).
 ```bash
 : "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
 ls "$VIVREAL_REPOS" | grep -qx vivreal-hq || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
@@ -32,7 +35,11 @@ starts a command there without a `cd` first (release C lesson L-C-01: three agen
 hq clone on one day because definitions named it). The vivreal-workflow owner-checkout guard
 (PreToolUse, Bash and PowerShell) refuses a subagent's command whose folder is a clone at the root:
 the folder a `cd`, `pushd` or `Set-Location` moves to, a `git -C`, `--git-dir`, `--work-tree` or
-`GIT_DIR`, else the folder the command starts in. It allows `_wt/` and `_ops/`, anything outside the
+`GIT_DIR`, else the folder the command starts in. It follows `popd`, `cd -` and the end of a
+subshell back to the folder before, and looks through `timeout`, `nohup`, `env`, `nice`, `setsid`,
+`wsl`, `eval` and a shell's `-c` to the command they run. It allows `_wt/` and `_ops/`, a linked
+worktree elsewhere under the root (a folder whose nearest `.git` is a file, such as an
+`isolation: worktree` subagent's folder inside a clone), anything outside the
 root, the main thread, the one-off clone form and the three fleets below. So every command a subagent runs starts with
 `cd "$VIVREAL_REPOS/_wt/<your worktree>" &&` (or `_ops/<folder>`).
 - **hq paths name a kept hq worktree, never the hq clone.** Reads and hq tools: `${VIVREAL_REPOS}/_wt/hq-main`,
@@ -47,19 +54,32 @@ root, the main thread, the one-off clone form and the three fleets below. So eve
   and `git -C "$VIVREAL_REPOS/<repo>" worktree add [-b <branch> --no-track | --detach] "$VIVREAL_REPOS/_wt/<name>" <ref>`
   (or a path under `_ops/`). Both touch only the clone's shared `.git`, never the owner's working tree
   or index, and the guard allows exactly these two, only with `git -C` (not after a `cd` into the
-  clone), and `worktree add` only of a path under `_wt/` or `_ops/`. Everything else, `show`, `log`,
+  clone), and `worktree add` only of a path under `_wt/` or `_ops/`. It reads them strictly, so keep
+  them plain: no other git option before the subcommand (`-c`), no `GIT_*` variable set in the
+  command, a `fetch` with a named remote and only everyday options (`--prune`, `--tags`,
+  `--quiet`; never `--upload-pack`, `--update-head-ok`, `--prune-tags`, `--depth`, `--filter` or a
+  refspec that writes a branch or a tag), and a `worktree add` without `-f`, `--force` or `-B`. Everything else, `show`, `log`,
   `status`, `ls-remote`, `worktree remove`, a script, an install, runs in a worktree.
 - **A kept read worktree per repo:** `$VIVREAL_REPOS/_wt/<repo>-read`, detached at the deployed line,
   made once with the one-off form (`--detach ... origin/<line>`); a ref read is
   `git -C "$VIVREAL_REPOS/_wt/<repo>-read" show origin/<line>:<path>` after a fetch. hq's is `_wt/hq-main`.
 - **Three owner-operated fleets keep their data in a clone,** untracked and only there: the lead
-  store (`packages/leadgen/Data/`, not regenerable) and the capture session files in the hq clone,
-  the captures and `.env` in the Vivreal_Site_Migrator clone. The agents of `vivreal-leadgen` and
-  `vivreal-content` may run their own tools in the hq clone, and those of `vivreal-site-migrator`
-  in the Vivreal_Site_Migrator clone, never git and never in another clone (the guard reads the
-  plugin from `agent_type`). Any step of theirs in another repo uses a worktree like everyone else.
+  store (`packages/leadgen/Data/`, not regenerable) and the capture session files and fixtures
+  (`packages/content-studio`) in the hq clone, the captures and `.env` in the Vivreal_Site_Migrator
+  clone. So, and only in those data folders, never git: `vivreal-leadgen` agents run their tools
+  in `packages/leadgen`, `vivreal-content` agents in `packages/content-studio`, and
+  `vivreal-site-migrator` agents in `captures/` and, at the Vivreal_Site_Migrator clone root where
+  its `.env` sits, only its own tools (`node commands/...`, `node scripts/...`, `node -e`,
+  `npm run <script>`). A `cd` within that clone runs nothing and is allowed; anything else there
+  (`rm -rf docs`, `npm install` at the root, a tool in another package's folder) is refused, and so
+  is every step in another repo, which uses a worktree like everyone else. A step of theirs that
+  changes a tracked file (the migrator's capability regen in `packages/site-loader`) runs in a
+  worktree of that repo. The guard reads the plugin from `agent_type`, and its refusal names the
+  data folder for that fleet's agents.
 - **What the guard cannot see:** a folder named by a variable the command did not set, a script that
-  changes folder itself, a file read from elsewhere. The rule still holds there.
+  changes folder itself, a program outside its wrapper list that runs another (`xargs`,
+  `find -exec`, `sudo`), a `cd` that fails or sits in a pipeline, a file a redirection writes, a
+  file read from elsewhere. The rule still holds there.
 
 ### Cross-repo docs: the hq dev docs
 Cross-repo flows, decisions, dependency maps, the AWS estate and operations are described in the vivreal-hq dev docs, `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/README.md` (a symptom table, then use cases and references). Each repo's `CLAUDE.md` owns that repo's internals; the dev docs own what crosses repos (owners, 2026-11-04). Two hq tools, run from the kept hq worktree `${VIVREAL_REPOS}/_wt/hq-main`, find the right page before you change code: `npm run docs:route -- "<symptom or component>"` names the document to open, and `npm run docs:impact -- <repo>:<path>` lists the documents, maps and pinning tests that cover a file you are about to change. If either script is missing in that worktree, open the README's symptom table by hand. **The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04, a banner on each page points here): never cite it as current and never edit it.

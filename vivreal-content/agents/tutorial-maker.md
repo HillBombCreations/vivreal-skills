@@ -191,7 +191,7 @@ to catch, and it can lock the owner's account out.
 
 **Attach to the owner's own Chrome, do not launch one.** Start it yourself first:
 ```bash
-chrome.exe --mute-audio --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/_wt/hq-main/.agent-cache/tutorial-profiles/chrome-cdp
+cd packages/content-studio && chrome.exe --mute-audio --remote-debugging-port=9222 --user-data-dir=${VIVREAL_REPOS}/_wt/hq-main/.agent-cache/tutorial-profiles/chrome-cdp
 ```
 then run with `TUTORIAL_CDP_URL=http://127.0.0.1:9222` (`tutorial-lib.ts`
 `LaunchOptions.cdpUrl`, `src/tutorial/cdp-screencast.ts` records the tab through Chrome's own

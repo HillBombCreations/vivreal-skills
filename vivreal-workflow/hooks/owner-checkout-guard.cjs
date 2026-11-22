@@ -5,53 +5,101 @@
 //
 // A command's folders, segment by segment (`&&`, `||`, `;`, `|`, `&`, a newline, a parenthesis):
 //   - `cd <dir>`, `pushd`, `chdir`, `Set-Location`, `sl`, `Push-Location` move the folder the next
-//     segments run in, and the folder moved to counts itself;
+//     segments run in, and the folder moved to counts itself; `popd` and `cd -` go back (a folder
+//     stack; with nothing in this command to go back to, the folder stays), and a Bash subshell
+//     `( ... )` restores the folder it started in when it closes;
+//   - the wrappers `timeout`, `nohup`, `env` (with `VAR=x` and `-C <dir>`), `nice`, `setsid` and
+//     `wsl` (with `--cd <dir>`, `-e`, `-d`) are peeled off and the command they run is checked,
+//     with a WSL `/mnt/<drive>/...` path read as the Windows path it names;
 //   - a `git` segment counts its `-C <dir>` (applied in order), `--git-dir`, `--work-tree`, and a
 //     `GIT_DIR=` or `GIT_WORK_TREE=` set before it, in place of the folder it runs in;
-//   - `bash -c`, `bash -lc`, `sh -c`, `wsl.exe -e bash -lc`, `powershell -Command`, `cmd /c` and a
-//     `$( ... )` are read the same way, starting from the folder they run in;
+//   - `bash -c`, `bash -lc`, `sh -c`, `wsl.exe -e bash -lc`, `powershell -Command`, `cmd /c`, `eval`,
+//     a `$( ... )` and, in Bash, a backtick substitution are read the same way, starting from the
+//     folder they run in;
 //   - a segment that only sets variables (`X=1`, `export X=1`, `$env:X = 1`) runs nothing;
 //   - every other segment counts the folder it runs in: the last `cd` before it, else the hook
 //     input's `cwd`.
 // The command is REFUSED when any folder it counts is an owner checkout: a folder under the clone
-// root whose first part is not `_wt` or `_ops` and holds `.git`. Checking every segment, not only
+// root, outside `_wt` and `_ops`, whose nearest `.git` above it is a DIRECTORY (a nearest `.git`
+// that is a FILE is a linked worktree, an agent's own, and is allowed). Checking every segment, not only
 // the last, closes `git -C <owner> show; git -C <worktree> log`.
 //
 // ALLOWED: the main thread (the hook input carries `agent_id` only inside a subagent or an
 // in-process teammate; Claude Code hooks reference, "Common input fields", pinned by recorded
 // inputs in owner-checkout-guard.test.cjs, U-SK1); a folder under `_wt/` or `_ops/`; a folder
-// outside the clone root or the root itself; a folder that is not a checkout; the one-off clone
-// form, `git -C <clone> fetch ...` or `git -C <clone> worktree add <path under _wt/ or _ops/>`,
-// which touches only the clone's shared .git and is how a worktree of a repo with none is made; and
-// a data-bearing fleet's own tools, never git, in the one clone its data lives in (FLEET_HOMES).
+// outside the clone root or the root itself; a folder that is not a checkout; a linked worktree;
+// the one-off clone form, read strictly: no git option but `-C` and no `GIT_*` variable set in the
+// command, then a `fetch` with only the listed options, a plain remote and no refspec writing
+// anything but a remote-tracking ref, or a `worktree add` with only the listed options (never
+// `-f`, `--force`, `-B`) of a path under `_wt/` or `_ops/`; it touches only the clone's shared
+// .git and is how a worktree of a repo with none is made; and a data-bearing fleet's own tools,
+// never git, in its data folders only (FLEET_DATA).
 //
 // What it cannot see, and lets through: a folder named by a variable this command did not set
 // (`cd "$X"` with X from elsewhere), a path the command builds at run time, a script that changes
-// folder itself, and a file READ in an owner checkout from elsewhere (`cat <owner>/CLAUDE.md`),
-// which runs nothing there. It fails open on its own errors and outside a Vivreal clone root: a
-// broken guard is never a reason a command cannot run, and the definitions say the same rule.
+// folder itself, a program outside the wrapper list that runs another (`xargs`, `find -exec`,
+// `sudo`), a `cd` that fails or sits in a pipeline, a file a redirection writes, and a file READ
+// in an owner checkout from elsewhere (`cat <owner>/CLAUDE.md`), which runs nothing there. It
+// fails open on its own errors and outside a Vivreal clone root: a broken guard is never a reason
+// a command cannot run, and the definitions say the same rule.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
 const KEPT = new Set(['_wt', '_ops']);
 const CD_WORDS = new Set(['cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location']);
-const SHELLS = new Set(['bash', 'sh', 'zsh', 'dash', 'wsl', 'powershell', 'pwsh', 'cmd']);
+const SHELLS = new Set(['bash', 'sh', 'zsh', 'dash', 'powershell', 'pwsh', 'cmd']);
 const INNER_FLAGS = new Set(['-c', '-lc', '-ic', '-lic', '-command', '/c']);
 const KEYWORDS = new Set(['if', 'then', 'else', 'elif', 'fi', 'do', 'done', 'while', 'until', 'for', '{', '}', '!', 'time', 'exec', 'command', 'builtin']);
+// Programs that run another command: the guard checks the command they run (pass 1, guard-bypass).
+const WRAPPERS = new Set(['timeout', 'nohup', 'env', 'nice', 'setsid', 'wsl']);
 const NEUTRAL = new Set(['export', 'set', 'unset', ':', 'true', 'local', 'declare', 'readonly']);
 const ROOT_VAR = 'VIVREAL_REPOS';
-// `git worktree add` options that take a value, so the value is never read as the new path.
-const WORKTREE_VALUE_OPTS = new Set(['-b', '-B', '--orphan', '--reason']);
+// Markers splitSegments emits for a subshell's `(` and `)`, so the folder is restored after it.
+const OPEN = '\u0001(';
+const CLOSE = '\u0001)';
+// git options before the subcommand that take a value (any of them ends the one-off form).
+const GIT_VALUE_OPTS = new Set(['-c', '--config-env', '--exec-path', '--namespace', '--super-prefix']);
+// `git fetch` options the one-off form accepts; anything else ends it: `--upload-pack` (runs a
+// command), `-u` and `--update-head-ok` (move the checked-out branch), `--refmap`,
+// `--recurse-submodules`, `--prune-tags` or `-P` (delete the owner's local-only tags), `--depth`
+// and its kin (make a full clone shallow) and `--filter` (marks the remote a promisor in the
+// clone's config).
+const FETCH_FLAGS = new Set([
+  '--prune', '-p', '--tags', '-t', '--no-tags', '-n', '--all', '--quiet', '-q',
+  '--verbose', '-v', '--dry-run', '--no-recurse-submodules', '--progress', '--no-progress',
+  '--atomic', '--force', '-f', '--append', '-a', '--multiple', '--write-fetch-head', '--no-write-fetch-head',
+  '--auto-gc', '--no-auto-gc', '--auto-maintenance', '--no-auto-maintenance',
+]);
+const FETCH_VALUE_OPT = /^--jobs(=|$)/;
+// `git worktree add` options the one-off form accepts. `-f`, `--force` and `-B` (which resets an
+// existing branch, the owner's included) end it. `--orphan` takes no value (`git worktree add -h`):
+// read as a value option it would swallow a `-f` after it.
+const WORKTREE_VALUE_OPTS = new Set(['-b', '--reason']);
+const WORKTREE_FLAGS = new Set([
+  '--detach', '-d', '--no-track', '--track', '--checkout', '--no-checkout', '--quiet', '-q', '--lock', '--orphan',
+  '--guess-remote', '--no-guess-remote', '--relative-paths', '--no-relative-paths',
+]);
 // The owner-operated fleets whose working data exists only in one owner clone, untracked, so their
-// agents cannot move to a worktree without a code change there: the lead store
-// (`packages/leadgen/Data/`, not regenerable) and the content capture session files in hq, the
-// captures and `.env` in Vivreal_Site_Migrator. Each plugin's agents (agent_type
-// `<plugin>:<agent>`) may run their own tools in that one clone, never git, and nowhere else.
-const FLEET_HOMES = Object.freeze({
-  'vivreal-leadgen': 'vivreal' + '-hq',
-  'vivreal-content': 'vivreal' + '-hq',
-  'vivreal-site-migrator': 'vivreal_site_migrator',
+// agents cannot move to a worktree without a code change there. Each plugin's agents (agent_type
+// `<plugin>:<agent>`) may run their own tools, never git, only in their data folders (paths below
+// the clone root, lowercase): the lead store under `packages/leadgen` (`Data/`, not regenerable);
+// the content capture session files and fixtures under `packages/content-studio`; the migrator's
+// `captures/`, plus its own tools (`node commands/...`, `node scripts/...`, `node -e`,
+// `npm run <script>`) at the clone root, where its `.env` sits. A `cd` within the clone runs
+// nothing and is allowed (pass 1, fleet-breadth).
+const HQ_LOW = 'vivreal' + '-hq';
+// `say` is the sentence the refusal adds for that fleet's agents, so a refused agent learns where
+// its tools do run instead of being sent to a worktree its data is not in.
+const FLEET_DATA = Object.freeze({
+  'vivreal-leadgen': { clone: HQ_LOW, dirs: [HQ_LOW + '/packages/leadgen'], say: 'packages/leadgen of the hq clone' },
+  'vivreal-content': { clone: HQ_LOW, dirs: [HQ_LOW + '/packages/content-studio'], say: 'packages/content-studio of the hq clone' },
+  'vivreal-site-migrator': {
+    clone: 'vivreal_site_migrator',
+    dirs: ['vivreal_site_migrator/captures'],
+    rootTools: true,
+    say: 'captures/ of the Vivreal_Site_Migrator clone (and, at that clone\'s root, only node commands/..., node scripts/..., node -e and npm run <script>)',
+  },
 });
 const MAX_DEPTH = 4;
 
@@ -76,6 +124,16 @@ function splitSegments(command, ps) {
       quote = c;
       cur += c;
       continue;
+    }
+    // A Bash backtick substitution stays whole, like `$( ... )`; substitutions() reads its body.
+    // In PowerShell a backtick is the escape character, so it is left alone there.
+    if (c === '`' && !ps) {
+      const end = command.indexOf('`', i + 1);
+      if (end > i) {
+        cur += command.slice(i, end + 1);
+        i = end;
+        continue;
+      }
     }
     // A comment runs nothing: skip to the end of the line.
     if (c === '#' && (cur === '' || /\s$/.test(cur))) {
@@ -118,6 +176,9 @@ function splitSegments(command, ps) {
     if (c === '\n' || c === ';' || c === '|' || c === '&' || c === '(' || c === ')') {
       segs.push(cur);
       cur = '';
+      // A subshell's parentheses become markers, so the folder it moved to is restored after it.
+      if (c === '(') segs.push(OPEN);
+      if (c === ')') segs.push(CLOSE);
       continue;
     }
     cur += c;
@@ -126,10 +187,17 @@ function splitSegments(command, ps) {
   return segs.map((s) => s.trim()).filter(Boolean);
 }
 
-/** The `$( ... )` bodies in a segment, outermost first. */
-function substitutions(seg) {
+/** The `$( ... )` bodies in a segment, outermost first, and in Bash the backtick bodies too. */
+function substitutions(seg, ps) {
   const out = [];
   for (let i = 0; i < seg.length; i++) {
+    if (seg[i] === '`' && !ps) {
+      const end = seg.indexOf('`', i + 1);
+      if (end < 0) break;
+      out.push(seg.slice(i + 1, end));
+      i = end;
+      continue;
+    }
     if (seg[i] !== '$' || seg[i + 1] !== '(') continue;
     let depth = 1;
     let j = i + 2;
@@ -237,62 +305,129 @@ function makeResolver({ root, platform, home, env }) {
 }
 
 /**
- * The decision for one tool call, from facts alone. `exists` is injected so the tests decide
- * which folders are checkouts.
+ * The decision for one tool call, from facts alone. `kindOf(p)` ('file', 'dir' or null) is
+ * injected so the tests decide which folders are checkouts and which are linked worktrees.
  * @returns {{ refuse: boolean, folder?: string }}
  */
-function decide({ command, cwd, agentId, agentType, toolName, root, platform = process.platform, home = os.homedir(), env = process.env, exists = fs.existsSync }) {
+function decide({ command, cwd, agentId, agentType, toolName, root, platform = process.platform, home = os.homedir(), env = process.env, kindOf = statKind }) {
   if (typeof agentId !== 'string' || agentId === '') return { refuse: false };
   if (!root || typeof command !== 'string' || !command.trim()) return { refuse: false };
   const ps = toolName === 'PowerShell';
   const r = makeResolver({ root, platform, home, env });
   const rootN = r.rootN;
+  const relOf = (folder) => (folder && rootN && folder.startsWith(rootN + '/') ? folder.slice(rootN.length + 1) : null);
 
+  // An owner checkout: under the root, outside _wt/ and _ops/, and the nearest `.git` above the
+  // folder is a DIRECTORY (the clone itself). A nearest `.git` that is a FILE is a linked worktree
+  // (`<clone>/.claude/worktrees/<name>`, a sibling-named worktree), which is an agent's, not the
+  // owner's; no `.git` at all is not a checkout.
   const ownerCheckout = (folder) => {
-    if (!folder || !rootN) return false;
-    if (folder === rootN || !folder.startsWith(rootN + '/')) return false;
-    const first = folder.slice(rootN.length + 1).split('/')[0];
-    if (!first || KEPT.has(first)) return false;
-    return exists(path.join(root, first, '.git'));
+    const rel = relOf(folder);
+    if (!rel) return false;
+    const parts = rel.split('/');
+    if (!parts[0] || KEPT.has(parts[0])) return false;
+    for (let n = parts.length; n >= 1; n--) {
+      const kind = kindOf(path.join(root, ...parts.slice(0, n), '.git'));
+      if (kind === 'file') return false;
+      if (kind === 'dir') return true;
+    }
+    return false;
   };
 
   const underKept = (folder) => {
-    if (!folder || !rootN || !folder.startsWith(rootN + '/')) return false;
-    const rel = folder.slice(rootN.length + 1).split('/');
-    return KEPT.has(rel[0]) && rel.length > 1 && rel[1] !== '';
+    const rel = relOf(folder);
+    if (!rel) return false;
+    const parts = rel.split('/');
+    return KEPT.has(parts[0]) && parts.length > 1 && parts[1] !== '';
   };
-  // `rest` is everything after git's own options; `clone` is the resolved -C folder.
-  function isOneOff(rest, clone, scope) {
-    const [sub, ...more] = rest;
-    if (sub === 'fetch') return true;
-    if (sub !== 'worktree' || more[0] !== 'add') return false;
-    const opts = more.slice(1);
-    for (let i = 0; i < opts.length; i++) {
-      const a = opts[i];
-      if (WORKTREE_VALUE_OPTS.has(a)) {
-        i++;
+
+  // The one-off clone form, read strictly (definition review pass 1, guard-one-off): no git option
+  // but `-C`, then `fetch` with only listed options, a plain remote and refspecs that write only
+  // remote-tracking refs (never a branch, and never a tag, which `--prune` could then delete), or
+  // `worktree add` with only listed options and a path under _wt/ or _ops/.
+  function fetchIsOneOff(args) {
+    const positional = [];
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i];
+      if (FETCH_FLAGS.has(a)) continue;
+      const v = a.match(FETCH_VALUE_OPT);
+      if (v) {
+        // A value that looks like an option is not a value this form accepts.
+        if (!a.includes('=') && String(args[++i] || '').startsWith('-')) return false;
         continue;
       }
-      if (a === '--') return underKept(r.resolve(clone, opts[i + 1] || '', scope));
-      if (a.startsWith('-')) continue;
-      return underKept(r.resolve(clone, a, scope));
+      if (a.startsWith('-')) return false;
+      positional.push(a);
     }
-    return false;
+    const refspecs = positional.slice(1);
+    // A remote helper (`ext::<command>`) runs a command, wherever it sits (`--multiple` takes several remotes).
+    if (positional.some((p) => p.includes('::'))) return false;
+    return refspecs.every((spec) => {
+      if (!spec.includes(':')) return true;
+      const dst = spec.slice(spec.lastIndexOf(':') + 1);
+      return dst === '' || (dst.startsWith('refs/remotes/') && !dst.includes('..'));
+    });
   }
-  // A data-bearing fleet may run its own tools (never git) in the one clone its data lives in.
-  const fleetHome = typeof agentType === 'string' && agentType.includes(':') ? FLEET_HOMES[agentType.split(':')[0]] : undefined;
-  const inFleetHome = (folder) => {
-    if (!fleetHome || !folder || !folder.startsWith(rootN + '/')) return false;
-    return folder.slice(rootN.length + 1).split('/')[0].toLowerCase() === fleetHome;
+  function worktreeAddIsOneOff(args, clone, scope) {
+    // git reads options after the path too (`worktree add <path> -B main`), so every argument is
+    // read, not only those before the path.
+    const positional = [];
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i];
+      if (a === '--') {
+        positional.push(...args.slice(i + 1));
+        break;
+      }
+      if (WORKTREE_VALUE_OPTS.has(a)) {
+        // A value that looks like an option (`--reason -B`) is not a value this form accepts.
+        if (String(args[++i] || '').startsWith('-')) return false;
+        continue;
+      }
+      if (WORKTREE_FLAGS.has(a)) continue;
+      if (a.startsWith('-')) return false;
+      positional.push(a);
+    }
+    // <path> [<commit-ish>]
+    return positional.length >= 1 && positional.length <= 2 && underKept(r.resolve(clone, positional[0], scope));
+  }
+
+  // A data-bearing fleet runs its own tools (never git) only in its data folders (FLEET_DATA).
+  // An own-key lookup: a plugin named like an object key (`constructor`) is no fleet.
+  const plugin = typeof agentType === 'string' && /^[a-z0-9-]+:[^:]+$/i.test(agentType) ? agentType.split(':')[0] : '';
+  const fleet = Object.prototype.hasOwnProperty.call(FLEET_DATA, plugin) ? FLEET_DATA[plugin] : undefined;
+  const fleetAllows = (c) => {
+    if (!fleet || c.git) return false;
+    const rel = relOf(c.folder);
+    if (!rel) return false;
+    const low = rel.toLowerCase();
+    if (fleet.dirs.some((d) => low === d || low.startsWith(d + '/'))) return true;
+    if (c.prog === 'cd' && low.split('/')[0] === fleet.clone) return true;
+    if (fleet.rootTools && low === fleet.clone) return rootToolAllowed(c.prog, c.args);
+    return false;
   };
 
   const counted = [];
   function scan(cmd, start, vars, depth) {
     if (depth > MAX_DEPTH) return;
     let cur = start;
+    // The folder before the last `cd`; undefined until this command has changed folder once.
+    let prev;
+    let dirStack = [];
+    const shellStack = [];
     for (const seg of splitSegments(cmd, ps)) {
-      for (const inner of substitutions(seg)) scan(inner, cur, vars, depth + 1);
-      const flat = seg.replace(/\$\((?:[^()]|\([^()]*\))*\)/g, '$(x)');
+      // A Bash subshell gets its own folder, `cd -` target and folder stack, and none of them
+      // outlive it. A PowerShell `( ... )` only groups, so a Set-Location inside it stays.
+      if (seg === OPEN) {
+        if (!ps) shellStack.push({ cur, prev, dirStack: dirStack.slice() });
+        continue;
+      }
+      if (seg === CLOSE) {
+        if (!ps && shellStack.length) ({ cur, prev, dirStack } = shellStack.pop());
+        continue;
+      }
+      for (const inner of substitutions(seg, ps)) scan(inner, cur, vars, depth + 1);
+      let flat = seg.replace(/\$\((?:[^()]|\([^()]*\))*\)/g, '$(x)');
+      if (!ps) flat = flat.replace(/`[^`]*`/g, '`x`');
       const psEnv = flat.match(/^\$env:([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/i);
       if (psEnv) {
         const value = words(psEnv[2], ps)[0] || '';
@@ -300,15 +435,54 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
         continue;
       }
       let w = words(flat, ps);
-      while (w.length && KEYWORDS.has(w[0].toLowerCase())) w = w.slice(1);
       const local = {};
-      while (w.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(w[0])) {
-        const eq = w[0].indexOf('=');
-        local[w[0].slice(0, eq)] = w[0].slice(eq + 1);
-        w = w.slice(1);
+      let segCur = cur;
+      let wrapped = false;
+      const progOf = () => (w.length ? path.basename(w[0].replace(/\\/g, '/')).toLowerCase().replace(/\.exe$/, '') : '');
+      // Keywords, leading assignments and wrappers (WRAPPERS): each is peeled off, and the command
+      // it runs is the one checked.
+      for (let guard = 0; guard < 16; guard++) {
+        while (w.length && KEYWORDS.has(w[0].toLowerCase())) w = w.slice(1);
+        while (w.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(w[0])) {
+          const eq = w[0].indexOf('=');
+          local[w[0].slice(0, eq)] = w[0].slice(eq + 1);
+          w = w.slice(1);
+        }
+        const p = progOf();
+        if (!WRAPPERS.has(p)) break;
+        wrapped = true;
+        const rest = w.slice(1);
+        let i = 0;
+        if (p === 'timeout') {
+          for (; i < rest.length && rest[i].startsWith('-'); i++) if (/^-[sk]$|^--(signal|kill-after)$/.test(rest[i])) i++;
+          i++; // the duration
+        } else if (p === 'setsid') {
+          for (; i < rest.length && rest[i].startsWith('-'); i++);
+        } else if (p === 'nice') {
+          for (; i < rest.length && rest[i].startsWith('-'); i++) if (rest[i] === '-n' || rest[i] === '--adjustment') i++;
+        } else if (p === 'env') {
+          for (; i < rest.length && rest[i].startsWith('-'); i++) {
+            const a = rest[i];
+            if (a === '-u' || a === '--unset') i++;
+            else if (a === '-C' || a === '--chdir') segCur = r.resolve(segCur, rest[++i], { ...vars, ...local });
+            else if (a.startsWith('--chdir=')) segCur = r.resolve(segCur, a.slice(8), { ...vars, ...local });
+          }
+        } else if (p === 'wsl') {
+          for (; i < rest.length; i++) {
+            const a = rest[i];
+            if (a === '--cd' && i + 1 < rest.length) segCur = r.resolve(segCur, rest[++i], { ...vars, ...local });
+            else if (/^(-d|--distribution|-u|--user|--shell-type)$/.test(a)) i++;
+            else if (a === '-e' || a === '--exec' || a === '--') {
+              i++;
+              break;
+            } else if (a.startsWith('-')) continue;
+            else break;
+          }
+        }
+        w = rest.slice(i);
       }
-      const name = w.length ? path.basename(w[0].replace(/\\/g, '/')).toLowerCase().replace(/\.exe$/, '') : '';
-      if (!w.length || NEUTRAL.has(name)) {
+      const name = progOf();
+      if (!w.length || (NEUTRAL.has(name) && !wrapped)) {
         // Assignments only: they set variables for later segments and run nothing.
         const sets = { ...local };
         for (const a of w.slice(1)) {
@@ -319,71 +493,116 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
         continue;
       }
       const scope = { ...vars };
-      for (const [k, v] of Object.entries(local)) scope[k] = r.resolve(cur, v, vars) || v;
+      for (const [k, v] of Object.entries(local)) scope[k] = r.resolve(segCur, v, vars) || v;
       const args = w.slice(1);
 
-      if (CD_WORDS.has(name)) {
+      if (CD_WORDS.has(name) && !wrapped) {
         let target;
         for (let i = 0; i < args.length && target === undefined; i++) {
           if (/^-(literal)?path$/i.test(args[i])) target = args[i + 1];
           else if (!/^(-[LPe@]|\/d)$/i.test(args[i])) target = args[i];
         }
-        if (target === '-') cur = null;
+        const before = cur;
+        if (name === 'pushd' || name === 'push-location') dirStack.push(cur);
+        // `cd -` before any `cd` in this command goes to an OLDPWD the guard cannot read: the
+        // folder stays the one it knows, so the next segment is still checked.
+        if (target === '-') cur = prev === undefined ? cur : prev;
         else if (target === undefined) cur = r.clean(home);
         else cur = r.resolve(cur, target, scope);
-        counted.push({ folder: cur, git: false, oneOff: false });
+        prev = before;
+        counted.push({ folder: cur, git: false, prog: 'cd', args });
         continue;
       }
-      if (name === 'popd' || name === 'pop-location') {
-        cur = null;
+      if ((name === 'popd' || name === 'pop-location') && !wrapped) {
+        // With an empty stack `popd` fails and the folder stays where it is.
+        if (dirStack.length) {
+          prev = cur;
+          cur = dirStack.pop();
+        }
+        continue;
+      }
+      if (name === 'eval' && args.length) {
+        scan(args.join(' '), segCur, { ...scope }, depth + 1);
         continue;
       }
       if (SHELLS.has(name)) {
         const k = args.findIndex((a) => INNER_FLAGS.has(a.toLowerCase()));
         if (k >= 0 && k + 1 < args.length) {
-          scan(args.slice(k + 1).join(' '), cur, { ...scope }, depth + 1);
+          scan(args.slice(k + 1).join(' '), segCur, { ...scope }, depth + 1);
           continue;
         }
       }
       if (name === 'git') {
         const folders = [];
         let dashC = null;
+        let onlyC = true;
         let i = 0;
         for (; i < args.length; i++) {
           const a = args[i];
           if (a === '-C' && i + 1 < args.length) {
-            dashC = r.resolve(dashC === null ? cur : dashC, args[++i], scope);
-          } else if (a === '-c' && i + 1 < args.length) {
-            i++;
+            dashC = r.resolve(dashC === null ? segCur : dashC, args[++i], scope);
           } else if (a.startsWith('--git-dir=') || a.startsWith('--work-tree=')) {
-            folders.push(r.resolve(cur, a.slice(a.indexOf('=') + 1), scope));
+            onlyC = false;
+            folders.push(r.resolve(segCur, a.slice(a.indexOf('=') + 1), scope));
           } else if ((a === '--git-dir' || a === '--work-tree') && i + 1 < args.length) {
-            folders.push(r.resolve(cur, args[++i], scope));
-          } else if (!a.startsWith('-')) break;
+            onlyC = false;
+            folders.push(r.resolve(segCur, args[++i], scope));
+          } else if (a.startsWith('-')) {
+            onlyC = false;
+            if (GIT_VALUE_OPTS.has(a)) i++;
+          } else break;
         }
         for (const k of ['GIT_DIR', 'GIT_WORK_TREE']) {
-          if (scope[k]) folders.push(r.resolve(cur, scope[k], scope));
+          if (scope[k]) folders.push(r.resolve(segCur, scope[k], scope));
         }
         // The one-off clone form: `git -C <clone> fetch ...`, or `git -C <clone> worktree add` of a
-        // worktree under _wt/ or _ops/. Both touch only the clone's shared .git (its refs, its list
-        // of worktrees), never the owner's working tree or index, and they are how a worktree of a
-        // repo with none is made (F641).
-        const oneOff = folders.length === 0 && dashC !== null && isOneOff(args.slice(i), dashC, scope);
+        // worktree under _wt/ or _ops/. Both touch only the clone's shared .git (its remote refs,
+        // its list of worktrees), never the owner's working tree, index or branches, and they are
+        // how a worktree of a repo with none is made (F641).
+        const [sub, ...more] = args.slice(i);
+        let oneOff = false;
+        // A `GIT_*` variable set anywhere in the command (before the git word, or exported in an
+        // earlier segment) can name a program git runs (`GIT_SSH_COMMAND`), so it ends the form.
+        if (onlyC && dashC !== null && !folders.length && !Object.keys(scope).some((k) => /^GIT_/i.test(k))) {
+          if (sub === 'fetch') oneOff = fetchIsOneOff(more);
+          else if (sub === 'worktree' && more[0] === 'add') oneOff = worktreeAddIsOneOff(more.slice(1), dashC, scope);
+        }
         if (dashC !== null) folders.push(dashC);
-        if (!folders.length) folders.push(cur);
+        if (!folders.length) folders.push(segCur);
         for (const folder of folders) counted.push({ folder, git: true, oneOff });
         continue;
       }
-      counted.push({ folder: cur, git: false, oneOff: false });
+      counted.push({ folder: segCur, git: false, prog: name, args });
     }
   }
 
   scan(command, r.clean(cwd || process.cwd()), {}, 0);
-  const hit = counted.find((c) => ownerCheckout(c.folder) && !c.oneOff && !(!c.git && inFleetHome(c.folder)));
-  return hit ? { refuse: true, folder: hit.folder } : { refuse: false };
+  const hit = counted.find((c) => ownerCheckout(c.folder) && !c.oneOff && !fleetAllows(c));
+  if (!hit) return { refuse: false };
+  return fleet ? { refuse: true, folder: hit.folder, fleet: { plugin, say: fleet.say } } : { refuse: true, folder: hit.folder };
 }
 
-function reasonFor(folder) {
+/** The migrator's own tools at its clone root: `node commands/...`, `node scripts/...`, `node -e`, `npm run <script>`. */
+function rootToolAllowed(prog, args) {
+  const a = args || [];
+  if (prog === 'node') return /^(\.\/)?(commands|scripts)\//.test(a[0] || '') || a[0] === '-e' || a[0] === '--eval';
+  if (prog === 'npm') return a[0] === 'run' && typeof a[1] === 'string' && !a[1].startsWith('-');
+  return false;
+}
+
+function statKind(p) {
+  try {
+    const st = fs.statSync(p);
+    return st.isDirectory() ? 'dir' : st.isFile() ? 'file' : null;
+  } catch {
+    return null;
+  }
+}
+
+function reasonFor(folder, fleet) {
+  const own = fleet
+    ? ` A ${fleet.plugin} agent also runs its own tools, never git, in ${fleet.say}: start the command with a cd into that folder.`
+    : '';
   return (
     `Refused by the vivreal-workflow owner-checkout guard (F641): this command would run in ${folder}, ` +
     `an owner's own checkout under VIVREAL_REPOS. A subagent works only in a worktree under ` +
@@ -391,7 +610,8 @@ function reasonFor(folder) {
     `cd "$VIVREAL_REPOS/_wt/<your worktree>" && . A repo with no worktree gets one with the one-off form ` +
     `git -C "$VIVREAL_REPOS/<repo>" fetch origin, then git -C "$VIVREAL_REPOS/<repo>" worktree add ` +
     `--detach "$VIVREAL_REPOS/_wt/<repo>-read" origin/<line>. For hq reads use the kept hq worktree ` +
-    `(vivreal-workflow:shared-standards, Path resolution). Only the main thread works in an owner checkout.`
+    `(vivreal-workflow:shared-standards, Path resolution). Only the main thread works in an owner checkout.` +
+    own
   );
 }
 
@@ -407,7 +627,7 @@ function main() {
   if (!d.refuse) return;
   process.stdout.write(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reasonFor(d.folder) },
+      hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reasonFor(d.folder, d.fleet) },
     }),
   );
 }

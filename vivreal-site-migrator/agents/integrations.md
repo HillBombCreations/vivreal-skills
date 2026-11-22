@@ -26,8 +26,10 @@ gift cards) is a parity DEFECT, not a minor omission.
   (`packages/site-loader/src/capability/integrations.json`), the real provider
   list + category + auth types + config fields. This is a GENERATED mirror of the
   portal's `MANIFESTS` map, i.e. exactly the providers the portal can actually
-  connect. Regenerate with
-  `cd packages/site-loader && node scripts/sync-integration-capabilities.js`.
+  connect. Regenerating it rewrites a tracked file, so it runs in a worktree of
+  this repo, never in the clone (the owner-checkout guard refuses that folder),
+  with the portal read from its kept read worktree:
+  `cd "$VIVREAL_REPOS/_wt/<migrator worktree>/packages/site-loader" && VIVREAL_PORTAL_DIR="$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" node scripts/sync-integration-capabilities.js`.
   Programmatic access: `require('@hillbombcreations/site-loader').getIntegrationCapability(provider)`
   / `.isConnectableProvider(provider)` (both case-insensitive).
 - Output path: `captures/<domain>/integrations.part.json`.

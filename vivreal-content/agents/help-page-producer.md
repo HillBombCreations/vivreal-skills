@@ -478,10 +478,11 @@ then the detail. A "no" stated plainly with what to do instead beats a workaroun
 
 ## Step 7. Voice gate
 
-From the vivreal-hq root:
+From the content-studio package (the content fleet's data folder; the owner-checkout guard refuses
+the hq root):
 
 ```bash
-node packages/content-studio/scripts/voice-check.mjs knowledge/help-drafts/<article-key>.md
+cd packages/content-studio && node scripts/voice-check.mjs ../../knowledge/help-drafts/<article-key>.md
 ```
 
 Zero errors, or the draft is not done. Draft mode requires the `**Meta:**` line and holds

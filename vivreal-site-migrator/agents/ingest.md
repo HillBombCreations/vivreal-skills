@@ -55,8 +55,10 @@ integration vehicle, not content migration); never classify it as thin content.
    (`packages/site-loader/src/capability/integrations.json`) to know which
    integration providers the portal can connect, so your
    `integrationSignals.provider` values match real providers (stripe, square,
-   mailchimp, the socials, …). Regenerate with
-   `cd packages/site-loader && node scripts/sync-integration-capabilities.js`.
+   mailchimp, the socials, …). Regenerating it rewrites a tracked file, so it
+   runs in a worktree of this repo, never in the clone (the owner-checkout guard
+   refuses that folder), with the portal read from its kept read worktree:
+   `cd "$VIVREAL_REPOS/_wt/<migrator worktree>/packages/site-loader" && VIVREAL_PORTAL_DIR="$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" node scripts/sync-integration-capabilities.js`.
    NOTE: detection is deliberately wider than connectability, it is fine to
    SIGNAL a provider that is not in the snapshot (e.g. a site genuinely running
    Shopify); record it with its evidence. The `integrations` agent is what gates
