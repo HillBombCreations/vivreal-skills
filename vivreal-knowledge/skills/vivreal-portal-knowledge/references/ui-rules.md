@@ -27,10 +27,16 @@ path is a reason to look, never a reason to hand-build.
 **Gaps.** A rule whose "Use" names a gap has no shared component for that part yet. Do not
 hand-roll one and do not copy a hand version: ask the owners first (the list is at the end).
 
-**Framing.** When the look, the placement, the order, the shape per width or the words that frame
-a feature are not settled by a rule here, by the record, by an owner-approved mockup the plan
-names, or by the owner-approved plan's own words, stop building that piece and report the question
-to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep moving.
+**Framing.** When the look, the placement, the order or the shape per width is not settled by a
+rule here, by the record, by an owner-approved mockup the plan names, or by the owner-approved
+plan, stop building that piece and report the question to whoever dispatched you, who asks the
+owners (PROC-5). Never pick one to keep moving.
+
+**Words are not a framing question** (owners, Justin 2026-11-21T00:51:53Z, L-C-02). The words that
+frame a feature, and every other owner-facing line, are approved by a voice pass against vivreal-hq `brand/voice.md`
+(`vivreal-product:marketing-auditor`) plus the reviewer's pass of the piece that carries them;
+there is no owner word sitting. Write the wording you recommend, list it as drafted for that pass,
+and keep building. Owners still decide features, behaviour, looks and mockups.
 
 ## 1. Cards: products and orders (7)
 
@@ -342,7 +348,9 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
 - **PROC-4. A look change gets an owner-approved mockup first.** (UF-098, UF-105, UF-108) Use: no
   component.
 - **PROC-5. When the framing is not settled, ask the owners before building.** Stop that piece and
-  report the question to whoever dispatched you, who asks the owners; never pick. (UF-112) Use: no component.
+  report the question to whoever dispatched you, who asks the owners; never pick. Framing is the look,
+  the placement, the order and the shape per width; words are approved by the voice pass and the
+  reviewer, never asked (L-C-02). (UF-112) Use: no component.
 
 ## Gaps: no shared component yet; do not hand-roll; ask
 

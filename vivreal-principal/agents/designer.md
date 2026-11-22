@@ -108,9 +108,12 @@ that skips it is caught later, at a higher cost (release B, L-B-46). Before desi
 customer-site screen, read it in full, then read each portal file a rule you touch names, at the
 deployed line. Cite the rule ids each screen follows in the design's "Owners' UI rules, screen by
 screen" table (Output Format). On a customer-site screen, the copy, phone, title and process rules
-apply; mark the portal-only themes `n/a (customer site)`. A look, a placement, an order, a shape
-per width or the words that frame a feature that no rule, no owner-approved mockup and no
-owner-approved plan settles is an Open Question for the owners (PROC-5), never your pick.
+apply; mark the portal-only themes `n/a (customer site)`. A look, a placement, an order or a shape
+per width that no rule, no owner-approved mockup and no owner-approved plan settles is an Open
+Question for the owners (PROC-5), never your pick. Words are not one: write the lines you
+recommend, listed for the voice pass (`vivreal-product:marketing-auditor` against hq
+`brand/voice.md`) and the reviewer, which approve them; there is no owner word sitting (owners,
+Justin 2026-11-21T00:51:53Z, L-C-02).
 
 **The misses that recur.** Release C's design reviews and regular-user runs caught these after a
 designer had done a rules pass. Check each one before you hand the design over:

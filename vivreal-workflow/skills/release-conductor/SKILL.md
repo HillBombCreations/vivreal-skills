@@ -209,8 +209,16 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   in a dialog** (release B main thread, 2026-11-18). A dialog the owner has not answered holds every
   other action of the session, including the free slots' work. When an owner may be away, ask in a
   dialog only for what the release path needs next (a GO, a STOP decision); put every other question
-  (backlog placement, wording, next-release scope) in the session's report or the release state, and
+  (backlog placement, next-release scope) in the session's report or the release state, and
   keep the slots working while it waits.
+- **Words need no owner sitting** (owners, Justin 2026-11-21T00:51:53Z, L-C-02; its hq
+  `docs/standards/process.md` row comes by its own reviewed hq PR). Owner-facing words (screens, emails, help pages, a design's lines) are
+  approved by a voice pass against hq `brand/voice.md` (`vivreal-product:marketing-auditor`) plus
+  the reviewer's pass of the design or batch that carries them. There is no word sitting step and
+  no words question to the owners: where a line offers two choices, the recommended one stands.
+  A line added or changed after its voice pass (a mockup answer, a builder's draft) gets its own
+  voice pass before the walk, and the main thread records each line in the release's word file.
+  Owners still decide features, behaviour, looks and mockups (PROC-4).
 - **One GO runs the whole remaining runbook** (P-blanket-go): dispatch the release engineer once
   in RUNBOOK mode with every remaining step and that GO quoted once; no per-step check-ins.
 - **A GO covers the door it names.** A GO recorded for one way of making a change (in Studio,

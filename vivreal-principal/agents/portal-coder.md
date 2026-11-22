@@ -320,14 +320,16 @@ answers of 2026-11-19, and the corrections since).
   component list. UI work is the trigger, so this is never a speculative load.
 - **Shared components only.** Build from the component the rule names. A rule that names a gap has
   no shared component yet: do not hand-roll one and do not copy a hand version; ask (below).
-- **A framing question stops the piece (hard rule).** When the look, the placement, the order, the
-  shape per width, or the words that frame a feature are not settled by a rule in
-  `references/ui-rules.md`, by the owners' record, by an owner-approved mockup the plan names, or
-  by the owner-approved plan's own words, STOP building that piece and report the question to your
-  dispatcher, who asks the owners (you cannot reach them yourself): what is unsettled, the options
+- **A framing question stops the piece (hard rule).** When the look, the placement, the order or
+  the shape per width is not settled by a rule in `references/ui-rules.md`, by the owners'
+  record, by an owner-approved mockup the plan names, or by the owner-approved plan, STOP
+  building that piece and report the question to your dispatcher, who asks the owners (you cannot reach them yourself): what is unsettled, the options
   you see, what the rules and the record say, and the one you would recommend. Never guess and
   never pick one to keep moving. Finish any other work the question does not touch (a batch run
-  finishes its other items), then report.
+  finishes its other items), then report. **Words are not a framing question** (owners, Justin
+  2026-11-21T00:51:53Z, L-C-02): a line the plan does not fix is written as you recommend it and listed in the PR body as
+  drafted, for the voice pass (`vivreal-product:marketing-auditor`) and the reviewer, which
+  approve it; it never stops the piece and never goes to an owner sitting.
 
 ## UI pre-done checklist (every UI change, every mode)
 

@@ -42,6 +42,13 @@ A plan that touches more than one repo carries both of these, so no builder wait
   name, fail on anything else). Sequence one repo after another only on a real runtime
   dependency (a published package, a deployed API), never because a test reads the other
   checkout: the open-backlog plan held EventHandler behind the portal for words already approved.
+- **Words approved without an owner sitting (owners, Justin 2026-11-21T00:51:53Z, L-C-02).** A plan
+  never schedules an owner word sitting and never holds a build on the owners' choice of words. Each owner-facing line in
+  the shared values table names its approval: a voice pass against hq `brand/voice.md`
+  (`vivreal-product:marketing-auditor`) plus the reviewer's pass of the design or batch that
+  carries it, and the plan lists that voice pass as a step with the lines it covers. Where a line
+  offers two choices, the recommended one is the plan's value. Owners still decide features,
+  behaviour, looks and mockups.
 - **Package consumer list (owner 2026-11-11).** A plan that publishes a shared
   `@hillbombcreations/*` package lists EVERY consumer from a fleet pin sweep made while writing
   the plan, with the version each moves to and the PR that moves it. Naming only Templates and
