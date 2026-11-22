@@ -1,0 +1,39 @@
+{
+  "about": "PreToolUse inputs recorded from Claude Code 2.1.325 on 2026-11-22 (a non-interactive session whose settings added one hook that wrote its stdin to a file): the main thread ran one Bash command, then a general-purpose subagent ran one. Keys and their order are as recorded; values that name a machine, a session or an id are placeholders the tests fill in. U-SK1: agent_id and agent_type appear only on the subagent call.",
+  "mainThread": {
+    "session_id": "<session id>",
+    "transcript_path": "<transcript path>",
+    "cwd": "<cwd>",
+    "prompt_id": "<prompt id>",
+    "permission_mode": "bypassPermissions",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "<command>",
+      "description": "Print main thread probe string"
+    },
+    "tool_use_id": "<tool use id>"
+  },
+  "subagent": {
+    "session_id": "<session id>",
+    "transcript_path": "<transcript path>",
+    "cwd": "<cwd>",
+    "prompt_id": "<prompt id>",
+    "permission_mode": "bypassPermissions",
+    "agent_id": "<agent id>",
+    "agent_type": "general-purpose",
+    "effort": {
+      "level": "high"
+    },
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "<command>",
+      "description": "Print probe string"
+    },
+    "tool_use_id": "<tool use id>"
+  }
+}

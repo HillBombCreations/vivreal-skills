@@ -1,5 +1,5 @@
 {
-  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session). At session start in a Vivreal checkout, print who owns which task, and the owners' shared rules from vivreal-hq origin/main: the live values, plus the rules index everywhere except a current hq checkout, whose CLAUDE.md imports it. At each subagent start, hand the subagent the same rules as context unless that CLAUDE.md already gave them (Explore and Plan always get them). Before a general-purpose dispatch whose first word is a routed task, deny it with the owning agent named.",
+  "description": "After a package.json change, nudge to propagate shared @hillbombcreations/* package bumps across consumers and patch the lockfile surgically (once per session). At session start in a Vivreal checkout, print who owns which task, and the owners' shared rules from vivreal-hq origin/main: the live values, plus the rules index everywhere except a current hq checkout, whose CLAUDE.md imports it. At each subagent start, hand the subagent the same rules as context unless that CLAUDE.md already gave them (Explore and Plan always get them). Before a general-purpose dispatch whose first word is a routed task, deny it with the owning agent named. Before a subagent's Bash or PowerShell command, deny it when it would run in an owner's own checkout under the clone root (anything not under _wt/ or _ops/); the main thread is never refused.",
   "hooks": {
     "PostToolUse": [
       {
@@ -51,6 +51,16 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-guard.cjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/owner-checkout-guard.cjs\"",
             "timeout": 10
           }
         ]
