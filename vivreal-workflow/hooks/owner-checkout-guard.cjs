@@ -20,7 +20,10 @@
 // ALLOWED: the main thread (the hook input carries `agent_id` only inside a subagent or an
 // in-process teammate; Claude Code hooks reference, "Common input fields", pinned by recorded
 // inputs in owner-checkout-guard.test.cjs, U-SK1); a folder under `_wt/` or `_ops/`; a folder
-// outside the clone root or the root itself; a folder that is not a checkout.
+// outside the clone root or the root itself; a folder that is not a checkout; the one-off clone
+// form, `git -C <clone> fetch ...` or `git -C <clone> worktree add <path under _wt/ or _ops/>`,
+// which touches only the clone's shared .git and is how a worktree of a repo with none is made; and
+// a data-bearing fleet's own tools, never git, in the one clone its data lives in (FLEET_HOMES).
 //
 // What it cannot see, and lets through: a folder named by a variable this command did not set
 // (`cd "$X"` with X from elsewhere), a path the command builds at run time, a script that changes
@@ -38,6 +41,18 @@ const INNER_FLAGS = new Set(['-c', '-lc', '-ic', '-lic', '-command', '/c']);
 const KEYWORDS = new Set(['if', 'then', 'else', 'elif', 'fi', 'do', 'done', 'while', 'until', 'for', '{', '}', '!', 'time', 'exec', 'command', 'builtin']);
 const NEUTRAL = new Set(['export', 'set', 'unset', ':', 'true', 'local', 'declare', 'readonly']);
 const ROOT_VAR = 'VIVREAL_REPOS';
+// `git worktree add` options that take a value, so the value is never read as the new path.
+const WORKTREE_VALUE_OPTS = new Set(['-b', '-B', '--orphan', '--reason']);
+// The owner-operated fleets whose working data exists only in one owner clone, untracked, so their
+// agents cannot move to a worktree without a code change there: the lead store
+// (`packages/leadgen/Data/`, not regenerable) and the content capture session files in hq, the
+// captures and `.env` in Vivreal_Site_Migrator. Each plugin's agents (agent_type
+// `<plugin>:<agent>`) may run their own tools in that one clone, never git, and nowhere else.
+const FLEET_HOMES = Object.freeze({
+  'vivreal-leadgen': 'vivreal' + '-hq',
+  'vivreal-content': 'vivreal' + '-hq',
+  'vivreal-site-migrator': 'vivreal_site_migrator',
+});
 const MAX_DEPTH = 4;
 
 /** Split at separators outside quotes; keep `$( ... )` whole. `ps` keeps backslashes literal. */
@@ -60,6 +75,12 @@ function splitSegments(command, ps) {
     if (c === "'" || c === '"') {
       quote = c;
       cur += c;
+      continue;
+    }
+    // A comment runs nothing: skip to the end of the line.
+    if (c === '#' && (cur === '' || /\s$/.test(cur))) {
+      const nl = command.indexOf('\n', i);
+      i = (nl < 0 ? command.length : nl) - 1;
       continue;
     }
     // A heredoc body is data, not commands: skip from the next line to its delimiter line.
@@ -220,7 +241,7 @@ function makeResolver({ root, platform, home, env }) {
  * which folders are checkouts.
  * @returns {{ refuse: boolean, folder?: string }}
  */
-function decide({ command, cwd, agentId, toolName, root, platform = process.platform, home = os.homedir(), env = process.env, exists = fs.existsSync }) {
+function decide({ command, cwd, agentId, agentType, toolName, root, platform = process.platform, home = os.homedir(), env = process.env, exists = fs.existsSync }) {
   if (typeof agentId !== 'string' || agentId === '') return { refuse: false };
   if (!root || typeof command !== 'string' || !command.trim()) return { refuse: false };
   const ps = toolName === 'PowerShell';
@@ -233,6 +254,36 @@ function decide({ command, cwd, agentId, toolName, root, platform = process.plat
     const first = folder.slice(rootN.length + 1).split('/')[0];
     if (!first || KEPT.has(first)) return false;
     return exists(path.join(root, first, '.git'));
+  };
+
+  const underKept = (folder) => {
+    if (!folder || !rootN || !folder.startsWith(rootN + '/')) return false;
+    const rel = folder.slice(rootN.length + 1).split('/');
+    return KEPT.has(rel[0]) && rel.length > 1 && rel[1] !== '';
+  };
+  // `rest` is everything after git's own options; `clone` is the resolved -C folder.
+  function isOneOff(rest, clone, scope) {
+    const [sub, ...more] = rest;
+    if (sub === 'fetch') return true;
+    if (sub !== 'worktree' || more[0] !== 'add') return false;
+    const opts = more.slice(1);
+    for (let i = 0; i < opts.length; i++) {
+      const a = opts[i];
+      if (WORKTREE_VALUE_OPTS.has(a)) {
+        i++;
+        continue;
+      }
+      if (a === '--') return underKept(r.resolve(clone, opts[i + 1] || '', scope));
+      if (a.startsWith('-')) continue;
+      return underKept(r.resolve(clone, a, scope));
+    }
+    return false;
+  }
+  // A data-bearing fleet may run its own tools (never git) in the one clone its data lives in.
+  const fleetHome = typeof agentType === 'string' && agentType.includes(':') ? FLEET_HOMES[agentType.split(':')[0]] : undefined;
+  const inFleetHome = (folder) => {
+    if (!fleetHome || !folder || !folder.startsWith(rootN + '/')) return false;
+    return folder.slice(rootN.length + 1).split('/')[0].toLowerCase() === fleetHome;
   };
 
   const counted = [];
@@ -280,7 +331,7 @@ function decide({ command, cwd, agentId, toolName, root, platform = process.plat
         if (target === '-') cur = null;
         else if (target === undefined) cur = r.clean(home);
         else cur = r.resolve(cur, target, scope);
-        counted.push(cur);
+        counted.push({ folder: cur, git: false, oneOff: false });
         continue;
       }
       if (name === 'popd' || name === 'pop-location') {
@@ -297,10 +348,13 @@ function decide({ command, cwd, agentId, toolName, root, platform = process.plat
       if (name === 'git') {
         const folders = [];
         let dashC = null;
-        for (let i = 0; i < args.length; i++) {
+        let i = 0;
+        for (; i < args.length; i++) {
           const a = args[i];
           if (a === '-C' && i + 1 < args.length) {
             dashC = r.resolve(dashC === null ? cur : dashC, args[++i], scope);
+          } else if (a === '-c' && i + 1 < args.length) {
+            i++;
           } else if (a.startsWith('--git-dir=') || a.startsWith('--work-tree=')) {
             folders.push(r.resolve(cur, a.slice(a.indexOf('=') + 1), scope));
           } else if ((a === '--git-dir' || a === '--work-tree') && i + 1 < args.length) {
@@ -310,18 +364,23 @@ function decide({ command, cwd, agentId, toolName, root, platform = process.plat
         for (const k of ['GIT_DIR', 'GIT_WORK_TREE']) {
           if (scope[k]) folders.push(r.resolve(cur, scope[k], scope));
         }
+        // The one-off clone form: `git -C <clone> fetch ...`, or `git -C <clone> worktree add` of a
+        // worktree under _wt/ or _ops/. Both touch only the clone's shared .git (its refs, its list
+        // of worktrees), never the owner's working tree or index, and they are how a worktree of a
+        // repo with none is made (F641).
+        const oneOff = folders.length === 0 && dashC !== null && isOneOff(args.slice(i), dashC, scope);
         if (dashC !== null) folders.push(dashC);
         if (!folders.length) folders.push(cur);
-        counted.push(...folders);
+        for (const folder of folders) counted.push({ folder, git: true, oneOff });
         continue;
       }
-      counted.push(cur);
+      counted.push({ folder: cur, git: false, oneOff: false });
     }
   }
 
   scan(command, r.clean(cwd || process.cwd()), {}, 0);
-  const hit = counted.find((f) => ownerCheckout(f));
-  return hit ? { refuse: true, folder: hit } : { refuse: false };
+  const hit = counted.find((c) => ownerCheckout(c.folder) && !c.oneOff && !(!c.git && inFleetHome(c.folder)));
+  return hit ? { refuse: true, folder: hit.folder } : { refuse: false };
 }
 
 function reasonFor(folder) {
@@ -329,7 +388,9 @@ function reasonFor(folder) {
     `Refused by the vivreal-workflow owner-checkout guard (F641): this command would run in ${folder}, ` +
     `an owner's own checkout under VIVREAL_REPOS. A subagent works only in a worktree under ` +
     `$VIVREAL_REPOS/_wt/ or a folder under $VIVREAL_REPOS/_ops/: start the command with ` +
-    `cd "$VIVREAL_REPOS/_wt/<your worktree>" && . For hq reads use the kept hq worktree ` +
+    `cd "$VIVREAL_REPOS/_wt/<your worktree>" && . A repo with no worktree gets one with the one-off form ` +
+    `git -C "$VIVREAL_REPOS/<repo>" fetch origin, then git -C "$VIVREAL_REPOS/<repo>" worktree add ` +
+    `--detach "$VIVREAL_REPOS/_wt/<repo>-read" origin/<line>. For hq reads use the kept hq worktree ` +
     `(vivreal-workflow:shared-standards, Path resolution). Only the main thread works in an owner checkout.`
   );
 }
@@ -342,7 +403,7 @@ function main() {
   const cwd = data.cwd || process.cwd();
   const { resolveReposRoot } = require('./repos-root.cjs');
   const { root } = resolveReposRoot({ env: process.env, starts: [cwd] });
-  const d = decide({ command: ti.command, cwd, agentId: data.agent_id, toolName: data.tool_name, root });
+  const d = decide({ command: ti.command, cwd, agentId: data.agent_id, agentType: data.agent_type, toolName: data.tool_name, root });
   if (!d.refuse) return;
   process.stdout.write(
     JSON.stringify({
