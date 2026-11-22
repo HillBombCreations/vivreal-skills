@@ -94,7 +94,9 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
    right path on the wrong commit reads exactly like the answer. `git fetch origin` first, prove the
    tip (`git ls-remote origin refs/heads/<branch>` equals `git rev-parse origin/<branch>`; default
    branches differ, ask with `git ls-remote --symref origin HEAD`), then read with
-   `git show <ref>:<path>` or from a `git worktree add --detach <path> <ref>` research worktree.
+   `git show <ref>:<path>` in the repo's kept read worktree (`$VIVREAL_REPOS/_wt/<repo>-read`, made with the
+   one-off clone form in shared-standards "Path resolution"), or from a
+   `git -C "$VIVREAL_REPOS/<repo>" worktree add --detach "$VIVREAL_REPOS/_wt/<name>" <ref>` research worktree; never in the clone.
    In Git Bash, export `MSYS_NO_PATHCONV=1` first: MSYS rewrites a path starting with a dot
    (`git show <ref>:.github/workflows/x.yml`) and the call fails in a way that reads like a
    missing file, which is a false absence (reproduced in the 2026-10-20 skills audit).

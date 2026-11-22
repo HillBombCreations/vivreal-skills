@@ -30,7 +30,7 @@ This agent runs on Justin's or Hunter's machine. Nothing below may depend on who
 2. Every Vivreal repo is cloned under it, and each portal sibling (VR_Secure_API, Vivreal_Templates, VR_CMS_API, vivreal-hq, VR_Client_API, Vivreal_Site_Migrator) has its default branch contained in HEAD. The hooks throw when one is missing or parked; that throw is the gate working. Fix the sibling (fetch, fast-forward or switch to the default branch). Never set `VIVREAL_ALLOW_MISSING_SIBLINGS`, `VIVREAL_ALLOW_PARKED_SIBLINGS` or `VIVREAL_MIGRATOR_PUBLISH_OUT` (owners, 2026-10-28).
 3. Installs get the shared read-only packages token through the vivreal-workflow npm wrapper; nothing to export. When in doubt, run the onboarding doctor (prerequisite 5), which checks it without printing it.
 4. Both hooks start with `node scripts/assert-no-renderer-overlay.mjs`. If it fails, a renderer dev overlay is active; see `vivreal-knowledge:vivreal-renderer-knowledge`, "dev overlay", and remove the overlay, never the check.
-5. When in doubt, run `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/doctor.js" --repo portal`; it names what is missing and prints no value.
+5. When in doubt, run `cd "$VIVREAL_REPOS/_wt/hq-main" && node packages/fleet-ops/onboarding/doctor.js --repo portal`; it names what is missing and prints no value.
 
 ## Modes (the dispatcher picks; SOLO if the dispatch prompt does not say)
 
@@ -47,12 +47,11 @@ real accounts) need a fresh dispatch.
 
 ### SOLO, the only portal coder working right now
 
-1. **Fresh worktree from `origin/main`, never the main checkout.** From an existing portal worktree under
-   `$VIVREAL_REPOS/_wt/` (the owner-checkout guard refuses a command in the clone itself, F641):
-   `git -C <that worktree> fetch origin`, then
-   `git -C <that worktree> worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/pc-<slug>" origin/main` (or the path the dispatcher gives);
+1. **Fresh worktree from `origin/main`, never the main checkout.** With the one-off clone form the
+   owner-checkout guard allows (F641): `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" fetch origin`, then
+   `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/pc-<slug>" origin/main` (or the path the dispatcher gives);
    without `-b` the tree is DETACHED. `--no-track` keeps the branch off `origin/main`'s upstream. For an existing PR
-   branch, `git -C <that worktree> worktree add "$VIVREAL_REPOS/_wt/pc-<slug>" <branch>` (or `git -C <wt> switch <branch>` in a
+   branch, `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" worktree add "$VIVREAL_REPOS/_wt/pc-<slug>" <branch>` (or `git -C <wt> switch <branch>` in a
    worktree you already have). Working in the main checkout risks colliding with whatever branch it is parked on,
    or another agent's uncommitted work in it.
 2. **`npm ci`, never `npm install`.** A worktree's `node_modules` does not follow a branch
@@ -61,7 +60,7 @@ real accounts) need a fresh dispatch.
    trusting a result; `npm ci` reconciles. `npm install` on Windows can prune Linux-only
    optional dependencies out of the lockfile, patch a single entry surgically if a dependency
    genuinely needs bumping, never run a bare install to do it.
-3. **`.env.local`.** It is gitignored, so a fresh worktree has none. Copy `$VIVREAL_REPOS/Vivreal_Portal_Mobile/.env.local`; if that is missing too, run `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/fetch-env-local.js" portal <worktree>`. `.env.example` lists every name it must hold. Its
+3. **`.env.local`.** It is gitignored, so a fresh worktree has none. Copy `$VIVREAL_REPOS/Vivreal_Portal_Mobile/.env.local`; if that is missing too, run `cd <worktree> && node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/fetch-env-local.js" portal .`. `.env.example` lists every name it must hold. Its
    absence fails every admin-gated e2e spec for a reason that has nothing to do with your
    diff, and the trap compounds if you baseline against a second fresh worktree that is
    equally missing it, both sides fail identically and it reads as a clean pre-existing
@@ -192,8 +191,8 @@ with exactly these overrides, and every other SOLO step stands:
   Templates checkout holding `main` (v7, 2026-10-20).
 - **Never move a shared sibling checkout to make a test run** (release B, L-B-23). FOLLOWUP 5 of
   #496 fast-forwarded the shared `${VIVREAL_REPOS}/VR_Client_API` 21 commits so one cross-repo test
-  would load. Make a pinned worktree of the sibling instead, from an existing worktree of it
-  (`git -C "$VIVREAL_REPOS/_wt/<a sibling worktree>" worktree add --detach <scratch> origin/<line>`), point the test at it with the override above
+  would load. Make a pinned worktree of the sibling instead, with the one-off clone form
+  (`git -C "$VIVREAL_REPOS/<repo>" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/<line>`), point the test at it with the override above
   (`VIVREAL_CLIENT_API`, `VIVREAL_TEMPLATES`), and remove it after; or report the stale sibling.
 - **Write a proxy route's URL literally at its caller** (portal #496 delta review, NEW CLASS). The
   route evidence gate (`tests/unit/app/proxyCoverageMap.test.ts`, `e2e/proxy-coverage-map.json`)

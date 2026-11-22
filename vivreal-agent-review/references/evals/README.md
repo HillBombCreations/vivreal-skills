@@ -27,8 +27,8 @@ never check it out, branch it, or write inside it.
 Reconstruct both trees into a scratch directory:
 
 ```bash
-git -C ${VIVREAL_REPOS}/_wt/hq-main archive 29b9404 | tar -x -C <scratch>/hq-before
-git -C ${VIVREAL_REPOS}/_wt/hq-main archive HEAD    | tar -x -C <scratch>/hq-head
+cd <scratch> && git -C ${VIVREAL_REPOS}/_wt/hq-main archive 29b9404 | tar -x -C <scratch>/hq-before
+cd <scratch> && git -C ${VIVREAL_REPOS}/_wt/hq-main archive HEAD    | tar -x -C <scratch>/hq-head
 ```
 
 **Archive the whole tree, not just `.claude`.** `ref-unresolved` resolves a token

@@ -168,7 +168,7 @@ follows it rather than on the version and silently returns the wrong line.
 2026-10-21 a redeploy of 21 customer sites replaced each app's env map and dropped
 `SITE_RENDER_MODE` from every one, while every check that ran ("the build succeeded, the page
 answers 200") passed. Any change to the Amplify env, a buildSpec or a branch setting on more than
-one site goes through `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/fleet-rollout/cli.js"`:
+one site goes through `cd "$VIVREAL_REPOS/_wt/hq-main" && node packages/fleet-ops/fleet-rollout/cli.js`:
 a `--dry-run` first, then the change on one QA canary site, then small batches, with every app
 snapshotted (key names, never values) and diffed before and after each step, stopping on the first
 lost setting. A rollout stop is a STOP for this step. The canary, the flags, the stop rules and

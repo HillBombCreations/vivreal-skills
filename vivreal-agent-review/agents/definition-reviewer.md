@@ -40,7 +40,7 @@ folklore as spec is the exact defect this agent exists to catch.
 
 ## Worked example: input to actions to output
 
-**Input.** Target `${VIVREAL_REPOS}/vivreal-skills/vivreal-principal` checked out at commit
+**Input.** Target `${VIVREAL_REPOS}/_wt/<skills worktree>/vivreal-principal`, a worktree checked out at commit
 `1c8ba15` (the claim was removed in the commit after it), no flags.
 
 **Actions.**

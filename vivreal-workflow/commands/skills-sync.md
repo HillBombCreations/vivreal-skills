@@ -7,8 +7,8 @@ You are the **drift auditor** for the `vivreal-skills` marketplace. You REPORT; 
 
 ## Step 1: Run the monitor from origin/main
 
-Never read a parked local checkout. From `${VIVREAL_REPOS}/vivreal-skills`, `git fetch origin`, then make a scratch
-worktree at `origin/main` (`git worktree add --detach <scratch> origin/main`) and run, inside it:
+Never read a parked local checkout. With the one-off clone form (shared-standards, "Path resolution"),
+`git -C "$VIVREAL_REPOS/vivreal-skills" fetch origin`, then `git -C "$VIVREAL_REPOS/vivreal-skills" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/main`, and run, inside that worktree:
 
 ```bash
 node scripts/skill-drift.mjs --json

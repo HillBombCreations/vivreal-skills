@@ -253,7 +253,7 @@ site-loader publish,** because the two packages decide what an instantiated site
 Studio can set. Run the per-section census, vivreal-hq `packages/fleet-ops/blank-buildable` (its
 `README.md`, "The two snapshots", is the runbook), over the template demo sites AND the live fleet,
 with the reach generated at the portal head that will consume the version
-(`git -C "$VIVREAL_REPOS/_wt/<a portal worktree>" show <ref>:src/data/generated/blank-buildable-reach.json`).
+(`git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show <ref>:src/data/generated/blank-buildable-reach.json`, the portal's kept read worktree, made with the one-off form in shared-standards "Path resolution").
 Both must exit 0 with every control line printed; exit 1 (NOT BUILDABLE or DEAD) or exit 2
 (VOID) stops the publish. It reads only stored `siteDetails` (fetch once, for both the census and
 the fast path's count), and builds nothing, so a words-only publish runs it too. A new kit riding the publish is offered in the picker only once its own
@@ -326,9 +326,9 @@ publish stopped on both gates and the owner narrowed them, 2026-11-16).
    commits awaiting one in the report.
 
 **Work each consumer in its own worktree on a named branch, and check the branch before every
-first commit.** From an existing worktree of that consumer under `$VIVREAL_REPOS/_wt/`, never its clone
-(the owner-checkout guard refuses that, F641): `git -C <that worktree> fetch origin`, then
-`git -C <that worktree> worktree add -b <branch> --no-track <path> origin/main` (a
+first commit.** With the one-off clone form the owner-checkout guard allows (F641):
+`git -C "$VIVREAL_REPOS/<consumer>" fetch origin`, then
+`git -C "$VIVREAL_REPOS/<consumer>" worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/<name>" origin/main` (a
 bare `git worktree add <path> origin/main` makes a DETACHED tree), or `git -C <path> switch
 <branch>` for an existing PR branch. Print `git branch --show-current` and `git rev-parse HEAD`
 before the first commit in each repository. An empty branch name means a detached HEAD: attach

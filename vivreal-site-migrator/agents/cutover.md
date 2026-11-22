@@ -83,7 +83,14 @@ db.groups.updateOne({ _id: ObjectId('<groupId>'), dbKey: '<old>' },
 
 **Verify after every dbKey flip, this is a required step, not a suggestion:**
 ```bash
-cd ${VIVREAL_REPOS}/VR_Secure_API && node scripts/audit-group-key.js
+# Secure's kept tool worktree at its deployed line: the one-off clone form makes it once
+# (shared-standards, "Path resolution"); everything else runs in the worktree, never the clone.
+W="$VIVREAL_REPOS/_wt/VR_Secure_API-ops"
+git -C "$VIVREAL_REPOS/VR_Secure_API" fetch origin
+cd "$VIVREAL_REPOS/_wt" && { test -e "$W/.git" || git -C "$VIVREAL_REPOS/VR_Secure_API" worktree add --detach "$W" origin/stable; }
+cd "$W" && test -z "$(git status --porcelain)" && git checkout --detach origin/stable
+cd "$W" && { test -e .env || cp "$VIVREAL_REPOS/VR_Secure_API/.env" .env; } && npm ci
+cd "$W" && node scripts/audit-group-key.js
 ```
 It is read-only and exits non-zero on any finding.
 
@@ -100,10 +107,15 @@ their group from day one, never "built in ours, moved later." The shared
 migration group (`pod_01` `<_id: look up group key vivreal>`, read from the group doc
 2026-09-27, key `vivreal`, tier `pro`) is for **internal test migrations only** (and carries the collision hazard below).
 
-1. **Provision** (ops CLI in VR_Main_API; its `.env` carries the prod env):
+1. **Provision** (ops CLI in VR_Main_API, run in its kept tool worktree with the clone's `.env` copied in; it carries the prod env):
    ```bash
-   cd ${VIVREAL_REPOS}/VR_Main_API
-   node src/hbcreations/scripts/provisionDemoAccount.js \
+   # Main's kept tool worktree at its deployed line, made the same way as Secure's above
+   W="$VIVREAL_REPOS/_wt/VR_Main_API-ops"
+   git -C "$VIVREAL_REPOS/VR_Main_API" fetch origin
+   cd "$VIVREAL_REPOS/_wt" && { test -e "$W/.git" || git -C "$VIVREAL_REPOS/VR_Main_API" worktree add --detach "$W" origin/stable; }
+   cd "$W" && test -z "$(git status --porcelain)" && git checkout --detach origin/stable
+   cd "$W" && { test -e .env || cp "$VIVREAL_REPOS/VR_Main_API/.env" .env; } && npm ci
+   cd "$W" && node src/hbcreations/scripts/provisionDemoAccount.js \
      --email <prospect-email> --first <First> --last <Last> --group-name "<Brand Name>"
    ```
    - Use the **SAME `<Brand Name>` as `assemble --group`**, both derive the same
@@ -362,7 +374,7 @@ its Amplify build passed.
    (the `API_KEY` read with a `--query` naming only that value, into a variable, never printed;
    every `--output text` through `tr -d '\r'`); never commit it, it holds the prospect's content.
    Read the portal's reach at a named ref
-   (`git -C "$VIVREAL_REPOS/_wt/<a portal worktree>" show <ref>:src/data/generated/blank-buildable-reach.json`),
+   (`git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show <ref>:src/data/generated/blank-buildable-reach.json`),
    then from the kept hq worktree (`$VIVREAL_REPOS/_wt/hq-main`) run
    `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <reach.json> --by-site`.
    Required: exit 0 with the control, cross-check and gap-control lines printed. Exit 1 (each

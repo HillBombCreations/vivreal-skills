@@ -95,7 +95,7 @@ composed in the exemplar home's grammar, in the kit's own section order; keep `h
 node commands/assemble-blueprint.js captures/<kit> --group "<Vertical>" --gap-policy block   # gotcha L: exits nonzero on gaps but WRITES blueprint, run bundle SEPARATELY, never &&-chained
 node commands/preview-bundle.js captures/<kit>/blueprint.json --out captures/<kit>/preview
 node commands/serve-preview.js captures/<kit>/preview 8799                                    # bg (restart after every re-bundle)
-cd ${VIVREAL_REPOS}/Vivreal_Templates && NEXT_PUBLIC_CLIENT_API=http://127.0.0.1:8799 SITE_ID=preview API_KEY=dev npm run dev:linked   # bg; browse localhost:3000 (never 127.0.0.1)
+cd ${VIVREAL_REPOS}/_wt/Vivreal_Templates-preview && NEXT_PUBLIC_CLIENT_API=http://127.0.0.1:8799 SITE_ID=preview API_KEY=dev npm run dev:linked   # bg; browse localhost:3000 (never 127.0.0.1); the kept Templates worktree, made once with the one-off clone form at origin/stable, then npm ci
 ```
 Shoot/probe the Round-A render (zero-trace, single-H1, computed-color/type asserts).
 
@@ -160,7 +160,7 @@ authoring). Record the verdict into the brief STATUS.
    - **On the instantiated demo site** (Vivreal Content, see "Template sites" below), before the
      look's `site_templates` row is inserted: the per-section census at 0 NOT BUILDABLE, exit 0
      with its control lines printed, against the portal's reach v2 read at a named ref
-     (`git -C "$VIVREAL_REPOS/_wt/<a portal worktree>" show <ref>:src/data/generated/blank-buildable-reach.json`),
+     (`git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show <ref>:src/data/generated/blank-buildable-reach.json`),
      `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <reach.json> --by-site`.
      Exit 2 is VOID, never a pass.
    Fix by cause: a setting the renderer reads and Studio cannot set → `studio-registrar` (control

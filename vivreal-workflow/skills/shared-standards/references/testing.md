@@ -99,8 +99,8 @@ timeout.
 - **A faked layer hides the failure it fakes** (v7, 2026-10-19/20). A stubbed Mongoose model never runs the schema cast, so a write on an undeclared path passes; a mocked network never runs the next hop's validator; a test of what is DECLARED (a `@font-face`) passes while the element resolves to something else; a spy that matches any call passes on broken code. So: one test of any write runs through the REAL schema model; when a change alters what a client sends, one test goes through the real next hop with only the far upstream mocked; assert what renders or resolves; assert the exact call. Cases and rules: `verification-discipline`, "A faked layer hides exactly the failure it fakes".
 - **A test that reads a sibling repository reads a pinned worktree of it, never a shared checkout
   it moves** (release B, L-B-23). A builder that finds `${VIVREAL_REPOS}/<sibling>` behind makes
-  `git -C "$VIVREAL_REPOS/_wt/<a sibling worktree>" worktree add --detach <scratch> origin/<line>` (from an
-  existing worktree of the sibling, never its clone, which the owner-checkout guard refuses) and points the
+  `git -C "$VIVREAL_REPOS/<sibling>" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/<line>` (the
+  one-off clone form the owner-checkout guard allows; nothing else runs in the clone) and points the
   test at it through the repo's sibling override (the portal's `VIVREAL_CLIENT_API` and
   `VIVREAL_TEMPLATES`), or reports the stale sibling; it never pulls, fast-forwards or switches the
   shared checkout, which another agent or an owner may be using (P-shared-checkout). A sibling test

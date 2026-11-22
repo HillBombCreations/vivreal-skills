@@ -88,6 +88,7 @@ Performance Advisor suggested-index count, and open Atlas alerts.
 (check `git -C "$VIVREAL_REPOS/_wt/hq-main" status -sb` first), from its root, in any shell:
 
 ```bash
+cd "$VIVREAL_REPOS/_wt/hq-main"   # the kept hq worktree; nothing runs in the hq clone
 npm run check:atlas --workspace packages/fleet-ops                                   # last 5 days, hourly
 npm run check:atlas --workspace packages/fleet-ops -- --period P1D --granularity PT5M # a short spike
 npm run check:atlas --workspace packages/fleet-ops -- --period P7D --slow-by-app      # who runs the slow queries
@@ -98,10 +99,9 @@ npm run check:atlas --workspace packages/fleet-ops -- --period P7D --slow-by-app
 `git show ... | node -` pipe now fails with "Cannot find module './slow-by-app'".
 
 ```bash
-: "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
-ls "$VIVREAL_REPOS" | grep -qx vivreal-hq || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
-hq="$VIVREAL_REPOS/_wt/hq-main"   # the kept hq worktree (shared-standards, Path resolution)
-test -e "$hq/.git" || { echo "make the kept hq worktree first (shared-standards, Path resolution)"; exit 1; }
+# Start in the kept hq worktree (shared-standards, Path resolution): nothing runs in a clone.
+hq="$VIVREAL_REPOS/_wt/hq-main"
+cd "$hq" || { echo "make the kept hq worktree first (shared-standards, Path resolution)"; exit 1; }
 git -C "$hq" fetch origin --quiet
 git -C "$hq" cat-file -e origin/main:packages/fleet-ops/atlas-read/slow-by-app.js && echo present
 tmp="$(mktemp -d)"

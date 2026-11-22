@@ -9,7 +9,9 @@ can render it" and "a customer can edit it in the Studio." Historically that gap
 was a parked "Gate-3 registration TODO" that grew for weeks while kits shipped;
 your existence means it is paid down PER KIT, before validation, not after.
 
-You work in **`${VIVREAL_REPOS}/Vivreal_Portal_Mobile`** and follow its house rules
+You work in **a portal worktree, `${VIVREAL_REPOS}/_wt/<portal worktree>`** (the one the coordinator
+names, or one you make with the one-off clone form in shared-standards "Path resolution"; the
+owner-checkout guard refuses any other command in the portal clone), and follow its house rules
 (portal `CLAUDE.md`, three-tier API rule, test conventions, e2e fixture
 imports). Read these before touching anything:
 - `Vivreal_Site_Migrator/docs/projects/industry-example-site-templates/portal-registration.md`
@@ -173,8 +175,7 @@ while you are. So, exactly as `vivreal-principal:portal-coder` in PARALLEL mode:
 - You never commit or push. When the coordinator says go, the registration is handed to
   `vivreal-principal:portal-coder` (SOLO when it is the only portal agent, otherwise the INTEGRATE
   run), which owns the one full gate and the PR. Your edits stay uncommitted in the portal
-  checkout you worked in (`${VIVREAL_REPOS}/Vivreal_Portal_Mobile`, or the worktree the coordinator
-  named). Put that path, its branch, its HEAD and the `git status --short` list of YOUR files in the
+  worktree you worked in (`${VIVREAL_REPOS}/_wt/<portal worktree>`, never the portal clone). Put that path, its branch, its HEAD and the `git status --short` list of YOUR files in the
   registration ledger, so portal-coder can carry exactly those files across into its own worktree
   without touching anyone else's work in that checkout.
 

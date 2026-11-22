@@ -54,8 +54,11 @@ registry is corrected; never scan a guessed line.
 
 For each repo in the dispatch:
 
-1. **The deployed ref, proven.** `git -C <repo> fetch --prune origin`, then
-   `git ls-remote origin refs/heads/<line>` and `git rev-parse origin/<line>` in the same run. Both
+1. **The deployed ref, proven.** `git -C <repo> fetch --prune origin` (the registry path is the
+   clone; the fetch and a `worktree add` are the one-off form, shared-standards "Path resolution"), then
+   in the repo's kept read worktree `$VIVREAL_REPOS/_wt/<repo>-read` (made once with
+   `git -C <repo> worktree add --detach "$VIVREAL_REPOS/_wt/<repo>-read" origin/<line>`; every read below
+   runs there, never in the clone) `git ls-remote origin refs/heads/<line>` and `git rev-parse origin/<line>` in the same run. Both
    must print the same 40 hex. Record `<line> <sha>`. A mismatch, or a line `ls-remote` does not
    return, STOPs that repo. Nothing is read from a working tree. A repo the registry marks as
    deployed by manual dispatch runs the SHA of its last successful deploy run, not its line's tip:

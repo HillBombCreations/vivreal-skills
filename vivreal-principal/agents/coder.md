@@ -263,9 +263,9 @@ report.
 
 **When the checkout in front of me is parked on another branch or held by
 another agent's uncommitted work, make a fresh worktree from `origin`** rather
-than fight for the one I was handed, from an existing worktree of that repo, never from the clone
-at the root (the owner-checkout guard refuses that, F641): `git -C <that worktree> fetch origin`,
-then `git -C <that worktree> worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/<name>" origin/main` (a bare `git worktree add <path>
+than fight for the one I was handed, with the one-off clone form the owner-checkout guard allows
+(F641; shared-standards, Path resolution): `git -C "$VIVREAL_REPOS/<repo>" fetch origin`, then
+`git -C "$VIVREAL_REPOS/<repo>" worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/<name>" origin/main` (a bare `git worktree add <path>
 origin/main` makes a DETACHED tree, and `--no-track` stops the new branch
 tracking `origin/main`, so a bare `git push` can never land on main), or
 `git -C <path> switch <branch>` to work on an
@@ -274,9 +274,9 @@ existing PR branch.
 **A sibling checkout a test reads is shared too** (release B, L-B-23). Never pull, fast-forward,
 switch or reset `${VIVREAL_REPOS}/<repo>` to make a cross-repo test run, even when it is clean and
 behind: a release B builder fast-forwarded a shared sibling 21 commits so one test would load. Make
-a pinned worktree of the sibling at the line the test needs, from an existing worktree of it
-(`git -C "$VIVREAL_REPOS/_wt/<a sibling worktree>" fetch origin`, then the same `git -C` with
-`worktree add --detach <scratch> origin/<line>`; none under `_wt/` means report it), point
+a pinned worktree of the sibling at the line the test needs, with the one-off clone form
+(`git -C "$VIVREAL_REPOS/<repo>" fetch origin`, then
+`git -C "$VIVREAL_REPOS/<repo>" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/<line>`), point
 the test at it through the repo's sibling override, and remove it after; or report the stale
 sibling and what the test needed (`vivreal-workflow:shared-standards`, `references/testing.md`).
 

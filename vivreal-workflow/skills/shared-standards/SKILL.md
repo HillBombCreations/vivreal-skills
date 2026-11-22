@@ -22,7 +22,7 @@ ls "$VIVREAL_REPOS" | grep -qx vivreal-hq || { echo "no Vivreal clone root found
 Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
 
 - **A sibling repo you need is missing:** clone it, `gh repo clone HillBombCreations/<repo> "$VIVREAL_REPOS/<repo>"`, rather than reporting a hole.
-- **A repo has `.env.example` and no `.env.local`:** run `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/fetch-env-local.js" <key> "$VIVREAL_REPOS/_wt/<your worktree>"` (the key is the repo's `envLocal` in `onboarding/repos.json`). It prints names, never values, and lists the personal keys still to fill.
+- **A repo has `.env.example` and no `.env.local`:** run `cd "$VIVREAL_REPOS/_wt/<your worktree>" && node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/fetch-env-local.js" <key> .` (the key is the repo's `envLocal` in `onboarding/repos.json`). It prints names, never values, and lists the personal keys still to fill.
 - **`npm` in Bash needs no token setup, and only installs get a token:** the same hook runs `npm` and `npx` through a wrapper. Install and read commands (`ci`, `install`, `i`, `add`, `update`, `view`, `info`, `outdated`, and `npx` or `npm exec` naming `@hillbombcreations/`) get the shared READ-ONLY packages token; `npm publish` alone gets the WRITE token, and only for its upload: its lifecycle scripts and its `npm pack` run first with no token, then the packed tarball is published with `--ignore-scripts`; every other command (`npm run build`, `npm test`, `npx next build` and the rest) gets NONE, and a `NODE_AUTH_TOKEN` you set is stripped from it too, because a Next.js build cache writes environment values to disk (owners, 2026-11-04). Each token is read from AWS Secrets Manager with your own AWS sign-in at the moment npm runs (the secret names are keys `packagesTokenSecret` and `packagesWriteTokenSecret` of hq's `.vivreal/private-names.json`, which the hook reads from the hq clone; read it yourself in `${VIVREAL_REPOS}/_wt/hq-main`), never from `gh auth token`, and the wrapper never prints it or writes it to a file; the npm child that receives it, and that child's install scripts, can read their own environment. When a part is missing (the key, the secret, or your AWS sign-in) it says which, and npm runs without a token.
 
 ### Every clone at the root is an owner's checkout: agents work in worktrees (F641)
@@ -33,20 +33,31 @@ hq clone on one day because definitions named it). The vivreal-workflow owner-ch
 (PreToolUse, Bash and PowerShell) refuses a subagent's command whose folder is a clone at the root:
 the folder a `cd`, `pushd` or `Set-Location` moves to, a `git -C`, `--git-dir`, `--work-tree` or
 `GIT_DIR`, else the folder the command starts in. It allows `_wt/` and `_ops/`, anything outside the
-root, and the main thread. So every command a subagent runs starts with
+root, the main thread, the one-off clone form and the three fleets below. So every command a subagent runs starts with
 `cd "$VIVREAL_REPOS/_wt/<your worktree>" &&` (or `_ops/<folder>`).
 - **hq paths name a kept hq worktree, never the hq clone.** Reads and hq tools: `${VIVREAL_REPOS}/_wt/hq-main`,
   detached at `origin/main`; a ref read needs no checkout
   (`git -C "$VIVREAL_REPOS/_wt/hq-main" fetch origin && git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:<path>`),
   and a file read or an hq tool first brings it to `origin/main` when it is clean
-  (`test -z "$(git -C "$VIVREAL_REPOS/_wt/hq-main" status --porcelain)" && git -C "$VIVREAL_REPOS/_wt/hq-main" checkout --detach origin/main`);
+  (`cd "$VIVREAL_REPOS/_wt/hq-main" && test -z "$(git status --porcelain)" && git checkout --detach origin/main`);
   a tool that needs packages gets `npm ci` there. Writes (a plan, a release record,
   `docs/projects/<slug>/`, recorded footage) go in the hq worktree your brief names, on its branch,
   written below as `${VIVREAL_REPOS}/_wt/<hq worktree>`. Every hq path in these skills means one of the two.
-- **A worktree is made from a worktree.** `git -C "$VIVREAL_REPOS/_wt/<any worktree of that repo>" fetch origin`,
-  then `git -C <that same worktree> worktree add ...` (worktrees of one repo share its refs). When the
-  repo has none under `_wt/`, the brief names one the main thread made; a subagent never makes it
-  from the clone. `_wt/hq-main` itself is made once the same way, or by the main thread.
+- **The one thing a subagent runs in a clone: the one-off form.** `git -C "$VIVREAL_REPOS/<repo>" fetch origin`
+  and `git -C "$VIVREAL_REPOS/<repo>" worktree add [-b <branch> --no-track | --detach] "$VIVREAL_REPOS/_wt/<name>" <ref>`
+  (or a path under `_ops/`). Both touch only the clone's shared `.git`, never the owner's working tree
+  or index, and the guard allows exactly these two, only with `git -C` (not after a `cd` into the
+  clone), and `worktree add` only of a path under `_wt/` or `_ops/`. Everything else, `show`, `log`,
+  `status`, `ls-remote`, `worktree remove`, a script, an install, runs in a worktree.
+- **A kept read worktree per repo:** `$VIVREAL_REPOS/_wt/<repo>-read`, detached at the deployed line,
+  made once with the one-off form (`--detach ... origin/<line>`); a ref read is
+  `git -C "$VIVREAL_REPOS/_wt/<repo>-read" show origin/<line>:<path>` after a fetch. hq's is `_wt/hq-main`.
+- **Three owner-operated fleets keep their data in a clone,** untracked and only there: the lead
+  store (`packages/leadgen/Data/`, not regenerable) and the capture session files in the hq clone,
+  the captures and `.env` in the Vivreal_Site_Migrator clone. The agents of `vivreal-leadgen` and
+  `vivreal-content` may run their own tools in the hq clone, and those of `vivreal-site-migrator`
+  in the Vivreal_Site_Migrator clone, never git and never in another clone (the guard reads the
+  plugin from `agent_type`). Any step of theirs in another repo uses a worktree like everyone else.
 - **What the guard cannot see:** a folder named by a variable the command did not set, a script that
   changes folder itself, a file read from elsewhere. The rule still holds there.
 
@@ -118,7 +129,8 @@ agent acts on itself, by ID:
 
 **1. Read the deployed line, not a working tree.** Most checkouts on this machine sit on a
 feature branch, and a stale one will have you describing code no customer has ever run.
-`git fetch origin --prune` first, then quote a ref. Release-train repos deploy from
+`git fetch origin --prune` first, then quote a ref, both in a worktree of the repo (its kept read
+worktree, `$VIVREAL_REPOS/_wt/<repo>-read`, "Path resolution"), never in the clone. Release-train repos deploy from
 `origin/stable`; merge-to-deploy repos from `origin/main`; **two repos have no `main` at all**
 and answer to `origin/master`. Ask, do not assume: `git ls-remote --symref origin HEAD`.
 For the portal in production, read its release JSON endpoint more than once, because one read
