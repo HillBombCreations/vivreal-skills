@@ -332,6 +332,11 @@ REACHABLE without a forbidden press.
 
 Load `brand/voice.md` again if you have done anything since reading it.
 
+**What a reader most needs sits in the first screen** (owner, Justin 2026-11-23, release C lesson
+L-C-23: people scroll as little as they can). The article's answer, and any line that changes what
+the reader decides (a plan a feature needs, an offer, a limit), come in the opening lines, which
+show in the first screen at 390, never only after a list or at the foot.
+
 **Output, two files in vivreal-hq** (one article per run):
 
 1. `knowledge/help-drafts/<article-key>.md`, for example `A3-channels.md`. Owner copy only,
@@ -668,7 +673,7 @@ product's own screens, as an owner would, never behind them.
 
 ## vivreal.io mode
 
-For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
+For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; selling points and offers sit in the first screen at 390, above the options they affect, never only in a footer or after a list (`vivreal-knowledge:vivreal-brand-voice`, checklist item 11, L-C-23); every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
 
 ## Never
 

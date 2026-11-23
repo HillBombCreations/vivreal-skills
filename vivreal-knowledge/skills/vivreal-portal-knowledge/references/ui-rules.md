@@ -18,7 +18,8 @@ items `UF-001` to `UF-113`, approved agent corrections `A-01` to `A-12`, the 80 
 themes, the gaps, and the owners' answers to its framing questions (2026-11-19). The ids after
 each rule cite that record; the owners' own words live only there. Where an answer of 2026-11-19
 changed or settled a rule, the rule says "owners, 2026-11-19". An owner correction that came after
-the record carries its own date and backlog row instead (PAGE-9), making 81 rules here.
+the record carries its own date and its backlog row or lesson instead (PAGE-9, TITLE-6), making 82
+rules here; PAGE-3 carries a later owner broadening (L-C-23).
 
 **Paths.** Every path is in `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/`, read at `origin/stable`
 `9974e41b` (v0.46.0). Re-read a file at the current deployed line before you rely on it; a moved
@@ -119,7 +120,7 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
 - **HELP-5. Help is light:** a link to the article beside each piece, not videos everywhere.
   (UF-021, UF-087) Use: `HelpLink`.
 
-## 4. Titles and long words (5)
+## 4. Titles and long words (6)
 
 - **TITLE-1. A title wraps to at most two lines, then cuts with "..."** (owners, 2026-11-19, for every
   title: page, sheet, dialog and card). A page board sentence is at most two lines at 360 with its
@@ -139,6 +140,16 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
   keep the owner's casing whatever the shop's style, and the live site keeps its own look (owners,
   2026-11-19). One casing rule across a card. (UF-111) Use: no shared component; the order card's
   item lines (`OrderItems.tsx`) take the shop's capitals today, which this rule replaces.
+- **TITLE-6. An icon and its words are one unit: they never wrap apart** (owner, Justin 2026-11-23,
+  release C lesson L-C-19, after the record). In every icon-plus-label row (a heading, a status
+  line, a button, a chip, a list row) the icon sits on the first line of its text, at a fixed size
+  that never shrinks, aligned to that first line; the words wrap only inside their own box beside
+  the icon, never under it, and no row ever holds only an icon. The pickup page's heading "Still
+  Ready for pickup" dropped below its info icon on an owner's iPhone, leaving a row with only the
+  icon (D-OWN-1). Check every such row at 320 and 390 with its longest real words. Use: one row that
+  never wraps, the icon unable to shrink and a text box that may (`min-w-0`) and wraps; at `9974e41b`
+  no shared component draws the pair, and this rule names the one release C adds when this file is
+  re-read at its deployed line. Never hand-roll a second shared one.
 
 ## 5. Forms: shared controls only (9)
 
@@ -223,9 +234,17 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
   Use: `src/components/Universal/PageContainer/index.tsx`, `PageBoard`,
   `src/components/Universal/PageToolbar/index.tsx`, `NamedRule`; guards `e2e/page-tops.spec.ts` and
   `tests/unit/components/Universal/pageTopRules.test.ts`.
-- **PAGE-3. The main content shows without a big scroll:** in the installed app at 390 by 797 the
-  first item sits above the tab bar, and what the owners want seen first (an offer above the options
-  it is about) comes first. (UF-076, UF-095, UF-109) Use: `PageBoard` plus `PageToolbar`.
+- **PAGE-3. What we most want people to see sits in the first screen, with no scroll** (broadened by
+  the owner, Justin 2026-11-23, release C lesson L-C-23: "People do the least amount of work
+  possible so they will likely do the least amount of scrolling"). In the installed app at 390 by
+  797 the first item sits above the tab bar. Selling points, offers, the recommended choice and any
+  line that changes a decision sit inside the first screen at 390, above the options they affect,
+  never only in a footer or after a list: the free year offer first sat under the plan grid and
+  needed a fix (D-P1-3). Where cards stack on a phone or a tablet, the recommended option goes first
+  (on the plans and pricing pages, Pro first, then Basic), chosen on purpose, never the order a wide
+  screen reads left to right. The DOM order matches the visual order, so a screen reader meets it
+  first too. Check it by measuring each named piece's box against the first screen at 390. (UF-076,
+  UF-095, UF-109) Use: `PageBoard` plus `PageToolbar`.
 - **PAGE-4. No summary tile rows, ever:** no strip of three or four tiles across the top with the real
   content below. (UF-002, UF-015) Use: a band, the board's sentence or uneven columns.
 - **PAGE-5. Desktop is its own deliberate pass:** extra width buys more content, never floating dead

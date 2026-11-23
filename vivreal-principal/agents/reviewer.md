@@ -71,14 +71,18 @@ section citation. Overall PASS only if every item is PASS.
    Load `vivreal-knowledge:vivreal-portal-knowledge` and read `references/ui-rules.md` in full; a
    screen in the design is the trigger, so this is never a speculative load. Every screen the
    design adds or changes has a row in its rules table naming the ids it follows, and every id
-   exists and fits. Then check the misses that recur, the eight in `vivreal-principal:designer`,
+   exists and fits. Then check the misses that recur, the ten in `vivreal-principal:designer`,
    "The owners' UI rules": a word that is untrue on any screen it shows or names one state two ways
    (COPY-3); what the installed app at 390 shows, not only the computer (PH-1); "tap" in words a
    computer shows (COPY-1); a look change with no owner-approved mockup (PROC-4); a title fit argued
    rather than measured with the real font, size and worst input (TITLE-1, TITLE-4, PROC-3), or a
    clamp over `leading-none` (from release C's design reviews, not a rule); a mockup drawn smaller than the real component; a control between a
    toggle and its input (FORM-4); a shared component that drops behaviour the hand-built one had
-   (the sheet header's drag). Each miss cites its rule id and the design line.
+   (the sheet header's drag); an icon-plus-label row not drawn at 320 with its longest words, or
+   one that can leave the icon on a row of its own (TITLE-6, L-C-19); a first screen at 390 not
+   drawn, or a selling point, an offer, the recommended choice or a decision-changing line below it
+   or after the options it affects, or stacked cards whose order nobody chose (PAGE-3, L-C-23).
+   Each miss cites its rule id and the design line.
 5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
 6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
 7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
@@ -146,6 +150,28 @@ hand-built twin, nothing a gap names hand-rolled), the coder's UI pre-done check
 browser or a screenshot opened, PROC-3, never a class name), and the misses that recur (artifact
 rubric 4a) are absent. FAIL each miss with its rule id and `file:line`. The approved design's rules
 table is the spec; a screen that departs from it is a FAIL unless the PR reports the deviation.
+Two reads every changed screen gets, from the PR's measured evidence or your own: every
+icon-plus-label row the diff adds or touches at 320 with its longest real words, FAIL an orphaned
+icon (TITLE-6, L-C-19); and the first screen at 390, FAIL a selling point, an offer, the recommended
+choice or a decision-changing line that sits below it or after the options it affects, or a DOM
+order that differs from the visual order (PAGE-3, L-C-23).
+
+### 2b. Approved words, built verbatim (every diff that carries owner-facing words)
+Release C's walk found an approved line never built, with no record (D-P7-1), and another narrowed
+by a builder with no decision (D-P7-2). N-A when the diff carries no owner-facing words.
+**How to verify:** take the approved line list for the batch (the plan's words table, the voice
+pass lines, the release's word file) and diff it against the build: every line the batch owns is
+in the diff word for word, or the PR body lists it as narrowed or left out with the decision that
+allows it (an owner's answer or the voice pass, cited). FAIL a missing or changed line with no
+such entry, quoting the approved line and `file:line`.
+
+### 2c. Whose clock (every time or date an owner or a customer reads)
+A time shown on UTC's clock reached the walk (D-P13-2). N-A when the diff shows no time or date.
+**How to verify:** every time or date the diff shows to an owner or a customer names where its
+zone comes from (the business time zone, `vivreal-knowledge:vivreal-product-rules` rule 21), never
+the server's or the device's clock; a reply that carries a time carries the zone on every branch,
+refusals and errors included. FAIL each branch that formats a time with no zone source, with
+`file:line`.
 
 ### 3. Type safety
 No new `any` types. No `as` casts without inline comment justification. Generics used appropriately.

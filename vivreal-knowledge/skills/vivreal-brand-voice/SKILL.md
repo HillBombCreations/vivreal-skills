@@ -122,7 +122,7 @@ These recur in proof points. Confirm each is true and current before asserting i
 
 A passing asset scores ≥10/12 with no hard-ban hits.
 
-## Marketing best-practices checklist (10 points)
+## Marketing best-practices checklist (11 points)
 
 1. Value prop is a **pain → outcome** statement, not a feature list ("update your menu without calling Jake" beats "composable headless CMS").
 2. **One** primary CTA per page/asset (extra offers can cut conversion ~266%; personalized CTAs convert ~202% better than generic).
@@ -134,6 +134,7 @@ A passing asset scores ≥10/12 with no hard-ban hits.
 8. Channels **orchestrated in sequence**, not run in isolation (connect on LinkedIn → engage 2-3x → personalized request → email + DM gets ~3.5x more responses than email alone).
 9. A **short-form video** motion for demos (41% of B2B marketers say it delivers highest ROI; "show, don't tell").
 10. Language matches **SMB / non-technical-founder** vocabulary, no insider jargon.
+11. **What we most want seen is in the first screen** (owner, Justin 2026-11-23, release C lesson L-C-23: "People do the least amount of work possible so they will likely do the least amount of scrolling"). Selling points, offers, the recommended choice and any line that changes a decision sit inside the first screen at 390 wide, above the options they affect, never only in a footer or after a list; where cards stack on a phone, the recommended option comes first. The portal's form of the rule is `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` PAGE-3.
 
 ## Channel notes (circa 2026, SMB / non-technical founders)
 

@@ -171,7 +171,9 @@ Every item is required in the PR body, with evidence, not a bare assertion:
 9. **Whose clock.** Any backend or renderer string with a time or date that an owner or a
    customer reads uses the business time zone, never the server's or the device's clock, and
    names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21).
-   Test with the process in a different zone from the business, and across a DST change.
+   Test with the process in a different zone from the business, and across a DST change. A reply
+   that carries a time carries the zone on every branch, refusals and errors included, and the PR
+   body names where each zone comes from (release C, D-P13-2: a time on UTC's clock).
 10. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a
    contract the repo's `CLAUDE.md` (or its `README.md`, `GEMINI.md` or another guide file) states
    updates that line in the same PR. Grep the guide files for the old value, with a positive
@@ -184,6 +186,19 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    REFUSE test per write path (add, increase, set) at a cap of 0 asserts the refusal and the stored
    quantity unchanged. A release B review caught a cart that wrote `quantity: 0` when the cap
    reached 0, which its own checkout route refused and its quote counted as 1.
+12. **Approved words, verbatim.** Every line the batch's approved word list holds (the plan's
+   words table, the voice pass lines, the release's word file) is built word for word, or the PR
+   body lists it as narrowed or left out with the decision that allows it (an owner's answer or the
+   voice pass, cited). Release C's walk found one approved line never built, with no record
+   (D-P7-1), and one narrowed by a builder with no decision (D-P7-2).
+13. **A screen a person sees** (a customer site, the admin app, vivreal.io; the portal is
+   portal-coder's). The owners' first-screen and icon rules hold there too
+   (`vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md`, PAGE-3 and TITLE-6;
+   L-C-23 and L-C-19): every selling point, offer, recommended choice and decision-changing line the
+   screen holds is measured inside the first screen at 390, above the options it affects, with the
+   DOM order equal to the visual order; every icon-plus-label row is one non-wrapping pair with a
+   wrapping text box, its longest real words measured at 320 with the icon on the first line. A box
+   from the browser or a screenshot you opened, never a class name.
 
 **Exception, a command owns the gate:** if my dispatch prompt says I'm running
 inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP

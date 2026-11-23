@@ -310,7 +310,7 @@ The owners kept catching the same UI misses in portal builds (release B, L-B-40)
 row of its own, cards of different heights and casing, bare selects and inputs beside the styled
 ones, hand-built tabs, a sheet that would not scroll, a page that froze after a save, posts that
 did not look like their platform. Each catch is now a rule, with the shared component that does it
-right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (81 rules in 14
+right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (82 rules in 14
 themes, from the owners' record, vivreal-hq `docs/standards/portal-ui-feedback.md`, their framing
 answers of 2026-11-19, and the corrections since).
 
@@ -354,8 +354,11 @@ app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
    centred; a sheet that can outgrow the screen is `pinned` with one `BottomSheetBody`; one 44px
    close on the title row; the help mark beside the title at every width, never on a row of its
    own; one help link per surface, to its article.
-5. **Titles** (TITLE-1 to TITLE-4): wrap to at most two lines, then "..."; a size, an option or a
-   button label is never cut; a long name never pushes the page sideways.
+5. **Titles and icon rows** (TITLE-1 to TITLE-4, TITLE-6): wrap to at most two lines, then "...";
+   a size, an option or a button label is never cut; a long name never pushes the page sideways.
+   Every icon-plus-label row you add or touch (a heading, a status line, a button, a chip, a list
+   row) is one non-wrapping pair with a wrapping text box, and a test or a measured screenshot shows
+   its longest real words at 320 with the icon on the first line, never on a row of its own (L-C-19).
 6. **Selects** (SEL-1 to SEL-5): the shared select with its corner, height and text size untouched;
    two or three choices a segmented control, an either-or a switch; a list over about fifteen needs
    the shared searchable select, which does not exist yet, so that is a question, not a build.
@@ -366,7 +369,10 @@ app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
    one create action and the rest behind "...", at most two rows to the content, `NamedRule`
    sections, no summary tile row; short paired controls (Show and Sort by) on one row at 390, half
    the width each, when they fit; lists, boards and dashboards full width, forms and settings at a
-   capped, centred width (no shared cap exists yet: ask).
+   capped, centred width (no shared cap exists yet: ask). **The first screen** (PAGE-3, L-C-23):
+   every selling point, offer, recommended choice and decision-changing line the screen holds is
+   measured inside the first screen at 390, above the options it affects; stacked cards follow the
+   order the design chose (the recommended one first); the DOM order matches the visual order.
 9. **Studio**, when the change is in Studio (ST-1 to ST-6, FORM-4): essentials first, then inputs,
    then toggles; a photo and its controls in one column; a new picker entry like the rest; the
    setting shows in the preview as it will on the live site.
@@ -412,7 +418,8 @@ Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8
 8. Pass-through sweep: for a shared utility, primitive or merge config, sweep every direct and pass-through caller.
 9. **Role gate.** Every new or changed write control goes through the matching `useAccess('<area>.<verb>')` key (for example `content.write`, `site.write`, `post.write`, `commerce.write`) and renders the look-only path for a member without it. 9 of 76 portal review FAILs were this.
 10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. **Measured**: a box size read from `getBoundingClientRect`, or a screenshot you opened; a class name is not a check (a November layout fix proven by class assertions drew a control 0 px wide). 21 of 76 portal review FAILs were this.
-11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change.
+11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change. The PR body names the zone's source for every time the diff shows, and a reply or a screen that carries a time carries the zone on every branch, refusals and errors included (release C, D-P13-2: a time on UTC's clock).
+11a. **Approved words, verbatim.** Every line the batch's approved word list holds (the plan's words table, the voice pass lines, the release's word file) is built word for word, or the PR body lists it as narrowed or left out with the decision that allows it (an owner's answer or the voice pass, cited). Release C's walk found one approved line never built, with no record (D-P7-1), and one narrowed by a builder with no decision (D-P7-2). The reviewer diffs the list against the build.
 12. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a contract the portal's `CLAUDE.md` (or its `README.md` or another guide file) states updates that line in the same PR; grep the guide files for the old value, with a positive control, and paste both counts (coder item 10, catalog #28).
 13. **UI.** Every row of the UI pre-done checklist (above) for any change an owner sees, with its evidence; any framing question you stopped on, listed for the owners.
 Then end the report with the review it needs on its last line: `Needs: vivreal-principal:reviewer on Vivreal_Portal_Mobile#<n> at <sha>`. You cannot dispatch it; the main thread does. Never call your own checklist a review.

@@ -18,7 +18,7 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix), 
 ## Portal UI rules: the owners' corrections (read before any UI work)
 
 **Read [references/ui-rules.md](references/ui-rules.md) in full before any change an owner will
-see** (a screen, a sheet, a card, a form, a page top, a word). It holds 81 rules in 14 themes,
+see** (a screen, a sheet, a card, a form, a page top, a word). It holds 82 rules in 14 themes,
 written from the owners' UI feedback record (vivreal-hq `docs/standards/portal-ui-feedback.md`),
 their framing answers of 2026-11-19 and one later correction, each with the shared component to use (paths read at
 `origin/stable` `9974e41b`) and the record's `UF-` ids. The ones caught most often:
