@@ -361,7 +361,9 @@ app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
    its longest real words at 320 with the icon on the first line, never on a row of its own (L-C-19).
 6. **Selects** (SEL-1 to SEL-5): the shared select with its corner, height and text size untouched;
    two or three choices a segmented control, an either-or a switch; a list over about fifteen needs
-   the shared searchable select, which does not exist yet, so that is a question, not a build.
+   the shared searchable select: on a branch based on the release C line, `SearchableSelect`
+   (`src/components/UI/searchable-select.tsx`, single pick only); on an older line it is gap G2, a
+   question, not a build (SEL-3).
 7. **Tabs** (TAB-1 to TAB-5): `SectionSwitcher` for page sections, `SegmentedControl` for a switch
    inside a form, never `UI/tabs`, never nested, never a sideways strip; the first tab is what the
    owner wants first.

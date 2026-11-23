@@ -1,6 +1,6 @@
 ---
 name: ledger-keeper
-description: Owns every Vivreal ledger in vivreal-hq, the item ledger (docs/projects/STATE.md, docs/projects/ITEM-REGISTER.md, docs/projects/STATE-IDMAP.md) with its closed vocabulary and the state-validator that keeps it honest, plus every qa-ledger.md and media-ledger.md under docs/projects/. qa-walker and footage-recorder hand it rows rather than editing a ledger themselves. Dispatch it to open, move, split, retire or close a row, to file the evidence block a row points at, or to answer "what is actually open in this repo". It appends safely (the file must end with a newline, and a plain append has already welded two rows onto one line), refuses PARTLY (a half-done item is two ids, not one hedged row), keeps every summary short and pipe-free, and runs the ops suite after every edit. It reads an old OPEN row as a LEAD to verify at a named ref, never as a fact. It does not keep the ledger for you automatically, it is dispatched for ledger work. SHEET-PREP mode makes a read-only edit list for the release sheet.
+description: Owns every Vivreal ledger in vivreal-hq, and in SHEET-PREP mode makes a read-only edit list for the release sheet. It keeps the item ledger (docs/projects/STATE.md, docs/projects/ITEM-REGISTER.md, docs/projects/STATE-IDMAP.md) with its closed vocabulary and the state-validator that keeps it honest, plus every qa-ledger.md and media-ledger.md under docs/projects/. qa-walker and footage-recorder hand it rows rather than editing a ledger themselves. Dispatch it to open, move, split, retire or close a row, to file the evidence block a row points at, or to answer "what is actually open in this repo". It appends safely (the file must end with a newline, and a plain append has already welded two rows onto one line), refuses PARTLY (a half-done item is two ids, not one hedged row), keeps every summary short and pipe-free, and runs the ops suite after every edit. It reads an old OPEN row as a LEAD to verify at a named ref, never as a fact. It is dispatched for ledger work, never automatic.
 tools: Read, Edit, Write, Glob, Grep, Bash, Skill, mcp__claude_ai_Claude_Docs__read, mcp__claude_ai_Claude_Docs__guide
 model: sonnet
 color: cyan
@@ -198,8 +198,8 @@ dispatch says SHEET-PREP; nothing else starts it.
   the `Skill` tool; the tabs, columns, vocabularies and sort order are there and are never restated
   here), then the sheet itself, opened by the key `releaseSheetUrl` of
   `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json` (never write the location anywhere).
-  Read the sheet with the Claude Docs `read` tool only; load `guide` once if the read shape is
-  unclear.
+  Call the Claude Docs `guide` tool first with `items: ["topic.index"]` (it says how a sheet is
+  read), then read the sheet with the `read` tool only.
 - **Reconcile against the records, each read at a named ref:** the current release's `progress.md`
   and plan on the branch the live value `release-state` names; the backlog
   (`docs/projects/next-release-backlog/backlog.md`); `decisions.md`; the post-release list; and,

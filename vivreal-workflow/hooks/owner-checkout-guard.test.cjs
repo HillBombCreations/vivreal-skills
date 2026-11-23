@@ -996,6 +996,7 @@ const F654_REFUSE = [
   ['a backgrounded cd into a worktree leaves git in the clone', `cd ${WT} & git status`, OWNER, 'Bash'],
   ['a cd run as a pipeline stage leaves git in the clone', `cd ${WT} | cat; git status`, OWNER, 'Bash'],
   ['a cd piped into, too', `true | cd ${WT}; git log -1`, OWNER, 'Bash'],
+  ['PowerShell: a piped Set-Location into the clone moves there, so git runs in it', `Set-Location ${OWNER} | Out-Null; git status`, WT, 'PowerShell'],
 ];
 for (const [name, command, cwd, toolName] of F654_REFUSE) {
   test(`REFUSE (subagent, F654): ${name}`, () => {
@@ -1009,6 +1010,9 @@ const F654_ALLOW = [
   ['a single backslash still joins the next line into one command', `git -C ${WT} log ${BS}${NL}  --oneline -5`, OWNER, 'Bash'],
   ['a cd that is not backgrounded moves the folder, and git runs in the background there', `cd ${WT}; git status & wait`, OWNER, 'Bash'],
   ['a cd joined by && moves the folder', `cd ${WT} && git status | cat`, OWNER, 'Bash'],
+  ['the CRLF twin: an escaped backslash and a Windows line end, the next line in a worktree', `echo done ${BS}${BS}${CRLF}git -C ${WT} status`, WT, 'Bash'],
+  ['the piped-into twin: a pipe after a real cd keeps the folder it moved to', `cd ${WT}; true | cat; git log -1`, OWNER, 'Bash'],
+  ['PowerShell: a piped Set-Location into a worktree moves the folder (one runspace)', `Set-Location ${WT} | Out-Null; git status`, OWNER, 'PowerShell'],
 ];
 for (const [name, command, cwd, toolName] of F654_ALLOW) {
   test(`ALLOW (subagent, F654): ${name}`, () => {

@@ -224,13 +224,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **An owner is Justin or Hunter**; either may give any GO (P-owners). **Collecting a GO or an
   owner decision** (P-go-form, amended by the owners' GO-IDENTITY, release C lesson L-C-22): read
   the owner from the GitHub account this session's `gh` is signed in as, `gh api user --jq .login`,
-  and map it by P-go-form (hq `docs/standards/process.md` is the map's source, and holds if the two
-  ever differ): `justincecc` is Justin, `hkreshock` is Hunter. Only when it prints another login, or
-  nothing (`gh` signed out, the call failed), ask "Who is giving this go, Justin or Hunter?" in the
-  same question. Never infer the owner from the Claude account, an account email or git config:
-  release C's session ran on a shared support login for part of a day. ALLOW: a GO typed in a
-  session whose login is `justincecc` is recorded as Justin with no question. REFUSE: a login the
-  map does not name is never mapped to an owner, however close it looks; ask. Run
+  and map it by P-go-form, the one place the login map lives (hq `docs/standards/process.md`, read
+  with `git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:docs/standards/process.md`). Only when it
+  prints a login the map does not name, or nothing (`gh` signed out, the call failed), ask "Who is
+  giving this go, Justin or Hunter?" in the same question. Never infer the owner from the Claude
+  account, an account email or git config: release C's session ran on a shared support login for
+  part of a day. ALLOW: a GO typed in a session whose login the map names is recorded as that owner
+  with no question. REFUSE: a login the map does not name is never mapped to an owner, however
+  close it looks; ask. Run
   `date -u +%Y-%m-%dT%H:%M:%SZ` right after the answer, and quote
   `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of the
   dispatch. For a portal release, ask for the walk sign-off on the exact head in the same question.
@@ -286,8 +287,9 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
      fix slot of section 2 item 5). What waits is moving them in: never re-walk a section before
      moving on.
   4. **After the last row** (the walker's `## WALK PASS 1 COMPLETE` line), every approved fix moves
-     into the stack together, in one restart, then one walk over every failed row, repeated until
-     every row passes.
+     into the stack together, in one restart, then one walk over every failed row and the rows each
+     fix's rerun list names (`vivreal-workflow:vivreal-writing-plans`, "The walk plan and its fix
+     loop"), repeated until every row passes.
 - **A walk brief copies the plan's NW list for its lanes, word for word** (release C, the part 10
   brief named two rows the plan makes not walkable locally). Never retype or summarise it.
 - **The stack starts detached** (release C, H-P10-1: a usage limit cut the walker's background
@@ -316,48 +318,9 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   "Create my site" read as tested while it failed.
 - **From the walk's start to its end marker, the next slot that frees is held for its fixes,**
   never given to side work (section 2, item 5); the walk itself never waits for it.
-- **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
-  SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
-  defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered -E "^## |NEED-"`, and route
-  each defect as it lands (section 3).
-  - **Every re-arm reads the gap first** (release C, L-C-08). The watch expires (every 30 minutes on
-    2026-11-23), and a `NEED-TIER-FREE` line written between one watch ending and the next waited 42
-    minutes. Before arming again, grep the file for `NEED-` and `## ` lines newer than the last one
-    you handled, and handle them first.
-  - **Re-arm the watch BEFORE you open any owner dialog during a walk** (L-C-13). An open dialog
-    holds the session; the watch lapsed under one and four lines (two `NEED-OWNER`, two defects)
-    waited up to an hour.
-  - **A done file is written only after an explicit check of what it reports** (L-C-12). A done
-    file at the end of an `&&` chain through `tee` was written while the write it logged had failed
-    (HTTP 403), and the walker briefly saw a false done. Run the step, read its result back (the
-    status code, the stored value), test that read, and only then write the done file, as its own
-    command.
-  - **A helper started inside a watch holds a single-instance lock and dies with its watch**
-    (L-C-20). Stopping a Monitor did not stop the loop it launched, so eleven copies raced on the
-    handshake files and one deleted a fresh go file. Give such a helper a pid file it checks with
-    `kill -0` before starting, kill it when its watch is replaced, and list processes naming its
-    script before every re-arm.
-  - **Kill the watch pipes you started, before each re-arm and at the walk's end marker** (release
-    C, L-C-24). Stopping or expiring a Monitor ends the watch, not the processes of its pipe: at the
-    end of release C's walk 34 `tail -F` processes on the defects file were still running, one per
-    re-arm. Before each re-arm, stop the previous watch's `tail` and `grep`; at the end marker, stop
-    every one of them, then list every process whose command line names the walk folder
-    (fleet-concurrency, "Sweep for orphans") and stop what is left (two shells of an earlier walker
-    part sat blocked on a script edit, L-C-05 again). The walk is closed only when that list is
-    empty.
-- **Keep the walk machine awake** until the walk's end marker (a sleeping machine looks like a
-  stalled walk), and say so in the walk report. On Windows hold `ES_DISPLAY_REQUIRED` as well as
-  `ES_SYSTEM_REQUIRED` (`SetThreadExecutionState(0x80000003)`, continuous) for the whole walk, and
-  ask the owner to leave the lid open (release C, L-C-14): on a Modern Standby laptop the screen
-  going off still entered standby, and the walk machine slept 6.5 hours mid-walk with only the
-  system flag held.
-- **A restart at a setup point, or for a harness failure, is the only stack handshake left**
-  (WALK-THEN-FIX removes the per-fix restarts and the two-walker handshake they needed). When a
-  restart does need one, the harness notes from release C hold: a background wait for `STACK-UP`
-  writes the resume file itself the moment the stack is up, never the main thread by hand after a
-  dialog (L-C-09); a coordinator resumes reading from the `STACK-UP` line itself, never from the
-  file's end, deletes the spent go file at resume, and is run against a fixture file before it is
-  armed (L-C-18); and its helpers follow the single-instance rule above (L-C-20).
+- **Watch the defects file, keep the machine awake, and clean up after the walk**: the steps are
+  `references/walks.md` (the defects watch and its re-arm, done files, helpers and watch pipes, the
+  keep-awake, the restart handshake). Read it before arming the first watch.
 - **Keep the walk's known errors off the Sentry quota:** add the project's IP inbound filter for
   the walk machine before the walk, and remove it after.
 - **Warn the owners before a walk's refusal and membership rows, and read Sentry right after**

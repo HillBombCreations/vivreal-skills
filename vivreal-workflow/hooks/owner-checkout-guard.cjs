@@ -620,11 +620,12 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
       for (const [k, v] of Object.entries(local)) scope[k] = r.resolve(segCur, v, vars) || v;
       const args = w.slice(1);
 
-      // A `cd` sent to the background (`cd <wt> & git status`) or run as a pipeline stage
-      // (`cd <wt> | cat; git status`) runs in a subshell, so the folder stays where it was
-      // (F654, pass 3). Its target still counts as a folder this command names.
+      // A `cd` sent to the background (`cd <wt> & git status`) runs in a subshell or a job, and
+      // in Bash a pipeline stage (`cd <wt> | cat; git status`) does too, so the folder stays where
+      // it was (F654, pass 3). A PowerShell pipeline runs in the same runspace, so a piped
+      // Set-Location DOES move the folder there (pass 1 N3). Its target still counts as a folder.
       const nextOp = at + 1 < segs.length ? segs[at + 1].op : undefined;
-      if (CD_WORDS.has(name) && !wrapped && (nextOp === '&' || nextOp === '|' || op === '|')) {
+      if (CD_WORDS.has(name) && !wrapped && (nextOp === '&' || (!ps && (nextOp === '|' || op === '|')))) {
         const target = args.find((a) => a !== '--' && !/^(-[LPe@]|\/d|-(literal)?path)$/i.test(a));
         const to = target === undefined ? null : r.resolve(cur, target, scope);
         counted.push({ folder: to || cur, git: false, prog: 'cd', args });

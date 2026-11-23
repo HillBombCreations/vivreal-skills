@@ -125,7 +125,7 @@ pickup reminder", "Seasonal products", "The checkout list tick", "A sale refresh
   `mainDb.connect()` is the only connect on its path, so a public route that bypasses it (the pickup link's
   `POST /tenant/pickupReminder/lookup` and `/answer`) calls `mainDb.connect()` first, as the webhooks do; a failed open
   is a fixed 500. On a cold container every pickup link answered "Something went wrong" until a signed-in route had
-  opened the database. Its test builds the REAL `scripts/mainDb.js` fresh against a real mongod and calls the
+  opened the database. Its test builds the REAL `src/createAndUpdateIntegrations/scripts/mainDb.js` fresh against a real mongod and calls the
   controller first (`dp131-pickup-link-cold-start.realMongo.test.js`): a pre-connected stand-in is what hid it. Any
   new public route takes the same cold-container test.
 - **Square at parity with Stripe** (SQP-C1 to SQP-C7, design `design-square-parity.md`): payouts on the money cards
