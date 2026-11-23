@@ -151,7 +151,10 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
    to it mid-task, correctly (see `vivreal-workflow:fleet-concurrency`). A fresh dry run comes first,
    right before the apply; if its pin differs from the approved one, stop and re-review.
 4. After the apply: the read-back lines, then a dry run that plans nothing left, then the served
-   check. Hand the read-back to the agent that owns the area.
+   check. Hand the read-back to the agent that owns the area. **A done or hold file another agent
+   waits on is written only after an explicit check of that read-back, as its own command**, never
+   at the end of an `&&` chain through `tee` (release C, L-C-12: `tee` succeeded while the write it
+   logged had failed with HTTP 403, so the waiting walker briefly saw a false done).
 5. Keep `runs/` (snapshot, journal, run record) off the machine as well until the revert window
    closes. Record what ran, when, and the pin in the release log, never in the script's repo.
 

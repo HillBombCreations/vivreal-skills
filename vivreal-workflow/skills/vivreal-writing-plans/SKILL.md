@@ -103,6 +103,29 @@ row's count is at most 1:
   dev dependencies ride along; the step names the workflow's prune and size check, and the last
   deploy's size, or adds them first.
 
+## The walk plan and its fix loop (REQUIRED in a release plan)
+
+Every change maps to a walk row before the walk GO (P-walk-plan). Release C added these:
+
+- **The fix loop is WALK-THEN-FIX** (P-local-validate; release C lessons L-C-21 and L-C-06). The
+  plan's "what passes, and what reruns after a fix" section says: one walker run walks every lane in
+  plan order, pausing only at setup points (a stack restart, a tier flip, an owner action); it walks
+  every row first, on the stack as it stands, filing each defect and going on; fixes are routed,
+  built and reviewed in parallel; after the last row every approved fix moves into the stack
+  together, then one walk over every failed row (and the rows each fix's rerun list names), repeated
+  until every row passes. Never "re-walked at the next lane boundary" or a head move per fix.
+- **The NW list is one table** the walk briefs copy word for word: each not-walkable row with the
+  reason and its named proof. A row that needs a Sentry event (the local portal sends none) or a
+  key-mode Stripe event (`stripe listen --forward-connect-to` forwards only connected accounts'
+  events) is on it, or has a harness path, before the walk GO. So is a row whose list read comes from
+  the portal's own cache, unless it starts from a fresh profile.
+- **Each changed screen's rules row** (`vivreal-knowledge:vivreal-portal-knowledge`,
+  `references/ui-rules.md`) checks its icon-plus-label rows at 320 and 390 with the longest real
+  words, REFUSE: a row that holds only an icon (TITLE-6, L-C-19); and names each first-screen piece
+  (a selling point, an offer, the recommended choice, a decision-changing line), measured inside the
+  first screen at 390 and above the options it affects, REFUSE: below the fold or after the list,
+  with the stacked order the design chose (PAGE-3, L-C-23).
+
 ## Plan traps the release B reviews found (walk them before the auto-review)
 
 Each was a NEW CLASS blocker in a release B plan review (vivreal-hq

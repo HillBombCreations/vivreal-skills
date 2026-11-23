@@ -61,7 +61,8 @@ exception an owner must approve, never the plan's default.
 2. **Walk the whole batch on the local stack, on the runtime it deploys on, until it passes**
    (P-local-validate). Anything that makes a local walk row fail (a broken flow, wrong behaviour, a
    defect against what the batch promises) is fixed in that repo's batch, with a delta review, and
-   the walk runs again, until it passes; a note or nit that fails no row goes to the backlog
+   the walk runs again, until it passes, in the WALK-THEN-FIX order of section 5 (every row first,
+   then every approved fix moves in together); a note or nit that fails no row goes to the backlog
    (P-ship-first). Only when the walk passes do the deployments start. A runtime move is
    validated on the new runtime locally, never proven by a tier in production.
 3. **Then deploy the backends back to back,** each proven live
@@ -97,6 +98,18 @@ SendMessage restarts it, and it counts toward the cap exactly like a new dispatc
 work, resumed agents included, before EVERY dispatch and EVERY resume, call by call: in a turn that
 makes several calls, recount before each one, never once for the turn. Release B went one over the
 cap twice that way (L-B-19, then L-B-25: two resumes in one turn beside three running agents).
+
+**The count line, written before every dispatch and every resume** (release C, L-C-07, the third
+repeat: a resume made 4 against a cap of 3, and the resumed builder was stopped with nothing
+written). Before each Agent call and each SendMessage that restarts a finished agent, write the
+line `running: <n> (<names>) / cap: <the live agent-cap as it stands now>` from the agent list, and
+make the call only when n is below the cap. A turn with three calls writes the line three times.
+
+**Recount after each stop, against the cap as it stands then** (L-C-15). A cap can be conditional
+(an extra slot granted only while two walkers run): when the condition ends, the cap drops with it,
+and a dispatch in the same turn counts against the lower number. Closing one of two walkers dropped
+the cap from 4 to 3, and a fourth agent went out in that turn, one over (stopped at once, nothing
+written).
 
 **Over the cap by a slip: stop one agent, do not leave it running** (owner amendment to P-cap,
 2026-11-19: "ok so lets stop an agent dont just leace it running"; the hq rule text follows in its
@@ -163,6 +176,17 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   repo (for hq reads, `$VIVREAL_REPOS/_wt/hq-main`), made by the main thread before the dispatch when the
   repo has none, and says plainly that nothing runs in a clone. The vivreal-workflow owner-checkout
   guard refuses a subagent's command in one (shared-standards, "Path resolution").
+- **The main thread runs nothing in an owner's checkout either** (release C, L-C-11, a repeat of
+  L-B-45). The guard lets the main thread through, so this one is a habit: on 2026-11-23 the main
+  thread ran a read-only `git status` in the hq clone to see whether a file had local edits. Ask the
+  owner instead, or copy the file to your scratch folder (a `cp` started from that folder) and
+  compare `git -C "$VIVREAL_REPOS/_wt/hq-main" hash-object <the copy>` with
+  `git -C "$VIVREAL_REPOS/_wt/hq-main" rev-parse origin/main:<path>`.
+- **A renderer publish brief scopes its fleet diff to the affected sites** (P-template-validate and
+  P-fleet-diff as amended, release C lesson L-C-03). A read of each site's composed sections picks
+  the sites whose pages draw a changed component; the report shows that list, how it was read, and
+  one unaffected site as a control. A change whose rows reach every site (a Templates batch) still
+  renders and builds every site. `vivreal-workflow:package-publisher` carries the steps.
 - **Briefs for a screen name the owners' UI rules** (release B, L-B-46). A design, review or walk
   brief that touches a portal or customer-site screen names `vivreal-knowledge:vivreal-portal-knowledge`
   `references/ui-rules.md` and what each agent owes against it: `vivreal-principal:designer` reads it
@@ -197,12 +221,19 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 
 ## 4. Owners
 
-- **An owner is Justin or Hunter**; either may give any GO (P-owners). **Collecting a GO**
-  (P-go-form): ask "Who is giving this go, Justin or Hunter?" in the same question, never infer it
-  from an account email or git config; run `date -u +%Y-%m-%dT%H:%M:%SZ` right after the answer;
-  quote `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of
-  the dispatch. For a portal release, ask for the walk sign-off on the exact head in the same
-  question.
+- **An owner is Justin or Hunter**; either may give any GO (P-owners). **Collecting a GO or an
+  owner decision** (P-go-form, amended by the owners' GO-IDENTITY, release C lesson L-C-22): read
+  the owner from the GitHub account this session's `gh` is signed in as, `gh api user --jq .login`,
+  and map it by P-go-form (hq `docs/standards/process.md` is the map's source, and holds if the two
+  ever differ): `justincecc` is Justin, `hkreshock` is Hunter. Only when it prints another login, or
+  nothing (`gh` signed out, the call failed), ask "Who is giving this go, Justin or Hunter?" in the
+  same question. Never infer the owner from the Claude account, an account email or git config:
+  release C's session ran on a shared support login for part of a day. ALLOW: a GO typed in a
+  session whose login is `justincecc` is recorded as Justin with no question. REFUSE: a login the
+  map does not name is never mapped to an owner, however close it looks; ask. Run
+  `date -u +%Y-%m-%dT%H:%M:%SZ` right after the answer, and quote
+  `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of the
+  dispatch. For a portal release, ask for the walk sign-off on the exact head in the same question.
 - **A blocking question stalls everything behind it, so at night only release-path questions go
   in a dialog** (release B main thread, 2026-11-18). A dialog the owner has not answered holds every
   other action of the session, including the free slots' work. When an owner may be away, ask in a
@@ -236,6 +267,34 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **A reviewed walk plan first** (P-walk-plan): every change in the release maps to a row with
   preconditions, steps, the expected result, a REFUSE check and the view, and every blocker is
   cleared before the walk GO. Walk the exact flows before any recording (P-walk-before-footage).
+  A row that needs a Sentry event (the local portal sends none) or a Stripe event in key mode
+  (`stripe listen --forward-connect-to` forwards only connected accounts' events) is planned not
+  walkable (NW) with its named proof, or given a harness path, before the walk GO (release C,
+  H-P12-1 and H-P5-3).
+- **One walker run, every row first, then fix** (P-local-validate, its WALK-THEN-FIX clauses;
+  release C lessons L-C-21 and L-C-06). Moving each fix into the walk as it was approved cost a
+  stack restart per fix (eight on 2026-11-23), walkers paused or cut off at each, coordinator races
+  and rows walked on a moving target. So:
+  1. **One `vivreal-product:qa-walker` run walks every lane in plan order**, never one dispatch per
+     lane. It pauses only at a setup point (a stack restart the plan names, a tier flip, an owner
+     action), by a `NEED-<what>` line in its defects file, and goes on when the main thread writes
+     the done file the line names.
+  2. **It walks every row on the stack as it stands.** Each defect is filed live and the walk goes
+     on. No head moves and no stack restart to re-walk a fix mid-walk; a restart only at a setup
+     point or for a harness failure.
+  3. **Fixes are routed, built and reviewed in parallel while it walks** (P-route-finds, the held
+     fix slot of section 2 item 5). What waits is moving them in: never re-walk a section before
+     moving on.
+  4. **After the last row** (the walker's `## WALK PASS 1 COMPLETE` line), every approved fix moves
+     into the stack together, in one restart, then one walk over every failed row, repeated until
+     every row passes.
+- **A walk brief copies the plan's NW list for its lanes, word for word** (release C, the part 10
+  brief named two rows the plan makes not walkable locally). Never retype or summarise it.
+- **The stack starts detached** (release C, H-P10-1: a usage limit cut the walker's background
+  shells, and the stack's API children died with them). Whoever starts it starts it as a detached
+  process that outlives the starting shell (a Node `spawn` with `detached: true` and `unref()`, or
+  `setsid -f` in WSL), with its pid file in the current walk part's folder, so a later session can
+  find and stop it.
 - **A row names the account state its expected result rests on** (which payments provider is
   active, the plan, a connection, a sandbox item), and the walk reads that state before the row
   runs. A release B row expected one QA business to sell through Square in the same session that
@@ -259,10 +318,38 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   never given to side work (section 2, item 5); the walk itself never waits for it.
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
-  defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each
-  defect as it lands (section 3).
+  defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered -E "^## |NEED-"`, and route
+  each defect as it lands (section 3).
+  - **Every re-arm reads the gap first** (release C, L-C-08). The watch expires (every 30 minutes on
+    2026-11-23), and a `NEED-TIER-FREE` line written between one watch ending and the next waited 42
+    minutes. Before arming again, grep the file for `NEED-` and `## ` lines newer than the last one
+    you handled, and handle them first.
+  - **Re-arm the watch BEFORE you open any owner dialog during a walk** (L-C-13). An open dialog
+    holds the session; the watch lapsed under one and four lines (two `NEED-OWNER`, two defects)
+    waited up to an hour.
+  - **A done file is written only after an explicit check of what it reports** (L-C-12). A done
+    file at the end of an `&&` chain through `tee` was written while the write it logged had failed
+    (HTTP 403), and the walker briefly saw a false done. Run the step, read its result back (the
+    status code, the stored value), test that read, and only then write the done file, as its own
+    command.
+  - **A helper started inside a watch holds a single-instance lock and dies with its watch**
+    (L-C-20). Stopping a Monitor did not stop the loop it launched, so eleven copies raced on the
+    handshake files and one deleted a fresh go file. Give such a helper a pid file it checks with
+    `kill -0` before starting, kill it when its watch is replaced, and list processes naming its
+    script before every re-arm.
 - **Keep the walk machine awake** until the walk's end marker (a sleeping machine looks like a
-  stalled walk), and say so in the walk report.
+  stalled walk), and say so in the walk report. On Windows hold `ES_DISPLAY_REQUIRED` as well as
+  `ES_SYSTEM_REQUIRED` (`SetThreadExecutionState(0x80000003)`, continuous) for the whole walk, and
+  ask the owner to leave the lid open (release C, L-C-14): on a Modern Standby laptop the screen
+  going off still entered standby, and the walk machine slept 6.5 hours mid-walk with only the
+  system flag held.
+- **A restart at a setup point, or for a harness failure, is the only stack handshake left**
+  (WALK-THEN-FIX removes the per-fix restarts and the two-walker handshake they needed). When a
+  restart does need one, the harness notes from release C hold: a background wait for `STACK-UP`
+  writes the resume file itself the moment the stack is up, never the main thread by hand after a
+  dialog (L-C-09); a coordinator resumes reading from the `STACK-UP` line itself, never from the
+  file's end, deletes the spent go file at resume, and is run against a fixture file before it is
+  armed (L-C-18); and its helpers follow the single-instance rule above (L-C-20).
 - **Keep the walk's known errors off the Sentry quota:** add the project's IP inbound filter for
   the walk machine before the walk, and remove it after.
 - **Warn the owners before a walk's refusal and membership rows, and read Sentry right after**
@@ -282,13 +369,23 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   Assigned to column claims everything else, and a name goes in BEFORE work on a row starts.
   Only a main thread writes the sheet, never a subagent. Re-read the cells before every write.
   Update it with every batch state change, in the same pass as `progress.md`. Recipes, columns
-  and vocabularies: `references/sheet.md`.
+  and vocabularies: `references/sheet.md`. For a large refresh, dispatch
+  `vivreal-workflow:ledger-keeper` in its SHEET-PREP mode (release C, L-C-16): it reads the sheet
+  and the records and returns an edit list, which the main thread re-reads against the cells and
+  applies itself.
 - **Backlog rows lag the release plan.** Before triaging the backlog or dispatching a fix from it,
   search the latest release plans for the item id; a row is not ticked when a release ships it.
 
 ## 7. Resume
 
 - Sweep for orphans first (`vivreal-workflow:fleet-concurrency`).
+- **A worktree a cut-off agent used is swept before anyone touches it** (release C, L-C-05). A
+  usage limit left one agent's shell running for hours, blocked on input in front of a scripted
+  file edit, in a worktree another agent then reviewed and approved. Before you resume that agent,
+  or dispatch a review or a merge of that worktree, list the processes whose command line names the
+  worktree (fleet-concurrency, "Sweep for orphans"), stop them, and check the worktree is clean at
+  its expected head (`git -C <worktree> status --porcelain` prints nothing and
+  `git -C <worktree> rev-parse HEAD` is the head the agent reported).
 - **A "stalled" notice describes the output stream, not the process.** Before relaunching, check
   the agent list and the agent's working directory for new writes; a relaunch beside a live
   agent in the same directory races it toward the same irreversible step.

@@ -244,9 +244,17 @@ it and so keep them. Everything else stays: the reviewer PASS at the SHA you pub
 and tarball checks, the surgical lockfile moves, each consumer's own pre-push tests, and Secure's
 capability regeneration.
 
-**Any code change keeps the full fleet build and render diff,** started only when no other heavy
-run is going (stricter than `vivreal-workflow:fleet-concurrency`'s general cap of two: the fleet
-build and render diff run alone; sample the CPU first).
+**Any code change keeps the fleet build and render diff, over the sites it affects** (owner rules
+P-template-validate and P-fleet-diff as amended, release C lesson L-C-03: "only compare sites that
+are effected by the changes"). Pick them by a read of each site's composed sections from the same
+fetch-once snapshot: the sites with a page that draws a component the candidate changes (name the
+changed components from the source diff, and the section types that draw each). Build, render and
+diff those, plus ONE site that draws none of them as an unaffected control, which must show no
+diff. The report lists the affected sites, how they were picked and the control. A change that
+reaches every site (a shared shell, a global style, the page composer itself) affects every site,
+so the whole fleet runs. Start it only when no other heavy run is going (stricter than
+`vivreal-workflow:fleet-concurrency`'s general cap of two: the fleet build and render diff run
+alone; sample the CPU first).
 
 **The Blank-buildable proof rides every renderer publish (owner, 2026-11-11), and every
 site-loader publish,** because the two packages decide what an instantiated site holds and what

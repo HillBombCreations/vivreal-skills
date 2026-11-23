@@ -104,6 +104,14 @@ else.
 A dev server left on a fixed port is worse than idle: the next agent reuses it
 and tests the wrong tree.
 
+**An agent cut off by a usage limit leaves its shells running** (release C, L-C-05).
+One sat for hours blocked on input in front of a scripted file edit, in a worktree
+another agent then reviewed and approved, so the edit could have landed under the
+approval. Before anyone resumes that agent, or reviews or merges a worktree it used,
+list the processes whose command line names that worktree (the report half below,
+with the worktree path as the filter), stop them, verify they are gone, and check
+the worktree is clean at the head the agent reported.
+
 `scripts/sweep-orphans.ps1` does this. It reports by default and kills only with
 `-Kill`. On macOS or Linux the report half is
 `ps -eo pid,args | grep -E 'next (dev|start)|vitest|playwright' | grep -- "$VIVREAL_REPOS"`. Run it before dispatching a batch and again between phases, and pass

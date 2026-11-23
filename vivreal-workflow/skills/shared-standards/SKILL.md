@@ -131,7 +131,7 @@ Anyone who drives the browser tool (the Playwright MCP) reads [references/browse
 ---
 
 ## Who "an owner" is
-An owner means either co-owner, Justin or Hunter. Either one may give any GO, any QA-walk sign-off and any owner decision, for any change. Nobody else may. Never wait for one particular owner, and never treat one owner's GO as needing the other's.
+An owner means either co-owner, Justin or Hunter. Either one may give any GO, any QA-walk sign-off and any owner decision, for any change. Nobody else may. Never wait for one particular owner, and never treat one owner's GO as needing the other's. Which owner gave it is read from the session's `gh` login (`gh api user --jq .login`), mapped by P-go-form, never asked, unless the login is one the map does not name or there is none (release C lesson L-C-22; the steps are `vivreal-workflow:release-conductor` section 4).
 
 ## Owner rules every agent follows
 

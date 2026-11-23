@@ -162,6 +162,22 @@ Each of these cost a session a false conclusion.
   its URL. A "This page did not load" seen once in three loads could never be explained because
   none of this was kept. "No event in Sentry" is not evidence of no error: the portal project
   filters chunk-load and hydration errors.
+- **A walk logger never keeps a sign-in body** (release C, L-C-17: a harness logger kept a whole
+  admin sign-in request, the operator's email and MFA session, and a walker printed 900 characters
+  of it). Any request or response logger you write or run drops the body of every `/auth/` request
+  and of any request or response naming an email, a session, a token, a password or a code, and
+  keeps only the method, the path, the status and the time. Never print a logged body to read it;
+  read named fields. A harness logger that keeps one is a `HARNESS:` finding, filed at once.
+- **A row that mocks a list read starts from a fresh profile** (release C, H-P9-1, H-P11-1,
+  H-P11-2: Studio read its lists from the portal's own cache, so the mock never fired and the row
+  measured the cache). Use a fresh browser profile with the site data and the service worker
+  cleared, and prove the mock fired (its request in your log) before you judge the row; a row the
+  plan could not give that start is NW with its unit proof, never a PASS.
+- **A row that needs a Sentry event or a key-mode Stripe event** has no path on the local stack
+  unless the plan gives one: the local portal sends no Sentry events (H-P12-1), and
+  `stripe listen --forward-connect-to` forwards only connected accounts' events (H-P5-3). With no
+  harness path in the plan, it is NW with the plan's named proof; say so before the walk GO
+  (P-walk-plan), never on the day.
 - **Launch every browser muted.** Headless is not silent: on 2026-11-11 a test browser played a
   Studio sample video's sound on the owner's machine while he worked. Give every Chromium your
   script launches `--mute-audio` (`chromium.launch({ args: ['--mute-audio'] })`,
@@ -252,7 +268,10 @@ Each of these cost a session a false conclusion.
   `net::ERR_NETWORK_IO_SUSPENDED`, which is never a product defect. Confirm with
   the System log (Kernel-Power 506/507) before filing anything that clusters in
   one moment. Start a keep-awake process at walk start that runs until the walk's last row is
-  written, stop it then, and say in the walk report that it ran.
+  written, stop it then, and say in the walk report that it ran. On Windows it holds the display
+  flag as well as the system flag (`SetThreadExecutionState(0x80000003)`, continuous): with only the
+  system flag, a Modern Standby laptop still slept 6.5 hours mid-walk when its screen went off
+  (release C, L-C-14). Say in the report's first lines that the lid must stay open.
 - **Keep the walk's known errors off the Sentry quota.** The dispatching thread adds the Sentry
   project's IP inbound filter for the walk machine before the walk and removes it after
   (`vivreal-workflow:release-conductor`, Walks; message filters need a higher Sentry plan). If
@@ -443,8 +462,12 @@ The local stack (`packages/fleet-ops/e2e-local` in vivreal-hq) runs the real ser
 existed. So before ANY local walk:
 
 1. `node e2e.js probe` runs every startup check live and starts nothing; it must exit 0.
-2. Start it detached (in a POSIX shell, `nohup node e2e.js start >/dev/null 2>&1 &`; in PowerShell,
-   the README's `Start-Process ... e2e.js start`), then read `run.log`. It must
+2. Start it detached, so it outlives your shell (release C, H-P10-1: a usage limit cut a walker's
+   background shells and the stack's API children died with them; a `nohup ... &` child of your
+   shell is not enough): a Node launcher that calls `spawn` with `detached: true`, `stdio: 'ignore'`
+   and `unref()` (or the README's PowerShell `Start-Process ... e2e.js start`), with its pid written
+   to a file in the current walk part's folder so a later session can find and stop it. Then read
+   `run.log`. It must
    show `NO-DISPATCH guard holds` for **every** service it started (cms, secure, client, main,
    outreach, mcp, admin, portal, templates) and each API's and the admin app's
    `runs as ...federated-user/local-e2e-<svc>` line. **The MCP server prints no runs-as line**; its
@@ -461,7 +484,9 @@ existed. So before ANY local walk:
    to a walk unless you move to it.
 5. **When the brief names a PR,** point that service at the PR head with
    `node e2e.js move <svc> <sha>`, then a FULL `stop` and `start` so every guard check runs again, and
-   re-run `heads` to prove it. Name the PR, its head and the service in the matrix.
+   re-run `heads` to prove it. Name the PR, its head and the service in the matrix. Heads move only
+   at the walk's start, at a setup point the brief names, or after the last row when every approved
+   fix moves in together; never mid-walk for a product fix (WALK-THEN-FIX, below).
 6. **Run the portal in `--portal-prod` mode** (`next build` then `next start`, service worker on)
    so the installed-app view is faithful; `next dev` is not what the installed app runs.
 7. **Put gate lines G-1 to G-5 at the top of the matrix, each PASS before any product row:**
@@ -557,6 +582,26 @@ matrix the moment it is confirmed, append only: severity, the row id, what you d
 got, the cause if known, the evidence. The coordinator watches that file so research and fixes
 start while you keep walking (owner, 2026-10-19). The full write-up still comes at the end.
 
+**A release walk is ONE run of yours, every row first, then the fixes** (owner rule
+P-local-validate, its WALK-THEN-FIX clauses; release C lessons L-C-21 and L-C-06):
+1. **Walk every lane in the plan's order in this one run.** Never stop at a lane's end to hand
+   back; the brief's lanes are all yours.
+2. **Pause only at a setup point** (a stack restart the plan names, a tier flip, an owner action):
+   append a line `NEED-<WHAT> <row id> <UTC time>: <what you need>` to the defects file, name the
+   done file you will wait on, and wait for it inside one foreground Bash call with a long timeout
+   (`until [ -e <done file> ]; do sleep 20; done`), called again if it times out; never a turn that
+   only echoes or sleeps.
+   Read what the done file says before going on; a done file that reports a failure is a
+   `HARNESS:` line, not a go.
+3. **A defect never stops the walk.** File it and walk on, on the stack as it stands. Never ask for
+   a head move, a stack restart or a re-walk for a product fix mid-walk; a restart only for a
+   harness failure (a `HARNESS:` line) or a setup point.
+4. **After the last row, write `## WALK PASS 1 COMPLETE`** to the defects file with the counts. The
+   approved fixes then move in together, and the next run walks every failed row, until none fails.
+5. **The brief's not-walkable (NW) list is the plan's, word for word.** A row on it is NW with its
+   named proof; a row missing from it is walked. A brief that names a row the plan does not, or
+   drops one, is a finding against the brief (release C, the part 10 brief).
+
 **Keep harness notes apart from product defects.** Number them H1, H2 and so on in their own
 section: what the test rig did that the product did not (Playwright's clock is per context, so
 installing a fake clock on one tab freezes another's animation frames; the local service worker
@@ -617,7 +662,13 @@ in every walk:
   title (SHEET-3, HELP-1); a long sheet keeps its title and action pinned (SHEET-1); the cards in a
   list stand the same height with 1, 2 and 4 or more items (CARD-3); the screen scrolls and takes
   input right after every save (PERF-4); no unsaved-changes prompt when nothing changed (FORM-9); no
-  "tap" at 1440 (COPY-1); every word on the screen true, one name per state (COPY-3). Measure a
+  "tap" at 1440 (COPY-1); every word on the screen true, one name per state (COPY-3); every
+  icon-plus-label row (a heading, a status line, a button, a chip, a list row) at 320 and 390 with
+  its longest real words, REFUSE: a row that holds only an icon (TITLE-6, L-C-19); and each piece
+  the plan names as first-screen (a selling point, an offer, the recommended choice, a line that
+  changes a decision) measured inside the first screen at 390 and above the options it affects,
+  REFUSE: below the fold or after the list, with stacked cards in the order the design chose
+  (PAGE-3, L-C-23). Measure a
   box with `getBoundingClientRect` or a screenshot you opened (PROC-3), never a class name. A miss
   is a defect, filed live with its rule id; the rules a running screen cannot show (shared
   components, code order) belong to the reviewer, not the walk.

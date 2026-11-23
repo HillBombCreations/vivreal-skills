@@ -9,13 +9,16 @@ the location into a shared file. The rule behind it is P-sheet (vivreal-hq
 ## Who writes it, and when
 
 - **Only a main thread writes the sheet, never a subagent.** A subagent reports; the main thread
-  writes.
+  writes. `vivreal-workflow:ledger-keeper`'s SHEET-PREP mode (release C, L-C-16) is the subagent
+  that prepares a refresh: it reads the sheet and the records and returns an edit list, never a
+  write; the main thread re-reads each cell it names and applies the list.
 - **Re-read the cells you will change before every write.** The owners edit it by hand.
 - **Update it with every batch state change** (built, a review verdict, a publish, a promote
   proven): the release tab's row AND each Backlog row that batch carries, in the same pass as the
   release's `progress.md`.
 - **Flip a Backlog row to Released only when its step is proven live**, never before.
-- **Set your owner's name in Assigned to before starting a row** (section below).
+- **Set your owner's name in Assigned to before starting a row** (section below). Your owner is
+  the one the session's `gh` login names (P-go-form; release-conductor section 4).
 
 ## Tabs
 
