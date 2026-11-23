@@ -496,7 +496,17 @@ existed. So before ANY local walk:
    with the recorder counts before and after; G-5 a sign-in smoke for each login the walk uses
    (the v7 local walks, 2026-10-19, under `docs/projects/next-release-v7/walks/` in vivreal-hq).
 
-The README in that folder is the authority on commands; read it on the day.
+The README in that folder is the authority on commands; read it on the day. **What release C added to the
+launcher** (read at hq `release-c/hq` `956e9d66`; on `main` once it merges): its QA ledger and Accounts table
+are read from the launcher's OWN checkout, never another checkout (hq #151; the start and every run refuse
+otherwise); `--lever <name>=...` answers each guarded child's SSM lever in memory (the pickup reminder takes
+only `off` or `canary:<QA groupID>`, NEVER `on`, because the stack writes the production database); `node
+e2e.js pickup-sweep-run --at=<ISO time with a zone>` runs the CMS's pickup sweep once at that clock; `--square-live`
+lets the one named QA business's Square calls reach production under a pinned token, every other Square call
+staying sandbox; `restart secure --secure-head=stable|batch` swaps the Secure the walk calls for the rollback rows;
+and `start-templates-pair` runs two production builds of QA scratch-2's site on 3402 and 3403. Rows a walk makes
+there (reminder rows, day claims) are production rows, deleted by `_id` at the walk's end. A head moves
+(`node e2e.js move`) only as step 5 above says.
 
 ### The navigation: enumerate it from the product
 
@@ -598,7 +608,11 @@ P-local-validate, its WALK-THEN-FIX clauses; release C lessons L-C-21 and L-C-06
    harness failure (a `HARNESS:` line) or a setup point.
 4. **After the last row, write `## WALK PASS 1 COMPLETE`** to the defects file with the counts. The
    approved fixes then move in together, and the next run walks every failed row, until none fails.
-5. **The brief's not-walkable (NW) list is the plan's, word for word.** A row on it is NW with its
+5. **Your last step stops your own shells** (release C, L-C-24: a finished walker showed "waiting on
+   2 shells", both blocked on a script edit from an earlier part). Before your final report, list
+   the processes you started (the stack excepted when the brief says it stays up, by its pid file),
+   stop every waiting loop, watch and helper, and say in the report's first lines that none is left.
+6. **The brief's not-walkable (NW) list is the plan's, word for word.** A row on it is NW with its
    named proof; a row missing from it is walked. A brief that names a row the plan does not, or
    drops one, is a finding against the brief (release C, the part 10 brief).
 

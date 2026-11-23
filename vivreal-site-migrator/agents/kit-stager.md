@@ -35,13 +35,22 @@ that way and to prove it.
    (a packed registry tarball unpacked in the run folder, never a working tree or a dev overlay,
    `vivreal-knowledge:vivreal-renderer-knowledge`), and the site-loader is the Migrator workspace's
    `packages/site-loader` at the head, the one the worker runs. Record both versions and their
-   integrity in the run's `state.log`. **STOP when the loader is not the one VR_Secure_API pins:**
-   read `@hillbombcreations/site-loader`'s `version` and `integrity` in VR_Secure_API's
-   `package-lock.json` at `origin/stable`; the workspace's `packages/site-loader/package.json` must
-   carry that version, `npm view @hillbombcreations/site-loader@<version> dist.integrity` must equal
-   the lock's integrity, and the workspace folder must equal its release tag
-   (`git diff --quiet site-loader-v<version> HEAD -- packages/site-loader`). A difference means the
-   packs would be built by a loader the worker does not run.
+   integrity in the run's `state.log`. **STOP when the loader is not the one the worker will run
+   when the rows move** (release C, `design-fl10-placement.md` section 5): that is VR_Secure_API's
+   `origin/stable`, or the approved Secure batch head when your dispatch says the rows move after
+   that deploy (it names the head). Read `@hillbombcreations/site-loader`'s `version` and `integrity`
+   in that ref's `package-lock.json`; the workspace's `packages/site-loader/package.json` must carry
+   that version, `npm view @hillbombcreations/site-loader@<version> dist.integrity` must equal the
+   lock's integrity, and the workspace folder must equal its release tag
+   (`git diff --quiet site-loader-v<version> HEAD -- packages/site-loader`). When the versions differ,
+   a recorded two-loader equality is a PASS: both loaders give the same content hash and the same
+   plan digests for every kit, and their converter and schema blobs are equal, each read and
+   recorded in `state.log`. Anything else means the packs would be built by a loader the worker does
+   not run. **The registry read's sign-in:** `npm view` in the Bash tool gets the shared read-only
+   packages token from the vivreal-workflow npm wrapper (`vivreal-workflow:shared-standards`, "Path
+   resolution"); a 401 or E404 means it got none, and the wrapper names the missing part (the key,
+   the secret, your AWS sign-in): STOP and report that, never read the integrity from a lock in its
+   place.
 4. **You never:** run `--row --apply` or `--revert --apply`; run `seed-site-templates.js` or any
    other Mongo write; flip a row to published; delete, overwrite or list-and-remove any prefix;
    change a portal pin, `starterPack.ts` or a try pack; pass `--allow-demo-hosts` unless the GO names
@@ -81,7 +90,11 @@ the WSL rules are `vivreal-workflow:shared-standards`, `references/wsl.md`):
       `updatedAt`), saved to `baseline-rows.json` with the read time.
    b. The portal's pins at `origin/stable`: `src/lib/studio/starterPack.ts`'s hash for each kit, and
       `npm run check:try-pins` in a fresh portal worktree at that SHA, with its made-up-hash control
-      answering 403. Every live row hash equals its stable pin.
+      answering 403. Every live row hash equals its stable pin, with one PASS beside it (release C,
+      `design-fl10-placement.md` section 5): a stable pin that is a KNOWN earlier hash of this kit (one
+      of its own earlier rows) while the release's approved portal batch pins the live row's hash or
+      the hash this stage makes. Record it as PASS with the open pin move named (the portal batch, its
+      head, the pin it ships). A stable pin that is no known hash of this kit is a STOP.
    c. The bucket's notification and replication configuration (none expected), so a write cannot
       fan out somewhere you did not name.
 2. **Dry runs at the head, every kit.** `node commands/publish-template.js <capture> --template-id
@@ -115,8 +128,9 @@ the WSL rules are `vivreal-workflow:shared-standards`, `references/wsl.md`):
       shard's sha256 matches; a made-up content hash's manifest answers 403.
 6. **Row move dry runs, every kit.** `node commands/publish-template.js <same flags> --row --out
    <run>/rowdry/<id>` (no `--apply`): each CHANGED kit prints a PIN line whose `from` equals its
-   live row hash AND its stable pin and whose `to` equals the new hash, with every S3 line matching
-   this run; each UNCHANGED kit prints CURRENT; every run ends "DRY RUN: nothing was written".
+   live row hash AND its stable pin (or the step 1b PASS for a known earlier pin, named again here)
+   and whose `to` equals the new hash, with every S3 line matching this run; each UNCHANGED kit
+   prints CURRENT; every run ends "DRY RUN: nothing was written".
 7. **`stage.json`.** Per changed kit: the new content hash, the live pin it replaces, the blueprint
    sha256, the media and pack object counts, the pack version and manifest sha256, and the PIN line
    verbatim. This file is what the row-move GO is asked on.
@@ -149,3 +163,6 @@ and loader versions used, every refusal or deviation with its reason, and the af
 the exact row-move command per kit and the path of each changed kit's `site-templates.row.json` for
 the Migrator rows commit. Never write that a kit is "live" or "published": a staged kit is
 live only after its row move.
+A `STOPPED` report goes first in your reply so the dispatcher can record it in the release's
+`progress.md` the same hour (`vivreal-workflow:release-conductor`, Records; `design-fl10-placement.md`
+section 5, item 4).

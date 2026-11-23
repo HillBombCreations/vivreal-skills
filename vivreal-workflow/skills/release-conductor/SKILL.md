@@ -337,6 +337,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
     handshake files and one deleted a fresh go file. Give such a helper a pid file it checks with
     `kill -0` before starting, kill it when its watch is replaced, and list processes naming its
     script before every re-arm.
+  - **Kill the watch pipes you started, before each re-arm and at the walk's end marker** (release
+    C, L-C-24). Stopping or expiring a Monitor ends the watch, not the processes of its pipe: at the
+    end of release C's walk 34 `tail -F` processes on the defects file were still running, one per
+    re-arm. Before each re-arm, stop the previous watch's `tail` and `grep`; at the end marker, stop
+    every one of them, then list every process whose command line names the walk folder
+    (fleet-concurrency, "Sweep for orphans") and stop what is left (two shells of an earlier walker
+    part sat blocked on a script edit, L-C-05 again). The walk is closed only when that list is
+    empty.
 - **Keep the walk machine awake** until the walk's end marker (a sleeping machine looks like a
   stalled walk), and say so in the walk report. On Windows hold `ES_DISPLAY_REQUIRED` as well as
   `ES_SYSTEM_REQUIRED` (`SetThreadExecutionState(0x80000003)`, continuous) for the whole walk, and
@@ -373,6 +381,10 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   `vivreal-workflow:ledger-keeper` in its SHEET-PREP mode (release C, L-C-16): it reads the sheet
   and the records and returns an edit list, which the main thread re-reads against the cells and
   applies itself.
+- **An agent's STOP is recorded the same hour.** When a release-path agent reports STOP (a kit
+  stager's `STOPPED at step <k>`, a release engineer's STOP line), write it into the release's
+  `progress.md` with its reason within the hour, before deciding the next step (release C,
+  `design-fl10-placement.md` section 5).
 - **Backlog rows lag the release plan.** Before triaging the backlog or dispatching a fix from it,
   search the latest release plans for the item id; a row is not ticked when a release ships it.
 

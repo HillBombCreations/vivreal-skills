@@ -105,6 +105,13 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
 
 ## Site-affecting writes
 
+**A one-shot that changes a page's content sets that page's `updatedAt`** (release C, F579). From release C, Studio
+saves only the pages it changed, each guarded by the `updatedAt` it last read (VR_Secure_API `src/shared/pageChanges.js`:
+a matching `base` proves nobody else changed that page). The guard is per PAGE, not per site: a one-shot that edits a
+page's content without moving that page's `updatedAt` is invisible to it, so an owner's open Studio can save over the
+one-shot's change with no conflict. Stamp each page you change in the same compare-and-set write, leave every other
+page's date alone, and test both: the changed page's date moved, an unchanged page's did not.
+
 - **A native-driver write is invisible to a live site and to every open browser.** It sends no
   `site.updated`, moves no `updatedAt` (that stamp is Mongoose's), emits no socket event and drops no
   cache. After a write that changes what a site serves, send ONE `site.updated` per affected site, with
