@@ -51,6 +51,7 @@ root, the main thread, the one-off clone form and the three fleets below. So eve
   `docs/projects/<slug>/`, recorded footage) go in the hq worktree your brief names, on its branch,
   written below as `${VIVREAL_REPOS}/_wt/<hq worktree>`. Every hq path in these skills means one of the two.
 - **The one thing a subagent runs in a clone: the one-off form.** `git -C "$VIVREAL_REPOS/<repo>" fetch origin`
+  <!-- guard-check: skip, a syntax template with placeholders and alternatives; the real one-off form it describes is allowed -->
   and `git -C "$VIVREAL_REPOS/<repo>" worktree add [-b <branch> --no-track | --detach] "$VIVREAL_REPOS/_wt/<name>" <ref>`
   (or a path under `_ops/`). Both touch only the clone's shared `.git`, never the owner's working tree
   or index, and the guard allows exactly these two, only with `git -C` (not after a `cd` into the

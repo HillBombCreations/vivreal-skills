@@ -986,6 +986,36 @@ for (const [name, agentType, cwd, now, old] of PASS2_DEFS) {
   });
 }
 
+// F654 (pass 3 warnings): an escaped backslash or backtick before a line end is no continuation,
+// an escaped quote opens no quote, and a backgrounded or piped `cd` moves no folder.
+const F654_REFUSE = [
+  ['an escaped backslash at the line end hides nothing: the next line runs', `echo done ${BS}${BS}${NL}git -C ${OWNER} status`, WT, 'Bash'],
+  ['the same with a Windows line end', `echo done ${BS}${BS}${CRLF}git -C ${OWNER} status`, WT, 'Bash'],
+  ['an escaped quote opens no quote, so the git after the semicolon runs', `echo it${BS}'s; git -C ${OWNER} status`, WT, 'Bash'],
+  ['PowerShell: a doubled backtick at the line end hides nothing', `echo done ${BT}${BT}${NL}git -C ${OWNER} status`, WT, 'PowerShell'],
+  ['a backgrounded cd into a worktree leaves git in the clone', `cd ${WT} & git status`, OWNER, 'Bash'],
+  ['a cd run as a pipeline stage leaves git in the clone', `cd ${WT} | cat; git status`, OWNER, 'Bash'],
+  ['a cd piped into, too', `true | cd ${WT}; git log -1`, OWNER, 'Bash'],
+];
+for (const [name, command, cwd, toolName] of F654_REFUSE) {
+  test(`REFUSE (subagent, F654): ${name}`, () => {
+    assert.equal(win(command, { cwd, toolName }).refuse, true, JSON.stringify(command));
+  });
+}
+const F654_ALLOW = [
+  ['an escaped backslash at the line end, the next line in a worktree', `echo done ${BS}${BS}${NL}git -C ${WT} status`, WT, 'Bash'],
+  ['an escaped quote, then git in a worktree', `echo it${BS}'s; git -C ${WT} status`, WT, 'Bash'],
+  ['PowerShell: a doubled backtick, then git in a worktree', `echo done ${BT}${BT}${NL}git -C ${WT} status`, WT, 'PowerShell'],
+  ['a single backslash still joins the next line into one command', `git -C ${WT} log ${BS}${NL}  --oneline -5`, OWNER, 'Bash'],
+  ['a cd that is not backgrounded moves the folder, and git runs in the background there', `cd ${WT}; git status & wait`, OWNER, 'Bash'],
+  ['a cd joined by && moves the folder', `cd ${WT} && git status | cat`, OWNER, 'Bash'],
+];
+for (const [name, command, cwd, toolName] of F654_ALLOW) {
+  test(`ALLOW (subagent, F654): ${name}`, () => {
+    assert.deepEqual(win(command, { cwd, toolName, agentType: 'vivreal-principal:coder' }), { refuse: false }, JSON.stringify(command));
+  });
+}
+
 // Note: every gap the guard lets through is listed where agents read the rule.
 test('the documented gaps: shared-standards and the guard header list every one the review named', () => {
   const skill = fs.readFileSync(path.join(__dirname, '..', 'skills', 'shared-standards', 'SKILL.md'), 'utf8');

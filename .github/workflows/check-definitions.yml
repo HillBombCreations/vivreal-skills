@@ -35,6 +35,7 @@ jobs:
           vivreal-workflow/hooks/session-rules.test.cjs
           vivreal-workflow/hooks/package-nudge.test.cjs
           vivreal-workflow/hooks/owner-checkout-guard.test.cjs
+          scripts/check-guard-commands.test.mjs
           scripts/skill-drift.test.mjs
           vivreal-infra/hooks/lambda-env-guard.test.cjs
           vivreal-db-explorer/scripts/launch-mongo-mcp.test.cjs

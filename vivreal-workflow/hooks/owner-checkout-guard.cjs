@@ -3,15 +3,18 @@
 // owner's own checkout under the clone root. Three agents ran git in the owner's hq checkout on
 // one day although each brief named a kept worktree, so the rule is enforced here, not only written.
 //
-// A line continuation (a Bash backslash-newline, a PowerShell backtick-newline) is joined first, and
-// the `&` of a redirection (`2>&1`, `&>`) is no separator. A command's folders, segment by segment
+// A line continuation (a Bash backslash-newline, a PowerShell backtick-newline) is joined first; an
+// escaped character outside quotes (a doubled backslash or backtick, an escaped quote) is taken
+// literally, so it neither continues a line nor opens a quote; and the `&` of a redirection (`2>&1`,
+// `&>`) is no separator. A command's folders, segment by segment
 // (`&&`, `||`, `;`, `|`, `&`, a newline, a parenthesis):
 //   - `cd <dir>`, `pushd`, `chdir`, `Set-Location`, `sl`, `Push-Location` move the folder the next
 //     segments run in (`cd -- <dir>` too), and the folder moved to counts itself; a folder under the
 //     root that does not exist (and that this command's one-off `worktree add` does not make) is
 //     not moved to, since that `cd` fails; `popd` and `cd -` go back (a folder
 //     stack; with nothing in this command to go back to, the folder stays), and a Bash subshell
-//     `( ... )` restores the folder it started in when it closes;
+//     `( ... )` restores the folder it started in when it closes; a `cd` sent to the background
+//     (`&`) or run as a pipeline stage (`|`) runs in a subshell and moves nothing;
 //   - the wrappers `timeout`, `nohup`, `env` (with `VAR=x` and `-C <dir>`), `nice`, `setsid` and
 //     `wsl` (with `--cd <dir>`, `-e`, `-d`) are peeled off and the command they run is checked,
 //     with a WSL `/mnt/<drive>/...` path read as the Windows path it names;
@@ -169,6 +172,14 @@ function splitOps(command, ps) {
     if (ps && c === '`' && lineEndAt(command, i + 1)) {
       i += lineEndAt(command, i + 1);
       cur += ' ';
+      continue;
+    }
+    // Outside quotes the escape character takes the next character literally (F654, pass 3): an
+    // escaped backslash or backtick before a line end is no continuation, so the next line is a
+    // command of its own, and an escaped quote opens no quote. Both characters stay in the text.
+    if (((!ps && c === '\\') || (ps && c === '`')) && next !== undefined) {
+      cur += c + next;
+      i++;
       continue;
     }
     if (c === "'" || c === '"') {
@@ -609,6 +620,16 @@ function decide({ command, cwd, agentId, agentType, toolName, root, platform = p
       for (const [k, v] of Object.entries(local)) scope[k] = r.resolve(segCur, v, vars) || v;
       const args = w.slice(1);
 
+      // A `cd` sent to the background (`cd <wt> & git status`) or run as a pipeline stage
+      // (`cd <wt> | cat; git status`) runs in a subshell, so the folder stays where it was
+      // (F654, pass 3). Its target still counts as a folder this command names.
+      const nextOp = at + 1 < segs.length ? segs[at + 1].op : undefined;
+      if (CD_WORDS.has(name) && !wrapped && (nextOp === '&' || nextOp === '|' || op === '|')) {
+        const target = args.find((a) => a !== '--' && !/^(-[LPe@]|\/d|-(literal)?path)$/i.test(a));
+        const to = target === undefined ? null : r.resolve(cur, target, scope);
+        counted.push({ folder: to || cur, git: false, prog: 'cd', args });
+        continue;
+      }
       if (CD_WORDS.has(name) && !wrapped) {
         let target;
         // After `--` the next word is the folder, even one named `-` (pass 2 warning: `cd -- <clone>`).
