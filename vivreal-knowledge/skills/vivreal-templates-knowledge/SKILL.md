@@ -35,7 +35,7 @@ Three rules that follow from how it is fed:
 - **Never call `POST /api/revalidate` by hand.** A hand-called hard invalidation broke `robots.txt` at the origin (its first statement binds `connection()`, and its cache entry did not survive), CloudFront cached the 500, and the whole host looked dead while the home page was fine at `stable.<appId>.amplifyapp.com`. The remedy, and the better tool for a site-record change anyway, is an Amplify `start-job --job-type RELEASE` on the same commit. Check the origin directly before concluding a site is down.
 - **A revalidation clears only the compute instance that received it**, with CloudFront on top, so after a BULK change (many records, a re-seed) rebuild the site with a RELEASE job rather than trusting tags.
 
-**After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves (**not live until BR-33**, the fleet rebuild step; read the live lever, `vivreal-knowledge:vivreal-eventhandler-knowledge`).
+**After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves where its lever lets it: whether it builds is the SSM lever, read every tick: `<ssm-prefix>/site-rebuild/mode` (`off`, `shadow` or `on`; missing or anything else is off), `<ssm-prefix>/site-rebuild/allowlist` (`none`, a comma list of app ids, or exactly `fleet:all`) and `<ssm-prefix>/site-rebuild/paused`. A site gets the build only when the mode is `on` and the allowlist admits its app. Read the live values, never this file: `aws ssm get-parameters --names <ssm-prefix>/site-rebuild/mode <ssm-prefix>/site-rebuild/allowlist --query 'Parameters[].[Name,Value]'` (the pilot and fleet steps of release C, FL-4, move them; the parameter semantics are `src/shared/siteRebuild/control.js` in Vivreal_EventHandler); `vivreal-knowledge:vivreal-eventhandler-knowledge`, `siteRebuildSweeper`.
 
 ## ISR render mode (`SITE_RENDER_MODE`), and the trap that froze vivreal.io's home page (2026-09-16)
 
@@ -122,6 +122,39 @@ CDN domain `media.vivreal.io` lives in `next.config.ts` `images.remotePatterns` 
 Installed from **GitHub Packages** (`.npmrc`: `@hillbombcreations:registry=npm.pkg.github.com` + `NODE_AUTH_TOKEN`), **read the current pin from `package.json` on the deployed line; it moves most weeks.** A clean regen is the wrong tool here: it floats OTHER carets too (the 1.38.0 bump rode next 16.2.11→16.2.12 + sentry 10.68 to the whole fleet) and can DROP optional transitives (the 1.40.1 sharp incident above). Bump the version in `package.json` and text-patch the lockfile entry as in the Lockfile gotcha above, never a delete-and-reinstall; Amplify runs `npm ci`, so a stale or npm-pruned lock fails the fleet build. Treat the first post-merge `main` CI build as the canary before `promote-stable`. Local renderer dev: `npm run dev:linked` (runs `../vivreal-site-renderer/scripts/dev-sync.js`). **That overlays a dev build onto the installed package and never reverts it: `dev-sync.js` replaces `dist/` and `styles/` inside `node_modules/@hillbombcreations/site-renderer` and deliberately never writes that package's own `package.json`, so the version string, `npm ls` and the lockfile `integrity` all stay authentic and no ordinary check sees it (measured 2026-09-30: an overlay stood in for the published package here for five days and produced three wrong conclusions, all off green runs).** Undo with `node ../vivreal-site-renderer/scripts/dev-unlink.js`; prove it either way with `node ../vivreal-site-renderer/scripts/dev-status.js`, a byte comparison against the tarball this repo's own lockfile `integrity` resolves to (about 0.2s, the only check with no false negatives). `pretest` and `prebuild` here refuse when the marker `RENDERER-DEV-OVERLAY.json` is present at the repo root (`checks/assert-no-renderer-overlay.mjs`, 2026-09-30); acknowledge deliberately with `ALLOW_RENDERER_OVERLAY=1 npm test` in bash or `$env:ALLOW_RENDERER_OVERLAY='1'; npm test` in PowerShell. The marker only exists from 2026-09-30, so its absence proves nothing about an older overlay; `dev-status.js` does. The old `--install-links` git-dep dance is dead. **Private dependencies: this app has installed a SECOND private package, `@hillbombcreations/email-brand` (exact `1.1.0`, `package.json:18`), since #173 on 2026-09-22, and every fleet build since has succeeded (19 of 19 on the 10-03 and 10-04 promotes).** So the old rule that customer Amplify tokens can read only the renderer is not true of this app as it stands, even though `CLAUDE.md:246` still calls a second private dependency a known way to brick the fleet. Do not add `@hillbombcreations/tier-quotas` (the renderer re-exports `canHidePoweredBy`, and `FREE_YEAR_OFFER` hand-copies the one number it needs), and confirm the Amplify token can read any new package before adding one. The RENDERER's own rule is separate and stands: the renderer package itself must not depend on another private package.
 
 **A Templates or renderer change is validated before it reaches customer sites** (owner rule P-template-validate, vivreal-hq `docs/standards/process.md`): every site renders (the fleet render diff) and builds at the PR head, and an owner sees the diff report before the promote GO. A renderer change alone renders, builds and diffs only the sites it affects plus one unaffected control (the amendment of release C lesson L-C-03; the rule text is in process.md).
+
+## Release C (read at the release C approved head `d525124`, `release-c/templates` #232; not yet deployed)
+
+Read at the head the release walks, not at `origin/stable`; the row record is `docs/release-c/progress.md` there.
+Re-read at `origin/stable` once release C is live.
+
+- **The shell read deadline** (SW-C28): `SHELL_READ_DEADLINE_MS` in `src/lib/cacheInvalidation.ts` moves from 1,500 to
+  2,500, the one read deadline while an instance holds a served shell, because a cold VR_Client_Auth key checker took
+  about 1,900 ms and the old deadline served the snapshot. `SHELL_READ_DEADLINE_COLD_MS` stays 5,500.
+- **The stylesheet retry** (VIVREAL-TEMPLATES-Q, D-P6-5): a failed stylesheet is retried once, then one named warning.
+  A head sheet that failed before hydration is found by its throwing `cssRules` read (Chromium keeps a failed link as
+  an empty sheet, so `link.sheet === null` never matched), not by the error listener, which runs too late for it.
+- **The picture routes keep their sandbox** (F608, review C-TPL B1; L-C-04): F608 sends an enforced policy on every
+  route (`frame-ancestors 'self'`, `nosniff`, a referrer policy, `src/lib/securityHeaders.ts`), and Next drops a route
+  handler's own header of a name the config already set, so `/img/*`, `/brand/logo` and `/og/*` get a later config
+  rule that restores their `sandbox` policy (the trap "A site-wide `headers()` rule ... replaces a route handler's header", below).
+- **The script policy switch** (PRL-RA11, F478): `VIVREAL_SCRIPT_POLICY` per app on its `stable` branch: unset or
+  `report-only` watches (Report-Only), `enforce` blocks; any other value fails the build. It is flipped by a branch
+  setting write plus a same-commit rebuild (the hq flip tool), never a deployment.
+- **Pages are sent complete** (F323): no page-authored `<Suspense>` box or `loading.tsx`, so a reader that runs no
+  scripts gets every page whole; the shop takes its query from the route (`productQuerySeed.ts`). Pinned by
+  `src/lib/pageBoundaries.test.ts` and the ISR build check's no-script read.
+- **The cart**: a one-price product with stock counted per size caps, sends and trims each size by its own count
+  (D-P9-5, design `design-dp95-per-size-stock.md`), with the Client's per-size checkout; the product page judges each
+  size by its own low stock number (F417); a bag trimmed by checkout never lets + pass the real count (F392); a Square
+  shop's product questions are asked in the cart and the newsletter tick sits in the cart for Stripe and Square, and
+  `/api/checkout` forwards both (SQP-T1 to SQP-T4, F642, F643, F557); no promo box on a plan that cannot make codes
+  (F426 D4); the bag total leaves out a line checkout refused (F526); cart fields are 16 px on a phone (F432); the
+  pickup day row offers only days with a time left (F429).
+- **The contact route** stops sending the business name and logo (F607). **F160**: `scripts/network-test-guard.mjs`
+  refuses any connection off the machine in a unit test (`UNFAKED_NETWORK_CALL`).
+- **Pins**: site engine 1.102.1 and Next.js 16.4.5 at this head (read `package.json` at the deployed line for the
+  current pins).
 
 ## v7 to v7.2 (live 2026-10-20/21)
 

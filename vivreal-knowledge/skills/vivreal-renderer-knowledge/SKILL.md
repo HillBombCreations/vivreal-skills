@@ -143,6 +143,42 @@ Measured: 1.80.1 composed all 103 stored pages of both Vivreal sites (both home 
 
 Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older version as an emergency lock. **Dependency discipline**: this package must stay installable with a single GitHub Packages token, adding a second private `@hillbombcreations/*` dependency 401s customer Amplify builds (this killed 1.35.0; see the powered-by gate below).
 
+## Release C: 1.102.0 and 1.102.1 (read at `origin/master` `3b8657f`, the merge of #147 that carries 1.102.1)
+
+Published and pinned by release C's batches (Templates and the portal on 1.102.1; Secure and Client on 1.102.0, plan
+WB-27). Every consumer moves only by its own repo's PR (P-packages); read each pin in its `package.json`.
+
+- **The empty photo band gate** (F570, PB-R1 to PB-R7, design `design-empty-photo-band.md`): `hidesEmptyPhotoBands
+  (siteData)` is true only for `emptyPhotoBands === 'hide'` (VR_Secure_API stamps it on every new customer site, never
+  a demo tenant's). On a live render, a list-bound band of one of the nine photo band layouts that would draw nothing
+  is dropped, judged by `DRAWS_NOTHING_WITHOUT_PHOTOS` (`composition/resolveLeafData.ts`), a Map from layout to the
+  layout's OWN item rule in `layouts/photoBandItems.ts` (one rule per layout, never a copy; a separate module because
+  five of the nine layouts are client modules). Preview never drops. **The page exemption** (PB-R4): `pageDrawsContent`
+  stays true for a page this rule emptied, so the page is not treated as empty. A feature-item hero with no item
+  photo borrows the page photo (PB-R6, `data-hero-figure=page-photo`).
+- **`photoBandPrompt`** (PB-R5, PB-R7): when Studio passes `options.photoBandPrompt`, the band is kept, marked
+  `photoBandHidden`, and draws `components/PhotoBandPrompt.tsx` ("Hidden on your site until it has photos. Add photos to
+  {list}.", `data-photo-band-prompt`), the list's name from `photoBandPrompt.listNames` by the band's
+  `collectionId`. A customer page never passes it (Templates PB-T1).
+- **The nested menu panel** (F627): `clampPanelLeft(centre, width, viewport)` moves the open Grouped list panel just
+  enough to sit 16 px inside each edge (none when it fits, so the server render is unchanged), reading the visual
+  viewport's width; a level 2 link with nothing inside draws as a link.
+- **1.102.1, brand-coloured text that reads on any brand colour**: chips on or beside a photo have a solid ground and
+  an ink judged on it (`pairings/chips.ts`; `--inverse-readable` and `--accent-on-white` emitted by `themeTokenStyle`
+  only where the default pair fails), and a card's price and other brand-coloured text take
+  `--brand-text-readable` (or `brandTextInk(accent, inkGround)` in a layout), re-judged by a page colour treatment and
+  a dark band (`docs/CONTRAST.md`, `docs/DESIGN_LANGUAGE.md`).
+- **Reduced motion and the first screen** (1.102.1, F652): `ScrollReveal`, like `SectionReveal`, renders visible on the
+  server and the first client render (`data-scroll-reveal`); the hide and fade are armed after mount, only with
+  motion allowed and only BELOW the fold, so a reduced-motion visitor, a visitor with no script, and anything already
+  on screen at load are never hidden. `AnimatedCounter` and `ProductImage`'s fade had the same mismatch and are fixed.
+- **Also in 1.102.0**: the letter mark follows Secure's favicon rule from one shared case table (I3); low stock judged
+  per option (F417, the SW-C15 truth table); the designed shops' product pages draw the owner's quantity options
+  (F544); the event agenda prints on the business's clock, the same on every machine (F448); visitor text fields are
+  16 px on phones (F432); a long cart name wraps to two lines (F489); an embed address that is not http(s) draws
+  nothing (F461); a menu page with no title of its own makes no empty section header (F225); an anchored steps block
+  joins the help page rail (F536).
+
 ## Key patterns
 
 - **`SiteRendererContext`**, the injection seam: `ImageComponent`/`LinkComponent` (typed `ElementType`), `previewMode`, `CartAdapter`, `mapsApiKey`, `onSubscribe`. The renderer does NOT import `next/image` (that would force Next.js on consumers). Default is plain `<img>`; Next consumers inject `next/image` via a provider. Studio preview strips it to plain `<img>` deliberately.

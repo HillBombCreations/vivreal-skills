@@ -163,6 +163,27 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
 - **Walking it**: dispatch `vivreal-product:qa-walker`, whose "Walking the admin app" section covers
   the operator sign-in, the head to name in the matrix, and the fix-forward rule.
 
+## Release C (read at the release C approved hq head `956e9d66`, `release-c/hq` #150; not yet deployed)
+
+Read at the head the release walks, not at `origin/deploy/admin-app`; the admin app deploys by fast-forwarding
+`deploy/admin-app`, so re-read there once it moves. The row record is `docs/projects/next-release-C/build-c-hq.md`.
+
+- **A Run's answer arrives in place, no reload** (F436, design `design-admin-live-answer.md`): ops-read gains
+  `action: 'auditorRun'` (`{ target, since }`): the target is looked up by own key in a two-row table (the health
+  watcher, the database monitor), Sum at 60 s, newest first, at most 10 datapoints, plus `readAt` from the function's
+  clock; nothing about the metric comes from the caller; `since` must be within the last 30 minutes and at most a
+  minute ahead (else 400 with no AWS call). `GET /api/monitoring/auditorRun` (admin session first, one target table
+  shared with the POST) answers a baseline or a verdict by `lib/monitoring/auditorAnswer.ts`; `RunCheckButton` reads the
+  baseline before the POST, then 15 s after it and every 10 s, one read in flight, none while the tab is hidden, until
+  an answer, within the owners' four minutes. The answer replaces the row in place, never a page reload.
+- **The Marketing page's sign-up path band** (F469): reads VR_Secure_API's marketing funnel `signupPath` section (our
+  own counters, Main's `signup_step_counts` and `signup_funnel_events`), beside Google's twins while both run, and
+  names the help readers both ways (`src/lib/marketing/signupPathView.ts`).
+- **Blocked scripts** (SB-1, F457's companion): ops-read `scriptBlocks` reads the site script policy's blocks per place
+  from Sentry (an environment Sentry has never seen reads as none), and Errors opens with a Blocked scripts section;
+  `SENTRY_READ_TOKEN` covers it. The daily script watch stack itself is `packages/fleet-ops/script-watch`.
+- **Security headers** (F458): a per-request script policy and no framing on every admin page.
+
 ## Shipped in the restyle (re-read at `origin/deploy/admin-app` `08f2d444`, 2026-10-27)
 
 - **Restyle to portal quality, dark navy** (R1 foundation tokens and fonts, R2 desktop shell, page

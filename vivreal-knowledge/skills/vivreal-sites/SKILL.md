@@ -56,6 +56,20 @@ These bite constantly, know them even before opening a reference:
 
 Also: **an empty list infers nothing.** A CMS list field's row shape is inferred from stored data, so an EMPTY list renders the plain-string widget and the structured shape never forms; seed one row.
 
+## Release C (read at the release C approved heads, not yet deployed; each repo's knowledge skill has the detail)
+
+- **Examples as drafts** (F539): a new site's template examples can be seeded as drafts that show only in Studio's
+  preview, by VR_Secure_API's SSM lever `<ssm-prefix>/site-examples/mode` (`draft` or `live`; anything else `live`).
+  Studio tags them Example, and "Save as mine" or the drafts door turns one into the owner's own.
+- **An empty photo band hides itself on a new site** (F570): VR_Secure_API stamps a new customer site
+  `emptyPhotoBands: 'hide'`, and the site engine drops a list-bound photo band that would draw nothing on the live
+  site, while Studio keeps it with the prompt "Hidden on your site until it has photos." Older sites are unchanged.
+- **Nested menus, the riders** (F625, F627, F579): a page removal takes its links out of the menus and the footer
+  (Studio and the AI connection alike), "Links to fix" lists the links a change left pointing nowhere, and the open
+  Grouped list panel stays on screen.
+- **Seasonal products** (F526): a Stripe or Square product can sell only between two dates (once, or every year), on
+  the business's own clock; out of season it leaves the shop list and checkout refuses it.
+
 ## Companions / boundary
 
 | Need | Skill |

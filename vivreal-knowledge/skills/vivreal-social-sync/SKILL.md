@@ -120,6 +120,18 @@ to see a failing account is to read that line.
 | TikTok `401 access_token_invalid` | token revoked or expired | needs an owner reconnect |
 | LinkedIn "missing permission" | `r_member_social` not held | by design until LinkedIn grants it |
 
+## Release C: who is told when a feed stops, and `needs-page` (read at the release C approved heads, not yet deployed)
+
+- **Who is told when a feed stops**: the weekly social staleness digest (VR_Main_API `frozenSocialChannels`) emails
+  the owners about a channel whose feed stopped. **A Facebook connect
+  waiting for a Page is told nothing**: the digest skips an account whose `socialProfile.noPagesGranted === true`
+  (F621 M1).
+- **`needs-page`** (F621): VR_Secure_API no longer saves a Facebook connect that chose no Page, and the portal opens
+  "Choose a Page on Facebook" instead; a legacy row carrying the marker is its own kind in the portal
+  (`accountNeedsPage`, drawn quietly, a finish card on Home), and the hourly sync skips it with
+  `social.sync.skipped_no_page`: no fetch, no health record, no page to staff. A Page-less account WITHOUT the marker
+  still throws `MISSING_CREDENTIALS` and pages, as before.
+
 ## Companions
 
 - `vivreal-cms-api-knowledge` (the Lambda this runs in), `vivreal-main-api-knowledge` (the Meta

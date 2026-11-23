@@ -23,7 +23,12 @@ rules here; PAGE-3 carries a later owner broadening (L-C-23).
 
 **Paths.** Every path is in `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/`, read at `origin/stable`
 `9974e41b` (v0.46.0). Re-read a file at the current deployed line before you rely on it; a moved
-path is a reason to look, never a reason to hand-build.
+path is a reason to look, never a reason to hand-build. **Release C** adds three shared components,
+read at its approved head `cf76b401` (`release-c/portal` #497) and live once it deploys: `IconLine`
+(`src/components/UI/icon-line.tsx`, TITLE-6), `SheetHeader` (`src/components/UI/sheet-header.tsx`,
+HELP-1, HELP-3, TITLE-1, SHEET-3; gap G4) and `SearchableSelect`
+(`src/components/UI/searchable-select.tsx`, SEL-3; gap G2). Before release C deploys, use one only on
+a branch based on the release C line.
 
 **Gaps.** A rule whose "Use" names a gap has no shared component for that part yet. Do not
 hand-roll one and do not copy a hand version: ask the owners first (the list is at the end).
@@ -146,10 +151,12 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
   that never shrinks, aligned to that first line; the words wrap only inside their own box beside
   the icon, never under it, and no row ever holds only an icon. The pickup page's heading "Still
   Ready for pickup" dropped below its info icon on an owner's iPhone, leaving a row with only the
-  icon (D-OWN-1). Check every such row at 320 and 390 with its longest real words. Use: one row that
-  never wraps, the icon unable to shrink and a text box that may (`min-w-0`) and wraps; at `9974e41b`
-  no shared component draws the pair, and this rule names the one release C adds when this file is
-  re-read at its deployed line. Never hand-roll a second shared one.
+  icon (D-OWN-1). Check every such row at 320 and 390 with its longest real words. Use: `IconLine`
+  (`src/components/UI/icon-line.tsx`, release C, `cf76b401`): one row that never wraps, the icon in a
+  box one line tall (`h-[1lh]`) that does not shrink, the words in a `min-w-0 flex-1` box; put the
+  text's size and line height on the row. Its tests: `tests/unit/releaseC/dOwn1IconLine.test.ts` and
+  `e2e/pickup-heading-beside-mark.spec.ts`. On a line without it (`9974e41b`), never hand-roll a
+  second shared one.
 
 ## 5. Forms: shared controls only (9)
 
@@ -193,9 +200,10 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
   control, never page navigation), an either-or is a `Switch`, up to about fifteen is the select,
   and a longer list needs search: one shared searchable select, a bottom sheet with a search box on
   a phone and a dropdown with search on a computer (owners, 2026-11-19). (UF-007) Use:
-  `src/components/UI/segmented-control.tsx`, `src/components/UI/switch.tsx`, `select.tsx`. Gap G2:
-  the shared searchable select is not built; `StateSelect`, `ContentSourceSelect` and the business
-  time zone row are three hand versions. Do not add a fourth; ask.
+  `src/components/UI/segmented-control.tsx`, `src/components/UI/switch.tsx`, `select.tsx`, and for a
+  long list `SearchableSelect` (`src/components/UI/searchable-select.tsx`, release C F601, single pick
+  only; Content source moved onto it). Gap G2 until release C deploys: at `9974e41b` `StateSelect`,
+  `ContentSourceSelect` and the business time zone row are three hand versions. Do not add a fourth.
 - **SEL-4. An important action is never the last option in a dropdown;** it gets its own visible
   button. (UF-080) Use: Studio's page picker
   (`src/components/Sites/Studio/LeftRail/PageSelector.tsx`) is the pattern.
@@ -374,15 +382,18 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
 ## Gaps: no shared component yet; do not hand-roll; ask
 
 - **G2, a shared searchable select** (SEL-3). The owners want one, for lists over about fifteen: a
-  bottom sheet with a search box on a phone, a dropdown with search on a computer. Not built. Three
+  bottom sheet with a search box on a phone, a dropdown with search on a computer. Built in release C
+  as `SearchableSelect` (single pick; multi pick waits for its first caller), not yet deployed. Three
   hand versions exist (`src/components/Universal/StateSelect/index.tsx`,
   `src/components/Sites/Studio/LeftRail/ContentSourceSelect.tsx`, the business time zone row), and
   `select.tsx` documents the Studio delivery time zone as the one browser select left on purpose
   until this exists.
 - **G3, a card header of fixed lines** (CARD-2, CARD-3). Nothing draws "the same number of item
   lines, then and n more" as one piece, and the product card hand-writes the tile.
-- **G4, a sheet and dialog header with a help slot and a two-line title** (HELP-1, TITLE-1). Today it
-  is a list of class constants (`sheet-title-row.ts`) applied by hand in three files
+- **G4, a sheet and dialog header with a help slot and a two-line title** (HELP-1, TITLE-1). Built in
+  release C as `SheetHeader` (F602: Back, title, help, one action, Close; a `dialog` and a `panel`
+  frame), moved onto nine sheets, not yet deployed. At `9974e41b` it is a list of class constants
+  (`sheet-title-row.ts`) applied by hand in three files
   (`MobileEditSheet.tsx`, Add a page, `MediaPicker`); `FullScreenDialog`, `StepDialog`,
   `BusinessDialogShell`, `UI/dialog` and `UI/bottom-sheet` have no help slot and cut their titles
   at one line.

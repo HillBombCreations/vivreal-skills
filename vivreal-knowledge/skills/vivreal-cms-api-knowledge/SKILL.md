@@ -115,6 +115,80 @@ A product list carries `collection_groups.commerce { state: selling | paused | m
 - **Native compare-and-set token writes** (#252): `src/shared/refreshOAuthToken.js` writes through the native `groups` collection, because `integrationAccountSchema` declares neither `refreshToken` nor `accessToken`, so a Mongoose arrayFilter on them threw `Could not find path` and the "mark expired" write never landed.
 - **Media-reuse gate** (#260, schemas 1.64.0): a post edit (`updateIntegrationObject`) and an item edit (`updateCollectionObject`) ask the reference gate before `deleteMediaFiles`, so a photo reused elsewhere is not destroyed; reused photos get an Instagram fit (`igFitBytes`).
 
+## Release C (read at the release C approved head `8ffdf6c5`, `release-c/cms` #277; not yet deployed)
+
+Read at the head the release walks, not at `origin/stable`; CLAUDE.md there holds the detail ("Square parity", "The
+pickup reminder", "Seasonal products", "The checkout list tick", "A sale refreshes the site"). Re-read at
+`origin/stable` once release C is live.
+
+- **A route mounted outside `handleTenantRoutes` opens the main database itself** (D-P13-1, SK-25). That router's
+  `mainDb.connect()` is the only connect on its path, so a public route that bypasses it (the pickup link's
+  `POST /tenant/pickupReminder/lookup` and `/answer`) calls `mainDb.connect()` first, as the webhooks do; a failed open
+  is a fixed 500. On a cold container every pickup link answered "Something went wrong" until a signed-in route had
+  opened the database. Its test builds the REAL `scripts/mainDb.js` fresh against a real mongod and calls the
+  controller first (`dp131-pickup-link-cold-start.realMongo.test.js`): a pre-connected stand-in is what hid it. Any
+  new public route takes the same cold-container test.
+- **Square at parity with Stripe** (SQP-C1 to SQP-C7, design `design-square-parity.md`): payouts on the money cards
+  (`squarePayouts`: `needs_reconnect` without `PAYOUTS_READ` in the account's stored `grantedScopes`, else Last,
+  Upcoming and `totalPayout` from ListPayouts under one 8 s deadline, `unavailable` when page 1 fails; never a balance
+  read); promo codes settled by the same `@shared/settleCouponRedemption` as Stripe, with `promoCode` on both order rows;
+  checkout answers read off the Client's `vrq-1` to `vrq-3` lines (`readSquareCheckoutAnswers`, the Client's case file);
+  the checkout list tick (`subscribeFromSquareOrder`, proved by the `square_payment_links` row); and the coupon link
+  sweep (`SquareCouponLinkSweepSchedule`, every 15 minutes, deletes an unpaid DRAFT order's link holding a capped code
+  after `couponHold.linkClosesAt` and before the hold ends; alarm `vivreal-square-coupon-link-close-failed`; its index
+  `SQUARE_COUPON_SWEEP_INDEX` is a release one-shot on each Square tenant database, never created by code).
+- **K-A, a paid Square order can be OPEN**: `@shared/squarePaid` `isPaidSquareOrder` (COMPLETED, or OPEN with a tender
+  and nothing due), pinned by the Client's `square-paid-cases.json`; the list, light read and snapshot add one capped
+  OPEN search. Marking Sent on an OPEN order completes it; RESERVED is refused for every Square order
+  (409 `SQUARE_PICKUP_READY_FINAL`); a terminal first fulfillment carries `fulfilment.final: true` (KB-4).
+- **Square Ready for pickup** (F593): `targetState PREPARED` only on a PICKUP not picked up, emails the buyer once
+  (claim `ready:square:<groupID>:<orderId>`); a Square pickup's `readyAt` is Square's own mark.
+- **The pickup reminder** (F528, design `design-pickup-reminder.md`): rows in the main database's `pickup_reminders`
+  (one per order, every close bumps `gen`, closed rows TTL 30 days); the hourly `PickupReminderSweepSchedule` asks the
+  owner and admins at most once a day, about each order twice at most, at 9:00 on the shop's clock (16:00 UTC with no
+  zone), fail closed on a failed `suppressions` read, the day claimed in `pickup_reminder_days` before any queue call.
+  The link is `<rowId>.<secret>` (only its sha256 stored, 7 days); its two public routes answer from a fixed allowlist,
+  every refusal names the shop's zone (D-P13-2), and Picked up runs the same after-pickup step as the app's press
+  (`afterOrderPickedUp.js`, D-P10-5). Every row says when the order was placed (D-P10-3). `GET /tenant/pickupReminder`
+  is the member read. **Lever** `<ssm-prefix>/pickup-reminder/mode` (`off`, `canary`, `on`) with
+  `<ssm-prefix>/pickup-reminder/canary-groups`; missing means off, and it ships off: read the live value with
+  `aws ssm get-parameter --name <ssm-prefix>/pickup-reminder/mode --query Parameter.Value`. `PORTAL_BASE_URL` on the
+  integrations function, no fallback. Metrics in `Vivreal/Orders`; alarms `VR-CMS-API-pickup-reminder-errors` and
+  `VR-CMS-API-pickup-reminder-did-not-run`, actions on. At this head no Square reminder row is opened yet (CLAUDE.md:
+  Square rides F593's sandbox proof).
+- **The AI connection's channel grant** (F555): VR-MCP-Server sends `x-vivreal-ai-channels` (`write`, `read`, `off`) on
+  every call; absent changes nothing. Anything but `write` refuses with 403 `AI_POSTS_NOT_GRANTED` (owner safe) a dated
+  post on `updatePublishDate`, `bulkUpdatePublishDate` (a pre-pass over the whole batch), `POST` and
+  `PUT /tenant/integrationObject` and the batch create, and approving an item a post waits for (`heldPostsFilter`).
+- **Per-option prices and stock**: one `price` never replaces a stored per-option price map with two or more amounts
+  (F657, 400 `PER_OPTION_PRICES`, owner safe, before any photo moves or a provider is called); a one-price product that
+  counts stock per option takes each option's units from the Client's order record (`vr_option_qty_<n>` on Stripe, a
+  line per option with `metadata.vr_option` on Square; D-P9-5, `src/shared/optionStock.js`), and a missing or broken
+  record moves nothing and logs `inventory.option_record_missing`.
+- **Seasonal windows** (F526): `objectValue._sellWindow` on a Stripe or Square product, refused when malformed
+  (400 `SELL_WINDOW_INVALID`); `windowState(window, today)` is the one rule the Client and the portal apply, its truth
+  table written here and pinned by sha256 there.
+- **A sale refreshes the site** (F382): the paid webhooks send one `integration.updated` (`reason: 'sale'`) per product
+  whose stock a paid line took.
+- **The checkout list tick** (F557): a buyer who ticked Vivreal's cart box joins the site's list from the paid webhook;
+  on Stripe the write needs the Client's `checkout_list_ticks` row (TTL index `createdAt_ttl_30d` on every tenant
+  database, a release data step); the subscriber row carries `consentSource: 'checkout'` and `consentRef`; Stripe's own
+  consent box is retired.
+- **Checkout answers and the pickup address** (F381, F592): a Stripe row carries `checkoutAnswers` from the session's
+  `custom_fields` (case file shared with the Client by sha256); `objectValue.checkoutQuestion` is refused when malformed
+  (400 `CHECKOUT_QUESTION_INVALID`); the Ready for pickup email adds `Pickup address:` from `vr_pickup_place`.
+- **An item edit never saves a dead file entry** (D-P10-4): a file an edit adds whose upload is gone is refused, 409
+  `UPLOAD_NOT_FOUND`, before any photo moves (an AI agent re-sent a spent upload descriptor and an entry with an empty
+  key was stored; the stored entry is a release one-shot's to clean). Only the item edit door has this check at this
+  head: item create, product and post edits, the batch and the JSON import can still save such an entry (a release D
+  backlog row).
+- **A write that landed answers as landed** (F176r): nothing a route awaits after its own write may answer failure; a
+  usage meter after a write goes through `@shared/meterAfterWrite`, and a stock Add records its press mark in
+  `stockAppliedLines` (F500).
+- **A Facebook connect waiting for a Page is skipped, not paged** (F621 C1): `syncIntegrationData` skips an account whose
+  `socialProfile.noPagesGranted === true` with `social.sync.skipped_no_page`; a Page-less account without the marker
+  still throws `MISSING_CREDENTIALS` and pages (`vivreal-knowledge:vivreal-social-sync`).
+
 ## Release B features, v2.24.0 (live 2026-11-17, read at `origin/stable` `1212b929`)
 
 - **Quick restock route** (C-391): `PUT /tenant/integrationObjects/stock` (`src/createAndUpdateIntegrations/api/index.js:87`, owner or admin through `withRole`). `mode: 'add'` is one `$inc` per option row; `mode: 'set'` is a compare-and-set on the `expected` count the caller read. It writes only the stock paths and `__v`, and answers 409 `stockChanged` (with the current rows) or `stockOwnedByShopify`. The contract is the route-list comment in CMS `CLAUDE.md` (grep the route); the portal's Add stock is the caller.

@@ -117,7 +117,7 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 - **Array media-signing latent bug (fixed 2026-05-27, commit b3558ab):** the `targetField.name` pattern silently no-op'd on arrays; the bug lived in 5 duplicate copies (3 inline + 2 helpers). Galleries never signed despite appearing to work. Now one shared impl. Watch for regressions in media-signing helpers; `looksLikeMediaItem` requires `mimeType`. (Full bug class: `vivreal-media-cdn`.)
 - Responses can be very large. CORS allows credentials for customer sites; the Amplify origin is anchored to our own app ids, not to AWS's whole `amplifyapp.com` domain (`c5dd6e0`, 2026-09-27). Over-cap NEVER 402s (see "Quota gates, BOTH neutralized").
 - The old `basic/` + `ecommerce/` alternate-deploy dirs are DELETED, one deploy config now.
-- arm64-only. Sentry traces sample at `SENTRY_TRACES_SAMPLE_RATE`, from the `SentryTracesSampleRate` template parameter (default `1.0`, no CI override; read `sam-template.yaml`), and filter `GET /health`. (`aws-xray-sdk` in package.json is vestigial, zero code refs.)
+- arm64-only. Sentry traces sample at `SENTRY_TRACES_SAMPLE_RATE` (read `sam-template.yaml` at the deployed line: before release C a `SentryTracesSampleRate` parameter defaulting to `1.0`; release C makes it a literal `'0.2'` with a `tracesSampler`, see "Release C" below), and filter `GET /health`. (`aws-xray-sdk` in package.json is vestigial, zero code refs.)
 - This is the **public unbounded service**, its connection-manager health is critical. Tenant databases are now `useDb` views of ONE shared client (`src/scripts/mongo.js`), 4 sockets typical and 6 at most per container whatever the tenant count (Client CLAUDE.md, Multi-Tenant Database). Saturating Atlas conns here can 500 the whole platform, it's the one capped via reserved concurrency. See `vivreal-atlas-topology` + `vivreal-lambda`.
 - **Public content GET filter-drop fix (2026-08)**: `getCollectionObjects` was silently dropping requested filter keys when a collection had >50 items or a sparse field, sampling now falls back correctly. Filter fan-out is bounded server-side: validator caps `filters` at 12 keys, existence checks sliced to 5.
 - **Media-signing completeness sweep (2026-08)**: sites with no `mediaFields` registry now get page/hero/cta/chrome media signed too, closed gaps in the cta subtree (band-variant `art[]`), the two wordmark seats (`hero.wordmark.image`, `footer.wordmark.imageKey`), `hero.collage[]`/`hero.overlays[]`, and per-binding `sectionConfig` media.
@@ -133,6 +133,49 @@ VR_Client_API is **SAM** (`sam-template.yaml`) with **one explicit API Gateway e
 - **Visitor email addresses are redacted by VALUE in logs and Sentry (v7.2).** `src/scripts/redactSensitive.js` replaces any address inside any string with `[REDACTED_EMAIL]`, because a sign-up stores the address under whatever key the owner's list uses, so no key list can find it (the error handler once logged it in full). `src/scripts/sentry.js` applies it in `beforeSend` and in `beforeSendLog`, the one hook every Sentry log line passes. Never log a request body around it.
 - **The business time zone is the site's zone (v7.1, owner 2026-10-20).** `getSiteDetails` serves `siteDetails.values.timezone` as the business zone (`groups.timezone`), falling back to the site's own stored value (`src/shared/siteTimeZone.js`). Both go through `canonicalTimeZone`, the rule VR_Secure_API stores a zone with: a link or another case becomes the canonical IANA name, `UTC` is accepted, a fixed offset is refused. Templates spreads the value into `siteData.timezone`, the zone every renderer date falls back to; a zone a page or section sets still wins on that page.
 - **The calendar feed lists occurrences (v7.1).** `/sites/:siteId/feeds/schedule.ics` emits one event per occurrence of a repeating stop, decided by the renderer's own `readStopTiming`, `stopOccurrences` and `scheduleTimezone` from `@hillbombcreations/site-renderer/bindings` (`src/api/site/feeds/_helpers/feedOccurrences.js`), so the feed and the Schedule page agree by construction. Zone chain (`generateScheduleIcs.js`, `resolveTimezone`): the schedule toolbar's zone, the page labels' zone, the business zone, then UTC. Window: 90 days back, 26 weeks ahead, capped at `MAX_STOP_OCCURRENCES` with upcoming occurrences kept first. A repeating stop's end date means "repeat until that date". One-off stops keep the UID they always had. The feed therefore moves with THIS repo's renderer pin, which need not equal Templates': read both lockfiles before comparing page and feed.
+
+## Release C (read at the release C approved heads: VR_Client_API `3555c68` #145, VR_Client_Auth `65f70e3` #34; not yet deployed)
+
+Read at the heads the release walks, not at `origin/stable` (Client) or `origin/main` (Client Auth); re-read at the
+deployed lines once release C is live.
+
+- **Client Auth: a database error is thrown, never a Deny** (CA-1 to CA-4). A transient error (tenant-db's
+  `isDbUnavailable` names, such as `MongoNetworkError` and `MongoServerSelectionError`, plus the driver's retryable read
+  codes) gets ONE retry of the connect and lookup (`auth_db_retry`); after that, and for any other lookup error, the
+  handler throws, so API Gateway answers 500 and caches nothing. A cached Deny for a lost socket during Atlas maintenance
+  (2026-11-21) made live pages answer 403 for a valid key for the 60 s result TTL. Fail closed still holds: no error
+  returns an Allow, and a missing token, an unknown key and an unroutable placement still Deny. Both `ConnectFailures`
+  filters now match `MongoNetworkError` (held equal by a test), and `VR-Client-Auth-lambda-errors` pages only across
+  two consecutive minutes.
+- **The cart's list tick** (F557): the cart's own "Email me news and offers" box sets `vr_list` only when it was
+  ticked, the site's cart setting `askToJoinList` is on and a list resolved. On Stripe the Client also writes a
+  `checkout_list_ticks` row in the TENANT database (native, `{ _id: <session id>, groupID, listId, createdAt }`, no
+  personal data) right after Stripe made the session, so VR_CMS_API's paid webhook can tell Vivreal's cart from a
+  session a shop made itself. The write fails closed and never fails the sale (2 s bound, ids only in the log); its
+  TTL index (`createdAt_ttl_30d`) is a release data step on every tenant database, never created by a request.
+- **The checkout question and its answers** (F381, F642): a product's `objectValue.checkoutQuestion` becomes one of
+  Stripe's own `custom_fields` (at most three, key `vrq<product id>`; a Stripe refusal naming `custom_fields` drops
+  them once rather than lose the sale). On Square the cart asks it, and the answers ride the first Square line of each
+  asked product as `uid: 'vrq-<k>'` with a `note`; a required one unanswered is 409 `QUESTION_REQUIRED`. The answers
+  reach the owner's "New order" email only, never the customer's receipt or a log; both shapes are pinned by shared
+  case files with VR_CMS_API.
+- **One price, stock counted per size** (D-P9-5): a product with one price and a per-size `stock` object is sold by
+  the size: the cart line names it (`products[].option`), both checkouts hold each size against `stock[size]`, a
+  short size is named in the 409 `INSUFFICIENT_STOCK` items as `{ priceId, option, available }`, a line with no counted
+  size is 409 `ITEM_NO_LONGER_AVAILABLE`, and the split rides Stripe metadata `vr_option_qty_<n>` or one Square line per
+  size (`metadata.vr_option`). The rule is `test/fixtures/tracked-stock-cases.json`, which VR_CMS_API byte copies.
+- **Square checkout at parity** (F644, SQP): codes work on Square shops by the same rulebook, one pure `priceLines`
+  shared by both providers (the larger of the sale and the code per line, never both); a code's line carries a
+  `code-<n>` discount and the order `vr_coupon`; a capped code's hold lasts 75 minutes, its `square_payment_links` row is
+  written before the link, and VR_CMS_API's sweep closes an unpaid link. "Paid" on Square is the shared
+  `square-paid-cases.json` rule (K-A).
+- **Seasonal products** (F526): `objectValue._sellWindow` judged by one `windowState` on the BUSINESS's day
+  (`groups.timezone` only; no readable zone means a windowed product does not sell); the list leaves an out-of-season
+  product out in the query, both checkouts refuse it (409 `ITEM_NO_LONGER_AVAILABLE`, reason `out_of_season`), and the
+  Site MCP purchase answers "Product not available.".
+- **The pickup place** (F592): checkout writes `vr_pickup_place` from the site's own address onto the order.
+- **Tracing** (F568): one span per request from `src/lambda.js`, sampled at 20% by a `tracesSampler`
+  (`SENTRY_TRACES_SAMPLE_RATE` is a literal `'0.2'` in Globals). The older line "100% in prod" is retired.
 
 ## Release B checkout, v2.23.0 (live 2026-11-17, read at `origin/stable` `7c76374`)
 

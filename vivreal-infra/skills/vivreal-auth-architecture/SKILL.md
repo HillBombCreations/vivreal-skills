@@ -66,6 +66,19 @@ never run it without `--query`, because its default answer carries the client se
 state of each way in, and when each closes, lives in the private vivreal-hq release plan, never in
 this public repository.
 
+## Release C: PKCE and state on sign-in, and Client Auth's error rule (read at the release C approved heads, not yet deployed)
+
+- **Google and LinkedIn sign-in carry a trip** (portal F494, Main F191): the portal's `/api/sso/[provider]` keeps a
+  fresh `state` and a PKCE verifier in an httpOnly `__Host-vr_sso_<state>` cookie; its `user/ssoLogin` route refuses
+  400 `ssoStateMismatch` before calling Main when the trip is missing or differs, so the code is never spent, and
+  sends `codeVerifier`, which Main forwards to Cognito. Main holds a brand new Register trip for its business name
+  (202 `BUSINESS_NAME`) only when `codeVerifier` is present. **Rollback order: the portal before Main.** The AI
+  connection's and the Outreach MCP's Cognito app clients offer Google and LinkedIn only (F502).
+- **Client Auth: a database error is thrown, never a Deny** (CA-1, CA-2): one retry of a transient error, then a
+  throw, so API Gateway answers 500 and caches nothing for the 60 s result TTL; a missing token, an unknown key and an
+  unroutable placement still Deny, and no error returns an Allow. A 403 on a valid key during Atlas maintenance was a
+  cached Deny before this (`vivreal-knowledge:vivreal-client-stack-knowledge`).
+
 ## Debugging 401/403
 
 - **403 (CMS) / 502 (Secure) on a brand-new route** → API Gateway does not know the route. None of CMS, Secure or Client has a catch-all `{proxy+}`, so an unknown path never reaches Express, it falls through to the default IAM-protected resource and the Cognito authorizer never fires. The CMS 403 is SigV4/IAM on that fall-through resource, *not* an auth bug. Fix, CMS (since CMS #266): declare the path and method in the API's route list, `cloudformation/base.yaml` `ExpressApi.DefinitionBody.paths`, with an explicit `security`; never a SAM `Type: Api` event and never a new permission (each function has ONE, scoped to the API's prod stage, so console Test Invoke is refused). Fix, Secure and Client: add the per-route event in the `cloudformation/` fragment or `sam-template.yaml`. Never hand-edit a generated `allRoutes.yaml`. Deploy-config miss; the full CMS checklist is in `vivreal-cms-api-knowledge`. (Main API is exempt, public routes, no gateway authorizer.) See `vivreal-lambda`.

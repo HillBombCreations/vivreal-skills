@@ -93,6 +93,26 @@ The package runs inside VR_Secure_API's `instantiateTemplateWorker` in productio
   authoring overlays, its reviewer counted 11, and 7 shipped.
 - **Fixed kits reach the picker only when republished.** A kit fixed on master stays as published in the registry row until its republish (release B's BR-34 for the kits these checks caught): a picker instantiation before that runs the OLD blueprint. Read the row's blueprint, never assume master is what a new site gets. The republish is staged by `vivreal-site-migrator:kit-stager` (an owner GO: new content-hash prefixes in the template store, the Studio pack, every object proven, the row move dry-run only), then the row move under its own GO.
 
+## Release C (read at the release C head `431fc5b`, `release-c/migrator`, site loader 0.10.0)
+
+Read at the head the release ships, not at `origin/master`; re-read there once release C merges.
+
+- **Site loader 0.10.0**: the seed plan's `examples` option (F539): `draft` seeds a new site's template examples as
+  drafts with no publish date, honoured by the worker path and the CLI loader alike, reported beside the plan's report,
+  never in it. VR_Secure_API's worker chooses it by its SSM lever (`vivreal-knowledge:vivreal-secure-api-knowledge`).
+- **The create-only stamp belongs to Secure** (F570 PB-L1, PB-L2): the loader never sends `emptyPhotoBands`;
+  VR_Secure_API's `createSites` stamps `'hide'` once, on a new customer site (never a demo tenant's), and a loader
+  re-run never touches it. The older create-only rule for `lifecycleState` is unchanged.
+- **Kit copy** (F373): every venue fact line starts with "Example text."; the four kits it moved are FL-10's republish.
+  The kit favicon letters follow Secure's two-letter rule, from the shared letter mark table pinned by sha256 (I3).
+- **The kit republish is stage, then rows** (FL-10, design `design-fl10-placement.md`): `vivreal-site-migrator:kit-stager`
+  stages the changed kits (new prefixes nothing reads, `stage.json` with one PIN line per kit); the portal batch pins
+  the staged hashes; the rows move in the deploy window, directly before the portal promote, under a row-move GO
+  quoting the PIN lines (`--row --apply --expect "<PIN line>"`, main thread); a Migrator record commit then copies the
+  rows into `publish-out/` and empties `PENDING_REPUBLISH`. The stager's gates accept the loader the worker runs when
+  the rows move and a known earlier stable pin with its open pin move named (its definition, Hard gates 3 and step 1b).
+- **No unit test reaches the network or real AWS** (F160).
+
 ## Live-site restyle tooling (the third mode)
 
 Restyling an ALREADY-LIVE site in place, neither `/migrate` nor `/template`: `scripts/pull-live-site.js`, `apply-restyle.js`, `restyle-live-site.js`, `restyles/_shared.js` + per-site `restyles/<site>.js` (+ `.media.json`), `upload-<site>-media.js`, `spruce-<site>-content.js` (placeholders: list `scripts/` and `scripts/restyles/` for the real per-site names). Runbook: `docs/projects/<restyle-project>/HANDOFF.md` + `FINDINGS.md` (list `docs/projects/` for the restyle runbook folder); also `docs/projects/industry-example-site-templates/live-ops-motel-saturn/{restyle-motel-saturn,revalidate-motel-saturn,add-upcoming-dates}.js`.

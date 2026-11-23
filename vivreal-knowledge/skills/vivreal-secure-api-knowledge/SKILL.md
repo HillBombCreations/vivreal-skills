@@ -104,6 +104,61 @@ tier id is the case to think about: nothing rewrites it when a package folds a t
 - **Two Cognito pools, and an HTTP route binds to ONE.** The `/api/admin/*` routes (count the `Path: /api/admin` events in `cloudformation/`, never quote a number: they sit in `getGroupInformation.yaml` and, for the four admin push routes, `userAndAuth.yaml`) use `MyAdminCognitoAuthorizer`, the dedicated admin pool (`Vivreal-Admin-Identity`, MFA), so a customer-pool token is rejected at the gateway there. **One exception on purpose:** `PUT /api/admin/groups/{groupID}/prospect` takes the DEFAULT (customer pool) authorizer, because the site loader signs in there and sends no `x-user-ctx`; its controller gates on `ADMIN_EMAILS`. Read each event's `Auth` block before assuming the pool. `PUT /api/group/featureFlags` accepts either pool; every other route inherits the customer pool.
 - `iam simulate-principal-policy` on the role (the granted actions `allowed`, a control `implicitDeny`) is only a PRE-CHECK: a simulation evaluates the resource ARN and context keys you hand it, and twice in v7 it passed grants the real call then denied. The proof of a grant is the first real call (`vivreal-infra:vivreal-iam-secrets`).
 
+## Release C (read at the release C approved head `1bd1e017`, `release-c/secure` #405; not yet deployed)
+
+Read at the head the release walks, not at `origin/stable`; re-read at `origin/stable` once release C is live.
+
+- **Two more named list views** (CLAUDE.md, "A list read answers a NAMED view"): `GET /api/sites?fields=refresh`
+  (F590) answers `[{ _id, refresh: { state } }]` for Studio's Updating chip, built from the group's site ids and
+  `Vivreal.site_rebuilds`, not a projection; `fields=shopOffer` (F539 S-8) answers one row per TOP-LEVEL `products` or
+  `catalog` block whose first binding names a list (`collectionId`), never a site document, for Sales' "Put the shop on
+  your site" step. It filters by shape only (the portal's `shopOfferKind` decides the rest), sends `sectionConfig`'s
+  `purchaseMode` alone, skips archived sites and orders sites by `createdAt` then `_id`. No cap is coded: the design
+  measured at most 30 rows and 9,247 bytes for any business, where widening `pageIndex` would have grown the largest
+  to 323,961 bytes, so `pageIndex` is unchanged. An unknown view is still a 400 at the validator and in the service.
+- **`recentSaves`, the save confirm** (D-P2-2): the `stamp` view projects `lastSave` and `recentSaves`, the site's
+  last 10 saves (`{ id, at }`, under 1 KB a site). A save whose reply was lost committed when its `saveId` is
+  `lastSave.id` or any `recentSaves` id. A site the new Secure has not saved has no `recentSaves` key
+  (`src/createSites/services/getSites.js`).
+- **The sales tax warning's reads** (F485 D2): `GET /api/group/integrations/stripe/tax` and
+  `GET /api/group/integrations/square/tax`, owner or admin. Stripe answers `{ provider, check, homeState }` from its
+  registrations and settings, cached 60 s, and an unreadable answer is never cached; Square answers
+  `{ provider, check }` from the enabled taxes at the location and whether any item carries one. Never a thrown
+  non-Error: the Square check answers `reason: 'square_error'` (the L-F485-0 fixture). The release B switches
+  (`PUT`) are unchanged.
+- **Square payouts scope** (SQP-S1): the Square authorize URL asks for `PAYOUTS_READ` too, and a grant naming it is
+  recorded in `grantedScopes`; a refresh sends no scope, and a grant made before release C records none (the
+  portal's Square payouts card asks such a shop to reconnect).
+- **Site examples by an SSM lever** (F539, SW-C6): `instantiateTemplateWorker` reads `<ssm-prefix>/site-examples/mode`
+  on every customer instantiation, never cached (`examplesMode.js`, its one `ssm:GetParameter` grant). `draft` keeps a
+  new site's template examples in Studio's preview only; absent, unknown or unreadable reads `live`. The demo path
+  never reads it. Read the live value with `aws ssm get-parameter --name <ssm-prefix>/site-examples/mode --query
+  Parameter.Value`, never from this file.
+- **`DEMO_TENANT_GROUP_IDS` is one rule for two functions** (`@shared/demoTenant`): the worker seeds a demo tenant's
+  sites with the kit's whole content (no seed plan), and `createSites` stamps every other group's new placeholder site
+  `emptyPhotoBands: 'hide'` (F570 PB-S1). The same literal sits in `instantiateTemplateWorker.yaml` and
+  `createSites.yaml`, held equal by `test/unit/demoTenantParity.test.js`; unset means the customer behaviour everywhere.
+- **The alarm verifier's dated hold list** (F499): `src/alarmVerifier/holdList.js` holds an alarm switched off by plan
+  from `UndeliverableAlarms`, for the `actions-disabled` class only, each entry with an owner-approved reason and an
+  `until` at most 45 days after the commit that added it; held alarms are logged by name and counted in `HeldAlarms`.
+  The stuck digest still has no exemption list.
+- **The sign-up funnel report** (F469): the GA4 funnel route and its event are retired; the marketing funnel route's
+  `signupPath` section reads VR_Main_API's `signup_step_counts` and `signup_funnel_events` (our own counters), beside
+  Google's twins while both run; `checkout_started` counts plan checkouts, and plan checkouts are counted by outcome
+  (F193).
+- **Facebook connect** (F621, S1 and F1): a Facebook connect that chose no Page is never saved, and a Page chosen
+  clears the old failure record.
+- **Email change and account deletion** (F298, F314): a change that took effect first is finished, not left half
+  done; deletion needs a verified address and takes the account's records with it.
+- **Tracing** (F568): `initSentry` uses a `tracesSampler` returning `SENTRY_TRACES_SAMPLE_RATE` (else 1.0), so this
+  service's rate wins over an incoming trace's own decision (the portal samples at 1.0 and forwards its trace).
+  Source maps upload for every function (F569).
+- **A rename re-makes the generated wordmark and favicon letters** (F571): Secure's two-letter rule reads the letter
+  mark table shared with the site engine (`test/fixtures/letter-mark-cases.json`, a byte copy pinned by sha256).
+- **Shared packages**: the site engine and site loader stay EXACT pins (the worker bundles them); read the versions
+  from `package.json` at the deployed line, never from this file. Secure and Client stay on site engine 1.102.0 while
+  Templates and the portal move to 1.102.1 (plan WB-27).
+
 ## Release B features, v2.31.0 (live 2026-11-17, read at `origin/stable` `9bd16b83`)
 
 - **The sales tax switches** (S-TAX1 to S-TAX4): `PUT /api/group/integrations/stripe/tax` and `PUT /api/group/integrations/square/tax` (`?groupID=`, body `{ on }`, owner or admin; CLAUDE.md's route list). Each is the ONLY writer of its payments element's `salesTax`. ON is written only after a live read in the same request says the shop can tax: Stripe Tax `active` on the connected account, or, for Square, an enabled tax at the location checkout uses, bound to the merchant VR_Client_API charges through. Then one compare-and-set and a read-back. OFF never calls the provider. Refusals are `{ errorCode, message }`: `salesTaxNotReady`, `salesTaxUnchecked` (503), `salesTaxNeedsConnect`, `salesTaxNoStripe`, `salesTaxNoSquare`, each writing nothing. The settings save (`PUT /api/group/integrations`) strips a sent `salesTax`, so nothing else can store an unchecked ON. Checkout's half is `vivreal-knowledge:vivreal-client-stack-knowledge`; the rule is `vivreal-knowledge:vivreal-product-rules`.

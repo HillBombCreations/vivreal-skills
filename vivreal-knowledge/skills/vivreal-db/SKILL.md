@@ -344,6 +344,28 @@ then query `collection_objects` by `collectionObj.refID` (string), same pattern 
   fallback. **`groups.billing.source: 'comped'`** marks a comped paid-tier group: count paying
   customers by `stripeSubscriptionID`, never by tier.
 
+## Collections and indexes release C adds (read at the release C approved heads, not yet deployed)
+
+Main database (`Vivreal`) unless named:
+- `signup_name_holds` (VR_Main_API: a Register trip held for its business name, sealed, TTL 1800 s on `createdAt`).
+- `signup_step_counts` and `signup_funnel_events` (VR_Main_API owns both and their indexes; hourly page step totals
+  with no identity, and one row per sign-up request with `confirmedAt`; EventHandler adds a `site_live` row; kept 400
+  days; never an address, username, name, code or IP).
+- `signup_intents` gains the first sign-in's hold fields (`applyingAt`, `applyingId`, `createdGroupKey`,
+  `joinEntryId`, `awaitingName`).
+- `pickup_reminders` (VR_CMS_API: one row per order, unique on `{ provider, groupID, orderId }`, closed rows TTL 30
+  days) and `pickup_reminder_days` (`_id` `<groupID>:<shopDay>`, TTL 14 days).
+- `site_rebuilds` (EventHandler's rebuild sweeper record; its `refresh` is what VR_Secure_API's `fields=refresh` reads).
+- **Every tenant database**: `checkout_list_ticks` (VR_Client_API writes, native driver,
+  `{ _id: <Checkout Session id>, groupID, listId, createdAt }`, no personal data). **Its TTL index
+  `createdAt_ttl_30d` (30 days) is a release data step on EVERY tenant database**, never created by code: a tenant
+  database the step missed keeps its rows forever, so count the index across every tenant database after the step.
+  The Square coupon sweep index `SQUARE_COUPON_SWEEP_INDEX` is the same kind of one-shot, on each Square tenant
+  database.
+- Site documents gain `recentSaves` (the last 10 saves, `{ id, at }`) beside `lastSave`, `emptyPhotoBands` (`'hide'` on
+  a new customer site), and each page's `updatedAt` moves only when its content changes (the per-page save guard).
+- Subscriber rows from the checkout tick carry `consentSource: 'checkout'` and `consentRef` (schemas 1.71.0).
+
 ## Known drift (measured 2026-10-15; re-measure before relying on it)
 
 - **The domain orders live in `Vivreal.domainOrders` (camelCase).** The lowercase `domainorders` the old model name produced is gone after VR_Secure_API #231 and its data migration. This is the mongoose collection-name lowercasing trap: always pass `collectionName`, and suspect it whenever a query returns zero rows against a database you believe has data.

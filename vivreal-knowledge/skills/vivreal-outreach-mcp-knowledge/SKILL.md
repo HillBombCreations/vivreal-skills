@@ -13,6 +13,23 @@ Last synced: 2026-10-20 against `origin/main` at `066d0b2` (#11, live since 2026
 
 **Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions), but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` for depth; re-read its header and `src/tools/` at `origin/main` for the current tool count before quoting one.
 
+## Release C (read at the release C approved head `58ed5713`, `release-c/outreach-mcp` #22; not yet deployed)
+
+Read at the head the release walks, not at `origin/main`; re-read there once #22 merges.
+
+- **A call is never refused for its session** (F439; owner GO "refuse nothing", Justin, 2026-11-22T04:46:14Z). A `/mcp`
+  call that names no session, a session this server no longer holds, or someone else's opens a new session, seeded
+  with the business the person last chose with `set-active-group` while they are still a member (the freshly fetched
+  group list decides). The choice is a `pref:<userId>` row in the session table (`activeGroupId`, `updatedAt`; no
+  `ttl`), written after a successful `set-active-group`; a failed read or write of it costs only the shortcut. The log
+  line "New Outreach MCP session created" carries `sessionHeader` (`absent`, `unknown`, `otherUser`),
+  `seededActiveGroup` and `preferenceIgnored`. VR-MCP-Server's task 18 matches it.
+- **Google and LinkedIn only** (F502): `VR-outreach-mcp-client` drops the `COGNITO` provider and `ALLOW_USER_SRP_AUTH`;
+  the broker's `/oauth/authorize` still sends staff to the hosted page, which now shows only the two federated buttons;
+  `ALLOW_REFRESH_TOKEN_AUTH` is kept for the broker's token renewal.
+- **No unit test reaches real AWS or the network** (F160); Sentry starts before the server, and the address matcher
+  is pinned equal to VR-MCP-Server's (PRL-F374).
+
 ## Since the last sync: release A and release B (read at `origin/main` `b04a5a3`)
 
 - **Runtime and role (release B, live 2026-11-17, #19 and #20):** `McpServerFunction` runs `nodejs24.x` and its role carries the fleet's workload permissions boundary (`Globals.Function`, pinned by `test/unit/template-permissions-boundary.test.js`); an `AccessDenied` naming the boundary is a grant the boundary denies, not a missing policy (`vivreal-infra:vivreal-iam-secrets`). The "Node 22" in the sync line above is history.

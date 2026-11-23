@@ -89,6 +89,31 @@ Every schedule is a classic EventBridge rule (`rate(...)`/`cron(...)`), each ove
 - **`siteRebuildSweeper`, the rebuild a few minutes after a save** (release B B-2, #118 merged as `108b5fae`, live 2026-11-18; `src/handlers/siteDeploy/siteRebuildSweeper/index.js`): every minute, for each live Templates site, it reads the delivery stamp VR_Secure_API's webhook worker leaves on the site's revalidate row and starts ONE bare RELEASE build on `stable` shortly after the newest save, within the owners' caps (per site a day, the tier's monthly budget, the fleet a day; read them in the handler). The nightly `liveRebuildSweep` stays as the net under it. Each build is recorded in `Vivreal.site_rebuilds` (unique index on `appId`, built at BR-16). **The lever is SSM, read every tick** (`shared/siteRebuild/control.js`): `<ssm-prefix>/site-rebuild/mode` (`off`, `shadow`, `on`; missing means off, so a merge changes nothing), `.../allowlist` and `.../paused`. `shadow` logs `would_start` and starts nothing; `on` builds the sites the allowlist names. Release B's pilot (BR-32) and fleet (BR-33) steps turn it on, so read the live mode and allowlist before saying a save rebuilds: while it builds nothing, a save reaches only the instances it revalidated. Its six alarms were created with actions off and switched on in #120 (live 2026-11-19, merge `5db6f7d2`; `vivreal-infra:vivreal-observability`), which also moved `vivreal-route53-registered-domains-near-cap` to 48, 80 percent of the raised registered-domain quota of 60.
 - **Persisted deploy stage status** (#104): `seeding`, `creating_branch` and `creating_app` now write `deployment.status`, `message` and `updatedAt` onto the site document as they broadcast (`src/shared/persistDeployStage.js`), as a compare-and-set that never moves a site backwards; a brand-new site created as `deploying` with no app yet counts as pre-pipeline.
 
+## Release C (read at the release C approved head `6bb832dc`, `release-c/eventhandler` #121; not yet deployed)
+
+Read at the head the release walks, not at `origin/main`; a push to `main` here is a deploy, so re-read `origin/main`
+once #121 merges.
+
+- **Site capacity and its refusal alarm** (F168): when `CreateApp` answers `LimitExceededException`,
+  `createAmplifyApp` lists the account's apps, reads the applied `L-1BED97F3` (fallback 200), logs one
+  `site.capacity.refused` line (`kind`, `appCount`, `appQuota`, `quotaSource`, `createdLastHour`, `awsMessage`) and
+  throws `SiteCapacityFull`, `SiteCapacityHourly` (the 25-an-hour limit, `L-2FC3A2FA`, not adjustable) or
+  `SiteCapacityUnknown`, marked state-retried so its retries file no Sentry events. Alarm
+  `vivreal-site-capacity-refused` (filter `SiteCapacityRefusedFilter` into `Vivreal/SiteDeploy SiteCapacityRefused`).
+  `markSiteFailed` writes `failureCode`, `failedAt` and, for the hourly limit only, `retryAfter`; `site.deployFailed`
+  is live in VR_Main_API's `TYPE_POLICY` (the body is the same for every failure in release C; capacity words are
+  release D's).
+- **`site_live`, the funnel's last step** (F469): `markSiteLive` writes one best-effort `site_live` row into the main
+  database's `signup_funnel_events` when its own stamp flipped the site live (raw driver, `$setOnInsert` on
+  `{ event, ref }`; VR_Main_API owns the collection and its indexes).
+- **The rebuild sweeper's chip and its quiet alarm** (F590, F620): a fourth lever, `<ssm-prefix>/site-rebuild/chip`
+  (missing or `on` is on), and the record's `refresh` (`waiting` or `building` only in `on`, else `none`) that
+  VR_Secure_API's `fields=refresh` view reads for the portal's "Updating your site" chip (a `checkedAt` older than
+  180 s reads as `none`). In `shadow` the tick publishes 0 for `OldestPendingSaveSeconds` and `FleetCapReached`, so a
+  practice tick never pages; the oldest-pending alarm's actions come back only at the rebuild pilot flip (R2).
+- **A revalidate row under a base path** (SC-RV): the IndexNow and revalidate calls read the row's base path
+  (`parseRevalidateUrl`), so the help app's `/help/api/revalidate` row is its row.
+
 ## v7 and v7.1 (merged and live 2026-10-19/20; a merge here is the deploy)
 - **New apps build only when asked (V7.247, #92).** `createAmplifyApp` creates every app with `enableAutoBuild: false` and a `vivreal:buildTier` tag (`src/shared/amplify/costTags.js`, `buildTierFor`): `live` by default, `demo` or `qa` only on an exact match of a listed group id, so every unknown fails toward `live`. A redeploy keeps a tier the app already carries (TagResource would otherwise reset a backfilled or overridden tier). The Templates promote starts release builds by this tag, live tier only; demos catch up weekly (`vivreal-infra:vivreal-site-deploy-pipeline`).
 - **Seeded items are metered under `collectionObject_<id>` (v7.1 S9-D7, #95).** `seedCollections` writes each seeded item's usage row field for field as VR_CMS_API's `trackBulkDocs` does (`itemUsageRow`); the legacy `collection_<id>` key released nothing on delete and was counted twice on the first edit.
@@ -102,7 +127,7 @@ Every schedule is a classic EventBridge rule (`rate(...)`/`cron(...)`), each ove
 - Don't rename `checkDomainAssociaion` (typo in state machine + handler).
 - "Render differently for ecommerce vs showcase" belongs in Vivreal_Templates + site-renderer, NOT here (runtime ignores `templateType`).
 - Seed builders + template manifests live ONLY here (`src/shared/seeding/`, `src/shared/templates/`); the old `VR_Secure_API/src/createSites/services/templates` + `buildCollectionGroups`/`buildPages` files no longer exist. VR_Secure_API keeps only integration helpers under `services/HelperFunctions/` and a hardcoded `countExpectedSeeds()` per template, bump that count if you add seeds here.
-- **After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves (**not live until BR-33**, the fleet rebuild step; read the live lever, `siteRebuildSweeper` above).
+- **After a save:** a fresh instance serves the build copy until a rebuild; the site rebuild sweeper builds a few minutes after saves where its lever lets it: whether it builds is the SSM lever, read every tick: `<ssm-prefix>/site-rebuild/mode` (`off`, `shadow` or `on`; missing or anything else is off), `<ssm-prefix>/site-rebuild/allowlist` (`none`, a comma list of app ids, or exactly `fleet:all`) and `<ssm-prefix>/site-rebuild/paused`. A site gets the build only when the mode is `on` and the allowlist admits its app. Read the live values, never this file: `aws ssm get-parameters --names <ssm-prefix>/site-rebuild/mode <ssm-prefix>/site-rebuild/allowlist --query 'Parameters[].[Name,Value]'` (the pilot and fleet steps of release C, FL-4, move them; the parameter semantics are `src/shared/siteRebuild/control.js` in Vivreal_EventHandler); `siteRebuildSweeper` above.
 
 ## Before you report an absence
 

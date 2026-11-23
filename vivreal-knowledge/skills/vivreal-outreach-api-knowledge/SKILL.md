@@ -17,6 +17,26 @@ The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts 
 
 Authoritative sources: `${VIVREAL_REPOS}/VR_Outreach_API/README.md` (full route table) + `docs/` + `template.yaml`, there is NO `CLAUDE.md` in this repo. For deeper read-only analysis with citations, dispatch the `outreach-api` expert agent. For driving outreach via MCP, see `vivreal-outreach-mcp-knowledge`.
 
+## Release C (read at the release C approved head `6b5be1b`, `release-c/outreach` #110; not yet deployed)
+
+Read at the head the release walks, not at `origin/main`; a merge to `main` is this repo's one release C deployment,
+so re-read `origin/main` once #110 merges. The row record is `docs/release-c/progress.md` there.
+
+- **The connection retune** (F222, SW-C14; design `design-f222-concurrency.md` section 10): `ApiHandler` reserves 6
+  concurrent executions (was 4), `cronTick` and `PublicApiHandler` stay 2, and every comment that sized a reservation
+  against "a 500 connection cap" is corrected (the cluster's real limits are `vivreal-infra:vivreal-atlas-topology`'s).
+  The one 500 left is the enroll-by-filter request cap in `src/api/routes/sequences.js`, which sizes no reservation.
+  After the deploy `ApiHandler` must read 6 (L-OUT-1). The hq connection inventory (F313's gaps are hq fleet-ops
+  functions, not this repo) regenerates its Outreach row after the deploy.
+- **Each Lambda's init waits for its `service.started` line** (PRL-F374): a generated `dist/entry/<name>.mjs` per
+  bundle awaits `startLineFlushed()` at top level and the five `Handler:` lines name `entry/<name>.handler`, so a
+  start-up that is never served still writes its line (L-OUT-2 checks it for 7 days). The permissions boundary test
+  reads the real SAM expansion (`scripts/expand-sam-template.py`).
+- **No unit test reaches the network** (F160): `tests/setupNetworkContainment.js`.
+- **Unchanged in release C**: the studio demo visit routes (`studioDemoVisits.js`, the demo link, the hot leads fold)
+  and the booking and sequence routes. The sign-up funnel report moved to our own counters in VR_Main_API and
+  VR_Secure_API (F469); nothing here reads it.
+
 ## Release B (live 2026-11-17, read at `origin/main` `0f4fbbd`)
 
 - **Node 24, and the shim that would have stopped it loading** (RT-Outreach, R2): Node 24 refuses a handler whose exported function declares three or more parameters (`vivreal-infra:vivreal-lambda`). The no-SDK Sentry shim's `wrapHandler` was `(fn) => fn`, which hands back serverless-express's raw handler (length 3) for the runtime to refuse; it is now `(event, context) => fn(event, context)`, pinned by REFUSE and ALLOW rows in `sentryShim.test.js`. Any new wrapper here keeps two parameters.

@@ -190,6 +190,27 @@ read the deployed stack for the current set.
 
 ---
 
+## Release C (read at the release C approved heads, not yet deployed)
+
+- **The alarm verifier's hold list** (VR_Secure_API F499): `src/alarmVerifier/holdList.js` holds an alarm switched off
+  by plan from `UndeliverableAlarms`, for the `actions-disabled` class only, each entry with an owner-approved reason
+  and an `until` at most 45 days after the commit that added it; held alarms are logged by name and counted in the
+  `HeldAlarms` metric. The stuck digest has no exemption list.
+- **The daily script watch** (hq F457, `packages/fleet-ops/script-watch`, stack and function `vivreal-script-watch`,
+  daily at 09:35 UTC): it reads the script hosts each page actually serves on Vivreal's own pages, the public app
+  pages and every customer site host, with three alarms (only did-not-run gated by `AlarmActionsEnabled`); the admin app's
+  Errors page opens with a Blocked scripts section (`scriptBlocks`). Deployed by `scripts/deploy-script-watch.sh`
+  with `--alarm-actions on|off` and no default.
+- **The stylesheet warning** (Templates, VIVREAL-TEMPLATES-Q, D-P6-5): a failed stylesheet is retried once, then one
+  named warning, never a page of errors; a head sheet that failed before hydration is found by its throwing
+  `cssRules` read.
+- **New alarms**: `vivreal-site-capacity-refused` (EventHandler F168), `VR-CMS-API-pickup-reminder-errors` and
+  `-did-not-run` (CMS F528), `vivreal-square-coupon-link-close-failed` (CMS); `VR-Client-Auth-lambda-errors` now
+  needs two consecutive minutes. The rebuild sweeper's oldest-pending alarm publishes 0 in `shadow`, so a practice
+  tick never pages (F620).
+- **Tracing**: Secure, Client and Main sample through a `tracesSampler` that returns the service's own rate, so an
+  incoming trace's decision no longer overrides it (F568).
+
 ## Logs
 
 **Retention.** The declared policy is **30 days standard, and 365 days for sign-in, billing and
