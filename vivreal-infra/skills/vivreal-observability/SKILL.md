@@ -190,20 +190,39 @@ read the deployed stack for the current set.
 
 ---
 
-## Release C (read at the release C approved heads, not yet deployed)
+## Release C (live 2026-11-24; read at the deployed lines: Secure `origin/stable` `7e3c2334`, CMS release `9042eaf5`,
+Client Auth `8a182057`, EventHandler `main` `87c2ae12`, Templates `origin/stable` `a7121e5f`, hq `f06f6580`)
+
+Each deployed tree equals the approved head first read here except for version stamps, one Secure doc, the hq script watch's
+schedule move and EventHandler's sweeper fix (each compared file by file with the GitHub compare API on 2026-11-24).
 
 - **The alarm verifier's hold list** (VR_Secure_API F499): `src/alarmVerifier/holdList.js` holds an alarm switched off
   by plan from `UndeliverableAlarms`, for the `actions-disabled` class only, each entry with an owner-approved reason
   and an `until` at most 45 days after the commit that added it; held alarms are logged by name and counted in the
-  `HeldAlarms` metric. The stuck digest has no exemption list.
+  `HeldAlarms` metric. The stuck digest has no exemption list. **So pausing an alarm's pages trades one page for
+  another** (release C, L-C-31): an alarm whose actions are disabled and that is not on the hold list is counted at the
+  verifier's next :26 run and pages through `VR-Secure-API-AlarmVerifier-undeliverable-alarms`. Pause a once-a-day alarm
+  only around its own run, between two verifier runs, or add a dated hold in a reviewed Secure change.
 - **The daily script watch** (hq F457, `packages/fleet-ops/script-watch`, stack and function `vivreal-script-watch`,
-  daily at 09:35 UTC): it reads the script hosts each page actually serves on Vivreal's own pages, the public app
-  pages and every customer site host, with three alarms (only did-not-run gated by `AlarmActionsEnabled`); the admin app's
-  Errors page opens with a Blocked scripts section (`scriptBlocks`). Deployed by `scripts/deploy-script-watch.sh`
-  with `--alarm-actions on|off` and no default.
+  daily at 09:50 UTC, rule `vivreal-script-watch-daily`; it moved from 09:35, which Secure's nightly marketing rollup
+  already holds, and the deploy script refuses a schedule another rule holds): it reads the script hosts each page
+  actually serves on Vivreal's own pages, the public app pages and every customer site host, with three alarms (only
+  did-not-run gated by `AlarmActionsEnabled`; the new-host and void alarms act from the first change set, so its first
+  run can page); the admin app's Errors page opens with a Blocked scripts section (`scriptBlocks`). Deployed by
+  `scripts/deploy-script-watch.sh` with `--alarm-actions on|off` and no default. **A watch's allow rule for a known
+  vendor covers that vendor's host family, and a new watch's first scheduled run is read before its alarm can page**
+  (release C, L-C-32): its first run paged on five Microsoft Clarity beacon hosts (letter subdomains of `clarity.ms`
+  that Clarity rotates) behind tags the baseline already knew, because the baseline listed hosts. A family rule is
+  tested with lookalike REFUSE cases (a host that only ends in the vendor's name, a sibling domain). Read the live rule
+  in hq `packages/fleet-ops/script-watch` at `origin/main`, not here: its fix forward follows release C's deploy.
 - **The stylesheet warning** (Templates, VIVREAL-TEMPLATES-Q, D-P6-5): a failed stylesheet is retried once, then one
   named warning, never a page of errors; a head sheet that failed before hydration is found by its throwing
   `cssRules` read.
+- **An absence alarm is created so it cannot breach before its first datapoint** (release C, L-C-27):
+  `TreatMissingData: notBreaching`, or actions off with a flip after the first datapoint. CMS's
+  `VR-CMS-API-pickup-reminder-did-not-run` read missing data as breaching over 3 x 3600 s, went to ALARM at its
+  creation before the hourly sweep had run, and paged the owners (its booking sibling did the same on 2026-10-30).
+  Every plan and review checks each new alarm for a creation-time breach.
 - **New alarms**: `vivreal-site-capacity-refused` (EventHandler F168), `VR-CMS-API-pickup-reminder-errors` and
   `-did-not-run` (CMS F528), `vivreal-square-coupon-link-close-failed` (CMS); `VR-Client-Auth-lambda-errors` now
   needs two consecutive minutes. The rebuild sweeper's oldest-pending alarm publishes 0 in `shadow`, so a practice

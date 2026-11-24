@@ -123,10 +123,10 @@ Installed from **GitHub Packages** (`.npmrc`: `@hillbombcreations:registry=npm.p
 
 **A Templates or renderer change is validated before it reaches customer sites** (owner rule P-template-validate, vivreal-hq `docs/standards/process.md`): every site renders (the fleet render diff) and builds at the PR head, and an owner sees the diff report before the promote GO. A renderer change alone renders, builds and diffs only the sites it affects plus one unaffected control (the amendment of release C lesson L-C-03; the rule text is in process.md).
 
-## Release C (read at the release C approved head `d525124`, `release-c/templates` #232; not yet deployed)
+## Release C (live 2026-11-24; read at the deployed `origin/stable` `a7121e5f`, renderer pinned at 1.102.1)
 
-Read at the head the release walks, not at `origin/stable`; the row record is `docs/release-c/progress.md` there.
-Re-read at `origin/stable` once release C is live.
+The deployed tree equals the approved head `d525124` (#232) first read here, compared file by file with the GitHub compare API on 2026-11-24. The row record is
+`docs/release-c/progress.md` there.
 
 - **The shell read deadline** (SW-C28): `SHELL_READ_DEADLINE_MS` in `src/lib/cacheInvalidation.ts` moves from 1,500 to
   2,500, the one read deadline while an instance holds a served shell, because a cold VR_Client_Auth key checker took

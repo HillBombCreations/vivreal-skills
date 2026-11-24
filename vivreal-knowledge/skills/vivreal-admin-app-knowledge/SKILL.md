@@ -163,10 +163,11 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
 - **Walking it**: dispatch `vivreal-product:qa-walker`, whose "Walking the admin app" section covers
   the operator sign-in, the head to name in the matrix, and the fix-forward rule.
 
-## Release C (read at the release C approved hq head `956e9d66`, `release-c/hq` #150; not yet deployed)
+## Release C (live 2026-11-24; read at the deployed `origin/deploy/admin-app` `956e9d66`)
 
-Read at the head the release walks, not at `origin/deploy/admin-app`; the admin app deploys by fast-forwarding
-`deploy/admin-app`, so re-read there once it moves. The row record is `docs/projects/next-release-C/build-c-hq.md`.
+`deploy/admin-app` was fast-forwarded to the approved hq head `956e9d66` (#150) first read here; hq `main` moved on to
+`f06f6580` for the script watch's schedule and the standards files only, outside `packages/admin-app` (compared
+2026-11-24). The row record is `docs/projects/next-release-C/build-c-hq.md`.
 
 - **A Run's answer arrives in place, no reload** (F436, design `design-admin-live-answer.md`): ops-read gains
   `action: 'auditorRun'` (`{ target, since }`): the target is looked up by own key in a two-row table (the health

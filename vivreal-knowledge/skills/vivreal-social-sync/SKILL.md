@@ -120,7 +120,7 @@ to see a failing account is to read that line.
 | TikTok `401 access_token_invalid` | token revoked or expired | needs an owner reconnect |
 | LinkedIn "missing permission" | `r_member_social` not held | by design until LinkedIn grants it |
 
-## Release C: who is told when a feed stops, and `needs-page` (read at the release C approved heads, not yet deployed)
+## Release C: who is told when a feed stops, and `needs-page` (live 2026-11-24; read at the deployed lines, Main `origin/stable` `b101cd00`, Secure `7e3c2334`, CMS `9042eaf5`, portal `429e1b00`)
 
 - **Who is told when a feed stops**: the weekly social staleness digest (VR_Main_API `frozenSocialChannels`) emails
   the owners about a channel whose feed stopped. **A Facebook connect

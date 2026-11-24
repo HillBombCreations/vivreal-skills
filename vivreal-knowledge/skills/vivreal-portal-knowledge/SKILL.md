@@ -56,10 +56,11 @@ their framing answers of 2026-11-19 and one later correction, each with the shar
 - FOUR upstreams: `NEXT_PUBLIC_CMS_URL` (`/tenant/*`), `NEXT_PUBLIC_SECURE_URL` (`/api/*`), `NEXT_PUBLIC_MAIN_API` (`/api/*`), `NEXT_PUBLIC_OUTREACH_URL` (`/proxy/outreach/*` routes, only the public and Studio-facing ones since v0.37; the CRM moved to vivreal-hq `packages/admin-app`).
 
 
-## Release C (read at the release C approved head `cf76b401`, `release-c/portal` #497; not yet deployed)
+## Release C (live 2026-11-24 as v0.47.0; read at the deployed `origin/stable` `429e1b00`)
 
-Read at the head the release walks, not at `origin/stable`; the row-by-row record with its commits and tests is
-`docs/release-c/build-c-por.md` there. Re-read at `origin/stable` once release C is live.
+The deployed tree equals the approved head `cf76b401` (#497) first read here except for the version stamps
+(`package.json`, its lockfile, `public/release.json`), compared file by file with the GitHub compare API on 2026-11-24. The row-by-row record with its commits and tests is
+`docs/release-c/build-c-por.md` there.
 
 - **Sign-in with a trip** (F494, F191): `/api/sso/[provider]` starts Google and LinkedIn with a fresh `state` and a PKCE
   verifier in an httpOnly `__Host-vr_sso_<state>` cookie (`src/lib/auth/ssoTrip.ts`); `user/ssoLogin` refuses

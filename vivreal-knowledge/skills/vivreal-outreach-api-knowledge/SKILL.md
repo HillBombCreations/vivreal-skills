@@ -17,10 +17,10 @@ The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts 
 
 Authoritative sources: `${VIVREAL_REPOS}/VR_Outreach_API/README.md` (full route table) + `docs/` + `template.yaml`, there is NO `CLAUDE.md` in this repo. For deeper read-only analysis with citations, dispatch the `outreach-api` expert agent. For driving outreach via MCP, see `vivreal-outreach-mcp-knowledge`.
 
-## Release C (read at the release C approved head `6b5be1b`, `release-c/outreach` #110; not yet deployed)
+## Release C (live 2026-11-24; read at the deployed `origin/main` `0a782e97`, the merge of #110)
 
-Read at the head the release walks, not at `origin/main`; a merge to `main` is this repo's one release C deployment,
-so re-read `origin/main` once #110 merges. The row record is `docs/release-c/progress.md` there.
+The deployed tree equals the approved head `6b5be1b` first read here, compared file by file with the GitHub compare API on 2026-11-24. The row record is
+`docs/release-c/progress.md` there.
 
 - **The connection retune** (F222, SW-C14; design `design-f222-concurrency.md` section 10): `ApiHandler` reserves 6
   concurrent executions (was 4), `cronTick` and `PublicApiHandler` stay 2, and every comment that sized a reservation

@@ -104,9 +104,10 @@ tier id is the case to think about: nothing rewrites it when a package folds a t
 - **Two Cognito pools, and an HTTP route binds to ONE.** The `/api/admin/*` routes (count the `Path: /api/admin` events in `cloudformation/`, never quote a number: they sit in `getGroupInformation.yaml` and, for the four admin push routes, `userAndAuth.yaml`) use `MyAdminCognitoAuthorizer`, the dedicated admin pool (`Vivreal-Admin-Identity`, MFA), so a customer-pool token is rejected at the gateway there. **One exception on purpose:** `PUT /api/admin/groups/{groupID}/prospect` takes the DEFAULT (customer pool) authorizer, because the site loader signs in there and sends no `x-user-ctx`; its controller gates on `ADMIN_EMAILS`. Read each event's `Auth` block before assuming the pool. `PUT /api/group/featureFlags` accepts either pool; every other route inherits the customer pool.
 - `iam simulate-principal-policy` on the role (the granted actions `allowed`, a control `implicitDeny`) is only a PRE-CHECK: a simulation evaluates the resource ARN and context keys you hand it, and twice in v7 it passed grants the real call then denied. The proof of a grant is the first real call (`vivreal-infra:vivreal-iam-secrets`).
 
-## Release C (read at the release C approved head `1bd1e017`, `release-c/secure` #405; not yet deployed)
+## Release C (live 2026-11-24 as v2.33.0; read at the deployed `origin/stable` `7e3c2334`)
 
-Read at the head the release walks, not at `origin/stable`; re-read at `origin/stable` once release C is live.
+The deployed tree equals the approved head `1bd1e017` (#405) first read here except for the version stamps and one doc
+(`docs/stripe-api-clover-migration.md`), compared file by file with the GitHub compare API on 2026-11-24.
 
 - **Two more named list views** (CLAUDE.md, "A list read answers a NAMED view"): `GET /api/sites?fields=refresh`
   (F590) answers `[{ _id, refresh: { state } }]` for Studio's Updating chip, built from the group's site ids and

@@ -344,7 +344,7 @@ then query `collection_objects` by `collectionObj.refID` (string), same pattern 
   fallback. **`groups.billing.source: 'comped'`** marks a comped paid-tier group: count paying
   customers by `stripeSubscriptionID`, never by tier.
 
-## Collections and indexes release C adds (read at the release C approved heads, not yet deployed)
+## Collections and indexes release C adds (live 2026-11-24; read at the deployed lines each repo's knowledge skill names)
 
 Main database (`Vivreal`) unless named:
 - `signup_name_holds` (VR_Main_API: a Register trip held for its business name, sealed, TTL 1800 s on `createdAt`).

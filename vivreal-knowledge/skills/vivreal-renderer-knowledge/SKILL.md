@@ -145,8 +145,9 @@ Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older v
 
 ## Release C: 1.102.0 and 1.102.1 (read at `origin/master` `3b8657f`, the merge of #147 that carries 1.102.1)
 
-Published and pinned by release C's batches (Templates and the portal on 1.102.1; Secure and Client on 1.102.0, plan
-WB-27). Every consumer moves only by its own repo's PR (P-packages); read each pin in its `package.json`.
+Published and pinned by release C's batches, live 2026-11-24 (Templates `origin/stable` `a7121e5f` and the portal
+`origin/stable` `429e1b00` on 1.102.1; Secure `7e3c2334` and Client `8249a02f` on 1.102.0, plan WB-27; each pin read
+in its deployed `package.json` on 2026-11-24). Every consumer moves only by its own repo's PR (P-packages); read each pin in its `package.json`.
 
 - **The empty photo band gate** (F570, PB-R1 to PB-R7, design `design-empty-photo-band.md`): `hidesEmptyPhotoBands
   (siteData)` is true only for `emptyPhotoBands === 'hide'` (VR_Secure_API stamps it on every new customer site, never

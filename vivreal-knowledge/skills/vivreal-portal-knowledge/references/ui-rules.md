@@ -24,11 +24,11 @@ rules here; PAGE-3 carries a later owner broadening (L-C-23).
 **Paths.** Every path is in `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/`, read at `origin/stable`
 `9974e41b` (v0.46.0). Re-read a file at the current deployed line before you rely on it; a moved
 path is a reason to look, never a reason to hand-build. **Release C** adds three shared components,
-read at its approved head `cf76b401` (`release-c/portal` #497) and live once it deploys: `IconLine`
+read at its approved head `cf76b401` (`release-c/portal` #497) and live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`): `IconLine`
 (`src/components/UI/icon-line.tsx`, TITLE-6), `SheetHeader` (`src/components/UI/sheet-header.tsx`,
 HELP-1, HELP-3, TITLE-1, SHEET-3; gap G4) and `SearchableSelect`
-(`src/components/UI/searchable-select.tsx`, SEL-3; gap G2). Before release C deploys, use one only on
-a branch based on the release C line.
+(`src/components/UI/searchable-select.tsx`, SEL-3; gap G2). All three files are present at `429e1b00`;
+`sheet-title-row.ts` is not.
 
 **Gaps.** A rule whose "Use" names a gap has no shared component for that part yet. Do not
 hand-roll one and do not copy a hand version: ask the owners first (the list is at the end).
@@ -202,8 +202,10 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
   a phone and a dropdown with search on a computer (owners, 2026-11-19). (UF-007) Use:
   `src/components/UI/segmented-control.tsx`, `src/components/UI/switch.tsx`, `select.tsx`, and for a
   long list `SearchableSelect` (`src/components/UI/searchable-select.tsx`, release C F601, single pick
-  only; Content source moved onto it). Gap G2 until release C deploys: at `9974e41b` `StateSelect`,
-  `ContentSourceSelect` and the business time zone row are three hand versions. Do not add a fourth.
+  only; Content source moved onto it; live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`)). Before it, at `9974e41b`, `StateSelect`,
+  `ContentSourceSelect` and the business time zone row were three hand versions, and `StateSelect` at
+  `429e1b00` still names no `SearchableSelect`: move a hand version onto it when you touch one, and never
+  add a fourth.
 - **SEL-4. An important action is never the last option in a dropdown;** it gets its own visible
   button. (UF-080) Use: Studio's page picker
   (`src/components/Sites/Studio/LeftRail/PageSelector.tsx`) is the pattern.
@@ -383,8 +385,8 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
 
 - **G2, a shared searchable select** (SEL-3). The owners want one, for lists over about fifteen: a
   bottom sheet with a search box on a phone, a dropdown with search on a computer. Built in release C
-  as `SearchableSelect` (single pick; multi pick waits for its first caller), not yet deployed. Three
-  hand versions exist (`src/components/Universal/StateSelect/index.tsx`,
+  as `SearchableSelect` (single pick; multi pick waits for its first caller), live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`). Three
+  hand versions existed before it (`src/components/Universal/StateSelect/index.tsx`,
   `src/components/Sites/Studio/LeftRail/ContentSourceSelect.tsx`, the business time zone row), and
   `select.tsx` documents the Studio delivery time zone as the one browser select left on purpose
   until this exists.
@@ -392,11 +394,11 @@ and keep building. Owners still decide features, behaviour, looks and mockups.
   lines, then and n more" as one piece, and the product card hand-writes the tile.
 - **G4, a sheet and dialog header with a help slot and a two-line title** (HELP-1, TITLE-1). Built in
   release C as `SheetHeader` (F602: Back, title, help, one action, Close; a `dialog` and a `panel`
-  frame), moved onto nine sheets, not yet deployed. At `9974e41b` it is a list of class constants
-  (`sheet-title-row.ts`) applied by hand in three files
+  frame), moved onto nine sheets, live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`), where `sheet-title-row.ts` is gone.
+  At `9974e41b` it was a list of class constants (`sheet-title-row.ts`) applied by hand in three files
   (`MobileEditSheet.tsx`, Add a page, `MediaPicker`); `FullScreenDialog`, `StepDialog`,
-  `BusinessDialogShell`, `UI/dialog` and `UI/bottom-sheet` have no help slot and cut their titles
-  at one line.
+  `BusinessDialogShell`, `UI/dialog` and `UI/bottom-sheet` had no help slot and cut their titles
+  at one line; check each at the deployed line before you rely on it.
 - **G5, a shared, counted scroll lock** (PERF-1). Two hand copies exist.
 - **G6, a long sheet that is safe by default** (SHEET-1). `pinned` is opt-in and `UI/dialog` scrolls
   its whole box, and no test catches a new sheet that scrolls its title away. Pass `pinned`.

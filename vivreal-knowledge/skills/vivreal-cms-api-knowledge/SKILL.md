@@ -115,11 +115,11 @@ A product list carries `collection_groups.commerce { state: selling | paused | m
 - **Native compare-and-set token writes** (#252): `src/shared/refreshOAuthToken.js` writes through the native `groups` collection, because `integrationAccountSchema` declares neither `refreshToken` nor `accessToken`, so a Mongoose arrayFilter on them threw `Could not find path` and the "mark expired" write never landed.
 - **Media-reuse gate** (#260, schemas 1.64.0): a post edit (`updateIntegrationObject`) and an item edit (`updateCollectionObject`) ask the reference gate before `deleteMediaFiles`, so a photo reused elsewhere is not destroyed; reused photos get an Instagram fit (`igFitBytes`).
 
-## Release C (read at the release C approved head `8ffdf6c5`, `release-c/cms` #277; not yet deployed)
+## Release C (live 2026-11-24 as v2.26.0; read at the deployed `origin/stable` `9042eaf5`)
 
-Read at the head the release walks, not at `origin/stable`; CLAUDE.md there holds the detail ("Square parity", "The
-pickup reminder", "Seasonal products", "The checkout list tick", "A sale refreshes the site"). Re-read at
-`origin/stable` once release C is live.
+The deployed tree equals the approved head `8ffdf6c5` (#277) first read here except for the version stamps,
+compared file by file with the GitHub compare API on 2026-11-24. CLAUDE.md there holds the detail ("Square parity", "The pickup reminder", "Seasonal products", "The checkout
+list tick", "A sale refreshes the site").
 
 - **A route mounted outside `handleTenantRoutes` opens the main database itself** (D-P13-1, SK-25). That router's
   `mainDb.connect()` is the only connect on its path, so a public route that bypasses it (the pickup link's

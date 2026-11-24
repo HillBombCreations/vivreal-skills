@@ -13,9 +13,9 @@ Last synced: 2026-10-20 against `origin/main` at `066d0b2` (#11, live since 2026
 
 **Internal-only remote MCP server** exposing the Vivreal **Outreach** pipeline to Claude Desktop so team members can seed and manage leads. Architecturally a clone of **VR-MCP-Server** (Cognito OAuth 2.1 + PKCE, DynamoDB sessions, JSON-RPC dispatch, SAM/Lambda + API Gateway, GitHub Actions), but VR-MCP-Server is the **CMS** MCP server (69 CMS-admin tools; `vivreal-mcp-server-knowledge`); this one fronts **VR_Outreach_API** (+ CMS fanout). **DEPLOYED to prod 2026-06-25** at `https://outreach-mcp.vivreal.io`. TypeScript; design/audit artifacts live in `VR-MCP-Server/docs/projects/outreach-mcp-server/`. Read `${VIVREAL_REPOS}/VR-Outreach-MCP-Server/CLAUDE.md` for depth; re-read its header and `src/tools/` at `origin/main` for the current tool count before quoting one.
 
-## Release C (read at the release C approved head `58ed5713`, `release-c/outreach-mcp` #22; not yet deployed)
+## Release C (live 2026-11-24; read at the deployed `origin/main` `2e8fd9c9`, the merge of #22)
 
-Read at the head the release walks, not at `origin/main`; re-read there once #22 merges.
+The deployed tree equals the approved head `58ed5713` first read here, compared file by file with the GitHub compare API on 2026-11-24.
 
 - **A call is never refused for its session** (F439; owner GO "refuse nothing", Justin, 2026-11-22T04:46:14Z). A `/mcp`
   call that names no session, a session this server no longer holds, or someone else's opens a new session, seeded

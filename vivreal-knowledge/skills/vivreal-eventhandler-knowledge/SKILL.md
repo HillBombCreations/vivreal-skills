@@ -89,10 +89,11 @@ Every schedule is a classic EventBridge rule (`rate(...)`/`cron(...)`), each ove
 - **`siteRebuildSweeper`, the rebuild a few minutes after a save** (release B B-2, #118 merged as `108b5fae`, live 2026-11-18; `src/handlers/siteDeploy/siteRebuildSweeper/index.js`): every minute, for each live Templates site, it reads the delivery stamp VR_Secure_API's webhook worker leaves on the site's revalidate row and starts ONE bare RELEASE build on `stable` shortly after the newest save, within the owners' caps (per site a day, the tier's monthly budget, the fleet a day; read them in the handler). The nightly `liveRebuildSweep` stays as the net under it. Each build is recorded in `Vivreal.site_rebuilds` (unique index on `appId`, built at BR-16). **The lever is SSM, read every tick** (`shared/siteRebuild/control.js`): `<ssm-prefix>/site-rebuild/mode` (`off`, `shadow`, `on`; missing means off, so a merge changes nothing), `.../allowlist` and `.../paused`. `shadow` logs `would_start` and starts nothing; `on` builds the sites the allowlist names. Release B's pilot (BR-32) and fleet (BR-33) steps turn it on, so read the live mode and allowlist before saying a save rebuilds: while it builds nothing, a save reaches only the instances it revalidated. Its six alarms were created with actions off and switched on in #120 (live 2026-11-19, merge `5db6f7d2`; `vivreal-infra:vivreal-observability`), which also moved `vivreal-route53-registered-domains-near-cap` to 48, 80 percent of the raised registered-domain quota of 60.
 - **Persisted deploy stage status** (#104): `seeding`, `creating_branch` and `creating_app` now write `deployment.status`, `message` and `updatedAt` onto the site document as they broadcast (`src/shared/persistDeployStage.js`), as a compare-and-set that never moves a site backwards; a brand-new site created as `deploying` with no app yet counts as pre-pipeline.
 
-## Release C (read at the release C approved head `6bb832dc`, `release-c/eventhandler` #121; not yet deployed)
+## Release C (live 2026-11-24; read at the deployed `origin/main` `87c2ae12`)
 
-Read at the head the release walks, not at `origin/main`; a push to `main` here is a deploy, so re-read `origin/main`
-once #121 merges.
+Deployed twice in release C under an owner exception to P-one-promote (GO-C-D5-FIXFWD): #121 merged as `03ae7c9b` (tree
+equal to the approved head `6bb832dc`), then `87c2ae12` (D5b) with the sweeper fix and the sharded coverage run below,
+compared file by file with the GitHub compare API on 2026-11-24.
 
 - **Site capacity and its refusal alarm** (F168): when `CreateApp` answers `LimitExceededException`,
   `createAmplifyApp` lists the account's apps, reads the applied `L-1BED97F3` (fallback 200), logs one
@@ -111,6 +112,19 @@ once #121 merges.
   VR_Secure_API's `fields=refresh` view reads for the portal's "Updating your site" chip (a `checkedAt` older than
   180 s reads as `none`). In `shadow` the tick publishes 0 for `OldestPendingSaveSeconds` and `FleetCapReached`, so a
   practice tick never pages; the oldest-pending alarm's actions come back only at the rebuild pilot flip (R2).
+- **A pending Amplify job has no `startTime`** (D5b, `a2982403`; Sentry SITE-DEPLOYMENT-Q, STOP D5): the sweeper built
+  `new Date(undefined)` for a queued job and `canonical()` threw on its `toISOString()`, failing every tick while any
+  build was queued (shadow only, no customer effect). `shared/siteRebuild/record.js` now reads a missing time as `null`,
+  and `canonical()` prints an Invalid Date as the marker `invalid-date`, so that one record fails as its own
+  `row_failed` instead of the whole tick.
+- **Coverage runs as 4 mocha shards under one c8** (D5b, #123, `scripts/run-unit-shards.js`, `npm run coverage`, each
+  shard at `--max-old-space-size=3072`; release C, L-C-34). One process holding the whole suite peaked at about 7.1 GB
+  on the 7.9 GB deploy runner and hung the deploy's "Test + coverage thresholds" step for 34 minutes with no log. Keep
+  the shards when the suite grows and measure the peak against the runner (`/usr/bin/time -v`). At `87c2ae12` the
+  `lambda_api.yml` step "Test + coverage thresholds" still has no `timeout-minutes` (read 2026-11-24), so a hang holds
+  the deploy until GitHub's job default: add one with the next EventHandler change (`vivreal-workflow:shared-standards`,
+  "Dependencies, lockfiles and the CI runner"). A spec that imports another spec runs that spec's tests twice when they land in different shards; nothing
+  is dropped.
 - **A revalidate row under a base path** (SC-RV): the IndexNow and revalidate calls read the row's base path
   (`parseRevalidateUrl`), so the help app's `/help/api/revalidate` row is its row.
 

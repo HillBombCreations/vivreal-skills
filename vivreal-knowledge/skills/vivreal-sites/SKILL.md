@@ -56,7 +56,7 @@ These bite constantly, know them even before opening a reference:
 
 Also: **an empty list infers nothing.** A CMS list field's row shape is inferred from stored data, so an EMPTY list renders the plain-string widget and the structured shape never forms; seed one row.
 
-## Release C (read at the release C approved heads, not yet deployed; each repo's knowledge skill has the detail)
+## Release C (live 2026-11-24; read at the deployed lines each repo's knowledge skill names, where the detail is)
 
 - **Examples as drafts** (F539): a new site's template examples can be seeded as drafts that show only in Studio's
   preview, by VR_Secure_API's SSM lever `<ssm-prefix>/site-examples/mode` (`draft` or `live`; anything else `live`).

@@ -93,9 +93,9 @@ The package runs inside VR_Secure_API's `instantiateTemplateWorker` in productio
   authoring overlays, its reviewer counted 11, and 7 shipped.
 - **Fixed kits reach the picker only when republished.** A kit fixed on master stays as published in the registry row until its republish (release B's BR-34 for the kits these checks caught): a picker instantiation before that runs the OLD blueprint. Read the row's blueprint, never assume master is what a new site gets. The republish is staged by `vivreal-site-migrator:kit-stager` (an owner GO: new content-hash prefixes in the template store, the Studio pack, every object proven, the row move dry-run only), then the row move under its own GO.
 
-## Release C (read at the release C head `431fc5b`, `release-c/migrator`, site loader 0.10.0)
+## Release C (merged 2026-11-24; read at `origin/master` `535f3daa`, the merge of #103, site loader 0.10.0)
 
-Read at the head the release ships, not at `origin/master`; re-read there once release C merges.
+The merged tree equals the release C head `431fc5b` first read here, compared file by file with the GitHub compare API on 2026-11-24.
 
 - **Site loader 0.10.0**: the seed plan's `examples` option (F539): `draft` seeds a new site's template examples as
   drafts with no publish date, honoured by the worker path and the CLI loader alike, reported beside the plan's report,

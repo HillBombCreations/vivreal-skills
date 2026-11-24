@@ -41,10 +41,9 @@ neither is the module list itself. Alongside the tools there are guided **prompt
 
 `/oauth/authorize` sends a signed-out or stale owner to the portal's own `/login`, whose password form goes through VR_Main_API's `/api/user/login` on the portal's app client, so Main's emailed sign-in code applies here too, on the same `/login`, before it returns to Allow access. Approve accepts only an ID token issued to the portal client and signed in recently (`src/auth/middleware.ts`), and each connection refreshes its ID token on the portal client (`src/auth/downstream.ts`). The Cognito broker is retired (`src/auth/broker.ts`) and no route reaches Cognito's hosted pages, so any text that says this server signs people in on Cognito's page is stale. Which other ways into the user pool still accept a password is not written here (`vivreal-infra:vivreal-auth-architecture`, System 3).
 
-## Release C (read at the release C approved head `2a3d6215`, `release-c/mcp` #65; not yet deployed)
+## Release C (live 2026-11-24; read at the deployed `origin/main` `9951f1d6`, the merge of #65)
 
-Read at the head the release walks, not at `origin/main`; a merge to `main` is this server's deploy, so re-read
-`origin/main` once #65 merges.
+The deployed tree equals the approved head `2a3d6215` first read here, compared file by file with the GitHub compare API on 2026-11-24.
 
 - **The channels header** (F555): every CMS call, and only CMS calls, carries `x-vivreal-ai-channels` (`write`, `read`,
   or `off` for anything else), the connection's Channels and posts access, from `ToolContext.aiChannels`, a REQUIRED

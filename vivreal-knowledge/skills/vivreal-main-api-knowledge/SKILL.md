@@ -51,9 +51,9 @@ Since v7 the roster also carries `SubscriberConfirmFunction` and `SubscriberConf
 - **Unsubscribe and bounces move EVERY matching row (v7.2).** `campaignUnsubscribe.js` is an `updateMany` over `{ groupID, 'collectionObj.refID', subscriberEmail }` that skips rows already `unsubscribed` (so a second click keeps the original `unsubscribedAt` the rejoin cooldown reads); it answers `already` when every row was unsubscribed and `not-found` only when there is no row at all. `src/campaignEvents/lambda.js` suppresses bounced and complaining addresses with `updateMany` scoped to the campaign's list and its `groupID`; a campaign whose `groupID` differs from the event's group suppresses nobody and is reported (`campaignEvents.group_mismatch`, plus a Sentry message carrying ids only). The reason: `collection_objects` is shared by every group on a pod, and one list can hold the same address twice, which `sendBatches` mails twice.
 - **Pushes are split by surface (v7).** `notificationConsumer` sends staff (pinned-recipient) types only to subscriptions with `surface: 'admin'` (the admin app's devices) and customer types only to the rest, and logs `no-subscriptions` when a staff push has no admin device (`src/notificationConsumer/lambda.js`; `surface` is declared in `db.js` so `strictQuery` keeps the filter). See `vivreal-infra:vivreal-notifications`.
 
-## Release C (read at the release C approved head `ee040d8`, `release-c/main` #139; not yet deployed)
+## Release C (live 2026-11-24 as v2.22.0; read at the deployed `origin/stable` `b101cd00`)
 
-Read at the head the release walks, not at `origin/stable`; re-read there once release C is live.
+The deployed tree equals the approved head `ee040d8` (#139) first read here except for the version stamps, compared file by file with the GitHub compare API on 2026-11-24.
 
 - **One first sign-in apply for every door** (F299): `services/users/signupIntent.js` `applyFirstSignIn` is the ONLY
   writer of `custom:sID`. Password, the sign-in code, Google, LinkedIn, One Tap, the AI connection and the Register

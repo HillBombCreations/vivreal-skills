@@ -66,7 +66,7 @@ never run it without `--query`, because its default answer carries the client se
 state of each way in, and when each closes, lives in the private vivreal-hq release plan, never in
 this public repository.
 
-## Release C: PKCE and state on sign-in, and Client Auth's error rule (read at the release C approved heads, not yet deployed)
+## Release C: PKCE and state on sign-in, and Client Auth's error rule (live 2026-11-24; read at the deployed lines: portal `origin/stable` `429e1b00`, Main `origin/stable` `b101cd00`, Client Auth `origin/main` `8a182057`, each tree equal to its approved head but for version stamps)
 
 - **Google and LinkedIn sign-in carry a trip** (portal F494, Main F191): the portal's `/api/sso/[provider]` keeps a
   fresh `state` and a PKCE verifier in an httpOnly `__Host-vr_sso_<state>` cookie; its `user/ssoLogin` route refuses
