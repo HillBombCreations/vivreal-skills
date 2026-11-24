@@ -2,7 +2,7 @@
 
 This is the public form of the anti-pattern catalog. Each entry carries a rule, the generic way it
 hurts, how to spot it in code, and the shape of a good guard. Agents with access read the internal
-catalog at `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md` for the evidence behind
+catalog at `${VIVREAL_REPOS}/_wt/hq-main/docs/standards/anti-patterns.md` for the evidence behind
 each entry and its enforcement status.
 
 How to use it: before writing code and before reviewing a diff, decide for each entry whether the

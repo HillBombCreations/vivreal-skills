@@ -5,7 +5,7 @@ description: 'Use when migrating an external website into the Vivreal CMS, turni
 
 # Vivreal_Site_Migrator: knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U34-how-the-migrator-works.md`; `npm run docs:route -- "migrator"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U34-how-the-migrator-works.md`; `npm run docs:route -- "migrator"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
@@ -41,7 +41,7 @@ Agent-driven repo with **three modes**: `/migrate` (migrate an external site's c
 
 The owner's standard: an owner can build every page a site holds again from a Blank page in Studio, and edit and customise it like every current template. It is proved on the **INSTANTIATED** site, the one the platform made, never on the kit blueprint or the capture: Secure's `convertPages` turns blueprint pages into sections at instantiation, so a blueprint is not the shape an owner gets. Template validation that never read an instantiated site let 96 stored settings over 16 published templates stand with no Studio control until the census counted them (decisions W-BB-2, 2026-11-11). Three parts, all required:
 
-1. **The per-section census at 0 NOT BUILDABLE.** vivreal-hq `packages/fleet-ops/blank-buildable`; its `README.md` is the runbook and outranks this summary (read it at hq `main`). Fetch the site's `siteDetails` ONCE, throttled, into the session scratchpad as `{ app: { siteId }, body }` (the README's snapshot loop, for that one Amplify app; the key read with a `--query` naming only `API_KEY`, never printed, and every `--output text` through `tr -d '\r'`); it holds customer content, so never commit it. Read the portal's reach at a named ref, `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" show <ref>:src/data/generated/blank-buildable-reach.json > <scratchpad>/reach.json`, then from vivreal-hq run `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <scratchpad>/reach.json --by-site`. PASS is exit 0 with the control, cross-check and gap-control lines printed. Exit 1 lists each `NOT BUILDABLE` and `DEAD` item. Exit 2 is VOID and never a pass (a v1 reach, a failed control, a matcher disagreement). The reach must be **v2** (`reachVersion: 2` plus a `sectionConfig` table), read under the contract in release plan section 15 (vivreal-hq `docs/projects/release-plan-open-backlog/plan-remaining-work.md`) and its amendments 1 to 3: a binding with no `displayAs`, or one held by a block the reach lists in `ignoresDisplayAs`, is keyed `block:<dispatchId>`; a photo key stored as a plain address is creatable when Studio's photo control writes that key; `P.*` covers paths under `P.` and `P[` only, and an exact entry covers only itself.
+1. **The per-section census at 0 NOT BUILDABLE.** vivreal-hq `packages/fleet-ops/blank-buildable`; its `README.md` is the runbook and outranks this summary (read it at hq `main`). Fetch the site's `siteDetails` ONCE, throttled, into the session scratchpad as `{ app: { siteId }, body }` (the README's snapshot loop, for that one Amplify app; the key read with a `--query` naming only `API_KEY`, never printed, and every `--output text` through `tr -d '\r'`); it holds customer content, so never commit it. Read the portal's reach at a named ref, `git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show <ref>:src/data/generated/blank-buildable-reach.json > <scratchpad>/reach.json`, then from vivreal-hq run `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <scratchpad>/reach.json --by-site`. PASS is exit 0 with the control, cross-check and gap-control lines printed. Exit 1 lists each `NOT BUILDABLE` and `DEAD` item. Exit 2 is VOID and never a pass (a v1 reach, a failed control, a matcher disagreement). The reach must be **v2** (`reachVersion: 2` plus a `sectionConfig` table), read under the contract in release plan section 15 (vivreal-hq `docs/projects/release-plan-open-backlog/plan-remaining-work.md`) and its amendments 1 to 3: a binding with no `displayAs`, or one held by a block the reach lists in `ignoresDisplayAs`, is keyed `block:<dispatchId>`; a photo key stored as a plain address is creatable when Studio's photo control writes that key; `P.*` covers paths under `P.` and `P[` only, and an exact entry covers only itself.
 2. **A Studio rebuild from Blank.** Every page made again in Studio, starting from a Blank page and adding each section from Studio's own section picker (never a template, a copy or a preset that brings the sections with it), then compared with the stored page on its sections in order AND on every per-section settings path, each set through a Studio control on THAT section. A rebuild cut for time is NOT RUN, and the gate is not passed (walk 2 cut it and reported only the settings it had judged).
 3. **Full edit and customise, like every current template:** `studio-confirm`'s classification ledger with no un-waived non-EDITABLE row, and, for a kit, `npm run kit:validate -- --kit <kit>` green in the portal.
 
@@ -92,6 +92,26 @@ The package runs inside VR_Secure_API's `instantiateTemplateWorker` in productio
   a kit folder on master is not a shipped kit. A release B paper counted 8 selling kits from
   authoring overlays, its reviewer counted 11, and 7 shipped.
 - **Fixed kits reach the picker only when republished.** A kit fixed on master stays as published in the registry row until its republish (release B's BR-34 for the kits these checks caught): a picker instantiation before that runs the OLD blueprint. Read the row's blueprint, never assume master is what a new site gets. The republish is staged by `vivreal-site-migrator:kit-stager` (an owner GO: new content-hash prefixes in the template store, the Studio pack, every object proven, the row move dry-run only), then the row move under its own GO.
+
+## Release C (merged 2026-11-24; read at `origin/master` `535f3daa`, the merge of #103, site loader 0.10.0)
+
+The merged tree equals the release C head `431fc5b` first read here, compared file by file with the GitHub compare API on 2026-11-24.
+
+- **Site loader 0.10.0**: the seed plan's `examples` option (F539): `draft` seeds a new site's template examples as
+  drafts with no publish date, honoured by the worker path and the CLI loader alike, reported beside the plan's report,
+  never in it. VR_Secure_API's worker chooses it by its SSM lever (`vivreal-knowledge:vivreal-secure-api-knowledge`).
+- **The create-only stamp belongs to Secure** (F570 PB-L1, PB-L2): the loader never sends `emptyPhotoBands`;
+  VR_Secure_API's `createSites` stamps `'hide'` once, on a new customer site (never a demo tenant's), and a loader
+  re-run never touches it. The older create-only rule for `lifecycleState` is unchanged.
+- **Kit copy** (F373): every venue fact line starts with "Example text."; the four kits it moved are FL-10's republish.
+  The kit favicon letters follow Secure's two-letter rule, from the shared letter mark table pinned by sha256 (I3).
+- **The kit republish is stage, then rows** (FL-10, design `design-fl10-placement.md`): `vivreal-site-migrator:kit-stager`
+  stages the changed kits (new prefixes nothing reads, `stage.json` with one PIN line per kit); the portal batch pins
+  the staged hashes; the rows move in the deploy window, directly before the portal promote, under a row-move GO
+  quoting the PIN lines (`--row --apply --expect "<PIN line>"`, main thread); a Migrator record commit then copies the
+  rows into `publish-out/` and empties `PENDING_REPUBLISH`. The stager's gates accept the loader the worker runs when
+  the rows move and a known earlier stable pin with its open pin move named (its definition, Hard gates 3 and step 1b).
+- **No unit test reaches the network or real AWS** (F160).
 
 ## Live-site restyle tooling (the third mode)
 

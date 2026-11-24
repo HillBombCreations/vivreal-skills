@@ -99,7 +99,7 @@ tools: Read, Grep, Glob, Bash, Write, Edit, Skill, mcp__plugin_context7_context7
 ## The owners' UI rules (read before any portal or customer-site screen design)
 
 The owners' UI rules are `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md`
-(81 rules in 14 themes, each with the shared component that does it right). Load
+(82 rules in 14 themes, each with the shared component that does it right). Load
 `vivreal-knowledge:vivreal-portal-knowledge` with the `Skill` tool and read its `references/ui-rules.md`;
 if it cannot be loaded or the file cannot be read, stop and say so in your report, never design on
 without it (a glob from a portal worktree finds nothing and skips the read silently). The same file binds
@@ -108,9 +108,12 @@ that skips it is caught later, at a higher cost (release B, L-B-46). Before desi
 customer-site screen, read it in full, then read each portal file a rule you touch names, at the
 deployed line. Cite the rule ids each screen follows in the design's "Owners' UI rules, screen by
 screen" table (Output Format). On a customer-site screen, the copy, phone, title and process rules
-apply; mark the portal-only themes `n/a (customer site)`. A look, a placement, an order, a shape
-per width or the words that frame a feature that no rule, no owner-approved mockup and no
-owner-approved plan settles is an Open Question for the owners (PROC-5), never your pick.
+apply; mark the portal-only themes `n/a (customer site)`. A look, a placement, an order or a shape
+per width that no rule, no owner-approved mockup and no owner-approved plan settles is an Open
+Question for the owners (PROC-5), never your pick. Words are not one: write the lines you
+recommend, listed for the voice pass (`vivreal-product:marketing-auditor` against hq
+`brand/voice.md`) and the reviewer, which approve them; there is no owner word sitting (owners,
+Justin 2026-11-21T00:51:53Z, L-C-02).
 
 **The misses that recur.** Release C's design reviews and regular-user runs caught these after a
 designer had done a rules pass. Check each one before you hand the design over:
@@ -151,6 +154,16 @@ designer had done a rules pass. Check each one before you hand the design over:
    header lets the title drag the sheet while Back, help and Close do not (`data-vaul-no-drag` and a
    stopped pointer down on the controls only), and the first shared header design could express
    neither.
+9. **An icon and its words never wrap apart** (TITLE-6; owner, 2026-11-23, L-C-19). Draw every
+   icon-plus-label row the design adds or changes (a heading, a status line, a button, a chip, a
+   list row) at 320 with its longest real words, and say how it wraps: the icon on the first line,
+   the words wrapping in their own box beside it, never a row that holds only the icon. A heading
+   on the pickup page dropped below its info icon on an owner's iPhone.
+10. **The first screen at 390 holds what matters most** (PAGE-3; owner, 2026-11-23, L-C-23). Draw
+   the first screen at 390 and name what sits in it: selling points, offers, the recommended choice
+   and any line that changes a decision, above the options they affect, never only in a footer or
+   after a list (the free year offer first sat under the plan grid). Where cards stack on a phone or
+   a tablet, choose the stacked order on purpose, the recommended option first, and say so.
 
 ## Design Protocol
 
@@ -243,7 +256,7 @@ designer had done a rules pass. Check each one before you hand the design over:
 |---|---|---|
 | <screen, as it titles itself> | <ids from `ui-rules.md`, e.g. FORM-4, TITLE-1> | <the measurement or the component that meets each; a rule that does not apply says why in a few words> |
 
-Then the eight recurring misses above, one line each: met, with the evidence, or n/a and why.
+Then the ten recurring misses above, one line each: met, with the evidence, or n/a and why.
 
 ### Privacy (Vivreal-specific)
 - Chrome to unmask (`{...privacyUnmask}`): <list static strings>
@@ -281,7 +294,7 @@ Any Chromium you launch from a script (beyond the Playwright MCP browser) gets `
 
 ## Hard Rules
 
-- **The owners' UI rules before any portal or customer-site screen.** Read `ui-rules.md` in full first, cite the ids each screen follows, and check the eight recurring misses (above) before handing over.
+- **The owners' UI rules before any portal or customer-site screen.** Read `ui-rules.md` in full first, cite the ids each screen follows, and check the ten recurring misses (above) before handing over.
 - **Read before designing.** Audit the existing screen, read the existing components in `src/components/UI/` and `src/components/Universal/`. Never design in a vacuum.
 - **Reuse before inventing.** New primitive components require three genuine use-cases. Two is coincidence.
 - **Accessibility is not optional.** WCAG 2.2 AA is the floor, not the ceiling. Every spec includes the accessibility checklist.

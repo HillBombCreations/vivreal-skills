@@ -58,6 +58,8 @@
  *      Mongo ObjectId, an AWS or Atlas generated hostname or resource id, a citation of one
  *      machine's private Claude Code memory, and a dollar figure in the unit-economics skill or
  *      the finance-auditor.
+ *  16. A path into the owner's own hq checkout through the clone root variable, in any file and any
+ *      spelling (`owner-checkout`, F641). Hq paths name a kept worktree under `_wt/` instead.
  *
  * Rule 6 accepts an agent as a reference target (a dispatch names one), but fails a line
  * that LOADS an agent as a skill, since an agent has no skill entry to load.
@@ -930,6 +932,38 @@ function ruleMachinePaths(files) {
   }
 }
 
+// --------------------------------------------- rule 16: owner checkout paths (F641)
+// The owner's hq clone sits at the clone root as `vivreal-hq`; it is an owner's own checkout, and
+// three agents ran git there on one day because definitions named it (lesson L-C-01). Every path
+// into hq names a kept worktree, `${VIVREAL_REPOS}/_wt/<hq worktree>` (shared-standards, "Path
+// resolution"), so the root variable followed by that folder name fails in EVERY file of the repo,
+// in any spelling: braced or bare, PowerShell's `env:`, cmd's `%...%`, any slash or escaped
+// backslash. A folder name that continues with a dash (`vivreal-hq-archive`) is another folder.
+// The pattern is built from pieces, so this file never holds a string it refuses, and there is no
+// line marker that excuses one: a definition that needs the clone itself says "the hq clone".
+const OWNER_HQ_PATH = new RegExp(
+  '(?:' + BSL + '$' + BSL + '{?(?:env:)?VIVREAL_REPOS' + BSL + '}?|%VIVREAL_REPOS%)[/' + BSL + BSL + ']+' + 'vivreal' + '-hq(?!-)',
+);
+
+function ruleOwnerCheckoutPaths(files) {
+  for (const abs of files) {
+    const rel = norm(relative(ROOT, abs));
+    if (rel.startsWith('.agy/')) continue;
+    if (!/\.(md|json|js|cjs|mjs|ps1|sh|ya?ml|txt)$/.test(rel)) continue;
+    const lines = readFileSync(abs, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      if (!OWNER_HQ_PATH.test(line)) return;
+      fail(
+        'owner-checkout',
+        `${rel}:${i + 1}`,
+        'names the owner\'s own hq checkout through the clone root. Agents never run or read there: name a ' +
+          'kept hq worktree, `${VIVREAL_REPOS}/_wt/hq-main` for reads and hq tools, or the worktree the brief names ' +
+          'for writes (shared-standards, "Path resolution"; F641).',
+      );
+    });
+  }
+}
+
 // --------------------------------------------------- rule 12: version bump (R12)
 // An unbumped plugin does not reinstall, so a merged change never reaches a machine. Every
 // plugin directory changed since the merge base must carry a plugin.json version above the
@@ -1185,7 +1219,7 @@ const TOKEN_MESSAGES = {
   account: 'a named private account (the demo login or the QA account bundle). Write "the demo account" or "the QA account bundle".',
   prefix:
     'a Secrets Manager or SSM name prefix. Write <secret-prefix>/, <ssm-prefix>/ or <qa-secret-prefix>/; ' +
-    'each value is a key of ${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json.',
+    'each value is a key of ${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json.',
 };
 /** sha256 of a lowercased private token, to the kind of finding it raises. */
 const PRIVATE_TOKENS = new Map([
@@ -1381,6 +1415,7 @@ function runAll(files) {
   ruleRoutesResolve(files);
   ruleSkillSources(files);
   rulePublicLeaks(files);
+  ruleOwnerCheckoutPaths(files);
 }
 
 /**
@@ -1730,6 +1765,43 @@ function selfTest() {
         'const sample = \'D' + ':/sample\'; // machine-path-ok: a test fixture root\n',
     },
     {
+      rule: 'owner-checkout',
+      label: 'owner-checkout: the braced root variable',
+      path: join(tmp, 'agents', 'hq-braced.md'),
+      body:
+        '---\nname: hq-braced\ndescription: NO WRITE AND NO EDIT TOOL, it answers in its reply\ntools: Read\n---\n\n' +
+        'Read `${VIVREAL_REPOS}/' + 'vivreal' + '-hq' + '/docs/dev-docs/README.md` first.\n',
+    },
+    {
+      rule: 'owner-checkout',
+      label: 'owner-checkout: the bare root variable in a git -C',
+      path: join(tmp, 'skills', 'hq-bare', 'SKILL.md'),
+      body: '---\nname: hq-bare\ndescription: fixture\n---\n\n`git -C "$VIVREAL_REPOS/' + 'vivreal' + '-hq' + '" fetch origin`\n',
+    },
+    {
+      rule: 'owner-checkout',
+      label: 'owner-checkout: PowerShell env: and an escaped backslash in a hook',
+      path: join(tmp, 'hooks', 'hq-hook.cjs'),
+      body: "const a = '$env:VIVREAL_REPOS" + BSL + BSL + 'vivreal' + '-hq' + "';\n",
+    },
+    {
+      rule: 'owner-checkout',
+      label: 'owner-checkout: the folder name at the end of a line',
+      path: join(tmp, 'skills', 'hq-eol', 'SKILL.md'),
+      body: '---\nname: hq-eol\ndescription: fixture\n---\n\nRun it from ${VIVREAL_REPOS}/' + 'vivreal' + '-hq' + '\n',
+    },
+    {
+      rule: 'owner-checkout',
+      kind: 'clean',
+      label: 'owner-checkout: _wt/, _ops/ and a dash-continued name',
+      path: join(tmp, 'skills', 'hq-kept', 'SKILL.md'),
+      body:
+        '---\nname: hq-kept\ndescription: fixture\n---\n\n' +
+        'Read `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/README.md`, run `git -C "$VIVREAL_REPOS/_wt/hq-relplan" log`, ' +
+        'keep logs in `$VIVREAL_REPOS/_ops/release-c/`, and leave `$VIVREAL_REPOS/' + 'vivreal' + '-hq' + '-archive` alone. ' +
+        'The hq clone itself is the main thread\'s.\n',
+    },
+    {
       // Definition review blocker: the documented skill limit is 1,024 characters.
       rule: 'description-length',
       label: 'description-length: a skill over 1,024',
@@ -1982,7 +2054,7 @@ function selfTest() {
         'The word pre' + fakeHandle + 'post and `example/prod/main-api` are fine, and so is `<name>@gmail.com`. ' +
         // Paths that exist on every machine, an elided path, a URL and the repo variable name no one.
         'Git Bash turns `/aws/x` into `' + SYSTEM_DRIVE + '/Program Files/Git/aws/x`; import `' + SYSTEM_DRIVE + '/...` fails; see ' +
-        '`https://example.com/a` and `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md`.\n',
+        '`https://example.com/a` and `${VIVREAL_REPOS}/_wt/hq-main/CLAUDE.md`.\n',
     },
     {
       rule: 'public-leak',

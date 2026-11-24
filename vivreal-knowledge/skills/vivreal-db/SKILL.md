@@ -11,7 +11,7 @@ against a lowercased collection name returns zero rows against a database that h
 
 # Vivreal Multi-Tenant MongoDB: Safe Query & Linking Rules
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/data-and-tenancy.md`, `05-reference/connection-pooling.md`; `npm run docs:route -- "tenant-db"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `02-architecture/data-and-tenancy.md`, `05-reference/connection-pooling.md`; `npm run docs:route -- "tenant-db"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 > **Which database a tenant lives in is a different subject, and it has its own skill.** This file
 > is about querying once you are in the right database. For `group.dbKey`, `resolvePlacement`, the
@@ -38,7 +38,7 @@ NOT hard-coded. Source it, then connect. The string is the Atlas **cluster** URI
    store is fully deleted (2026-09-15, no recovery window). Do not read or resolve it.
    `vivreal-db-explorer`'s launcher (below) reads `<secret-prefix>/main-api`, which is a live
    writable services-user secret. Its full name is key `dbSecretId` of
-   `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json` (the optional `VIVREAL_DB_SECRET_ID`
+   `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json` (the optional `VIVREAL_DB_SECRET_ID`
    environment variable overrides it; nothing needs setting). To read the URL directly (requires AWS
    credentials for the account), run the db-explorer plugin's `scripts/cluster-url.cjs` with node: it
    resolves the name the same way and prints only `CLUSTER_URL`.
@@ -343,6 +343,28 @@ then query `collection_objects` by `collectionObj.refID` (string), same pattern 
   the site serves it as `siteDetails.values.timezone`; the site document's own value is only the
   fallback. **`groups.billing.source: 'comped'`** marks a comped paid-tier group: count paying
   customers by `stripeSubscriptionID`, never by tier.
+
+## Collections and indexes release C adds (live 2026-11-24; read at the deployed lines each repo's knowledge skill names)
+
+Main database (`Vivreal`) unless named:
+- `signup_name_holds` (VR_Main_API: a Register trip held for its business name, sealed, TTL 1800 s on `createdAt`).
+- `signup_step_counts` and `signup_funnel_events` (VR_Main_API owns both and their indexes; hourly page step totals
+  with no identity, and one row per sign-up request with `confirmedAt`; EventHandler adds a `site_live` row; kept 400
+  days; never an address, username, name, code or IP).
+- `signup_intents` gains the first sign-in's hold fields (`applyingAt`, `applyingId`, `createdGroupKey`,
+  `joinEntryId`, `awaitingName`).
+- `pickup_reminders` (VR_CMS_API: one row per order, unique on `{ provider, groupID, orderId }`, closed rows TTL 30
+  days) and `pickup_reminder_days` (`_id` `<groupID>:<shopDay>`, TTL 14 days).
+- `site_rebuilds` (EventHandler's rebuild sweeper record; its `refresh` is what VR_Secure_API's `fields=refresh` reads).
+- **Every tenant database**: `checkout_list_ticks` (VR_Client_API writes, native driver,
+  `{ _id: <Checkout Session id>, groupID, listId, createdAt }`, no personal data). **Its TTL index
+  `createdAt_ttl_30d` (30 days) is a release data step on EVERY tenant database**, never created by code: a tenant
+  database the step missed keeps its rows forever, so count the index across every tenant database after the step.
+  The Square coupon sweep index `SQUARE_COUPON_SWEEP_INDEX` is the same kind of one-shot, on each Square tenant
+  database.
+- Site documents gain `recentSaves` (the last 10 saves, `{ id, at }`) beside `lastSave`, `emptyPhotoBands` (`'hide'` on
+  a new customer site), and each page's `updatedAt` moves only when its content changes (the per-page save guard).
+- Subscriber rows from the checkout tick carry `consentSource: 'checkout'` and `consentRef` (schemas 1.71.0).
 
 ## Known drift (measured 2026-10-15; re-measure before relying on it)
 

@@ -352,4 +352,4 @@ interactive login at seed time if the outreach token is expired.
 
 ## Sequence copy
 
-When the brief asks for sequence copy, read `$VIVREAL_REPOS/vivreal-hq/docs/standards/process.md`, section Outreach, first: subjects are a curious personal question, never pitchy or bait; one generic copy per industry, wide net, general inboxes allowed; keep the owner's selling points as written; the opt-out line goes in the body. Draft only: no sequence goes live, no enrollment and no send without an owner's GO quoted in the dispatch.
+When the brief asks for sequence copy, read `$VIVREAL_REPOS/_wt/hq-main/docs/standards/process.md`, section Outreach, first: subjects are a curious personal question, never pitchy or bait; one generic copy per industry, wide net, general inboxes allowed; keep the owner's selling points as written; the opt-out line goes in the body. Draft only: no sequence goes live, no enrollment and no send without an owner's GO quoted in the dispatch.

@@ -71,14 +71,18 @@ section citation. Overall PASS only if every item is PASS.
    Load `vivreal-knowledge:vivreal-portal-knowledge` and read `references/ui-rules.md` in full; a
    screen in the design is the trigger, so this is never a speculative load. Every screen the
    design adds or changes has a row in its rules table naming the ids it follows, and every id
-   exists and fits. Then check the misses that recur, the eight in `vivreal-principal:designer`,
+   exists and fits. Then check the misses that recur, the ten in `vivreal-principal:designer`,
    "The owners' UI rules": a word that is untrue on any screen it shows or names one state two ways
    (COPY-3); what the installed app at 390 shows, not only the computer (PH-1); "tap" in words a
    computer shows (COPY-1); a look change with no owner-approved mockup (PROC-4); a title fit argued
    rather than measured with the real font, size and worst input (TITLE-1, TITLE-4, PROC-3), or a
    clamp over `leading-none` (from release C's design reviews, not a rule); a mockup drawn smaller than the real component; a control between a
    toggle and its input (FORM-4); a shared component that drops behaviour the hand-built one had
-   (the sheet header's drag). Each miss cites its rule id and the design line.
+   (the sheet header's drag); an icon-plus-label row not drawn at 320 with its longest words, or
+   one that can leave the icon on a row of its own (TITLE-6, L-C-19); a first screen at 390 not
+   drawn, or a selling point, an offer, the recommended choice or a decision-changing line below it
+   or after the options it affects, or stacked cards whose order nobody chose (PAGE-3, L-C-23).
+   Each miss cites its rule id and the design line.
 5. **Edge cases / failure modes**, the plan addresses empty/null inputs, concurrency, partial failure, and rollback where applicable.
 6. **Testability**, each task ends with a concrete, checkable verification; no "looks done" steps.
 7. **No placeholders**, no TBD/TODO, no "similar to Task N", no steps that say what without how.
@@ -89,6 +93,8 @@ section citation. Overall PASS only if every item is PASS.
    counted 8 selling kits from authoring overlays, its reviewer counted 11, and 7 shipped. Re-count
    it yourself the same way before you agree or disagree.
 8. **One deployment per repo per release** (release plans and runbooks; hq `docs/standards/process.md`, P-one-promote, amended 2026-11-18). The plan's "Deployments per repo" table (`vivreal-workflow:vivreal-writing-plans`) exists and says at most 1 for every repo, and no step deploys a repo a second time: no runtime tier or day gate between repos, no features-then-runtime split, no follow-up promote to flip an alarm or a mode (a soak that must stay is a parameter or data flip after the one deploy). Before any deployment the plan walks the whole batch on the local stack, on the runtime it deploys on, and loops: anything that makes a local walk row fail (a broken flow, wrong behaviour, a defect against what the batch promises) is fixed in that repo's batch, with a delta review, and the walk runs again, until it passes; a note or nit that fails no row goes to the backlog (P-ship-first). Also, parameter and data flips, one-shots such as indexes and kits, package publishes under P-packages and docs merges are not deployments, and a repo whose several stacks deploy back to back in one step counts as one deployment. FAIL a plan that stages any repo across more than one deployment unless the row cites an owner exception recorded in hq `decisions.md`; only release B's deployments already made before the owners' decision (hq `decisions.md`, 2026-11-18T16:48:03Z) are exempt without one. N-A only for a plan that deploys nothing.
+8a. **Help and marketing in the release plan** (owner rule HELP-MKT-IN-PLAN, Justin 2026-11-24T15:00:51Z, amending P-post-release-help). A release plan carries the section "Help and marketing this release makes untrue or adds" (`vivreal-workflow:vivreal-writing-plans`): one row per help page and per vivreal.io marketing page, each with the deploy its publish waits for, drafted during the release. FAIL a release plan without it, or one that leaves a page's drafting to the post-release list. Spot-check it: search one changed feature's words on both sites and FAIL a page the section misses.
+8b. **No alarm pages at its own creation** (release C, L-C-27). For every new alarm in a plan, runbook or template, read its `TreatMissingData` and its actions: an absence alarm (did-not-run, no data) that reads missing data as breaching with actions on FAILs, unless its actions start off and a flip after its first datapoint is planned.
 
 Verdict lines follow the Output contract below.
 
@@ -146,6 +152,28 @@ hand-built twin, nothing a gap names hand-rolled), the coder's UI pre-done check
 browser or a screenshot opened, PROC-3, never a class name), and the misses that recur (artifact
 rubric 4a) are absent. FAIL each miss with its rule id and `file:line`. The approved design's rules
 table is the spec; a screen that departs from it is a FAIL unless the PR reports the deviation.
+Two reads every changed screen gets, from the PR's measured evidence or your own: every
+icon-plus-label row the diff adds or touches at 320 with its longest real words, FAIL an orphaned
+icon (TITLE-6, L-C-19); and the first screen at 390, FAIL a selling point, an offer, the recommended
+choice or a decision-changing line that sits below it or after the options it affects, or a DOM
+order that differs from the visual order (PAGE-3, L-C-23).
+
+### 2b. Approved words, built verbatim (every diff that carries owner-facing words)
+Release C's walk found an approved line never built, with no record (D-P7-1), and another narrowed
+by a builder with no decision (D-P7-2). N-A when the diff carries no owner-facing words.
+**How to verify:** take the approved line list for the batch (the plan's words table, the voice
+pass lines, the release's word file) and diff it against the build: every line the batch owns is
+in the diff word for word, or the PR body lists it as narrowed or left out with the decision that
+allows it (an owner's answer or the voice pass, cited). FAIL a missing or changed line with no
+such entry, quoting the approved line and `file:line`.
+
+### 2c. Whose clock (every time or date an owner or a customer reads)
+A time shown on UTC's clock reached the walk (D-P13-2). N-A when the diff shows no time or date.
+**How to verify:** every time or date the diff shows to an owner or a customer names where its
+zone comes from (the business time zone, `vivreal-knowledge:vivreal-product-rules` rule 21), never
+the server's or the device's clock; a reply that carries a time carries the zone on every branch,
+refusals and errors included. FAIL each branch that formats a time with no zone source, with
+`file:line`.
 
 ### 3. Type safety
 No new `any` types. No `as` casts without inline comment justification. Generics used appropriately.

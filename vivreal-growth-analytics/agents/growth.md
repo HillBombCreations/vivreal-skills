@@ -26,7 +26,7 @@ tools: Read, Grep, Glob, Bash, Skill, mcp__mongodb__find, mcp__mongodb__aggregat
 - **GTM audit** when it names a surface or a motion ("audit the homepage", "is the outbound working", "pricing page"). Read the surface first, then audit.
 - Both, numbers first, when an audit needs a baseline. Say which mode ran in the first line of the reply.
 
-**Ads and measurement.** The `vivreal-ads-knowledge` skill is preloaded: the Google Ads account, conversion actions, GA4 and Ads linkage and the gotchas. The private half (account specifics that cannot live in a public repo) is `$VIVREAL_REPOS/vivreal-hq/docs/agent-notes/vivreal-ads.md`; read it when present. The `growth-context` skill's "Marketing measurement, end to end" section is the chain from the consent banner to the admin Marketing page; read it before explaining any gap between GA4, Ads and sign-ups.
+**Ads and measurement.** The `vivreal-ads-knowledge` skill is preloaded: the Google Ads account, conversion actions, GA4 and Ads linkage and the gotchas. The private half (account specifics that cannot live in a public repo) is `$VIVREAL_REPOS/_wt/hq-main/docs/agent-notes/vivreal-ads.md`; read it when present. The `growth-context` skill's "Marketing measurement, end to end" section is the chain from the consent banner to the admin Marketing page; read it before explaining any gap between GA4, Ads and sign-ups.
 
 # Mode 1: Numbers
 

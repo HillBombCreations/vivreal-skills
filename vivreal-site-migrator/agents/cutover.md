@@ -83,7 +83,14 @@ db.groups.updateOne({ _id: ObjectId('<groupId>'), dbKey: '<old>' },
 
 **Verify after every dbKey flip, this is a required step, not a suggestion:**
 ```bash
-cd ${VIVREAL_REPOS}/VR_Secure_API && node scripts/audit-group-key.js
+# Secure's kept tool worktree at its deployed line: the one-off clone form makes it once
+# (shared-standards, "Path resolution"); everything else runs in the worktree, never the clone.
+W="$VIVREAL_REPOS/_wt/VR_Secure_API-ops"
+git -C "$VIVREAL_REPOS/VR_Secure_API" fetch origin
+cd "$VIVREAL_REPOS/_wt" && { test -e "$W/.git" || git -C "$VIVREAL_REPOS/VR_Secure_API" worktree add --detach "$W" origin/stable; }
+cd "$W" && test -z "$(git status --porcelain)" && git checkout --detach origin/stable
+cd "$W" && { test -e .env || cp "$VIVREAL_REPOS/VR_Secure_API/.env" .env; } && npm ci
+cd "$W" && node scripts/audit-group-key.js
 ```
 It is read-only and exits non-zero on any finding.
 
@@ -100,10 +107,15 @@ their group from day one, never "built in ours, moved later." The shared
 migration group (`pod_01` `<_id: look up group key vivreal>`, read from the group doc
 2026-09-27, key `vivreal`, tier `pro`) is for **internal test migrations only** (and carries the collision hazard below).
 
-1. **Provision** (ops CLI in VR_Main_API; its `.env` carries the prod env):
+1. **Provision** (ops CLI in VR_Main_API, run in its kept tool worktree with the clone's `.env` copied in; it carries the prod env):
    ```bash
-   cd ${VIVREAL_REPOS}/VR_Main_API
-   node src/hbcreations/scripts/provisionDemoAccount.js \
+   # Main's kept tool worktree at its deployed line, made the same way as Secure's above
+   W="$VIVREAL_REPOS/_wt/VR_Main_API-ops"
+   git -C "$VIVREAL_REPOS/VR_Main_API" fetch origin
+   cd "$VIVREAL_REPOS/_wt" && { test -e "$W/.git" || git -C "$VIVREAL_REPOS/VR_Main_API" worktree add --detach "$W" origin/stable; }
+   cd "$W" && test -z "$(git status --porcelain)" && git checkout --detach origin/stable
+   cd "$W" && { test -e .env || cp "$VIVREAL_REPOS/VR_Main_API/.env" .env; } && npm ci
+   cd "$W" && node src/hbcreations/scripts/provisionDemoAccount.js \
      --email <prospect-email> --first <First> --last <Last> --group-name "<Brand Name>"
    ```
    - Use the **SAME `<Brand Name>` as `assemble --group`**, both derive the same
@@ -268,11 +280,11 @@ will NOT reach `live`. Two real failure modes seen in prod (2026-07-10):
    `rm package-lock.json` (portal has a tiptap peer-skew trap).
 2. **`spawn ENOMEM` at the "Running TypeScript" step**, the 8 GiB Standard build box
    is borderline for a large Next.js build: the webpack compile succeeds, then forking
-   `tsc` OOMs. Usually **transient**, retry: `aws amplify start-job --app-id <id>
+   `tsc` OOMs. Usually **transient**, retry: `cd captures && aws amplify start-job --app-id <id>
    --branch-name <br> --job-type RETRY --job-id <n>`. If it recurs, cap Node's heap
    in `amplify.yml` (`NODE_OPTIONS="--max-old-space-size=6144" npm run build`).
 
-Watch/diagnose a build: `aws amplify get-job --app-id <id> --branch-name <br>
+Watch/diagnose a build: `cd captures && aws amplify get-job --app-id <id> --branch-name <br>
 --job-id <n>` → the BUILD step's `logUrl` (curl it). Confirm each customer build
 went green, a "sync succeeded" workflow only means the branch was pushed, NOT that
 its Amplify build passed.
@@ -286,7 +298,7 @@ its Amplify build passed.
 4. Content edits after deploy: the site caches `siteDetails` for the app's own
    `SITE_CACHE_TTL_SECONDS` (Templates `src/lib/api/client.ts` defaults it to 60; the four apps
    read on 2026-10-14 set 300; read it with
-   `aws amplify get-app --app-id <id> --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'`,
+   `cd captures && aws amplify get-app --app-id <id> --query 'app.environmentVariables.SITE_CACHE_TTL_SECONDS'`,
    then the same on the branch). A Studio save fires the revalidate webhook by itself and lands in
    seconds; a write behind the product (this load included) waits out the TTL. To reflect a
    change now, fire
@@ -297,9 +309,9 @@ its Amplify build passed.
    the BRANCH level, not the app level**, an app-level read returns the literal
    string `None`, which HMACs cleanly into a 401 "Invalid signature" that looks
    like a signing bug. Read it from the branch, projected to that one field and
-   into a variable, never printed:
-   `S=$(aws amplify get-branch --app-id <id> --branch-name stable --query 'branch.environmentVariables.REVALIDATE_WEBHOOK_SECRET' --output text)`,
-   then test it without printing it: `[ -n "$S" ] && [ "$S" != "None" ] && echo set || echo not-set`.
+   into a variable, never printed, and test it without printing it in the same command (a variable
+   does not outlive the command):
+   `cd captures && S=$(aws amplify get-branch --app-id <id> --branch-name stable --query 'branch.environmentVariables.REVALIDATE_WEBHOOK_SECRET' --output text) && { [ -n "$S" ] && [ "$S" != "None" ] && echo set || echo not-set; }`.
    Compare against the literal `None`, never the length: `None` is four characters, so a length
    check reads an unset secret as set. If it is not set there, try the same projection on
    `get-app --query 'app.environmentVariables.REVALIDATE_WEBHOOK_SECRET'`.
@@ -362,8 +374,8 @@ its Amplify build passed.
    (the `API_KEY` read with a `--query` naming only that value, into a variable, never printed;
    every `--output text` through `tr -d '\r'`); never commit it, it holds the prospect's content.
    Read the portal's reach at a named ref
-   (`git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" show <ref>:src/data/generated/blank-buildable-reach.json`),
-   then from vivreal-hq run
+   (`git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show <ref>:src/data/generated/blank-buildable-reach.json`),
+   then from the kept hq worktree (`$VIVREAL_REPOS/_wt/hq-main`) run
    `node packages/fleet-ops/blank-buildable/cli.js --sites <snapshot dir> --reach <reach.json> --by-site`.
    Required: exit 0 with the control, cross-check and gap-control lines printed. Exit 1 (each
    `NOT BUILDABLE` or `DEAD` item listed) goes back to the coordinator with the item list, keys

@@ -5,7 +5,7 @@ description: 'Use when working in VR_Outreach_API, Vivreal''s email-outreach bac
 
 # VR_Outreach_API: knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U26-outreach-and-campaigns.md`; `npm run docs:route -- "outreach"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U26-outreach-and-campaigns.md`; `npm run docs:route -- "outreach"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
@@ -16,6 +16,26 @@ Last synced: 2026-10-28 against `origin/main` at `3878d27` (a merge here is the 
 The Vivreal Outreach Sequencer backend: drip email sequences, reusable contacts + first-class companies, per-contact enrollments, cold-call + social-touch logging, public booking/scheduling, Gmail history (admin-only), SES send + inbound-reply routing with bounce/opt-out detection, suppressions, web-push notifications. Maps to `NEXT_PUBLIC_OUTREACH_URL` (custom domain `outreach.vivreal.io`, mapped out of band, NOT in `template.yaml`). Express + serverless-express on Lambda (`nodejs24.x` in `template.yaml` since release B, #109 live 2026-11-17, all five functions, each role with the workload permissions boundary; AWS SAM, webpack). Connects **directly** to tenant Mongo (does NOT proxy through VR_CMS_API). Its CRM client is vivreal-hq `packages/admin-app` since v7; the portal reaches only the public booking, demo-link and studio-demo routes through `src/app/api/proxy/outreach/*`.
 
 Authoritative sources: `${VIVREAL_REPOS}/VR_Outreach_API/README.md` (full route table) + `docs/` + `template.yaml`, there is NO `CLAUDE.md` in this repo. For deeper read-only analysis with citations, dispatch the `outreach-api` expert agent. For driving outreach via MCP, see `vivreal-outreach-mcp-knowledge`.
+
+## Release C (live 2026-11-24; read at the deployed `origin/main` `0a782e97`, the merge of #110)
+
+The deployed tree equals the approved head `6b5be1b` first read here, compared file by file with the GitHub compare API on 2026-11-24. The row record is
+`docs/release-c/progress.md` there.
+
+- **The connection retune** (F222, SW-C14; design `design-f222-concurrency.md` section 10): `ApiHandler` reserves 6
+  concurrent executions (was 4), `cronTick` and `PublicApiHandler` stay 2, and every comment that sized a reservation
+  against "a 500 connection cap" is corrected (the cluster's real limits are `vivreal-infra:vivreal-atlas-topology`'s).
+  The one 500 left is the enroll-by-filter request cap in `src/api/routes/sequences.js`, which sizes no reservation.
+  After the deploy `ApiHandler` must read 6 (L-OUT-1). The hq connection inventory (F313's gaps are hq fleet-ops
+  functions, not this repo) regenerates its Outreach row after the deploy.
+- **Each Lambda's init waits for its `service.started` line** (PRL-F374): a generated `dist/entry/<name>.mjs` per
+  bundle awaits `startLineFlushed()` at top level and the five `Handler:` lines name `entry/<name>.handler`, so a
+  start-up that is never served still writes its line (L-OUT-2 checks it for 7 days). The permissions boundary test
+  reads the real SAM expansion (`scripts/expand-sam-template.py`).
+- **No unit test reaches the network** (F160): `tests/setupNetworkContainment.js`.
+- **Unchanged in release C**: the studio demo visit routes (`studioDemoVisits.js`, the demo link, the hot leads fold)
+  and the booking and sequence routes. The sign-up funnel report moved to our own counters in VR_Main_API and
+  VR_Secure_API (F469); nothing here reads it.
 
 ## Release B (live 2026-11-17, read at `origin/main` `0f4fbbd`)
 

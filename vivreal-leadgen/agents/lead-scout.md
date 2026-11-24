@@ -157,11 +157,11 @@ companyName,domain,website,area,city,state,phone,platform,track,tier,seedable,em
 4. **Honesty floor.** Every named person, email, and fact comes from a source you actually saw.
    Unconfirmed → `not found` / `unknown`, never a guess. `seedable`/`emailReady` must be truthful,
    the seeder enforces the same bar (`isSeedableContact`), so a padded row just becomes company-only.
-5. **Write the CSV**, then import it:
+5. **Write the CSV**, then import it, from `packages/leadgen` of the hq clone:
    ```
-   node commands/import-leads.js Data/exports/<campaign>-leads-<date>.csv \
+   cd packages/leadgen && node commands/import-leads.js Data/exports/<campaign>-leads-<date>.csv \
      --campaign <name> --tags <tag1>,<tag2> --dry-run   # verify parse/mapping first
-   node commands/import-leads.js Data/exports/<campaign>-leads-<date>.csv \
+   cd packages/leadgen && node commands/import-leads.js Data/exports/<campaign>-leads-<date>.csv \
      --campaign <name> --tags <tag1>,<tag2>             # real upsert
    ```
    Report the import counts (created / existing / no-website / with-contact) and the CSV path.

@@ -4,7 +4,7 @@ Moved out of `SKILL.md` ("Testing rules") on 2026-11-18 so that file stays a map
 F476 6). Every rule below is binding exactly as it was; agents that cite "shared-standards, Testing
 rules" read it here.
 
-Contents, in order: the e2e harness (fixtures, real signed ctx cookies, raw upstream mocks, the
+Contents, in order: the test guard rule; the e2e harness (fixtures, real signed ctx cookies, raw upstream mocks, the
 coverage map); gates that cannot fail; the test inventory; the red proof (forms (a), (b), (c) and the
 `Red:` line); real code paths, tests defending a defect, faked layers; fixtures recorded from real
 answers; mocks in the deployed shape; copy checks on the screen that shows the copy; inert fixes;
@@ -12,6 +12,28 @@ honest assertions; a green suite is not a build; vacuous controls; child output 
 lint, the hook gates, the portal release-head check and the one full run; targeted runs under a
 timeout.
 
+- **The test guard rule (F160, SW-C19): no unit test reaches real AWS or the network.** Every
+  repository's test bootstrap, the file its runner loads before any test (a mocha `--require`, a
+  vitest `setupFiles` entry, a `test/helpers/setupEnv.js`), does two things before the first test
+  file loads:
+  1. **Fake AWS credentials.** It sets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and
+     `AWS_REGION` to test values and deletes `AWS_PROFILE` and `AWS_SESSION_TOKEN`, and an
+     unstubbed AWS SDK v3 `send` throws, so a client a test forgot to stub can never sign with the
+     machine's own credentials.
+  2. **Every outbound connection blocked except loopback.** `fetch` (undici), `http` and `https`
+     `request` and `get`, `tls.connect`, and `net.connect` (with `net.Socket.prototype.connect`)
+     refuse any host but `localhost`, `127.0.0.1` and `::1` (an in-memory MongoDB, a local mock).
+     A refused call throws a named error and is also recorded, and the run fails on any record,
+     so a test that catches the error still fails the run.
+
+  The guard lives in the bootstrap, never in a `beforeEach` another hook can replace: a CMS run
+  reached a payment provider's real sandbox because two hooks reset `fetch` (2026-11-06), and an
+  EventHandler unit test with an unstubbed Amplify client ran on the machine's real credentials
+  and changed a live customer's site settings (2026-11-05, reverted under an owner GO). Its own
+  tests are a planted-request REFUSE test per transport (fetch, http, https, tls, net: the call is
+  refused and recorded) and an ALLOW test of a loopback connection, red at the base commit like any
+  guard. The reference is VR_CMS_API `test/helpers/setupEnv.js` at its deployed line; read it
+  there, and name the guard's error the way that repository already does.
 - All E2E tests in `e2e/`. Import from `e2e/fixtures/global-setup` or `e2e/fixtures/auth-setup`. NEVER import from `@playwright/test` directly.
 - **Logged-in specs authenticate with REAL signed ctx cookies**, `e2e/fixtures/ctx.ts` mints HMAC-SHA256 `active_ctx`/`user_ctx`/`csrf_token` with a test `CTX_SECRET`, run against a dedicated test dev server on port **3100** (`NEXT_DIST_DIR=.next-test` isolation) with all backend env vars pointed at a **mock upstream on port 4600** (`e2e/mock-upstream/`). Because the signature is genuinely valid, `verifyCtxEdge()` and CSRF pass with zero source bypasses, `serverFetchDirect()` calls from server components now genuinely reach the mock upstream too, not just browser-side `page.route()` intercepts.
 - **Mock-upstream handlers return RAW upstream shapes**, not the portal's `{success,data,error}` envelope, the proxy route applies the envelope on top, same as it does against the real backends.
@@ -77,7 +99,8 @@ timeout.
 - **A faked layer hides the failure it fakes** (v7, 2026-10-19/20). A stubbed Mongoose model never runs the schema cast, so a write on an undeclared path passes; a mocked network never runs the next hop's validator; a test of what is DECLARED (a `@font-face`) passes while the element resolves to something else; a spy that matches any call passes on broken code. So: one test of any write runs through the REAL schema model; when a change alters what a client sends, one test goes through the real next hop with only the far upstream mocked; assert what renders or resolves; assert the exact call. Cases and rules: `verification-discipline`, "A faked layer hides exactly the failure it fakes".
 - **A test that reads a sibling repository reads a pinned worktree of it, never a shared checkout
   it moves** (release B, L-B-23). A builder that finds `${VIVREAL_REPOS}/<sibling>` behind makes
-  `git -C "$VIVREAL_REPOS/<sibling>" worktree add --detach <scratch> origin/<line>` and points the
+  `git -C "$VIVREAL_REPOS/<sibling>" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/<line>` (the
+  one-off clone form the owner-checkout guard allows; nothing else runs in the clone) and points the
   test at it through the repo's sibling override (the portal's `VIVREAL_CLIENT_API` and
   `VIVREAL_TEMPLATES`), or reports the stale sibling; it never pulls, fast-forwards or switches the
   shared checkout, which another agent or an owner may be using (P-shared-checkout). A sibling test
@@ -122,6 +145,14 @@ timeout.
 - No `.only`, no `sleep()`, use `waitFor()`.
 - **Repo lint must stay 0 errors / 0 warnings.** No new `eslint-disable` without a justification comment; `react-hooks/*` is scoped off `e2e/**` only (Playwright's `use(page)` false-positive), don't widen that scope elsewhere.
 - **No repository in this fleet has a pull-request test gate.** GitHub Actions does run, in most repos, but only to cut, promote, backport, roll back or deploy. Husky pre-commit (lint-staged plus vitest plus coverage-map) and pre-push (repo eslint 0 errors 0 warnings, both tsc configs, vitest, coverage-map `--strict`, e2e smoke) are the ONLY things that read your code before it lands. Never bypass with `--no-verify`, except inside a NAMED portal-coder mode that authorises it (PARALLEL, or FOLLOWUP on a branch that already passed the full gate) or a dispatch that says so. **A local-only gate is also a gate nobody else runs**, so a hook that silently skips on your machine skips for the whole fleet.
+- **Prove the hooks are installed before you rely on them** (release C, L-C-04; F520). Husky 9
+  runs hooks from its generated folder `.husky/_`, named by `core.hooksPath`; the scripts in
+  `.husky/` itself carry no shebang and no execute bit, so a hooks path of `.husky` runs nothing.
+  A `git clean` that deletes untracked or ignored files deletes `.husky/_` while the config still
+  names it, and from then on every hook is skipped with no warning; a fresh clone has no hooks at
+  all (an EventHandler clone pushed with no pre-push gate in release B). Before a push you rely on
+  a hook for: `npx husky`, then `git config core.hooksPath .husky/_`, then `ls -l .husky/_/pre-push`
+  (present and executable), and read the push log for the hook's own first line.
 - **Portal release-head check (owner, 2026-10-10): no full e2e, walk instead.** Before a portal
   release, the check is eslint, BOTH `tsc` configs, and every unit test file the release added
   or changed, all green. Do not schedule the full e2e suite, the full vitest run or the

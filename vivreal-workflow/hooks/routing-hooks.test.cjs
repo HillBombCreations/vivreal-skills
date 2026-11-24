@@ -271,7 +271,7 @@ test('session hook prints the portal routes inside the portal', () => {
   assert.match(r.stdout, /Dispatch template: .*dispatch-template\.md/);
   assert.match(
     r.stdout,
-    /^Owner rules: printed by the shared-rules hook; the book is \$VIVREAL_REPOS\/vivreal-hq\/docs\/standards\/process\.md$/m,
+    /^Owner rules: printed by the shared-rules hook; the book is \$VIVREAL_REPOS\/_wt\/hq-main\/docs\/standards\/process\.md$/m,
   );
   assert.match(r.stdout, /Doctor: VIVREAL_REPOS set \(override\), NODE_AUTH_TOKEN MISSING/);
   assert.doesNotMatch(r.stdout, /tutorial-maker/, 'an hq-only route leaked into the portal block');

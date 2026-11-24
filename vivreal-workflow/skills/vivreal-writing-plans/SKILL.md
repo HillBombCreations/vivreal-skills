@@ -42,6 +42,13 @@ A plan that touches more than one repo carries both of these, so no builder wait
   name, fail on anything else). Sequence one repo after another only on a real runtime
   dependency (a published package, a deployed API), never because a test reads the other
   checkout: the open-backlog plan held EventHandler behind the portal for words already approved.
+- **Words approved without an owner sitting (owners, Justin 2026-11-21T00:51:53Z, L-C-02).** A plan
+  never schedules an owner word sitting and never holds a build on the owners' choice of words. Each owner-facing line in
+  the shared values table names its approval: a voice pass against hq `brand/voice.md`
+  (`vivreal-product:marketing-auditor`) plus the reviewer's pass of the design or batch that
+  carries it, and the plan lists that voice pass as a step with the lines it covers. Where a line
+  offers two choices, the recommended one is the plan's value. Owners still decide features,
+  behaviour, looks and mockups.
 - **Package consumer list (owner 2026-11-11).** A plan that publishes a shared
   `@hillbombcreations/*` package lists EVERY consumer from a fleet pin sweep made while writing
   the plan, with the version each moves to and the PR that moves it. Naming only Templates and
@@ -74,7 +81,10 @@ row's count is at most 1:
   rate limit's mode ships in the one deploy behind a parameter or data value; the plan's later step
   is the flip, with its GO and its undo.
 - **An alarm is created with its actions on** when nothing can breach before its soak ends; an alarm
-  that could page at its own creation is shaped so it cannot, inside the one deployment.
+  that could page at its own creation is shaped so it cannot, inside the one deployment. An absence
+  alarm (did-not-run, no data) gets `TreatMissingData: notBreaching`, or actions off with a flip after
+  its first datapoint: release C's new CMS did-not-run alarm breached at creation and paged the owners
+  (L-C-27). The plan lists every new alarm with its missing-data setting.
 - **One row per repo.** Every stack, app and dated step of a repo is in its one row. Splitting a
   repo across rows (an app or a stack in a row of its own, so each reads 1 or 0) hides a count of 2:
   a release B final plan did that for one repo and its review failed it (NEW CLASS).
@@ -95,6 +105,63 @@ row's count is at most 1:
   the repository root (`CodeUri: ../`) can exceed the Lambda unzipped-size cap once coverage output or
   dev dependencies ride along; the step names the workflow's prune and size check, and the last
   deploy's size, or adds them first.
+- **An enable-then-dispatch step waits for the enable** (release C, L-C-26): enable, read the state
+  back as `active`, wait about 60 s, dispatch, confirm a job started within minutes; a run queued
+  with no job is a STOP, never a second dispatch. Two promotes dispatched a second after the enable
+  ghosted (queued forever, 0 jobs).
+- **Each row names the shared lock it takes, held for that row only** (L-C-29). A lane that held a QA
+  business's lock across a wait on the other lane's proof made a lock cycle between the lanes.
+- **A check that compares before and after names its before-capture as its own row ahead of the
+  deploy**, owned by a lane (L-C-35); without it the check can only be VOID.
+- **Lanes are dispatched with bounded row lists**, the deploys or the checks after them, never both,
+  each row ending in a `HANDOFF` line (L-C-33); and the deploy day holds the machine's keep-awake
+  from the first deploy to the last lane's end (L-C-28; `vivreal-workflow:release-conductor`,
+  `references/deploy-day.md`).
+
+## Help and marketing this release makes untrue or adds (REQUIRED in a release plan)
+
+The owners' rule HELP-MKT-IN-PLAN (Justin, 2026-11-24T15:00:51Z, amending P-post-release-help): "The
+help and marketing are suppsoed to be apart of the rlease planning". A release plan carries this
+section, one row per page, and a plan without it fails review (the plan's auto-review and
+`vivreal-principal:reviewer`):
+
+| # | Page (help slug or vivreal.io path) | Kind (help or marketing; update or new) | What the release makes untrue or adds | Plan rows | Publishes after (the deploy that changes the screens it describes) |
+|---|---|---|---|---|---|
+
+- **Both sites, each page its own row.** Every help page and every vivreal.io marketing page (home,
+  pricing, features, the product and industry pages, comparisons, the connect-your-AI page) whose
+  words a change makes untrue, and every new page a new feature needs. Find them by searching both
+  sites for the feature's words, as `vivreal-content:help-page-producer` does, and say how you
+  searched; "none" is a row with that search and its positive control.
+- **Drafted during the release, published after the deploy.** Each row is drafted against the
+  approved head by `vivreal-content:help-page-producer`, voice-passed by
+  `vivreal-product:marketing-auditor` and reviewed while the release is built and walked, in the
+  release's free slots, as the dev docs and skills passes are; only its publish waits for the deploy
+  named in the last column. Release C planned its help pages only after the deploy and drafted 2 of
+  its 41 pages during the release (L-C-36).
+
+## The walk plan and its fix loop (REQUIRED in a release plan)
+
+Every change maps to a walk row before the walk GO (P-walk-plan). Release C added these:
+
+- **The fix loop is WALK-THEN-FIX** (P-local-validate; release C lessons L-C-21 and L-C-06). The
+  plan's "what passes, and what reruns after a fix" section says: one walker run walks every lane in
+  plan order, pausing only at setup points (a stack restart, a tier flip, an owner action); it walks
+  every row first, on the stack as it stands, filing each defect and going on; fixes are routed,
+  built and reviewed in parallel; after the last row every approved fix moves into the stack
+  together, then one walk over every failed row (and the rows each fix's rerun list names), repeated
+  until every row passes. Never "re-walked at the next lane boundary" or a head move per fix.
+- **The NW list is one table** the walk briefs copy word for word: each not-walkable row with the
+  reason and its named proof. A row that needs a Sentry event (the local portal sends none) or a
+  key-mode Stripe event (`stripe listen --forward-connect-to` forwards only connected accounts'
+  events) is on it, or has a harness path, before the walk GO. So is a row whose list read comes from
+  the portal's own cache, unless it starts from a fresh profile.
+- **Each changed screen's rules row** (`vivreal-knowledge:vivreal-portal-knowledge`,
+  `references/ui-rules.md`) checks its icon-plus-label rows at 320 and 390 with the longest real
+  words, REFUSE: a row that holds only an icon (TITLE-6, L-C-19); and names each first-screen piece
+  (a selling point, an offer, the recommended choice, a decision-changing line), measured inside the
+  first screen at 390 and above the options it affects, REFUSE: below the fold or after the list,
+  with the stacked order the design chose (PAGE-3, L-C-23).
 
 ## Plan traps the release B reviews found (walk them before the auto-review)
 
@@ -213,9 +280,10 @@ prompt: Review the plan at docs/projects/<slug>/plan.md in ARTIFACT mode against
   vs the spec/research, scope correctness (no creep, nothing missing), risk and
   blast-radius coverage, convention fit, missing edge cases / failure modes,
   testability of the plan, and every item of the vivreal-writing-plans skill's
-  "Deployments per repo", "Runbook commands and STOP conditions" and "Plan traps"
-  lists (FAIL a plan that deploys a repo more than once in the release unless an owner
-  exception is recorded in hq decisions.md). Verdict PASS or
+  "Deployments per repo", "Runbook commands and STOP conditions", "Help and marketing
+  this release makes untrue or adds" and "Plan traps" lists (FAIL a plan that deploys a
+  repo more than once in the release unless an owner exception is recorded in hq
+  decisions.md, and a release plan without the help and marketing section). Verdict PASS or
   FAIL with section citations. Write to
   docs/projects/<slug>/plan-review-N.md.
 ```

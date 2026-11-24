@@ -1,13 +1,13 @@
 ---
 name: vivreal-brand-voice
-description: 'Use when writing, reviewing, or critiquing Vivreal marketing copy, messaging, or brand content, landing pages, pricing copy, social posts, cold email, ad copy, onboarding/in-app copy, taglines, or any customer-facing words. Teaches the Vivreal voice (the "Approachable Guide" for non-technical SMB founders), the promise ("Create once. Publish everywhere." + easy, phone-first), the hard-banned words/patterns, the framing rules + honesty floor, the competitive frame, an on-voice audit rubric, channel best-practices, and AI prompt scaffolding. Triggers on: brand voice, tone, copy, messaging, marketing content, landing page copy, pricing copy, cold email, social post, ad copy, tagline, headline, value prop, positioning, on-voice, jargon, CTA, social proof, founder-led. The `marketing-auditor` agent grounds in this skill; the content and leadgen agents in vivreal-hq PRODUCE to this voice. Canonical source: ${VIVREAL_REPOS}/vivreal-hq/brand/voice.md (vivreal-content was merged into vivreal-hq on 2026-08-03).'
+description: 'Use when writing, reviewing, or critiquing Vivreal marketing copy, messaging, or brand content, landing pages, pricing copy, social posts, cold email, ad copy, onboarding/in-app copy, taglines, or any customer-facing words. Teaches the Vivreal voice (the "Approachable Guide" for non-technical SMB founders), the promise ("Create once. Publish everywhere." + easy, phone-first), the hard-banned words/patterns, the framing rules + honesty floor, the competitive frame, an on-voice audit rubric, channel best-practices, and AI prompt scaffolding. Triggers on: brand voice, tone, copy, messaging, marketing content, landing page copy, pricing copy, cold email, social post, ad copy, tagline, headline, value prop, positioning, on-voice, jargon, CTA, social proof, founder-led. The `marketing-auditor` agent grounds in this skill; the content and leadgen agents in vivreal-hq PRODUCE to this voice. Canonical source: ${VIVREAL_REPOS}/_wt/hq-main/brand/voice.md (vivreal-content was merged into vivreal-hq on 2026-08-03).'
 ---
 
 # Vivreal Brand Voice: definition: rubric & channel playbook
 
 The defined Vivreal voice and the rules for keeping every customer-facing word on-brand. This is the grounding for the **`marketing-auditor`** agent and the voice anchor the `vivreal-content` plugin's editors (`content-planner`, `linkedin-editor`, `carousel-editor`, `short-form-editor` and the rest) write to. Those agents live in the vivreal-skills marketplace, not in `vivreal-hq/.claude/`, which holds only settings and hooks.
 
-> **Canonical voice source: `${VIVREAL_REPOS}/vivreal-hq/brand/voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`.)
+> **Canonical voice source: `${VIVREAL_REPOS}/_wt/hq-main/brand/voice.md`.** If that file and this skill diverge, that file wins, read it when it's available. This skill encodes the same voice so it works on any machine. (`vivreal-hq/knowledge/01-voice-and-rules.md` is now a stub pointing at `brand/voice.md`.)
 
 Last synced: 2026-10-29 (against vivreal-hq `brand/voice.md`, last changed 2026-10-29; re-read it, it is the canonical copy)
 
@@ -122,7 +122,7 @@ These recur in proof points. Confirm each is true and current before asserting i
 
 A passing asset scores ≥10/12 with no hard-ban hits.
 
-## Marketing best-practices checklist (10 points)
+## Marketing best-practices checklist (11 points)
 
 1. Value prop is a **pain → outcome** statement, not a feature list ("update your menu without calling Jake" beats "composable headless CMS").
 2. **One** primary CTA per page/asset (extra offers can cut conversion ~266%; personalized CTAs convert ~202% better than generic).
@@ -134,6 +134,7 @@ A passing asset scores ≥10/12 with no hard-ban hits.
 8. Channels **orchestrated in sequence**, not run in isolation (connect on LinkedIn → engage 2-3x → personalized request → email + DM gets ~3.5x more responses than email alone).
 9. A **short-form video** motion for demos (41% of B2B marketers say it delivers highest ROI; "show, don't tell").
 10. Language matches **SMB / non-technical-founder** vocabulary, no insider jargon.
+11. **What we most want seen is in the first screen** (owner, Justin 2026-11-23, release C lesson L-C-23: "People do the least amount of work possible so they will likely do the least amount of scrolling"). Selling points, offers, the recommended choice and any line that changes a decision sit inside the first screen at 390 wide, above the options they affect, never only in a footer or after a list; where cards stack on a phone, the recommended option comes first. The portal's form of the rule is `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` PAGE-3.
 
 ## Channel notes (circa 2026, SMB / non-technical founders)
 

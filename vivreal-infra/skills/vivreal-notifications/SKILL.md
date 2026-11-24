@@ -58,10 +58,10 @@ producer → vivreal-notification-queue (SQS, batch size 1, + DLQ) → Notificat
 - **Subscriber confirmation emails send on the TRANSACTIONAL account,** not the campaigns account:
   fine one at a time, an account-risk event in bulk.
 - **Campaign mail sends from its own AWS account,** separate from transactional, so a complaint
-  spike cannot stop customer sign-ins. Its account id is key `campaignsAccountId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
+  spike cannot stop customer sign-ins. Its account id is key `campaignsAccountId` of `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`.
 - **vivreal.io's email authentication lives in its Route 53 zone, not in any repo:** three DMARC
   records, with two SES sending subdomains still at `p=none`. The zone id is key
-  `vivrealIoZoneId` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`.
+  `vivrealIoZoneId` of `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`.
 
 ## Companions
 

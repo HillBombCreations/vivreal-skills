@@ -94,7 +94,9 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
    right path on the wrong commit reads exactly like the answer. `git fetch origin` first, prove the
    tip (`git ls-remote origin refs/heads/<branch>` equals `git rev-parse origin/<branch>`; default
    branches differ, ask with `git ls-remote --symref origin HEAD`), then read with
-   `git show <ref>:<path>` or from a `git worktree add --detach <path> <ref>` research worktree.
+   `git show <ref>:<path>` in the repo's kept read worktree (`$VIVREAL_REPOS/_wt/<repo>-read`, made with the
+   one-off clone form in shared-standards "Path resolution"), or from a
+   `git -C "$VIVREAL_REPOS/<repo>" worktree add --detach "$VIVREAL_REPOS/_wt/<name>" <ref>` research worktree; never in the clone.
    In Git Bash, export `MSYS_NO_PATHCONV=1` first: MSYS rewrites a path starting with a dot
    (`git show <ref>:.github/workflows/x.yml`) and the call fails in a way that reads like a
    missing file, which is a false absence (reproduced in the 2026-10-20 skills audit).
@@ -109,7 +111,7 @@ Read CLAUDE.md (mandatory in both modes). Do NOT eager-read the shared-standards
 1. Read CLAUDE.md (project standards, proxy route table, architecture)
 2. Skip the shared-standards skill unless the task touches a trigger area (see top of that file).
 3. Workflow mode: read the bug's issue.md and any prior research. Standalone mode: skip, there is no prior artifact.
-4. Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current.
+4. Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/_wt/hq-main`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current.
 5. Read the relevant backend repo's CLAUDE.md if cross-stack
 
 ## End-to-end trace (any feature, across repos)

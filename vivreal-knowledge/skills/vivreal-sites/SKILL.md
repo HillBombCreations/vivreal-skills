@@ -5,7 +5,7 @@ description: 'Use when reasoning about the Vivreal SITE PRODUCT, NOT the AWS dep
 
 # Vivreal Sites: Product: Data & Authoring Model
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U3-how-studio-works.md`, `03-use-cases/U16-serving-a-live-customer-site.md`; `npm run docs:route -- "site save"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U3-how-studio-works.md`, `03-use-cases/U16-serving-a-live-customer-site.md`; `npm run docs:route -- "site save"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 Last synced: 2026-10-15 (Templates `origin/stable` at `c9cfdb0`, the v6 release)
 Last extended: 2026-09-16 (Save to live on an ISR site depends on the stored Amplify buildSpec)
@@ -55,6 +55,20 @@ These bite constantly, know them even before opening a reference:
 2. **Label-vs-value binding drift.** A free-text field that must equal a canonical machine value (e.g. the home Product Showcase `product-type` → `/products?f_productType=` filter) silently matches zero when an author types a display label ("Sweet Treats") instead of the stored value ("Sweets"). Studio's filter-bound enums fix this for new authoring; legacy free-text data can still drift. See `references/page-formats.md`.
 
 Also: **an empty list infers nothing.** A CMS list field's row shape is inferred from stored data, so an EMPTY list renders the plain-string widget and the structured shape never forms; seed one row.
+
+## Release C (live 2026-11-24; read at the deployed lines each repo's knowledge skill names, where the detail is)
+
+- **Examples as drafts** (F539): a new site's template examples can be seeded as drafts that show only in Studio's
+  preview, by VR_Secure_API's SSM lever `<ssm-prefix>/site-examples/mode` (`draft` or `live`; anything else `live`).
+  Studio tags them Example, and "Save as mine" or the drafts door turns one into the owner's own.
+- **An empty photo band hides itself on a new site** (F570): VR_Secure_API stamps a new customer site
+  `emptyPhotoBands: 'hide'`, and the site engine drops a list-bound photo band that would draw nothing on the live
+  site, while Studio keeps it with the prompt "Hidden on your site until it has photos." Older sites are unchanged.
+- **Nested menus, the riders** (F625, F627, F579): a page removal takes its links out of the menus and the footer
+  (Studio and the AI connection alike), "Links to fix" lists the links a change left pointing nowhere, and the open
+  Grouped list panel stays on screen.
+- **Seasonal products** (F526): a Stripe or Square product can sell only between two dates (once, or every year), on
+  the business's own clock; out of season it leaves the shop list and checkout refuses it.
 
 ## Companions / boundary
 

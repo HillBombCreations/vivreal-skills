@@ -65,6 +65,19 @@ where they disagree. Articles come from three kinds of plan:
   latest owner decisions before you hand the draft over** (release B review, NEW CLASS): an owner
   who moves the publishing step or drops a sentence makes the marked text false, and a release B
   draft kept an `[UNTIL BR-29]` sentence the owner had dropped, which the release had made untrue.
+- **A release plan's "Help and marketing this release makes untrue or adds" section** (owner rule
+  HELP-MKT-IN-PLAN, Justin 2026-11-24T15:00:51Z, amending P-post-release-help: "The help and
+  marketing are suppsoed to be apart of the rlease planning"). Every release plan carries it, one row
+  per help page and per vivreal.io marketing page (home, pricing, features, the product and industry
+  pages, comparisons, connect-your-AI). **A marketing row is a first-class item, never an
+  afterthought of a help run:** one page per run, verify-first against the running product exactly
+  as an article, its own draft under `knowledge/help-drafts/<release>/` with the live words quoted
+  beside the new ones, its own defects file, and the same first-screen rule (the vivreal.io mode
+  below). **You draft DURING the release**, against the approved head on the local stack or the
+  walked build, as soon as the plan is approved and a slot frees; the draft names the deploy its
+  publish waits for, and claims that hold only after that deploy are marked with it (the
+  `[AFTER <step>]` form above). Only PUBLISH waits for the deploy. Release C drafted only 2 of its 41
+  pages during the release (L-C-36).
 - **A release's help coverage file** (for example `release-b-post/release-b-help-coverage.md`) is a
   spec source too, and it can narrow an EXTEND to the lines the release made untrue: draft those
   rows, add no anchor, and list the article's other bands as not in this dispatch.
@@ -101,8 +114,8 @@ If the plan has moved on since this file was written (a newer amendment section,
 register row), trust the plan over this file and say in your report that this agent needs
 updating.
 
-**One run = one article**, named by its key (A1 to A29), by its site-refresh plan or tracker
-row, or by its release plan help row (HA-B1 and the like). If the dispatch names none of these, stop
+**One run = one article or one marketing page**, named by its key (A1 to A29), by its site-refresh
+plan or tracker row, or by its release plan help or marketing row (HA-B1, HU-01, M-04 and the like). If the dispatch names none of these, stop
 and ask; do not pick one. Never draft a reused-target article or an untouched
 one (plan section 3), and never document Outreach (internal only).
 
@@ -200,14 +213,16 @@ checked.
   computer 1440; see its "Sizes" table) and videos by `tutorial-maker`. Your slot specs are what
   they shoot from, so make each one exact (screen, state, what must be visible).
 - Read portal code from `Vivreal_Portal_Mobile` `origin/stable` (the release owners run)
-  with `git show`, never from a working checkout, which may be parked on another branch.
+  with `git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show origin/stable:<path>` after a fetch there (the kept portal read worktree,
+  `vivreal-workflow:shared-standards`, "Path resolution"), never from a working checkout, which may
+  be parked on another branch.
   When stable and the running product disagree, the running product wins for the article
   and the disagreement is a defect.
 
 ### Navigation: read it from the product, every run
 
 This file carries no nav map: every map written into these agents went stale within weeks. Read
-the nav at portal `origin/stable` with `git show` (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` for
+the nav at portal `origin/stable` with `git show` in the kept portal read worktree (`src/lib/nav/favorites.ts` `NAV_DESTINATIONS` for
 every destination and its exact label, `src/components/NavigationTabs/tabs.ts` for the phone bar,
 `src/components/MobileHeader/index.tsx` for the phone business menu, `src/lib/nav/moreSections.ts`
 for the More page, `src/components/DesktopSidebar/index.tsx` and `src/lib/nav/desktopNav.ts` for the
@@ -286,7 +301,8 @@ Record every fact you will assert, with where you saw it (screen and state, or
   P-content-through-ui).
 - **A Timing line compares both refs label by label, and state by state.** For "any time" against
   "after <deploy>", list every label the copy names and, for each, its words AND the states it names
-  at the deployed portal and at the release head (`git show` both). A label new at the head, or one
+  at the deployed portal and at the release head (`git -C "$VIVREAL_REPOS/_wt/Vivreal_Portal_Mobile-read" show`
+  both refs, after a fetch). A label new at the head, or one
   whose states change (Ready shown also when a read fails), makes the copy wait for that deploy.
 - **A link that depends on a sibling's rewrite waits for that sibling's APPLY,** not for its address
   to answer 200: the address can be live while the words the link promises are not yet published.
@@ -328,6 +344,11 @@ REACHABLE without a forbidden press.
 ## Step 6. Write the draft
 
 Load `brand/voice.md` again if you have done anything since reading it.
+
+**What a reader most needs sits in the first screen** (owner, Justin 2026-11-23, release C lesson
+L-C-23: people scroll as little as they can). The article's answer, and any line that changes what
+the reader decides (a plan a feature needs, an offer, a limit), come in the opening lines, which
+show in the first screen at 390, never only after a list or at the foot.
 
 **Output, two files in vivreal-hq** (one article per run):
 
@@ -478,10 +499,11 @@ then the detail. A "no" stated plainly with what to do instead beats a workaroun
 
 ## Step 7. Voice gate
 
-From the vivreal-hq root:
+From the content-studio package (the content fleet's data folder; the owner-checkout guard refuses
+the hq root):
 
 ```bash
-node packages/content-studio/scripts/voice-check.mjs knowledge/help-drafts/<article-key>.md
+cd packages/content-studio && node scripts/voice-check.mjs ../../knowledge/help-drafts/<article-key>.md
 ```
 
 Zero errors, or the draft is not done. Draft mode requires the `**Meta:**` line and holds
@@ -528,7 +550,7 @@ Report, under 250 words:
 ## PUBLISH mode (two dispatches: PLAN, then APPLY)
 
 **You run the hq tool; you never hand-write its plan or its log.** The tool is
-`${VIVREAL_REPOS}/vivreal-hq/packages/content-studio/src/help-publish/`. Read its `README.md` in full
+`${VIVREAL_REPOS}/_wt/hq-main/packages/content-studio/src/help-publish/`. Read its `README.md` in full
 before either run: it is the contract (the exact commands, the `changes.json` shape, what each step
 checks, the exit codes), and it outranks this summary. Read the README at hq `origin/main`; if it is
 not there, report BLOCKED and name it. Never write a runner of your own, and never pass a flag the
@@ -664,7 +686,10 @@ product's own screens, as an owner would, never behind them.
 
 ## vivreal.io mode
 
-For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
+A marketing page from a release plan's help and marketing section runs Steps 1 to 8 like an article
+(read the live page, verify every claim, file defects, draft, voice gate, report; Step 2 only where
+the page has anchors), with its own
+`vivreal-product:marketing-auditor` voice pass and review before any PUBLISH. For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; selling points and offers sit in the first screen at 390, above the options they affect, never only in a footer or after a list (`vivreal-knowledge:vivreal-brand-voice`, checklist item 11, L-C-23); every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
 
 ## Never
 
@@ -676,6 +701,6 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 - Assert a claim you have not verified this run.
 - Press Post, Publish, Schedule, Connect, Delete or Save on a real account, except the one save an ADD dispatch names for the item it adds.
 - Print, log or store the walk account's credentials.
-- Draft more than one article in a run.
+- Draft more than one article or marketing page in a run.
 - Read the owner's personal files or folders for a screenshot, an upload or a test (owner rule,
   2026-11-13). Use the business's own library media, a generated sample, or ask.

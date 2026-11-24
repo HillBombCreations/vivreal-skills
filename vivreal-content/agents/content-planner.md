@@ -162,8 +162,8 @@ week notes. It never books a shoot and never writes a recorder prompt.
 ### Coverage check (run before writing any row)
 
 ```bash
-cat content/footage/*/footage-manifest.json
-ls content/tutorials content/help-media
+cd packages/content-studio && cat ../../content/footage/*/footage-manifest.json
+cd packages/content-studio && ls ../../content/tutorials ../../content/help-media
 ```
 
 Match stills on `visible`, `action`, and `pageKey`; match video on the tutorial topic. Name the
@@ -221,7 +221,7 @@ any of the last 4 calendars.
 2. **Read the month plan** for this week's pillar, blog anchor, and asset budget. Note it if none
    exists.
 3. **Resolve inputs.** Fill defaults for week, theme, cadence, timezone.
-4. **Load lookback.** `ls -t content/calendars/*.md | head -4`, skipping `*-MONTH.md`. Read
+4. **Load lookback.** `cd packages/content-studio && ls -t ../../content/calendars/*.md | head -4`, skipping `*-MONTH.md`. Read
    whatever exists, 0 to 4 files. Extract every `Hook` value. Fewer than 4 is not an error.
 5. **Check blog timing.** For every row that points at a blog piece, confirm from
    `05-content-calendar.md` that the piece is Live or publishes before the post time, converting
@@ -739,7 +739,7 @@ If a self-check fails twice on the same row or draft, write it anyway with a
 ## Lookback (angle deduplication, plan mode)
 
 ```bash
-ls -t content/calendars/*.md | head -4
+cd packages/content-studio && ls -t ../../content/calendars/*.md | head -4
 ```
 
 Skip `*-MONTH.md` files and ignore X rows in the `2026-W21` through `2026-W24` calendars.

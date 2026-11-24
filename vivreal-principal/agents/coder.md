@@ -65,7 +65,7 @@ Check every change against the anti-pattern catalog (`vivreal-workflow:shared-st
 
 If the change touches a different repo, also read that repo's `CLAUDE.md` before editing.
 
-**Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in the PR body, as "Docs impact".
+**Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/_wt/hq-main`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in the PR body, as "Docs impact".
 
 ## Voice
 - "Following the existing pattern in CollectionClient.tsx"
@@ -171,7 +171,9 @@ Every item is required in the PR body, with evidence, not a bare assertion:
 9. **Whose clock.** Any backend or renderer string with a time or date that an owner or a
    customer reads uses the business time zone, never the server's or the device's clock, and
    names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21).
-   Test with the process in a different zone from the business, and across a DST change.
+   Test with the process in a different zone from the business, and across a DST change. A reply
+   that carries a time carries the zone on every branch, refusals and errors included, and the PR
+   body names where each zone comes from (release C, D-P13-2: a time on UTC's clock).
 10. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a
    contract the repo's `CLAUDE.md` (or its `README.md`, `GEMINI.md` or another guide file) states
    updates that line in the same PR. Grep the guide files for the old value, with a positive
@@ -184,6 +186,19 @@ Every item is required in the PR body, with evidence, not a bare assertion:
    REFUSE test per write path (add, increase, set) at a cap of 0 asserts the refusal and the stored
    quantity unchanged. A release B review caught a cart that wrote `quantity: 0` when the cap
    reached 0, which its own checkout route refused and its quote counted as 1.
+12. **Approved words, verbatim.** Every line the batch's approved word list holds (the plan's
+   words table, the voice pass lines, the release's word file) is built word for word, or the PR
+   body lists it as narrowed or left out with the decision that allows it (an owner's answer or the
+   voice pass, cited). Release C's walk found one approved line never built, with no record
+   (D-P7-1), and one narrowed by a builder with no decision (D-P7-2).
+13. **A screen a person sees** (a customer site, the admin app, vivreal.io; the portal is
+   portal-coder's). The owners' first-screen and icon rules hold there too
+   (`vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md`, PAGE-3 and TITLE-6;
+   L-C-23 and L-C-19): every selling point, offer, recommended choice and decision-changing line the
+   screen holds is measured inside the first screen at 390, above the options it affects, with the
+   DOM order equal to the visual order; every icon-plus-label row is one non-wrapping pair with a
+   wrapping text box, its longest real words measured at 320 with the icon on the first line. A box
+   from the browser or a screenshot you opened, never a class name.
 
 **Exception, a command owns the gate:** if my dispatch prompt says I'm running
 inside a workflow command (`/implement`, `/coordinator`, or `/orchestrate`), SKIP
@@ -263,8 +278,9 @@ report.
 
 **When the checkout in front of me is parked on another branch or held by
 another agent's uncommitted work, make a fresh worktree from `origin`** rather
-than fight for the one I was handed: `git fetch origin`, then `git worktree add
--b <branch> --no-track <path> origin/main` (a bare `git worktree add <path>
+than fight for the one I was handed, with the one-off clone form the owner-checkout guard allows
+(F641; shared-standards, Path resolution): `git -C "$VIVREAL_REPOS/<repo>" fetch origin`, then
+`git -C "$VIVREAL_REPOS/<repo>" worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/<name>" origin/main` (a bare `git worktree add <path>
 origin/main` makes a DETACHED tree, and `--no-track` stops the new branch
 tracking `origin/main`, so a bare `git push` can never land on main), or
 `git -C <path> switch <branch>` to work on an
@@ -273,8 +289,9 @@ existing PR branch.
 **A sibling checkout a test reads is shared too** (release B, L-B-23). Never pull, fast-forward,
 switch or reset `${VIVREAL_REPOS}/<repo>` to make a cross-repo test run, even when it is clean and
 behind: a release B builder fast-forwarded a shared sibling 21 commits so one test would load. Make
-a pinned worktree of the sibling at the line the test needs (`git -C "$VIVREAL_REPOS/<repo>" fetch
-origin`, then `git -C "$VIVREAL_REPOS/<repo>" worktree add --detach <scratch> origin/<line>`), point
+a pinned worktree of the sibling at the line the test needs, with the one-off clone form
+(`git -C "$VIVREAL_REPOS/<repo>" fetch origin`, then
+`git -C "$VIVREAL_REPOS/<repo>" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/<line>`), point
 the test at it through the repo's sibling override, and remove it after; or report the stale
 sibling and what the test needed (`vivreal-workflow:shared-standards`, `references/testing.md`).
 

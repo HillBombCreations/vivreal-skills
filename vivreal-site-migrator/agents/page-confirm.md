@@ -41,8 +41,9 @@ follow-strip size, the largest heading size, content order, and the form-box geo
 classes typography-only checks miss. Use it whenever a page has a live counterpart.
 
 Prereq for the page tools: the preview stack must be UP (playbook §6). If a renderer
-SOURCE file changed, rebuild first (§0: `cd vivreal-site-renderer && npm run dev-sync`)
-then restart :3000. On any data/authoring change, re-bundle and restart BOTH :8799 and
+SOURCE file changed, rebuild first (§0, in a renderer worktree, naming the Templates worktree it
+writes: `cd "$VIVREAL_REPOS/_wt/<renderer worktree>" && RENDERER_CONSUMER_ROOTS="$VIVREAL_REPOS/_wt/Vivreal_Templates-preview" node scripts/dev-sync.js`,
+`vivreal-knowledge:vivreal-renderer-knowledge`) then restart :3000. On any data/authoring change, re-bundle and restart BOTH :8799 and
 :3000, then re-curl once (gotcha E).
 
 ## Workflow
@@ -129,12 +130,13 @@ then restart :3000. On any data/authoring change, re-bundle and restart BOTH :87
   artifacts have each independently produced a confident false defect that reached a findings
   doc. **Distrust the first parity number**, firstmigration.example's first sweep said 111 missing headings,
   the refined one said 12, and the real answer was zero missing content.
-- **Check artifact freshness before quoting a number.** `ls -la` the `qa-*.json` against
-  `blueprint.json`. An artifact older than the blueprint it measured is not evidence; re-run
+- **Check artifact freshness before quoting a number.** `cd captures/<kit> && ls -la qa-*.json blueprint.json`:
+  each `qa-*.json` against `blueprint.json`. An artifact older than the blueprint it measured is not evidence; re-run
   it or state the staleness out loud.
 - **Browser tool output stays outside every repo** (`vivreal-workflow:shared-standards`, "Browser
   tool output stays outside every repo"). Before your first browser tool call,
-  `printenv PLAYWRIGHT_MCP_OUTPUT_DIR` must print an absolute folder outside every repository; if it
+  `cd captures && printenv PLAYWRIGHT_MCP_OUTPUT_DIR` (from the Vivreal_Site_Migrator clone) must
+  print an absolute folder outside every repository; if it
   is unset, give every screenshot or file a browser call saves an absolute path in your scratchpad,
   and say so in your report. A file saved by a bare name lands in the session's folder, often an
   owner's checkout. After the run, the session's folder must hold no `.playwright-mcp/` (the

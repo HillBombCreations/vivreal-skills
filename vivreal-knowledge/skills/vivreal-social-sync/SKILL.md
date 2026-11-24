@@ -5,7 +5,7 @@ description: 'Use when a task touches how an owner''s Instagram, Facebook or Tik
 
 # Social sync: how platform posts reach Vivreal, and what removes them
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U35-the-hourly-social-sync.md`, `03-use-cases/U36-disconnecting-a-social-channel.md`; `npm run docs:route -- "social sync"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U35-the-hourly-social-sync.md`, `03-use-cases/U36-disconnecting-a-social-channel.md`; `npm run docs:route -- "social sync"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 Last synced: 2026-10-04. Sources: VR_CMS_API `origin/main` (v2.14.3 on `stable` that day),
 VR_Secure_API v2.20.1, VR_Main_API, VR_Client_API v2.15.0, and the evidence rows in
@@ -119,6 +119,18 @@ to see a failing account is to read that line.
 | `user has not authorized application 975876768563719`, account marked expired | the Instagram token was revoked (app removed on the platform side) | needs an owner reconnect |
 | TikTok `401 access_token_invalid` | token revoked or expired | needs an owner reconnect |
 | LinkedIn "missing permission" | `r_member_social` not held | by design until LinkedIn grants it |
+
+## Release C: who is told when a feed stops, and `needs-page` (live 2026-11-24; read at the deployed lines, Main `origin/stable` `b101cd00`, Secure `7e3c2334`, CMS `9042eaf5`, portal `429e1b00`)
+
+- **Who is told when a feed stops**: the weekly social staleness digest (VR_Main_API `frozenSocialChannels`) emails
+  the owners about a channel whose feed stopped. **A Facebook connect
+  waiting for a Page is told nothing**: the digest skips an account whose `socialProfile.noPagesGranted === true`
+  (F621 M1).
+- **`needs-page`** (F621): VR_Secure_API no longer saves a Facebook connect that chose no Page, and the portal opens
+  "Choose a Page on Facebook" instead; a legacy row carrying the marker is its own kind in the portal
+  (`accountNeedsPage`, drawn quietly, a finish card on Home), and the hourly sync skips it with
+  `social.sync.skipped_no_page`: no fetch, no health record, no page to staff. A Page-less account WITHOUT the marker
+  still throws `MISSING_CREDENTIALS` and pages, as before.
 
 ## Companions
 

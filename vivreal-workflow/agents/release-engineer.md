@@ -85,6 +85,33 @@ the unit of work changes.
   coder on vivreal-hq `packages/admin-app` (and the Outreach API), and they never gate a portal
   release.
 
+## Deploy day in lanes (release C, 2026-11-24)
+
+Two release engineers ran release C's deployments in lanes; each rule below is one of that day's
+slips (release C `progress.md` Lessons). The main thread's half is `vivreal-workflow:release-conductor`
+`references/deploy-day.md`.
+
+- **A bounded row list, and `HANDOFF` lines as you go** (L-C-33). Three lane dispatches ran out of
+  working context mid-lane and handed rows back unrun. A lane dispatch carries deploys, or the checks
+  after them, never both. After each row, write a `HANDOFF` line in the run record (row, result, what
+  the next row needs), so a fresh dispatch can start at the next row; when your context runs low, stop
+  at a row boundary and report, never mid-row.
+- **Never hold a shared lock across a wait on another lane** (L-C-29). Take a QA business's lock for
+  one row and free it at the row's end; a lane that held one "until after" a row waiting on the other
+  lane's proof made a cycle.
+- **One heavy WSL build at a time across lanes** (L-C-25). Before a WSL build or a full suite, read
+  the run record for another lane's open heavy step and wait for its end line. Two webpack builds at
+  once hung WSL; `wsl --shutdown --force` cleared it where `wsl --shutdown` hung.
+- **The machine stays awake for the whole lane** (L-C-28). If the dispatch does not say the
+  keep-awake is held, ask before the first deploy: a sleep of about 6 hours turned nine timed reads
+  into late reads from logs and expired a saved QA session.
+- **A site is deleted only after its Deploy-Site run has ended** (L-C-30). Read the execution's end
+  and record its time before the delete; a delete under a running deploy threw an unhandled
+  `NotFoundException` in EventHandler and filed a test-caused Sentry issue.
+- **A before-and-after live check takes its before-capture as its own row ahead of the deploy**
+  (L-C-35). The runbook names it and the lane that owns it; a check with no before-capture taken is
+  recorded VOID, never PASS by reading only the after.
+
 ## Read this before your first release
 
 1. The target repo's own `CLAUDE.md` for its specific deploy mechanics, which workflow, which
@@ -103,7 +130,7 @@ the unit of work changes.
 IS the in-progress release (call it by its version, for example v7), one PR and one deploy per repo, and work
 is finished before anything deploys (owner, 2026-09-28 and 2026-10-13). A backend half that is
 ready lands on its repo's open release PR and waits; it ships on GO, not as soon as it is ready.
-Until GO, the portal is validated on the guarded local stack against the PR heads. Pre-GO portal validation runs on the guarded local stack, `$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/e2e-local/README.md`; it needs AWS permission to mint `federated-user/local-e2e-<svc>`. On GO, run the
+Until GO, the portal is validated on the guarded local stack against the PR heads. Pre-GO portal validation runs on the guarded local stack, `$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/e2e-local/README.md`; it needs AWS permission to mint `federated-user/local-e2e-<svc>`. On GO, run the
 runbook's steps in order, API first and portal last, and finish each step (merge, deploy, proof)
 before starting the next.
 
@@ -113,8 +140,14 @@ before starting the next.
 five train repos' `promote.yml` and `release-cut.yml` carry no `schedule:` trigger, only
 `workflow_dispatch` (TD-2), and both workflows rest `disabled_manually` between releases. Never
 re-add a `schedule:`, and never leave either workflow enabled. Enable one only for the single
-dispatch a runbook step makes, in this order: read the lock (below), enable, dispatch, wait for that
-run to finish, then disable it again in the same step, before the next step starts. On any STOP,
+dispatch a runbook step makes, in this order: read the lock (below), enable, read the state back
+until it is `active`, wait about 60 seconds, dispatch, confirm a job started within a few minutes,
+wait for that run to finish, then disable it again in the same step, before the next step starts
+(release C, L-C-26: two Secure promotes dispatched about 1 s after the enable sat queued with 0 jobs
+in their concurrency group, cancel and force-cancel answered 409, and the third, dispatched a
+minute after `active` read back, ran; the three October ghost runs fit the same pattern). A run still
+queued with no job after a few minutes is a STOP: record its id and target branch, never dispatch a
+second one on top of it. On any STOP,
 disable it first, before diagnosing anything. A disabled workflow cannot be dispatched, which is
 the only reason the enable exists. Read the state with
 `gh api repos/<owner>/<repo>/actions/workflows/<file> -q .state` (`gh workflow view` has no
@@ -168,12 +201,12 @@ follows it rather than on the version and silently returns the wrong line.
 2026-10-21 a redeploy of 21 customer sites replaced each app's env map and dropped
 `SITE_RENDER_MODE` from every one, while every check that ran ("the build succeeded, the page
 answers 200") passed. Any change to the Amplify env, a buildSpec or a branch setting on more than
-one site goes through `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/fleet-rollout/cli.js"`:
+one site goes through `cd "$VIVREAL_REPOS/_wt/hq-main" && node packages/fleet-ops/fleet-rollout/cli.js`:
 a `--dry-run` first, then the change on one QA canary site, then small batches, with every app
 snapshotted (key names, never values) and diffed before and after each step, stopping on the first
 lost setting. A rollout stop is a STOP for this step. The canary, the flags, the stop rules and
 the documented exception are in the fleet-rollout section of
-`$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/CLAUDE.md`; read them there, never from a copied
+`$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/CLAUDE.md`; read them there, never from a copied
 command.
 
 ## Working protocol
@@ -263,6 +296,8 @@ Each of these was a real STOP or correction in the v7 window (vivreal-hq
   shows a Modify on every resource, including conditional permission replacements (66 Modify rows
   around 7 real adds on 10-20). Allow such a tag-only cascade only when a SECOND preview made with
   the LIVE tags shows exactly the expected rows (the control). Anything else stops for the owner.
+  The tag read rule (shared-standards `references/aws-infra.md`) keeps the cascade from starting:
+  read the stack's tags first and pass them back.
 - **A preview does not check service string limits.** CloudWatch caps `AlarmDescription` at 1024
   characters and `AlarmName` at 255, and a composite `AlarmRule` at 10240. Unit tests, lint, review
   and the change-set preview all pass an over-long string; the real update fails on that one

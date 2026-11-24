@@ -52,7 +52,7 @@ review folder), with these differences:
   (owner decision D2, 2026-10-14).
 - **pdf-carousel mode:** the slide mechanics live in `carousel-editor.md`
   (template selection, the mockup scene library, variant rotation, the
-  1080x1350 render call, the `magick slide-*.png carousel.pdf` assembly).
+  1080x1350 render call, the `magick` assembly, run from `packages/content-studio`).
   Follow it rather than duplicating it here: 8-12 slides, one idea per slide,
   slide 1 is the hook, last slide is the CTA. When the job is carousel-only and
   you have the `Agent` tool, prefer dispatching `carousel-editor` with

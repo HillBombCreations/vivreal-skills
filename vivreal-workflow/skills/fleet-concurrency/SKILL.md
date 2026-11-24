@@ -104,6 +104,14 @@ else.
 A dev server left on a fixed port is worse than idle: the next agent reuses it
 and tests the wrong tree.
 
+**An agent cut off by a usage limit leaves its shells running** (release C, L-C-05).
+One sat for hours blocked on input in front of a scripted file edit, in a worktree
+another agent then reviewed and approved, so the edit could have landed under the
+approval. Before anyone resumes that agent, or reviews or merges a worktree it used,
+list the processes whose command line names that worktree (the report half below,
+with the worktree path as the filter), stop them, verify they are gone, and check
+the worktree is clean at the head the agent reported.
+
 `scripts/sweep-orphans.ps1` does this. It reports by default and kills only with
 `-Kill`. On macOS or Linux the report half is
 `ps -eo pid,args | grep -E 'next (dev|start)|vitest|playwright' | grep -- "$VIVREAL_REPOS"`. Run it before dispatching a batch and again between phases, and pass
@@ -148,7 +156,10 @@ start it again for the next walk: an idle walk stack beside a portal review, a r
 proof, real-mongod tests and a renderer suite pinned the CPU for minutes on
 2026-11-12, and a coder's run took over two hours. **A timeout under load is a load
 signal, not a result:** re-run that test alone on a quiet machine before calling it
-a failure.
+a failure. **Inside WSL the limit is ONE heavy build at a time** (release C, L-C-25):
+two release lanes' webpack builds at once took WSL's memory to 16 GB and hung it, and
+`wsl --shutdown` hung too; only `wsl --shutdown --force` cleared it. Lanes sharing a
+machine take the WSL build turn one after another.
 
 **Prefer fewer, longer-lived agents to many short ones** when they contend for
 the same repository. The coordination cost is real and it is paid in wall clock
@@ -262,6 +273,12 @@ transcript is not a record. A session that resumes a batch reads those records
 first, before any re-run, re-proof or triage note, because triage notes lag what
 actually ran: on 2026-11-04 a resume session called a recorded index build "not
 recorded" while the PR comment holding it had been there for hours.
+
+**Watch a run record by its line count** (release C, L-C-25). On Windows, Git Bash
+`tail -F` on a run record written by the lanes' record script delivered no line in
+an hour while lines were appended, so a lane's request waited 1 hour 40 minutes.
+Poll `wc -l` against the last line handled and print the new lines with `sed -n`
+(`vivreal-workflow:release-conductor`, `references/deploy-day.md`).
 
 ## The habit that makes all of this checkable
 

@@ -9,7 +9,7 @@ line (`git cherry`); Infrastructure stacks; Secrets Manager; Reading and verifyi
 deploy; When to consult the Lambda inventory.
 
 
-**The estate:** `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/05-reference/aws-estate.md` (with `05-reference/resource-to-template-map.md` and `04-operations/standalone-stacks.md`), READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. A count or a name there is a pointer to re-derive from the stack, never a value to quote.
+**The estate:** `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/05-reference/aws-estate.md` (with `05-reference/resource-to-template-map.md` and `04-operations/standalone-stacks.md`), READ THIS when debugging Lambda config issues, env var mismatches, deployment failures, or cross-function communication. A count or a name there is a pointer to re-derive from the stack, never a value to quote.
 
 ## Function rosters: count them, do not quote them
 Do not quote a function count from this file or from any CLAUDE.md. Both go stale between
@@ -105,11 +105,24 @@ the line still BUILDS. For anything that matters, confirm by behaviour on the li
 | `Vivreal-Media-CDN` | `VR_Secure_API/cloudformation/media-cdn.yaml` | `.github/workflows/media-cdn.yml` |
 
 ## Secrets Manager (per-service `<secret-prefix>/*`: secrets-audit Phase 2, 2026-07)
-**Names are written with a placeholder prefix, because this repository is PUBLIC.** Each value is a key of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json` (names only, never values): `<secret-prefix>/` is the Secrets Manager prefix, key `secretPrefix`; `<ssm-prefix>/` the SSM parameter prefix (it has a leading slash), key `ssmPrefix`; `<qa-secret-prefix>/` the QA secret prefix, key `qaSecretPrefix`; "the QA account bundle" is key `qaAccountBundle`; the db-explorer secret is key `dbSecretId`. Read the file; nothing needs setting. To confirm a name exists, list names only: `aws secretsmanager list-secrets --query 'SecretList[].Name'`. Never write a real prefix back into this repo: its check-definitions gate fails on one.
+**Names are written with a placeholder prefix, because this repository is PUBLIC.** Each value is a key of `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json` (names only, never values): `<secret-prefix>/` is the Secrets Manager prefix, key `secretPrefix`; `<ssm-prefix>/` the SSM parameter prefix (it has a leading slash), key `ssmPrefix`; `<qa-secret-prefix>/` the QA secret prefix, key `qaSecretPrefix`; "the QA account bundle" is key `qaAccountBundle`; the db-explorer secret is key `dbSecretId`. Read the file; nothing needs setting. To confirm a name exists, list names only: `aws secretsmanager list-secrets --query 'SecretList[].Name'`. Never write a real prefix back into this repo: its check-definitions gate fails on one.
 
 The monolithic `hb-api-secrets` is retired. Every backend now resolves secrets at deploy time from per-service secrets (`<secret-prefix>/secure-api`, `<secret-prefix>/cms-api`, `<secret-prefix>/client-api`, `<secret-prefix>/client-auth`, `<secret-prefix>/main-api`, `<secret-prefix>/analytics`, `<secret-prefix>/oncall`, `<secret-prefix>/site-deployment`) plus shared secrets (`<secret-prefix>/{core,stripe,social-oauth,github-app,vapid}`) and non-secret config from SSM `<ssm-prefix>/*` params. Values were copied verbatim, env var names unchanged. Key categories: Database (`CLUSTER_URL`), Auth (`CLIENT_ID`, `USERPOOL_ID`), Stripe, WebSocket (`WS_ENDPOINT`, `WS_TABLE`), OAuth providers, Encryption, CDN/Media signing, Push (VAPID), Agent (Anthropic + GitHub App), Comms (Slack/Discord/SES).
 
 ## Reading and verifying a CloudFormation deploy
+
+- **The tag read rule (F311, SW-C19): read a stack's tags before every change set, then pass them
+  back or refuse.** `aws cloudformation deploy` with no `--tags` sends an empty tag list and
+  REMOVES every stack tag, so each taggable resource shows an update and a reviewed preview grows
+  rows nobody planned (a permissions preview came back with 7 rows instead of 5, one of three hits
+  on 2026-11-14). Every supervised deploy path (a script, a runbook step, a workflow) first reads
+  the tag VALUES, `aws cloudformation describe-stacks --stack-name <stack> --query 'Stacks[0].Tags'`,
+  never only `length(Stacks[0].Tags)`: a count cannot tell the same keys from different ones. It
+  then passes exactly that list back (`--tags Key=Value ...` on `deploy`, `--tags` on
+  `create-change-set`) or refuses, printing the list it read. A stack with no tags reads `[]` and
+  passes none. Compare by key and value. A tool that builds the command gets an ALLOW test (the
+  stack's tags passed back unchanged) and a REFUSE test (a command built with no tags while the
+  stack holds some).
 
 - **`describe-stack-resources` TRUNCATES SILENTLY.** It returns one page and no error, so a
   resource audit built on it quietly under-reports. Use **`list-stack-resources`**, which

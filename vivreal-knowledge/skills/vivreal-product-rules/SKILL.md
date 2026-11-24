@@ -153,6 +153,18 @@ Never put a customer name, id or address in this file.
     portal labels the box "One count for every {label}". Enforced by Vivreal_Templates' cart,
     VR_Client_API's checkout and VR_CMS_API's paid webhooks.
 
+## Release C rules (the owners' answers in vivreal-hq `docs/projects/release-plan-open-backlog/decisions.md`)
+
+- **No X connection.** Vivreal connects no X (Twitter) account; no help page, vivreal.io line or screen may imply one
+  (F578, owner).
+- **Square at parity with Stripe** (owner, "if theres anything else in this release that was only specifically
+  tailored to stripe that needs to be appled to square as well"): promo codes, the checkout question and its answers,
+  the cart's newsletter tick, payouts on the money cards and the sales tax warning work on a Square shop by the same
+  rules as Stripe, each built in both providers' batches. A new shop feature is planned for both providers unless the
+  owners say otherwise (completeness over speed).
+- **What we most want people to see sits in the first screen** (L-C-23) and **an icon and its words never wrap apart**
+  (L-C-19): `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md`, PAGE-3 and TITLE-6.
+
 ## Adding a rule
 
 One line, the decision in owner words, who decided and when, and the code that enforces it. Keep this

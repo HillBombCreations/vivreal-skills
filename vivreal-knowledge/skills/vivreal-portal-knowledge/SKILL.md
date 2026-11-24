@@ -5,7 +5,7 @@ description: 'Use when working in the Vivreal Portal (Vivreal_Portal_Mobile), a 
 
 # Vivreal Portal (Vivreal_Portal_Mobile): knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/the-portal.md`; `npm run docs:route -- "portal proxy and context"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `02-architecture/the-portal.md`; `npm run docs:route -- "portal proxy and context"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
@@ -18,7 +18,7 @@ A **Next.js 16 web app** (App Router, React 19, TS strict, Tailwind 4 + Radix), 
 ## Portal UI rules: the owners' corrections (read before any UI work)
 
 **Read [references/ui-rules.md](references/ui-rules.md) in full before any change an owner will
-see** (a screen, a sheet, a card, a form, a page top, a word). It holds 81 rules in 14 themes,
+see** (a screen, a sheet, a card, a form, a page top, a word). It holds 82 rules in 14 themes,
 written from the owners' UI feedback record (vivreal-hq `docs/standards/portal-ui-feedback.md`),
 their framing answers of 2026-11-19 and one later correction, each with the shared component to use (paths read at
 `origin/stable` `9974e41b`) and the record's `UF-` ids. The ones caught most often:
@@ -55,6 +55,54 @@ their framing answers of 2026-11-19 and one later correction, each with the shar
 - Helpers: `injectCtxParams()` sets `key` + `groupID` (CMS-shaped). For Secure-API endpoints whose Joi validator names the tenant key `dbKey` and rejects unknown params, use `p.set('dbKey', ctx.dbKey); p.set('groupID', ctx.groupID)` **instead of** `injectCtxParams()`, sending `key` alongside gets the request rejected as an unknown param (see `analytics/site-traffic` and `webhooks` routes, which do it manually and document why). **The same rule decides any NEW param:** Secure's `Joi.object().keys({...})` rejects unknown keys by default, so before a proxy sends a param "ahead of" a backend release, read that route's validator on the DEPLOYED release line (MCP #42 broke production this way); the backend ships the key optional first.
 - FOUR upstreams: `NEXT_PUBLIC_CMS_URL` (`/tenant/*`), `NEXT_PUBLIC_SECURE_URL` (`/api/*`), `NEXT_PUBLIC_MAIN_API` (`/api/*`), `NEXT_PUBLIC_OUTREACH_URL` (`/proxy/outreach/*` routes, only the public and Studio-facing ones since v0.37; the CRM moved to vivreal-hq `packages/admin-app`).
 
+
+## Release C (live 2026-11-24 as v0.47.0; read at the deployed `origin/stable` `429e1b00`)
+
+The deployed tree equals the approved head `cf76b401` (#497) first read here except for the version stamps
+(`package.json`, its lockfile, `public/release.json`), compared file by file with the GitHub compare API on 2026-11-24. The row-by-row record with its commits and tests is
+`docs/release-c/build-c-por.md` there.
+
+- **Sign-in with a trip** (F494, F191): `/api/sso/[provider]` starts Google and LinkedIn with a fresh `state` and a PKCE
+  verifier in an httpOnly `__Host-vr_sso_<state>` cookie (`src/lib/auth/ssoTrip.ts`); `user/ssoLogin` refuses
+  400 `ssoStateMismatch` before calling Main when the trip is missing or differs, and sends `codeVerifier`. A new
+  sign-up may answer Main's `202 BUSINESS_NAME`; step 2 posts to `user/ssoLogin/business` (same-origin JSON only).
+  Register is two steps (F191), and its two page steps go to Main by `fetch` with `keepalive` and `text/plain`
+  (`src/lib/signupSteps.ts`, F469), the named exception to the three-tier rule. Rollback: the portal before Main.
+- **Rate limits** (`src/proxy.ts` `RL_ROUTES`): `user/login/code` and `user/ssoLogin/business` join the sign-in
+  routes, and the public pickup reminder routes are limited too; each public route also needs a `config.matcher`
+  entry, only so the limiter runs.
+- **The pickup page and the order sheet's reminder line** (F528): `/pickup` answers the reminder email's link through
+  the manual public routes `pickup-reminder/lookup` and `/answer` (no `active_ctx`); the order sheet reads
+  `integrations/orders/pickup-reminder` (factory). Its tab names Vivreal once (D-P10-1); "Already marked picked up"
+  names the time on the shop's clock (D-P13-2).
+- **Studio save** (F579, F563, F577, D-P2-2, D-P3-1): a page save sends `pageChanges`; a lost reply is confirmed by its
+  `saveId` in Secure's `lastSave` or `recentSaves` before anything is resent; after a page save the draft takes the
+  promoted photo key. The top bar counts the item editor and Cart too (D-P8-3, STUDIO-SAVE-ALL), Cart asks before
+  leaving with an unsaved change (D-P6-2) with Studio's own leave prompt, and F590's "Updating your site" chip reads
+  Secure's `fields=refresh` view.
+- **The publishing control is a state machine** (part 37, the part 36 review's B1): every host refuses Schedule with no
+  time ahead, and the picked schedule is the one saved (D-P7-6).
+- **Sales**: the archive and the board's words (F540, F542, F543, F558: uniform order cards, a buyer name wraps to two
+  lines on every card); per-option prices kept (F657: an item whose options keep their own prices edits them per
+  option, one Price box never flattens them; on Square one price box per size); the type switch confirms before it
+  clears options (D-P3-3, D-P4-2); seasonal products (F526, `SeasonField`, "Out of season"); Square payout cards
+  (`shown`, `needs_reconnect`, `unavailable`); the checkout question (F381) and the newsletter switch (F557) on
+  Stripe and Square; Square pickups get Ready (F593), and a Square order marked sent loses its undo at once (N11).
+- **The switch latch** (F613): a business switch writes the new business for the next document and changes nothing in
+  memory before the full load, so the page being left never re-reads its sites under the new cookie with the old
+  business's site ids. **Stale build recovery** (F598): after a deploy, the old webpack runtime's TypeError reading
+  `.call` off a module the new chunk no longer registers counts as a chunk failure: one reload per path per minute.
+- **Channels: the health copy and the quiet look** (F621): a refused no-Page Facebook connect opens "Choose a Page on
+  Facebook" (Try again, Contact support, Not now) instead of an error snackbar; an account waiting for a Page is its
+  own kind (`accountNeedsPage`, `needs-page`), ordered after broken accounts, worded by one `attentionWords`, skipped by
+  the feed roll-up, a finish card on Home (never "got disconnected"), and drawn in the quiet look on the Settings box,
+  the Working row and the card badge.
+- **Plans** (D-P1-3, PRO-FIRST): the free year card sits above the first plan card; where the plan cards stack or
+  wrap, Pro goes first, marked "Recommended" only where Pro is an upgrade for the owner (Free and Basic), once the
+  plan is read. At the site cap, Create my site opens the websites dialog (D-P1-4).
+- **Shared UI added** (`references/ui-rules.md`, "Paths"): `IconLine` (TITLE-6, D-OWN-1), `SheetHeader` (F602, gap G4)
+  and `SearchableSelect` (F601, gap G2, single pick). Toast actions are 44 px (part 35).
+- **Next.js 16.4.5** (F430); **no unit test reaches the network** (F160); the replay kill switch (F565).
 
 ## Release B, v0.45.0 (live 2026-11-17, read at `origin/stable` `c96328ec4`)
 

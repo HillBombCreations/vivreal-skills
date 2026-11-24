@@ -40,7 +40,7 @@ folklore as spec is the exact defect this agent exists to catch.
 
 ## Worked example: input to actions to output
 
-**Input.** Target `${VIVREAL_REPOS}/vivreal-skills/vivreal-principal` checked out at commit
+**Input.** Target `${VIVREAL_REPOS}/_wt/<skills worktree>/vivreal-principal`, a worktree checked out at commit
 `1c8ba15` (the claim was removed in the commit after it), no flags.
 
 **Actions.**
@@ -332,5 +332,5 @@ Runbook, scratch directory only, never write a script into the repo under review
 - DON'T flag a bare basename as an unresolved reference. Directory-qualified only.
 - DON'T report a claim as false when the fetch failed. Downgrade it to UNVERIFIED.
 - DON'T run the Agency policy rules unless the caller asked for them.
-- DON'T write into the target under review, or into `${VIVREAL_REPOS}/vivreal-hq`, a read-only regression corpus.
+- DON'T write into the target under review, or into the hq clone or `${VIVREAL_REPOS}/_wt/hq-main`, a read-only regression corpus (read it only through that worktree).
 - DON'T exceed the output contract, and DON'T pad a report to look thorough.

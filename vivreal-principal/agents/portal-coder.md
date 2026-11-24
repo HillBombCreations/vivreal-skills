@@ -30,7 +30,7 @@ This agent runs on Justin's or Hunter's machine. Nothing below may depend on who
 2. Every Vivreal repo is cloned under it, and each portal sibling (VR_Secure_API, Vivreal_Templates, VR_CMS_API, vivreal-hq, VR_Client_API, Vivreal_Site_Migrator) has its default branch contained in HEAD. The hooks throw when one is missing or parked; that throw is the gate working. Fix the sibling (fetch, fast-forward or switch to the default branch). Never set `VIVREAL_ALLOW_MISSING_SIBLINGS`, `VIVREAL_ALLOW_PARKED_SIBLINGS` or `VIVREAL_MIGRATOR_PUBLISH_OUT` (owners, 2026-10-28).
 3. Installs get the shared read-only packages token through the vivreal-workflow npm wrapper; nothing to export. When in doubt, run the onboarding doctor (prerequisite 5), which checks it without printing it.
 4. Both hooks start with `node scripts/assert-no-renderer-overlay.mjs`. If it fails, a renderer dev overlay is active; see `vivreal-knowledge:vivreal-renderer-knowledge`, "dev overlay", and remove the overlay, never the check.
-5. When in doubt, run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/doctor.js" --repo portal`; it names what is missing and prints no value.
+5. When in doubt, run `cd "$VIVREAL_REPOS/_wt/hq-main" && node packages/fleet-ops/onboarding/doctor.js --repo portal`; it names what is missing and prints no value.
 
 ## Modes (the dispatcher picks; SOLO if the dispatch prompt does not say)
 
@@ -47,10 +47,11 @@ real accounts) need a fresh dispatch.
 
 ### SOLO, the only portal coder working right now
 
-1. **Fresh worktree from `origin/main`, never the main checkout.** `git fetch origin`, then
-   `git worktree add -b <branch> --no-track ../pc-<slug> origin/main` (or the path the dispatcher gives);
+1. **Fresh worktree from `origin/main`, never the main checkout.** With the one-off clone form the
+   owner-checkout guard allows (F641): `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" fetch origin`, then
+   `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" worktree add -b <branch> --no-track "$VIVREAL_REPOS/_wt/pc-<slug>" origin/main` (or the path the dispatcher gives);
    without `-b` the tree is DETACHED. `--no-track` keeps the branch off `origin/main`'s upstream. For an existing PR
-   branch, `git worktree add ../pc-<slug> <branch>` (or `git -C <wt> switch <branch>` in a
+   branch, `git -C "$VIVREAL_REPOS/Vivreal_Portal_Mobile" worktree add "$VIVREAL_REPOS/_wt/pc-<slug>" <branch>` (or `git -C <wt> switch <branch>` in a
    worktree you already have). Working in the main checkout risks colliding with whatever branch it is parked on,
    or another agent's uncommitted work in it.
 2. **`npm ci`, never `npm install`.** A worktree's `node_modules` does not follow a branch
@@ -59,7 +60,7 @@ real accounts) need a fresh dispatch.
    trusting a result; `npm ci` reconciles. `npm install` on Windows can prune Linux-only
    optional dependencies out of the lockfile, patch a single entry surgically if a dependency
    genuinely needs bumping, never run a bare install to do it.
-3. **`.env.local`.** It is gitignored, so a fresh worktree has none. Copy `$VIVREAL_REPOS/Vivreal_Portal_Mobile/.env.local`; if that is missing too, run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/fetch-env-local.js" portal <worktree>`. `.env.example` lists every name it must hold. Its
+3. **`.env.local`.** It is gitignored, so a fresh worktree has none. Copy `$VIVREAL_REPOS/Vivreal_Portal_Mobile/.env.local`; if that is missing too, run `cd <worktree> && node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/fetch-env-local.js" portal .`. `.env.example` lists every name it must hold. Its
    absence fails every admin-gated e2e spec for a reason that has nothing to do with your
    diff, and the trap compounds if you baseline against a second fresh worktree that is
    equally missing it, both sides fail identically and it reads as a clean pre-existing
@@ -190,8 +191,8 @@ with exactly these overrides, and every other SOLO step stands:
   Templates checkout holding `main` (v7, 2026-10-20).
 - **Never move a shared sibling checkout to make a test run** (release B, L-B-23). FOLLOWUP 5 of
   #496 fast-forwarded the shared `${VIVREAL_REPOS}/VR_Client_API` 21 commits so one cross-repo test
-  would load. Make a pinned worktree of the sibling instead (`git -C "$VIVREAL_REPOS/<repo>"
-  worktree add --detach <scratch> origin/<line>`), point the test at it with the override above
+  would load. Make a pinned worktree of the sibling instead, with the one-off clone form
+  (`git -C "$VIVREAL_REPOS/<repo>" worktree add --detach "$VIVREAL_REPOS/_wt/<scratch>" origin/<line>`), point the test at it with the override above
   (`VIVREAL_CLIENT_API`, `VIVREAL_TEMPLATES`), and remove it after; or report the stale sibling.
 - **Write a proxy route's URL literally at its caller** (portal #496 delta review, NEW CLASS). The
   route evidence gate (`tests/unit/app/proxyCoverageMap.test.ts`, `e2e/proxy-coverage-map.json`)
@@ -297,7 +298,7 @@ Before any work, read:
    can for a non-portal repo.
 3. Plan mode: the `plan.md`/`design.md` named in the dispatch, this is your spec, zero scope
    creep. Standalone mode: restate the contract from the task itself, same as `coder`.
-4. **Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/vivreal-hq`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in
+4. **Docs impact.** Before you research or change code, find what the hq dev docs say about it: from `${VIVREAL_REPOS}/_wt/hq-main`, run `npm run docs:route -- "<symptom or component>"` for the document to open, and `npm run docs:impact -- <repo>:<path>` for each file in play (the documents, maps and pinning tests that cover it). Both are hq tools; if a script is missing on that checkout, open `docs/dev-docs/README.md` and use its symptom table. The portal's `docs/ecosystem/` is frozen (owners, 2026-11-04): never cite it as current. Put the `docs:impact` output for the files in your PR in
    the PR body, as "Docs impact".
 4. Any `review-N.md` if you are in fix mode.
 
@@ -309,7 +310,7 @@ The owners kept catching the same UI misses in portal builds (release B, L-B-40)
 row of its own, cards of different heights and casing, bare selects and inputs beside the styled
 ones, hand-built tabs, a sheet that would not scroll, a page that froze after a save, posts that
 did not look like their platform. Each catch is now a rule, with the shared component that does it
-right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (81 rules in 14
+right, in `vivreal-knowledge:vivreal-portal-knowledge`, `references/ui-rules.md` (82 rules in 14
 themes, from the owners' record, vivreal-hq `docs/standards/portal-ui-feedback.md`, their framing
 answers of 2026-11-19, and the corrections since).
 
@@ -320,14 +321,16 @@ answers of 2026-11-19, and the corrections since).
   component list. UI work is the trigger, so this is never a speculative load.
 - **Shared components only.** Build from the component the rule names. A rule that names a gap has
   no shared component yet: do not hand-roll one and do not copy a hand version; ask (below).
-- **A framing question stops the piece (hard rule).** When the look, the placement, the order, the
-  shape per width, or the words that frame a feature are not settled by a rule in
-  `references/ui-rules.md`, by the owners' record, by an owner-approved mockup the plan names, or
-  by the owner-approved plan's own words, STOP building that piece and report the question to your
-  dispatcher, who asks the owners (you cannot reach them yourself): what is unsettled, the options
+- **A framing question stops the piece (hard rule).** When the look, the placement, the order or
+  the shape per width is not settled by a rule in `references/ui-rules.md`, by the owners'
+  record, by an owner-approved mockup the plan names, or by the owner-approved plan, STOP
+  building that piece and report the question to your dispatcher, who asks the owners (you cannot reach them yourself): what is unsettled, the options
   you see, what the rules and the record say, and the one you would recommend. Never guess and
   never pick one to keep moving. Finish any other work the question does not touch (a batch run
-  finishes its other items), then report.
+  finishes its other items), then report. **Words are not a framing question** (owners, Justin
+  2026-11-21T00:51:53Z, L-C-02): a line the plan does not fix is written as you recommend it and listed in the PR body as
+  drafted, for the voice pass (`vivreal-product:marketing-auditor`) and the reviewer, which
+  approve it; it never stops the piece and never goes to an owner sitting.
 
 ## UI pre-done checklist (every UI change, every mode)
 
@@ -351,11 +354,16 @@ app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
    centred; a sheet that can outgrow the screen is `pinned` with one `BottomSheetBody`; one 44px
    close on the title row; the help mark beside the title at every width, never on a row of its
    own; one help link per surface, to its article.
-5. **Titles** (TITLE-1 to TITLE-4): wrap to at most two lines, then "..."; a size, an option or a
-   button label is never cut; a long name never pushes the page sideways.
+5. **Titles and icon rows** (TITLE-1 to TITLE-4, TITLE-6): wrap to at most two lines, then "...";
+   a size, an option or a button label is never cut; a long name never pushes the page sideways.
+   Every icon-plus-label row you add or touch (a heading, a status line, a button, a chip, a list
+   row) is one non-wrapping pair with a wrapping text box, and a test or a measured screenshot shows
+   its longest real words at 320 with the icon on the first line, never on a row of its own (L-C-19).
 6. **Selects** (SEL-1 to SEL-5): the shared select with its corner, height and text size untouched;
    two or three choices a segmented control, an either-or a switch; a list over about fifteen needs
-   the shared searchable select, which does not exist yet, so that is a question, not a build.
+   the shared searchable select: on a branch based on the release C line, `SearchableSelect`
+   (`src/components/UI/searchable-select.tsx`, single pick only); on an older line it is gap G2, a
+   question, not a build (SEL-3).
 7. **Tabs** (TAB-1 to TAB-5): `SectionSwitcher` for page sections, `SegmentedControl` for a switch
    inside a form, never `UI/tabs`, never nested, never a sideways strip; the first tab is what the
    owner wants first.
@@ -363,7 +371,10 @@ app) as owed to INTEGRATE. FOLLOWUP checks every row its fix touches.
    one create action and the rest behind "...", at most two rows to the content, `NamedRule`
    sections, no summary tile row; short paired controls (Show and Sort by) on one row at 390, half
    the width each, when they fit; lists, boards and dashboards full width, forms and settings at a
-   capped, centred width (no shared cap exists yet: ask).
+   capped, centred width (no shared cap exists yet: ask). **The first screen** (PAGE-3, L-C-23):
+   every selling point, offer, recommended choice and decision-changing line the screen holds is
+   measured inside the first screen at 390, above the options it affects; stacked cards follow the
+   order the design chose (the recommended one first); the DOM order matches the visual order.
 9. **Studio**, when the change is in Studio (ST-1 to ST-6, FORM-4): essentials first, then inputs,
    then toggles; a photo and its controls in one column; a new picker entry like the rest; the
    setting shows in the preview as it will on the live site.
@@ -409,7 +420,8 @@ Every item goes in the PR body with evidence, not a bare assertion. Items 1 to 8
 8. Pass-through sweep: for a shared utility, primitive or merge config, sweep every direct and pass-through caller.
 9. **Role gate.** Every new or changed write control goes through the matching `useAccess('<area>.<verb>')` key (for example `content.write`, `site.write`, `post.write`, `commerce.write`) and renders the look-only path for a member without it. 9 of 76 portal review FAILs were this.
 10. **Installed app and offline.** Every changed screen checked at 390 wide in standalone (installed-app) mode and with the network off; the PR body says what it shows offline. **Measured**: a box size read from `getBoundingClientRect`, or a screenshot you opened; a class name is not a check (a November layout fix proven by class assertions drew a control 0 px wide). 21 of 76 portal review FAILs were this.
-11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change.
+11. **Whose clock.** Every owner-facing or customer-facing time and date uses the business time zone, never the device clock, and names the zone where two zones can meet (`vivreal-knowledge:vivreal-product-rules`, rule 21). Test with the browser in a different zone from the business, and across a DST change. The PR body names the zone's source for every time the diff shows, and a reply or a screen that carries a time carries the zone on every branch, refusals and errors included (release C, D-P13-2: a time on UTC's clock).
+11a. **Approved words, verbatim.** Every line the batch's approved word list holds (the plan's words table, the voice pass lines, the release's word file) is built word for word, or the PR body lists it as narrowed or left out with the decision that allows it (an owner's answer or the voice pass, cited). Release C's walk found one approved line never built, with no record (D-P7-1), and one narrowed by a builder with no decision (D-P7-2). The reviewer diffs the list against the build.
 12. **The repo's own guide.** A change that moves a runtime, a version, a gate, a limit or a contract the portal's `CLAUDE.md` (or its `README.md` or another guide file) states updates that line in the same PR; grep the guide files for the old value, with a positive control, and paste both counts (coder item 10, catalog #28).
 13. **UI.** Every row of the UI pre-done checklist (above) for any change an owner sees, with its evidence; any framing question you stopped on, listed for the owners.
 Then end the report with the review it needs on its last line: `Needs: vivreal-principal:reviewer on Vivreal_Portal_Mobile#<n> at <sha>`. You cannot dispatch it; the main thread does. Never call your own checklist a review.

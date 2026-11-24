@@ -329,13 +329,13 @@ can never match it, so leave `angleCode` null only when no code honestly fits.
 
 When profiling multiple domains, process them in parallel where possible. For each domain, read its `_index.json` first, then the key pages. Output all profiles together for user review.
 
-To find domains needing profiling:
+To find domains needing profiling (from `packages/leadgen`, where the lead store is):
 ```bash
 # List all crawled domains
-ls packages/leadgen/Data/profiles/
+cd packages/leadgen && ls Data/profiles/
 
 # Check a specific domain's crawl data
-cat packages/leadgen/Data/profiles/{domain}/_index.json
+cd packages/leadgen && cat Data/profiles/{domain}/_index.json
 ```
 
 ## Profile JSON Schema

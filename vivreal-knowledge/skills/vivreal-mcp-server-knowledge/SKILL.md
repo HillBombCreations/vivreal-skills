@@ -5,7 +5,7 @@ description: 'Use when working in VR-MCP-Server, Vivreal''s remote MCP server (C
 
 # VR-MCP-Server: knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U7-mcp-servers.md`; `npm run docs:route -- "mcp servers"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U7-mcp-servers.md`; `npm run docs:route -- "mcp servers"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 Source of truth: `VR-MCP-Server` `CLAUDE.md` (and the docs it links) at `origin/main`.
 
@@ -40,6 +40,28 @@ neither is the module list itself. Alongside the tools there are guided **prompt
 ## How a person signs in: the portal's `/login`, never Cognito's page (since 2026-10-10, `0fd5ae6`)
 
 `/oauth/authorize` sends a signed-out or stale owner to the portal's own `/login`, whose password form goes through VR_Main_API's `/api/user/login` on the portal's app client, so Main's emailed sign-in code applies here too, on the same `/login`, before it returns to Allow access. Approve accepts only an ID token issued to the portal client and signed in recently (`src/auth/middleware.ts`), and each connection refreshes its ID token on the portal client (`src/auth/downstream.ts`). The Cognito broker is retired (`src/auth/broker.ts`) and no route reaches Cognito's hosted pages, so any text that says this server signs people in on Cognito's page is stale. Which other ways into the user pool still accept a password is not written here (`vivreal-infra:vivreal-auth-architecture`, System 3).
+
+## Release C (live 2026-11-24; read at the deployed `origin/main` `9951f1d6`, the merge of #65)
+
+The deployed tree equals the approved head `2a3d6215` first read here, compared file by file with the GitHub compare API on 2026-11-24.
+
+- **The channels header** (F555): every CMS call, and only CMS calls, carries `x-vivreal-ai-channels` (`write`, `read`,
+  or `off` for anything else), the connection's Channels and posts access, from `ToolContext.aiChannels`, a REQUIRED
+  option (a CMS call without it does not compile). VR_CMS_API refuses a date that would send a post unless it is
+  exactly `write` (403 `AI_POSTS_NOT_GRANTED`), which `tools/errors.ts` relays as `ACCESS_NOT_GRANTED` with area
+  `channels`. It only narrows; this server never calls the CMS approve, revert or batch post routes.
+- **The media re-add answer** (F315, D-P10-4): add-content-media can add back a photo it removed by its STORED
+  descriptor (a second write); by its spent upload descriptor it writes nothing and says the upload "was not found (an
+  upload can be used only once)", as it does for the CMS's 409 `UPLOAD_NOT_FOUND`.
+- **The menu take-out rider** (F579, nested menus rider c): the three page tools name one page, retry `PAGE_CHANGED`
+  under the same rule as `SITE_CHANGED`, and a page removal takes its links out of the menus.
+- **The AI app client** (F502, and F503's knowledge half): the Cognito app client for the AI connection offers Google
+  and LinkedIn only (no `COGNITO` provider, no `ALLOW_USER_SRP_AUTH`); a password sign-in goes through the portal's
+  `/login` and the portal client, as "How a person signs in" says. No text should describe Cognito's own sign-in page
+  for the AI connection.
+- **Team and billing write are stored and described as look while their tools are off** (F554).
+- **The permissions boundary is read off the real SAM expansion** (PRL-F374): after any edit to
+  `cloudformation/template.yaml`, run `scripts/expand-sam-template.py` (its header says how) or the test fails.
 
 ## What a connection may do (2026-10-09 hardening, v5 grants)
 

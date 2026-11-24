@@ -15,7 +15,7 @@ owner authority (2026-10-04); nothing else schedules.
 | Identity | How | Use it for |
 |---|---|---|
 | The demo account (the Vivreal Content demo business's agent sign-in) | The saved capture session (`packages/content-studio/capture-assets/auth.storageState.json`) | **The default for every read-only walk and every shoot.** A write there needs the owner's go, and its social channels are REAL: never Post, Schedule or Reply. It reaches the Vivreal Content business and the Vivreal business. Its display name is a business name, so a "Signed in as" line showing it is expected: it is the account's name, not a person, so never caption it as one |
-| Key `scratch2-owner` of the QA account bundle in Secrets Manager (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`) | Secrets Manager, read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)["scratch2-owner"]`, or the e2e harness resolver for that key); never `--output text` on the bundle, which would print every login in it; never printed, logged, passed on a command line or written to a file | **QA scratch-2 only** (owners, 2026-11-04): the one business where tests write freely (orders, refunds, Stripe TEST, destructive checks). `agent-walk-user` cannot reach it. Delete any saved session state file it produced at the end of the run |
+| Key `scratch2-owner` of the QA account bundle in Secrets Manager (its name is key `qaAccountBundle` of `${VIVREAL_REPOS}/_wt/hq-main/.vivreal/private-names.json`) | Secrets Manager, read ONE key in process (SDK `GetSecretValue` then `JSON.parse(...)["scratch2-owner"]`, or the e2e harness resolver for that key); never `--output text` on the bundle, which would print every login in it; never printed, logged, passed on a command line or written to a file | **QA scratch-2 only** (owners, 2026-11-04): the one business where tests write freely (orders, refunds, Stripe TEST, destructive checks). `agent-walk-user` cannot reach it. Delete any saved session state file it produced at the end of the run |
 | Key `canlook` of the same bundle, read the same way | The non-admin member of QA scratch-2 | **Permission and role tests only**: what a member without admin rights can see and do |
 | Key `scratch-owner` of the same bundle, read the same way | The owner of QA scratch-owner | **QA scratch-owner only**: walks and captures that need a shop selling through Stripe by sign-in in test mode (test checkouts, the sales tax board, a finished move from Square to Stripe). A write there needs the owner's named approval, as everywhere but QA scratch-2 (the write protocol below). Delete any saved session state file it produced at the end of the run |
 | A fresh sign-up, created for the test | Sign up through the product, then delete the account and its business at the end of the run | **Empty-state and first-run tests.** No standing account is kept empty for them |
@@ -83,6 +83,12 @@ the press (the new item has no before), and in place of step 8 it records the ad
 time, read-back) in that dispatch's `add-log-<date>.md`. Its one save passes the guard by its own
 allow-list entry, anchored on host, method and route, armed for that save only
 (`references/walk-harness.md`); every other write is still refused.
+
+**A QA site is deleted only after its own Deploy-Site run has ended** (release C, L-C-30). A test
+that makes a site and then deletes it reads that site's `Deploy-Site` execution first, waits for it
+to end, and records the end time beside the delete: a site deleted while its deploy still polled
+the domain association threw an unhandled `NotFoundException` in EventHandler, a Sentry issue our
+own testing caused (P-sentry-clean).
 
 **Never, approved or not:** Post, Publish to a channel, Schedule, Send, Connect, Disconnect, Delete
 anything that is not your own approved test item, Deploy, Purchase, Revert a site version, save

@@ -24,6 +24,8 @@ in the deploy template, a route count on the filesystem, a quota in the tier-quo
 ```bash
 node scripts/check-definitions.mjs              # the gate
 node scripts/check-definitions.mjs --self-test  # prove the gate can fail
+node scripts/check-guard-commands.mjs           # no shell block the owner-checkout guard refuses for its own reader
+node scripts/check-guard-commands.mjs --self-test
 ```
 
 It fails on a definition that does not parse, a manifest that disagrees with the directories

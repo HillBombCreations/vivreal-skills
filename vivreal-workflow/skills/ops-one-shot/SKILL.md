@@ -36,7 +36,9 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
 2. **Dry run and apply call the same planner.** One `plan()` in `lib.js`, the same state and guard
    functions, no stubs. A dry run on different predicates proves nothing about the apply (a 54-test
    script once stopped after 8 of 38 writes this way). Ask of every script: what does the dry run skip
-   that the apply runs?
+   that the apply runs? The dry run also BUILDS every write body (the update document and the request
+   each write sends), so a value a body cannot carry stops the dry run, never the apply after its
+   uploads (F492: a help picture one-shot never built its row bodies in the dry run).
 3. **`--expect` pins the reviewed plan.** The dry run prints one line: the counts per kind (and per
    database or group where it matters), the totals it will move, and a sha256 over the canonical,
    sorted planned set (ids plus the fields each write depends on). `--apply` without `--expect`
@@ -71,7 +73,10 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
     has its own dry run.
 11. **Usage counters move with the documents.** Deleting items, lists or usage rows without releasing
     (or deliberately not releasing) their bytes and entries leaves the quota wrong forever. State in the
-    header which counters move and which never do, and test both.
+    header which counters move and which never do, and test both. Plan the size the system STORES, not
+    the bytes you send: Secure re-encodes each promoted picture, so a business's media usage grows by the
+    stored size (F492). Upload each file just before the row that uses it, so a stop at row 1 leaves at
+    most one upload unused, never all of them.
 12. **Refuse unless the deployed code carries the fix the script depends on.** Where a script is only
     safe after a fix ships, check the DEPLOYED artifact, not git: read each function at its `live` alias
     (`$LATEST` where none), take only the code location, never the configuration or its environment,
@@ -99,6 +104,13 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
     repo. Test it with those three planted.
 
 ## Site-affecting writes
+
+**A one-shot that changes a page's content sets that page's `updatedAt`** (release C, F579). From release C, Studio
+saves only the pages it changed, each guarded by the `updatedAt` it last read (VR_Secure_API `src/shared/pageChanges.js`:
+a matching `base` proves nobody else changed that page). The guard is per PAGE, not per site: a one-shot that edits a
+page's content without moving that page's `updatedAt` is invisible to it, so an owner's open Studio can save over the
+one-shot's change with no conflict. Stamp each page you change in the same compare-and-set write, leave every other
+page's date alone, and test both: the changed page's date moved, an unchanged page's did not.
 
 - **A native-driver write is invisible to a live site and to every open browser.** It sends no
   `site.updated`, moves no `updatedAt` (that stamp is Mongoose's), emits no socket event and drops no
@@ -146,13 +158,18 @@ form (c) in `vivreal-workflow:shared-standards`; the false-green traps are in
    to it mid-task, correctly (see `vivreal-workflow:fleet-concurrency`). A fresh dry run comes first,
    right before the apply; if its pin differs from the approved one, stop and re-review.
 4. After the apply: the read-back lines, then a dry run that plans nothing left, then the served
-   check. Hand the read-back to the agent that owns the area.
+   check. Hand the read-back to the agent that owns the area. **A done or hold file another agent
+   waits on is written only after an explicit check of that read-back, as its own command**, never
+   at the end of an `&&` chain through `tee` (release C, L-C-12: `tee` succeeded while the write it
+   logged had failed with HTTP 403, so the waiting walker briefly saw a false done).
 5. Keep `runs/` (snapshot, journal, run record) off the machine as well until the revert window
    closes. Record what ran, when, and the pin in the release log, never in the script's repo.
 
 ## The defects that keep recurring (check each before review)
 
-- dry run and apply on different predicates; a dry run that stubs a state;
+- dry run and apply on different predicates; a dry run that stubs a state; a dry run that never builds
+  the write bodies; usage planned at the uploaded size where the server re-encodes; every upload done
+  before the first row write;
 - numbers promoted on snapshot read, so the revert is not byte identical;
 - no `--expect`, or a pin over counts only, not the planned set;
 - no per-write journal, or an intent-only journal that makes the revert re-insert rows another writer

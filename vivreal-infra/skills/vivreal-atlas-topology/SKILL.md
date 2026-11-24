@@ -66,9 +66,9 @@ Read MongoDB's `atlas-limits` page before quoting a number; these were read ther
 **The script.** vivreal-hq `packages/fleet-ops/atlas-read/atlas-read.js` (zero dependencies; node 18+, AWS CLI v2 and curl on PATH; macOS, Linux and Windows alike). It reads the secret in process and hands the key to curl on stdin. Its own docs: the `## atlas-read` section of vivreal-hq `packages/fleet-ops/CLAUDE.md`. Run the deployed-line copy so a parked checkout cannot matter:
 
 ```bash
-: "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
-test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
-hq="$VIVREAL_REPOS/vivreal-hq"
+# Start in the kept hq worktree (shared-standards, Path resolution): nothing runs in a clone.
+hq="$VIVREAL_REPOS/_wt/hq-main"
+cd "$hq" || { echo "make the kept hq worktree first (shared-standards, Path resolution)"; exit 1; }
 git -C "$hq" fetch origin --quiet
 # atlas-read.js requires its sibling slow-by-app.js (vivreal-hq #113), so extract the whole
 # folder from origin/main; piping the one file to `node -` now fails with "Cannot find module".
@@ -81,7 +81,7 @@ node "$tmp/packages/fleet-ops/atlas-read/atlas-read.js" --period P7D --slow-by-a
 rm -rf "$tmp"
 ```
 
-In a vivreal-hq checkout that is ON `origin/main`, the same thing is `npm run check:atlas --workspace packages/fleet-ops`, from the repo root, in any shell; pass flags after `--` (`npm run check:atlas --workspace packages/fleet-ops -- --slow-by-app`). `--json` prints the report as JSON. If the script is not on `origin/main`, say so; never improvise a credential.
+In the kept hq worktree (`$VIVREAL_REPOS/_wt/hq-main`) on `origin/main`, the same thing is `cd "$VIVREAL_REPOS/_wt/hq-main" && npm run check:atlas --workspace packages/fleet-ops`, in any shell; pass flags after `--` (`npm run check:atlas --workspace packages/fleet-ops -- --slow-by-app`). `--json` prints the report as JSON. If the script is not on `origin/main`, say so; never improvise a credential.
 
 **`--slow-by-app`** (vivreal-hq #113) adds, per node, Performance Advisor's slow query log over `--period`, grouped by appName (hash-like runs masked), command, namespace, the filter's top-level KEY names, the plan summary (stage words and index key names) and the read preference, with a count, largest first; `--json` carries the same under each node's `slowByApp`. It is how to pin a read-time step on a secondary on a caller (Atlas's own agents or a Vivreal service). It never prints a filter VALUE, a sample query or a raw log line, and a line it cannot parse is counted as `unparsed`, never echoed. A node whose header says `TRUNCATED at the 20000-entry cap` lost its older entries: shorten `--period`. `unavailable: ...` means that node's log read failed; report it as such, never as zero.
 

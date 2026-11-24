@@ -5,7 +5,7 @@ description: 'Use when working on, walking, deploying or reasoning about the int
 
 # The internal admin app
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `02-architecture/the-admin-app.md`; `npm run docs:route -- "admin app"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `02-architecture/the-admin-app.md`; `npm run docs:route -- "admin app"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 Source of truth: `vivreal-hq` `packages/admin-app/CLAUDE.md` (and the docs it links) at `origin/deploy/admin-app`.
 
@@ -162,6 +162,28 @@ them (`cloudformation/ops-read.yaml`, `ops-write.yaml`; code under `lambda/`).
   typographic single quote, and test the refusals.
 - **Walking it**: dispatch `vivreal-product:qa-walker`, whose "Walking the admin app" section covers
   the operator sign-in, the head to name in the matrix, and the fix-forward rule.
+
+## Release C (live 2026-11-24; read at the deployed `origin/deploy/admin-app` `956e9d66`)
+
+`deploy/admin-app` was fast-forwarded to the approved hq head `956e9d66` (#150) first read here; hq `main` moved on to
+`f06f6580` for the script watch's schedule and the standards files only, outside `packages/admin-app` (compared
+2026-11-24). The row record is `docs/projects/next-release-C/build-c-hq.md`.
+
+- **A Run's answer arrives in place, no reload** (F436, design `design-admin-live-answer.md`): ops-read gains
+  `action: 'auditorRun'` (`{ target, since }`): the target is looked up by own key in a two-row table (the health
+  watcher, the database monitor), Sum at 60 s, newest first, at most 10 datapoints, plus `readAt` from the function's
+  clock; nothing about the metric comes from the caller; `since` must be within the last 30 minutes and at most a
+  minute ahead (else 400 with no AWS call). `GET /api/monitoring/auditorRun` (admin session first, one target table
+  shared with the POST) answers a baseline or a verdict by `lib/monitoring/auditorAnswer.ts`; `RunCheckButton` reads the
+  baseline before the POST, then 15 s after it and every 10 s, one read in flight, none while the tab is hidden, until
+  an answer, within the owners' four minutes. The answer replaces the row in place, never a page reload.
+- **The Marketing page's sign-up path band** (F469): reads VR_Secure_API's marketing funnel `signupPath` section (our
+  own counters, Main's `signup_step_counts` and `signup_funnel_events`), beside Google's twins while both run, and
+  names the help readers both ways (`src/lib/marketing/signupPathView.ts`).
+- **Blocked scripts** (SB-1, F457's companion): ops-read `scriptBlocks` reads the site script policy's blocks per place
+  from Sentry (an environment Sentry has never seen reads as none), and Errors opens with a Blocked scripts section;
+  `SENTRY_READ_TOKEN` covers it. The daily script watch stack itself is `packages/fleet-ops/script-watch`.
+- **Security headers** (F458): a per-request script policy and no framing on every admin page.
 
 ## Shipped in the restyle (re-read at `origin/deploy/admin-app` `08f2d444`, 2026-10-27)
 

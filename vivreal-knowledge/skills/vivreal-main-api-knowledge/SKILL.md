@@ -5,7 +5,7 @@ description: 'Use when working in VR_Main_API, Vivreal''s public/unauthenticated
 
 # VR_Main_API: knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U17-login-and-signup.md`, `05-reference/email.md`; `npm run docs:route -- "sign-in and email"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U17-login-and-signup.md`, `05-reference/email.md`; `npm run docs:route -- "sign-in and email"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
@@ -50,6 +50,42 @@ Since v7 the roster also carries `SubscriberConfirmFunction` and `SubscriberConf
 - **The confirm route** (`services/email/subscribeConfirm.js`) moves `pending` to `subscribed` only on a row with no `suppressedAt` whose address is not on the platform suppression list, and `unsubscribed` to `subscribed` only for a link issued after `unsubscribedAt`. A `bounced` or `complained` row is never moved. Its row filter is the address AND the list AND the business (`groupID` from the group document, never the token's spelling).
 - **Unsubscribe and bounces move EVERY matching row (v7.2).** `campaignUnsubscribe.js` is an `updateMany` over `{ groupID, 'collectionObj.refID', subscriberEmail }` that skips rows already `unsubscribed` (so a second click keeps the original `unsubscribedAt` the rejoin cooldown reads); it answers `already` when every row was unsubscribed and `not-found` only when there is no row at all. `src/campaignEvents/lambda.js` suppresses bounced and complaining addresses with `updateMany` scoped to the campaign's list and its `groupID`; a campaign whose `groupID` differs from the event's group suppresses nobody and is reported (`campaignEvents.group_mismatch`, plus a Sentry message carrying ids only). The reason: `collection_objects` is shared by every group on a pod, and one list can hold the same address twice, which `sendBatches` mails twice.
 - **Pushes are split by surface (v7).** `notificationConsumer` sends staff (pinned-recipient) types only to subscriptions with `surface: 'admin'` (the admin app's devices) and customer types only to the rest, and logs `no-subscriptions` when a staff push has no admin device (`src/notificationConsumer/lambda.js`; `surface` is declared in `db.js` so `strictQuery` keeps the filter). See `vivreal-infra:vivreal-notifications`.
+
+## Release C (live 2026-11-24 as v2.22.0; read at the deployed `origin/stable` `b101cd00`)
+
+The deployed tree equals the approved head `ee040d8` (#139) first read here except for the version stamps, compared file by file with the GitHub compare API on 2026-11-24.
+
+- **One first sign-in apply for every door** (F299): `services/users/signupIntent.js` `applyFirstSignIn` is the ONLY
+  writer of `custom:sID`. Password, the sign-in code, Google, LinkedIn, One Tap, the AI connection and the Register
+  finish all go through it. It takes a hold on the account's `signup_intents` row, re-reads `custom:sID` under it,
+  records the business or seat before Stripe, passes the idempotency key `vivreal-first-signin:<row _id>`, takes back
+  only what it made on a failure, and resumes a dead request's work. A second request while one applies answers 423
+  `signupInProgress`. The SSO door keys on the id token's own `cognito:username`, never the first user found by address.
+- **The two-step sign-up and the name hold** (F191, design `design-signup-path.md`): a brand new account back from a
+  Register trip with no business is held, with no Stripe, business, lead or welcome: Main answers
+  `202 { challenge: 'BUSINESS_NAME', challengeId }` and keeps the session sealed in `signup_name_holds` (1800 s TTL).
+  It holds only a request carrying `codeVerifier` (the release C portal's PKCE sign-in), so an older portal never sees a
+  202. `POST /api/user/loginSSO/business` finishes it once (410 `signupHoldExpired`, 409 `BUSINESS_NAME_TAKEN`, 400
+  `badGroupCode` or `atGroupQuota`, 423 `signupInProgress`). A Google first sign-in adopts the typed business name
+  (F493). **Rollback order: roll the portal back before Main**, never Main below this line while the release C portal
+  is live: that portal sends `codeVerifier` and `signupFlow`, which the older validator refuses (400), so every Google
+  and LinkedIn sign-in would fail.
+- **An email-shaped username is refused** (F545): `/[^\s@]@[^\s@]/` before any read, and Cognito's email-format
+  SignUp refusal, both answer 400 `usernameIsEmail`.
+- **Our own sign-up funnel** (F469, design `design-signup-funnel.md`): `POST /api/signup/steps` takes the Register
+  page's two steps from the browser (text/plain, always 204); `signup_step_counts` holds hourly totals with no
+  identity (capped at 600 a key an hour) and `signup_funnel_events` one `signup_submitted` row per request with
+  `confirmedAt` stamped at the first confirmed sign-in; `leads.signupKind` is `create` or `join`. No address,
+  username, name, code or IP on either; kept 400 days; every write best effort. VR_Secure_API's marketing funnel route
+  reads them; EventHandler adds the `site_live` step.
+- **The email change recovery** (F298, F314): the sign-in recovery runs, before the businesses are read, whenever an
+  unexpired record for this username names the verified address.
+- **The social staleness digest skips a Facebook connect waiting on a Page** (F621 M1): `frozenSocialChannels` skips
+  an account whose `socialProfile.noPagesGranted === true`, so the digest never lists it.
+- **The takeover signal and alarm** (F471, F312): the read is aborted at 1 s, but its real cap is about 1.5 s while
+  Cognito throttles; the alarm reads 5-minute periods so each High pages.
+- **Tracing** (F568): `src/lambda.js` opens one `http.server` transaction per request (`Sentry.wrapHandler` opens
+  none, since nothing preloads the SDK), and a `tracesSampler` answers the stack's `SENTRY_TRACES_SAMPLE_RATE`.
 
 ## Release B, v2.20.0 (live 2026-11-17, read at `origin/stable` `92af375`)
 

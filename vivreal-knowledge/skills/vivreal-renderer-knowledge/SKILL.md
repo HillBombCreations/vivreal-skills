@@ -5,7 +5,7 @@ description: 'Use when working in vivreal-site-renderer (@hillbombcreations/site
 
 # vivreal-site-renderer: knowledge digest
 
-**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/`, starting at `03-use-cases/U22-what-the-renderer-renders.md`, `05-reference/site-chrome-contract.md`; `npm run docs:route -- "site-renderer"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
+**Cross-repo flows, decisions and maps:** the vivreal-hq dev docs under `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/`, starting at `03-use-cases/U22-what-the-renderer-renders.md`, `05-reference/site-chrome-contract.md`; `npm run docs:route -- "site-renderer"` from vivreal-hq names the rest. This skill and the repo's `CLAUDE.md` own the repo's internals.
 
 **Using this skill.** It is loaded into the caller's own context; there is no expert agent to dispatch. Cite file:line at the deploy line's SHA for anything you act on, and re-derive any count or roster from source before you rely on it.
 
@@ -115,7 +115,7 @@ Key src dirs: `src/chrome/` (Navbar/Footer/MobileNav/OverlayNav/CardNav/UtilityS
 The renderer is a published npm package; a publish reaches every deployed customer site on their next rebuild. Release runbook:
 1. Edit `src/`, `npm run build` (tsc → dist), commit **src + package.json only** (dist is gitignored).
 2. **Bump the version** (semver, patch/minor; major unused). Never republish a version (GitHub Packages rejects it).
-3. **Run the real-data compose diff (below) BEFORE the version bump reaches `master`.** Unit tests run fixtures; this runs every page customers actually have.
+3. **Run the real-data compose diff (below) BEFORE the version bump reaches `master`.** Unit tests run fixtures; this runs the real pages of every site the change affects.
 4. **Push to `master`** → `.github/workflows/publish.yml` runs `npm ci` + build + `npm publish` automatically. It no-ops on an unchanged version, so a merged change with no bump publishes nothing (it no-op'd twice on 2026-10-03). Local `npm publish` is discouraged; CI uses its own write token.
 5. **Bump consumers.** Pin the new version in each consumer's `package.json` and TEXT-PATCH the lockfile entry (version, resolved, integrity) rather than running `npm install`, which on Windows prunes the Linux-only optional dependencies the Amplify build needs; prove it with `npm ci --dry-run`. Templates, Secure (exact pin plus a re-vendored worker manifest) and the portal each had a "surgically patched lockfile" commit for every 1.7x/1.8x adoption.
 6. Deploy: the portal ships via its release train, NOT a merge to `main` (`vivreal-infra:vivreal-lambda` `references/deploy.md`); Templates releases via the **promote-stable** workflow (main→stable FF, then release builds for the `live` build tier only; demo sites catch up weekly), merging Templates `main` alone releases nothing. Expect a rollout wave across live sites after promote-stable.
@@ -130,7 +130,7 @@ one-byte change).
 
 ### The pre-publish real-data compose diff (how 1.81.0 and 1.83.0 were proven)
 
-Render EVERY stored page of every live Templates site through the OLD and the NEW `dist` on identical real data, and diff the outcomes. It is a local, read-only check; nothing is published or deployed by it.
+Render every stored page of the AFFECTED live Templates sites through the OLD and the NEW `dist` on identical real data, and diff the outcomes. It is a local, read-only check; nothing is published or deployed by it. **Which sites** (owner rules P-template-validate and P-fleet-diff as amended, release C lesson L-C-03): a read of each site's composed sections, from the step 1 snapshot, picks the sites with a page that draws a changed component, plus one site that draws none as an unaffected control; a change every page draws (the composer, a shared shell) affects every site. `vivreal-workflow:package-publisher` carries the selection steps.
 
 1. **Collect the data the live sites read.** List the Amplify apps (`aws amplify list-apps`), keep those whose repository is `Vivreal_Templates`, and for each read its `API_KEY` and `SITE_ID` env values. Fetch exactly what a live site fetches from `https://client.vivreal.io`: `GET /tenant/siteDetails?siteId=...`, then every `collectionId` / `itemCollectionId` the pages bind (`/tenant/collectionObjects?collectionId=...`) and every `integrationProvider` / `platforms` entry (`/tenant/integrationObjects?type=...`, `linkedin` canonicalised to `linkedIn`). Map items with Templates' own `src/lib/api/collections/mapItem.ts` `toContentItem`, so the renderer sees what production hands it. **This file holds real customer content and API keys: keep it in the session scratchpad, never in a repo.** **Throttle the fetch and fetch ONCE.** On 2026-10-04 this step, run as a burst (about 600 Client API calls in five minutes against the shared-tier Atlas cluster's 500-connection cap), degraded the cluster for hours and took Secure's site list down for every group (vivreal-hq `docs/projects/incident-2026-10-04-site-list/diagnosis.md`). Run at most 2 to 3 requests concurrently with a pause between sites, save the data file, and reuse it for every re-run of steps 2 to 5 instead of fetching again; if Client API latency is already elevated, wait.
    **Two cautions.** Read the app env with a `--query` naming only `API_KEY` and `SITE_ID`, into variables, and never print the values (they are per-site API keys). And every fetch that misses the API edge cache is an Atlas read against the M0 cluster's weekly data-out cap, which production sites share: run the collection once per candidate and diff from the saved data, never in a loop (limits and the throttle signature: `vivreal-infra:vivreal-atlas-topology`).
@@ -142,6 +142,43 @@ Render EVERY stored page of every live Templates site through the OLD and the NE
 Measured: 1.80.1 composed all 103 stored pages of both Vivreal sites (both home pages crash without the guard); 1.81.0 composed 442 pages on 20 sites with 0 failures and cut real dead hrefs from 105 to 0; 1.83.0's run over 436 pages dropped only 9 placeholder sections on one demo site, after the first candidate had been caught removing 30 forms on 17 sites (ledger, 2026-10-03 and 2026-10-04).
 
 Rollback: ship a new patch (don't `npm unpublish`); consumers can pin an older version as an emergency lock. **Dependency discipline**: this package must stay installable with a single GitHub Packages token, adding a second private `@hillbombcreations/*` dependency 401s customer Amplify builds (this killed 1.35.0; see the powered-by gate below).
+
+## Release C: 1.102.0 and 1.102.1 (read at `origin/master` `3b8657f`, the merge of #147 that carries 1.102.1)
+
+Published and pinned by release C's batches, live 2026-11-24 (Templates `origin/stable` `a7121e5f` and the portal
+`origin/stable` `429e1b00` on 1.102.1; Secure `7e3c2334` and Client `8249a02f` on 1.102.0, plan WB-27; each pin read
+in its deployed `package.json` on 2026-11-24). Every consumer moves only by its own repo's PR (P-packages); read each pin in its `package.json`.
+
+- **The empty photo band gate** (F570, PB-R1 to PB-R7, design `design-empty-photo-band.md`): `hidesEmptyPhotoBands
+  (siteData)` is true only for `emptyPhotoBands === 'hide'` (VR_Secure_API stamps it on every new customer site, never
+  a demo tenant's). On a live render, a list-bound band of one of the nine photo band layouts that would draw nothing
+  is dropped, judged by `DRAWS_NOTHING_WITHOUT_PHOTOS` (`composition/resolveLeafData.ts`), a Map from layout to the
+  layout's OWN item rule in `layouts/photoBandItems.ts` (one rule per layout, never a copy; a separate module because
+  five of the nine layouts are client modules). Preview never drops. **The page exemption** (PB-R4): `pageDrawsContent`
+  stays true for a page this rule emptied, so the page is not treated as empty. A feature-item hero with no item
+  photo borrows the page photo (PB-R6, `data-hero-figure=page-photo`).
+- **`photoBandPrompt`** (PB-R5, PB-R7): when Studio passes `options.photoBandPrompt`, the band is kept, marked
+  `photoBandHidden`, and draws `components/PhotoBandPrompt.tsx` ("Hidden on your site until it has photos. Add photos to
+  {list}.", `data-photo-band-prompt`), the list's name from `photoBandPrompt.listNames` by the band's
+  `collectionId`. A customer page never passes it (Templates PB-T1).
+- **The nested menu panel** (F627): `clampPanelLeft(centre, width, viewport)` moves the open Grouped list panel just
+  enough to sit 16 px inside each edge (none when it fits, so the server render is unchanged), reading the visual
+  viewport's width; a level 2 link with nothing inside draws as a link.
+- **1.102.1, brand-coloured text that reads on any brand colour**: chips on or beside a photo have a solid ground and
+  an ink judged on it (`pairings/chips.ts`; `--inverse-readable` and `--accent-on-white` emitted by `themeTokenStyle`
+  only where the default pair fails), and a card's price and other brand-coloured text take
+  `--brand-text-readable` (or `brandTextInk(accent, inkGround)` in a layout), re-judged by a page colour treatment and
+  a dark band (`docs/CONTRAST.md`, `docs/DESIGN_LANGUAGE.md`).
+- **Reduced motion and the first screen** (1.102.1, F652): `ScrollReveal`, like `SectionReveal`, renders visible on the
+  server and the first client render (`data-scroll-reveal`); the hide and fade are armed after mount, only with
+  motion allowed and only BELOW the fold, so a reduced-motion visitor, a visitor with no script, and anything already
+  on screen at load are never hidden. `AnimatedCounter` and `ProductImage`'s fade had the same mismatch and are fixed.
+- **Also in 1.102.0**: the letter mark follows Secure's favicon rule from one shared case table (I3); low stock judged
+  per option (F417, the SW-C15 truth table); the designed shops' product pages draw the owner's quantity options
+  (F544); the event agenda prints on the business's clock, the same on every machine (F448); visitor text fields are
+  16 px on phones (F432); a long cart name wraps to two lines (F489); an embed address that is not http(s) draws
+  nothing (F461); a menu page with no title of its own makes no empty section header (F225); an anchored steps block
+  joins the help page rail (F536).
 
 ## Key patterns
 

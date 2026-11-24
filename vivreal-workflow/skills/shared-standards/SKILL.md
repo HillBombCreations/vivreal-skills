@@ -14,19 +14,83 @@ Every Vivreal repository is cloned side by side directly under one folder, which
 2. Otherwise derive it from the checkout you are in: `git rev-parse --git-common-dir` names the MAIN checkout's `.git`, even from a worktree under `_wt/`, and the folder above that checkout is the root when it holds `vivreal-hq/.git`. From a folder that is not a checkout (`_ops/`), the root is the first ancestor holding `vivreal-hq/.git`.
 3. Otherwise STOP and report "no Vivreal clone root found". Never guess a path and never write a literal drive or home path into a command.
 
-Once the vivreal-workflow plugin is loaded (on a fresh machine, from the second session on), its SessionStart hook exports the derived value to every Bash command of the session, subagents included (measured 2026-11-04), so `$VIVREAL_REPOS` just works in Bash. The PowerShell tool never receives it, so do repo work in Bash. Hooks and the db-explorer MCP server derive it themselves (`repos-root.cjs`). In a first session, or any shell without it, the two lines below derive it the same way:
+Once the vivreal-workflow plugin is loaded (on a fresh machine, from the second session on), its SessionStart hook exports the derived value to every Bash command of the session, subagents included (measured 2026-11-04), so `$VIVREAL_REPOS` just works in Bash. The PowerShell tool never receives it, so do repo work in Bash. Hooks and the db-explorer MCP server derive it themselves (`repos-root.cjs`). In a first session, or any shell without it, the two lines below derive it the same way. As written they are for
+the main thread only: both lines run in the folder the session started in, which the owner-checkout
+guard refuses for a subagent. A subagent that lacks the variable runs them after a `cd` into the
+worktree its brief names (from a worktree under `_wt/` the first line still finds the root).
 ```bash
 : "${VIVREAL_REPOS:=$(cd "$(dirname "$(git rev-parse --git-common-dir)")/.." && pwd)}"
-test -e "$VIVREAL_REPOS/vivreal-hq/.git" || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
+ls "$VIVREAL_REPOS" | grep -qx vivreal-hq || { echo "no Vivreal clone root found: open the session inside a Vivreal clone"; exit 1; }
 ```
 Worktrees go under `$VIVREAL_REPOS/_wt/`; one-shot production scripts under `$VIVREAL_REPOS/_ops/`.
 
 - **A sibling repo you need is missing:** clone it, `gh repo clone HillBombCreations/<repo> "$VIVREAL_REPOS/<repo>"`, rather than reporting a hole.
-- **A repo has `.env.example` and no `.env.local`:** run `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/onboarding/fetch-env-local.js" <key> "$VIVREAL_REPOS/<repo>"` (the key is the repo's `envLocal` in `onboarding/repos.json`). It prints names, never values, and lists the personal keys still to fill.
-- **`npm` in Bash needs no token setup, and only installs get a token:** the same hook runs `npm` and `npx` through a wrapper. Install and read commands (`ci`, `install`, `i`, `add`, `update`, `view`, `info`, `outdated`, and `npx` or `npm exec` naming `@hillbombcreations/`) get the shared READ-ONLY packages token; `npm publish` alone gets the WRITE token, and only for its upload: its lifecycle scripts and its `npm pack` run first with no token, then the packed tarball is published with `--ignore-scripts`; every other command (`npm run build`, `npm test`, `npx next build` and the rest) gets NONE, and a `NODE_AUTH_TOKEN` you set is stripped from it too, because a Next.js build cache writes environment values to disk (owners, 2026-11-04). Each token is read from AWS Secrets Manager with your own AWS sign-in at the moment npm runs (the secret names are keys `packagesTokenSecret` and `packagesWriteTokenSecret` of `${VIVREAL_REPOS}/vivreal-hq/.vivreal/private-names.json`), never from `gh auth token`, and the wrapper never prints it or writes it to a file; the npm child that receives it, and that child's install scripts, can read their own environment. When a part is missing (the key, the secret, or your AWS sign-in) it says which, and npm runs without a token.
+- **A repo has `.env.example` and no `.env.local`:** run `cd "$VIVREAL_REPOS/_wt/<your worktree>" && node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/onboarding/fetch-env-local.js" <key> .` (the key is the repo's `envLocal` in `onboarding/repos.json`). It prints names, never values, and lists the personal keys still to fill.
+- **`npm` in Bash needs no token setup, and only installs get a token:** the same hook runs `npm` and `npx` through a wrapper. Install and read commands (`ci`, `install`, `i`, `add`, `update`, `view`, `info`, `outdated`, and `npx` or `npm exec` naming `@hillbombcreations/`) get the shared READ-ONLY packages token; `npm publish` alone gets the WRITE token, and only for its upload: its lifecycle scripts and its `npm pack` run first with no token, then the packed tarball is published with `--ignore-scripts`; every other command (`npm run build`, `npm test`, `npx next build` and the rest) gets NONE, and a `NODE_AUTH_TOKEN` you set is stripped from it too, because a Next.js build cache writes environment values to disk (owners, 2026-11-04). Each token is read from AWS Secrets Manager with your own AWS sign-in at the moment npm runs (the secret names are keys `packagesTokenSecret` and `packagesWriteTokenSecret` of hq's `.vivreal/private-names.json`, which the hook reads from the hq clone; read it yourself in `${VIVREAL_REPOS}/_wt/hq-main`), never from `gh auth token`, and the wrapper never prints it or writes it to a file; the npm child that receives it, and that child's install scripts, can read their own environment. When a part is missing (the key, the secret, or your AWS sign-in) it says which, and npm runs without a token.
+
+### Every clone at the root is an owner's checkout: agents work in worktrees (F641)
+The clones directly under `${VIVREAL_REPOS}` (the hq clone `vivreal-hq` among them) are the owners' own
+checkouts. A subagent runs nothing in one, not even `git show`, `git log` or `git status`, and never
+starts a command there without a `cd` first (release C lesson L-C-01: three agents ran git in the
+hq clone on one day because definitions named it). The vivreal-workflow owner-checkout guard
+(PreToolUse, Bash and PowerShell) refuses a subagent's command whose folder is a clone at the root:
+the folder a `cd`, `pushd` or `Set-Location` moves to, a `git -C`, `--git-dir`, `--work-tree` or
+`GIT_DIR`, else the folder the command starts in. It follows `popd`, `cd -` and the end of a
+subshell back to the folder before, and looks through `timeout`, `nohup`, `env`, `nice`, `setsid`,
+`wsl`, `eval` and a shell's `-c` to the command they run. It allows `_wt/` and `_ops/`, a linked
+worktree elsewhere under the root (a folder whose nearest `.git` is a file, such as an
+`isolation: worktree` subagent's folder inside a clone), anything outside the
+root, the main thread, the one-off clone form and the three fleets below. So every command a subagent runs starts with
+`cd "$VIVREAL_REPOS/_wt/<your worktree>" &&` (or `_ops/<folder>`).
+- **hq paths name a kept hq worktree, never the hq clone.** Reads and hq tools: `${VIVREAL_REPOS}/_wt/hq-main`,
+  detached at `origin/main`; a ref read needs no checkout
+  (`git -C "$VIVREAL_REPOS/_wt/hq-main" fetch origin && git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:<path>`),
+  and a file read or an hq tool first brings it to `origin/main` when it is clean
+  (`cd "$VIVREAL_REPOS/_wt/hq-main" && test -z "$(git status --porcelain)" && git checkout --detach origin/main`);
+  a tool that needs packages gets `npm ci` there. Writes (a plan, a release record,
+  `docs/projects/<slug>/`, recorded footage) go in the hq worktree your brief names, on its branch,
+  written below as `${VIVREAL_REPOS}/_wt/<hq worktree>`. Every hq path in these skills means one of the two.
+- **The one thing a subagent runs in a clone: the one-off form.** `git -C "$VIVREAL_REPOS/<repo>" fetch origin`
+  <!-- guard-check: skip, a syntax template with placeholders and alternatives; the real one-off form it describes is allowed -->
+  and `git -C "$VIVREAL_REPOS/<repo>" worktree add [-b <branch> --no-track | --detach] "$VIVREAL_REPOS/_wt/<name>" <ref>`
+  (or a path under `_ops/`). Both touch only the clone's shared `.git`, never the owner's working tree
+  or index, and the guard allows exactly these two, only with `git -C` (not after a `cd` into the
+  clone), and `worktree add` only of a path under `_wt/` or `_ops/`. It reads them strictly, so keep
+  them plain: no other git option before the subcommand (`-c`), no `GIT_*` variable set in the
+  command, a `fetch` with a named remote and only everyday options (`--prune`, `--tags`,
+  `--quiet`; never `--upload-pack`, `--update-head-ok`, `--prune-tags`, `--depth`, `--filter` or a
+  refspec that writes a branch or a tag), and a `worktree add` without `-f`, `--force` or `-B`. Everything else, `show`, `log`,
+  `status`, `ls-remote`, `worktree remove`, a script, an install, runs in a worktree.
+- **A kept read worktree per repo:** `$VIVREAL_REPOS/_wt/<repo>-read`, detached at the deployed line,
+  made once with the one-off form (`--detach ... origin/<line>`); a ref read is
+  `git -C "$VIVREAL_REPOS/_wt/<repo>-read" show origin/<line>:<path>` after a fetch. hq's is `_wt/hq-main`.
+- **Three owner-operated fleets keep their data in a clone,** untracked and only there: the lead
+  store (`packages/leadgen/Data/`, not regenerable) and the capture session files and fixtures
+  (`packages/content-studio`) in the hq clone, the captures and `.env` in the Vivreal_Site_Migrator
+  clone. So, and only in those data folders, never git: `vivreal-leadgen` agents run their tools
+  in `packages/leadgen`, `vivreal-content` agents in `packages/content-studio`, and
+  `vivreal-site-migrator` agents in `captures/` and, at the Vivreal_Site_Migrator clone root where
+  its `.env` sits, only its own tools (`node commands/...`, `node scripts/...`, `node -e`,
+  `npm run <script>`), with redirections (`2>&1`, `> captures/<kit>/crawl.log`), piped only into
+  `tail`, `head`, `grep`, `wc`, `sort` or `cat` reading stdin, and an `echo "exit=$?"` after it.
+  A content or leadgen agent at the hq root, which holds none of its tools, starts with
+  `cd packages/content-studio &&` or `cd packages/leadgen &&` and reads hq files from there
+  (`ls -t ../../content/calendars/*.md`). A `cd` within that clone runs nothing and is allowed; anything else there
+  (`rm -rf docs`, `npm install` at the root, a tool in another package's folder) is refused, and so
+  is every step in another repo, which uses a worktree like everyone else. A step of theirs that
+  changes a tracked file (the migrator's capability regen in `packages/site-loader`) runs in a
+  worktree of that repo. The guard reads the plugin from `agent_type`, and its refusal names the
+  data folder for that fleet's agents.
+- **What the guard cannot see:** a folder named by a variable the command did not set, a script that
+  changes folder itself, a program outside its wrapper list that runs another (`xargs`,
+  `find -exec`, `sudo`, `env -S`), a folder a program takes as an option (`npm --prefix`,
+  `make -C`), a script fed on stdin (`bash <<EOF`), a `GIT_*` variable exported through
+  `typeset -x`, PowerShell `iex`, a `cd` in a pipeline or to a missing folder outside the root, a
+  file written through a path argument (`rm -rf <clone>/docs` from a worktree), a file a redirection writes, a
+  file read from elsewhere. The rule still holds there.
 
 ### Cross-repo docs: the hq dev docs
-Cross-repo flows, decisions, dependency maps, the AWS estate and operations are described in the vivreal-hq dev docs, `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/README.md` (a symptom table, then use cases and references). Each repo's `CLAUDE.md` owns that repo's internals; the dev docs own what crosses repos (owners, 2026-11-04). Two hq tools, run from `${VIVREAL_REPOS}/vivreal-hq`, find the right page before you change code: `npm run docs:route -- "<symptom or component>"` names the document to open, and `npm run docs:impact -- <repo>:<path>` lists the documents, maps and pinning tests that cover a file you are about to change. If either script is missing on that checkout, open the README's symptom table by hand. **The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04, a banner on each page points here): never cite it as current and never edit it.
+Cross-repo flows, decisions, dependency maps, the AWS estate and operations are described in the vivreal-hq dev docs, `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/README.md` (a symptom table, then use cases and references). Each repo's `CLAUDE.md` owns that repo's internals; the dev docs own what crosses repos (owners, 2026-11-04). Two hq tools, run from the kept hq worktree `${VIVREAL_REPOS}/_wt/hq-main`, find the right page before you change code: `npm run docs:route -- "<symptom or component>"` names the document to open, and `npm run docs:impact -- <repo>:<path>` lists the documents, maps and pinning tests that cover a file you are about to change. If either script is missing in that worktree, open the README's symptom table by hand. **The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04, a banner on each page points here): never cite it as current and never edit it.
 
 ### When you see `${VIVREAL_REPOS}/...` in this doc or any agent prompt
 Resolve it before reading. Never paste the literal placeholder into a Read or Bash command, substitute the actual path.
@@ -68,7 +132,7 @@ Anyone who drives the browser tool (the Playwright MCP) reads [references/browse
 ---
 
 ## Who "an owner" is
-An owner means either co-owner, Justin or Hunter. Either one may give any GO, any QA-walk sign-off and any owner decision, for any change. Nobody else may. Never wait for one particular owner, and never treat one owner's GO as needing the other's.
+An owner means either co-owner, Justin or Hunter. Either one may give any GO, any QA-walk sign-off and any owner decision, for any change. Nobody else may. Never wait for one particular owner, and never treat one owner's GO as needing the other's. Which owner gave it is read from the session's `gh` login (`gh api user --jq .login`), mapped by P-go-form, never asked, unless the login is one the map does not name or there is none (release C lesson L-C-22; the steps are `vivreal-workflow:release-conductor` section 4).
 
 ## Owner rules every agent follows
 
@@ -93,7 +157,8 @@ agent acts on itself, by ID:
 
 **1. Read the deployed line, not a working tree.** Most checkouts on this machine sit on a
 feature branch, and a stale one will have you describing code no customer has ever run.
-`git fetch origin --prune` first, then quote a ref. Release-train repos deploy from
+`git fetch origin --prune` first, then quote a ref, both in a worktree of the repo (its kept read
+worktree, `$VIVREAL_REPOS/_wt/<repo>-read`, "Path resolution"), never in the clone. Release-train repos deploy from
 `origin/stable`; merge-to-deploy repos from `origin/main`; **two repos have no `main` at all**
 and answer to `origin/master`. Ask, do not assume: `git ls-remote --symref origin HEAD`.
 For the portal in production, read its release JSON endpoint more than once, because one read
@@ -144,7 +209,7 @@ three searches returned three different incomplete answers.
 | Removing cross-repo code (consumer → producer) | "Cross-stack removal ordering" |
 | `package-lock.json`, `npm ci` failing in CI but not locally, peer-dep errors | "Dependencies, lockfiles and the CI runner" |
 | A `wsl` or `wsl.exe` step: a Linux install, test, gate or pack on a Windows machine | [references/wsl.md](references/wsl.md) |
-| Dispatching a deploy workflow, or claiming a stack updated | [references/aws-infra.md](references/aws-infra.md): "Reading and verifying a CloudFormation deploy" |
+| Dispatching a deploy workflow, building a change set, or claiming a stack updated | [references/aws-infra.md](references/aws-infra.md): "Reading and verifying a CloudFormation deploy" (the tag read rule first) |
 | Backports, cherry-picks, "did this fix reach `release/*`" | [references/aws-infra.md](references/aws-infra.md): "Proving a fix reached a line" |
 | Any code diff, in any repo (always, before writing code and before review) | "Anti-pattern catalog", which points to [references/anti-patterns.md](references/anti-patterns.md) |
 | Anything not listed above | Skip this file. CLAUDE.md is sufficient. |
@@ -341,10 +406,17 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 - **A GitHub Actions billing refusal** is a completed, failed job with ZERO steps, whose logs
   expire. A job that has steps and fails is something else, and no runs at all is evidence of
   neither.
+- **A suite that runs in one process can outgrow the runner's memory, and a hung test step has no
+  log** (release C, L-C-34). EventHandler's deploy sat 34 minutes in "Test + coverage thresholds" with
+  no log uploaded: one mocha process under c8 peaked at about 7.1 GB on a 7.9 GB runner (fixed by
+  running 4 sequential shards of 3072 MB each, peak 3.4 GB). A repo whose CI suite runs in one process
+  measures its peak memory against the runner when its test count grows (`/usr/bin/time -v` on Linux),
+  and every deploy workflow's test step carries a `timeout-minutes`, so a hang fails instead of holding
+  the deploy.
 
 ## Testing rules
-Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the e2e
-harness rules, the red proof every agent follows (forms (a), (b) and (c), and the `Red:` line), real
+Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the test
+guard rule (no unit test reaches real AWS or the network), the e2e harness rules, the red proof every agent follows (forms (a), (b) and (c), and the `Red:` line), real
 code paths and real layers over fakes, fixtures recorded from real answers, mocks in the deployed
 shape, inert fixes, honest assertions, the build-is-not-the-suite rule, vacuous controls, the
 hook-is-the-one-full-run rule, and the specs that touch your files, each under a timeout.
@@ -374,7 +446,7 @@ Every Vivreal repo has a CLAUDE.md at its root with conventions, patterns, and g
 | VR_OnCall_Webhook | `${VIVREAL_REPOS}/VR_OnCall_Webhook/CLAUDE.md` | Sentry-webhook receiver → triggers VR_OnCall_Agent |
 | Vivreal_EventHandler | `${VIVREAL_REPOS}/Vivreal_EventHandler/CLAUDE.md` | Step Functions site deployment pipeline (Serverless Framework, not SAM) |
 | Vivreal_Site_Migrator | `${VIVREAL_REPOS}/Vivreal_Site_Migrator/CLAUDE.md` at `origin/master` | Migration (`/migrate`) + template/identity-kit (`/template`) pipelines (`CLAUDE.md` at `origin/master`, plus `docs/migration-flow.md` and `docs/template-flow.md`) |
-| vivreal-hq | `${VIVREAL_REPOS}/vivreal-hq/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Since v7 it also holds the **admin app** (`packages/admin-app`, the only home of staff surfaces including the outreach CRM). **Merging hq `main` deploys nothing:** the admin Amplify app builds only `deploy/admin-app`, so its deploy is a fast-forward of that branch, and its three stacks and every `packages/fleet-ops` stack deploy by hand from a clean worktree at the merge (v7 release runbook, hq row). Its agents and commands live in the `vivreal-skills` marketplace, not in its `.claude/`. |
+| vivreal-hq | `${VIVREAL_REPOS}/_wt/hq-main/CLAUDE.md` (+ `packages/*/CLAUDE.md`) | **Canonical for brand voice, content and lead generation.** Voice + positioning in `brand/`, planning inputs in `knowledge/` and `content/`, the two toolchains under `packages/leadgen` (CommonJS) and `packages/content-studio` (ESM). **`brand/voice.md` outranks everything for any copy.** Since v7 it also holds the **admin app** (`packages/admin-app`, the only home of staff surfaces including the outreach CRM). **Merging hq `main` deploys nothing:** the admin Amplify app builds only `deploy/admin-app`, so its deploy is a fast-forward of that branch, and its three stacks and every `packages/fleet-ops` stack deploy by hand from a clean worktree at the merge (v7 release runbook, hq row). Its agents and commands live in the `vivreal-skills` marketplace, not in its `.claude/`. |
 | vivreal-content | `${VIVREAL_REPOS}/vivreal-content\` | **DEAD SOURCE.** Consolidated into `vivreal-hq` on 2026-08-03 and frozen: its last commit is that same day, while the hq content tree has moved repeatedly since. The checkout still exists and still holds its own agents and commands, which is exactly why it gets read by mistake. Read and edit content work in `vivreal-hq`, never here. |
 | Vivreal_SSR_Landing | `${VIVREAL_REPOS}/Vivreal_SSR_Landing/AGENTS.md` (+ `docs/`) | **DEAD SOURCE: this repo does NOT serve vivreal.io.** `vivreal.io` and `www.vivreal.io` are CloudFront `<vivreal-io-distribution-id>` (real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`), whose default origin is the Vivreal_Templates Amplify app `vivreal` (`<vivreal-io-amplify-app-id>`, real id in vivreal-hq `docs/dev-docs/05-reference/aws-estate.md`, branch `stable`), with `/app*` routed to the portal's `stable`. Its pages are CMS content in the Vivreal group's site record plus a few Templates code routes (`/domains`, `/mcp`, `/llms.txt`). No SSR_Landing Amplify app exists in the account (sweep 2026-09-16). Change vivreal.io through the portal or Vivreal_Templates, never here. |
 | vivreal-edit-extractor | `${VIVREAL_REPOS}/vivreal-edit-extractor\` | EditDNA extraction tooling (companion to vivreal-content) |
@@ -394,7 +466,7 @@ and When to consult the Lambda inventory. The estate itself is vivreal-hq
 `docs/dev-docs/05-reference/aws-estate.md`.
 
 ## Cross-repo documentation (the hq dev docs)
-The standing description of how the system works across repos lives in vivreal-hq, `${VIVREAL_REPOS}/vivreal-hq/docs/dev-docs/README.md`, and is
+The standing description of how the system works across repos lives in vivreal-hq, `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/README.md`, and is
 maintained by `vivreal-workflow:system-doc-writer`. Check it during research before grepping blindly.
 
 | You need | Open (under `docs/dev-docs/`) |
@@ -492,7 +564,7 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 
 Read [references/anti-patterns.md](references/anti-patterns.md) on every code diff. It carries
 every rule in checklist form, then each entry with how to spot it and its guard (source of
-truth: `${VIVREAL_REPOS}/vivreal-hq/docs/standards/anti-patterns.md`, which also carries the
+truth: `${VIVREAL_REPOS}/_wt/hq-main/docs/standards/anti-patterns.md`, which also carries the
 evidence and enforcement status). A diff that adds an instance of any rule there is wrong even
 when its tests pass.
 
@@ -522,7 +594,8 @@ The portal uses **Playwright e2e + e2e/fixtures** (see the spec files in `e2e/` 
 - Tests are unit-style with **heavy mocking** via `test/helpers/loadWithMocks.js`
 - Mock DB adapters, AWS SDK clients, sockets, service dependencies
 - **An unstubbed AWS SDK client runs with the machine's real credentials** and can write
-  production. Stub every client, and make a test that reaches the network fail.
+  production. Stub every client, and keep the test guard rule ([references/testing.md](references/testing.md)):
+  fake credentials, and every outbound connection but loopback blocked, in the bootstrap.
 - Endpoint-focused: cover route wiring, handlers, controllers, validators, services
 - Branch coverage required: success path, validation failure, empty response, error branches
 - Run: `npm run test:unit` (no coverage gate, faster) or `npm test` (with NYC 100% gate)

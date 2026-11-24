@@ -18,19 +18,31 @@ items `UF-001` to `UF-113`, approved agent corrections `A-01` to `A-12`, the 80 
 themes, the gaps, and the owners' answers to its framing questions (2026-11-19). The ids after
 each rule cite that record; the owners' own words live only there. Where an answer of 2026-11-19
 changed or settled a rule, the rule says "owners, 2026-11-19". An owner correction that came after
-the record carries its own date and backlog row instead (PAGE-9), making 81 rules here.
+the record carries its own date and its backlog row or lesson instead (PAGE-9, TITLE-6), making 82
+rules here; PAGE-3 carries a later owner broadening (L-C-23).
 
 **Paths.** Every path is in `${VIVREAL_REPOS}/Vivreal_Portal_Mobile/`, read at `origin/stable`
 `9974e41b` (v0.46.0). Re-read a file at the current deployed line before you rely on it; a moved
-path is a reason to look, never a reason to hand-build.
+path is a reason to look, never a reason to hand-build. **Release C** adds three shared components,
+read at its approved head `cf76b401` (`release-c/portal` #497) and live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`): `IconLine`
+(`src/components/UI/icon-line.tsx`, TITLE-6), `SheetHeader` (`src/components/UI/sheet-header.tsx`,
+HELP-1, HELP-3, TITLE-1, SHEET-3; gap G4) and `SearchableSelect`
+(`src/components/UI/searchable-select.tsx`, SEL-3; gap G2). All three files are present at `429e1b00`;
+`sheet-title-row.ts` is not.
 
 **Gaps.** A rule whose "Use" names a gap has no shared component for that part yet. Do not
 hand-roll one and do not copy a hand version: ask the owners first (the list is at the end).
 
-**Framing.** When the look, the placement, the order, the shape per width or the words that frame
-a feature are not settled by a rule here, by the record, by an owner-approved mockup the plan
-names, or by the owner-approved plan's own words, stop building that piece and report the question
-to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep moving.
+**Framing.** When the look, the placement, the order or the shape per width is not settled by a
+rule here, by the record, by an owner-approved mockup the plan names, or by the owner-approved
+plan, stop building that piece and report the question to whoever dispatched you, who asks the
+owners (PROC-5). Never pick one to keep moving.
+
+**Words are not a framing question** (owners, Justin 2026-11-21T00:51:53Z, L-C-02). The words that
+frame a feature, and every other owner-facing line, are approved by a voice pass against vivreal-hq `brand/voice.md`
+(`vivreal-product:marketing-auditor`) plus the reviewer's pass of the piece that carries them;
+there is no owner word sitting. Write the wording you recommend, list it as drafted for that pass,
+and keep building. Owners still decide features, behaviour, looks and mockups.
 
 ## 1. Cards: products and orders (7)
 
@@ -113,7 +125,7 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
 - **HELP-5. Help is light:** a link to the article beside each piece, not videos everywhere.
   (UF-021, UF-087) Use: `HelpLink`.
 
-## 4. Titles and long words (5)
+## 4. Titles and long words (6)
 
 - **TITLE-1. A title wraps to at most two lines, then cuts with "..."** (owners, 2026-11-19, for every
   title: page, sheet, dialog and card). A page board sentence is at most two lines at 360 with its
@@ -133,6 +145,18 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
   keep the owner's casing whatever the shop's style, and the live site keeps its own look (owners,
   2026-11-19). One casing rule across a card. (UF-111) Use: no shared component; the order card's
   item lines (`OrderItems.tsx`) take the shop's capitals today, which this rule replaces.
+- **TITLE-6. An icon and its words are one unit: they never wrap apart** (owner, Justin 2026-11-23,
+  release C lesson L-C-19, after the record). In every icon-plus-label row (a heading, a status
+  line, a button, a chip, a list row) the icon sits on the first line of its text, at a fixed size
+  that never shrinks, aligned to that first line; the words wrap only inside their own box beside
+  the icon, never under it, and no row ever holds only an icon. The pickup page's heading "Still
+  Ready for pickup" dropped below its info icon on an owner's iPhone, leaving a row with only the
+  icon (D-OWN-1). Check every such row at 320 and 390 with its longest real words. Use: `IconLine`
+  (`src/components/UI/icon-line.tsx`, release C, `cf76b401`): one row that never wraps, the icon in a
+  box one line tall (`h-[1lh]`) that does not shrink, the words in a `min-w-0 flex-1` box; put the
+  text's size and line height on the row. Its tests: `tests/unit/releaseC/dOwn1IconLine.test.ts` and
+  `e2e/pickup-heading-beside-mark.spec.ts`. On a line without it (`9974e41b`), never hand-roll a
+  second shared one.
 
 ## 5. Forms: shared controls only (9)
 
@@ -176,9 +200,12 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
   control, never page navigation), an either-or is a `Switch`, up to about fifteen is the select,
   and a longer list needs search: one shared searchable select, a bottom sheet with a search box on
   a phone and a dropdown with search on a computer (owners, 2026-11-19). (UF-007) Use:
-  `src/components/UI/segmented-control.tsx`, `src/components/UI/switch.tsx`, `select.tsx`. Gap G2:
-  the shared searchable select is not built; `StateSelect`, `ContentSourceSelect` and the business
-  time zone row are three hand versions. Do not add a fourth; ask.
+  `src/components/UI/segmented-control.tsx`, `src/components/UI/switch.tsx`, `select.tsx`, and for a
+  long list `SearchableSelect` (`src/components/UI/searchable-select.tsx`, release C F601, single pick
+  only; Content source moved onto it; live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`)). Before it, at `9974e41b`, `StateSelect`,
+  `ContentSourceSelect` and the business time zone row were three hand versions, and `StateSelect` at
+  `429e1b00` still names no `SearchableSelect`: move a hand version onto it when you touch one, and never
+  add a fourth.
 - **SEL-4. An important action is never the last option in a dropdown;** it gets its own visible
   button. (UF-080) Use: Studio's page picker
   (`src/components/Sites/Studio/LeftRail/PageSelector.tsx`) is the pattern.
@@ -217,9 +244,17 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
   Use: `src/components/Universal/PageContainer/index.tsx`, `PageBoard`,
   `src/components/Universal/PageToolbar/index.tsx`, `NamedRule`; guards `e2e/page-tops.spec.ts` and
   `tests/unit/components/Universal/pageTopRules.test.ts`.
-- **PAGE-3. The main content shows without a big scroll:** in the installed app at 390 by 797 the
-  first item sits above the tab bar, and what the owners want seen first (an offer above the options
-  it is about) comes first. (UF-076, UF-095, UF-109) Use: `PageBoard` plus `PageToolbar`.
+- **PAGE-3. What we most want people to see sits in the first screen, with no scroll** (broadened by
+  the owner, Justin 2026-11-23, release C lesson L-C-23: "People do the least amount of work
+  possible so they will likely do the least amount of scrolling"). In the installed app at 390 by
+  797 the first item sits above the tab bar. Selling points, offers, the recommended choice and any
+  line that changes a decision sit inside the first screen at 390, above the options they affect,
+  never only in a footer or after a list: the free year offer first sat under the plan grid and
+  needed a fix (D-P1-3). Where cards stack on a phone or a tablet, the recommended option goes first
+  (on the plans and pricing pages, Pro first, then Basic), chosen on purpose, never the order a wide
+  screen reads left to right. The DOM order matches the visual order, so a screen reader meets it
+  first too. Check it by measuring each named piece's box against the first screen at 390. (UF-076,
+  UF-095, UF-109) Use: `PageBoard` plus `PageToolbar`.
 - **PAGE-4. No summary tile rows, ever:** no strip of three or four tiles across the top with the real
   content below. (UF-002, UF-015) Use: a band, the board's sentence or uneven columns.
 - **PAGE-5. Desktop is its own deliberate pass:** extra width buys more content, never floating dead
@@ -342,23 +377,28 @@ to whoever dispatched you, who asks the owners (PROC-5). Never pick one to keep 
 - **PROC-4. A look change gets an owner-approved mockup first.** (UF-098, UF-105, UF-108) Use: no
   component.
 - **PROC-5. When the framing is not settled, ask the owners before building.** Stop that piece and
-  report the question to whoever dispatched you, who asks the owners; never pick. (UF-112) Use: no component.
+  report the question to whoever dispatched you, who asks the owners; never pick. Framing is the look,
+  the placement, the order and the shape per width; words are approved by the voice pass and the
+  reviewer, never asked (L-C-02). (UF-112) Use: no component.
 
 ## Gaps: no shared component yet; do not hand-roll; ask
 
 - **G2, a shared searchable select** (SEL-3). The owners want one, for lists over about fifteen: a
-  bottom sheet with a search box on a phone, a dropdown with search on a computer. Not built. Three
-  hand versions exist (`src/components/Universal/StateSelect/index.tsx`,
+  bottom sheet with a search box on a phone, a dropdown with search on a computer. Built in release C
+  as `SearchableSelect` (single pick; multi pick waits for its first caller), live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`). Three
+  hand versions existed before it (`src/components/Universal/StateSelect/index.tsx`,
   `src/components/Sites/Studio/LeftRail/ContentSourceSelect.tsx`, the business time zone row), and
   `select.tsx` documents the Studio delivery time zone as the one browser select left on purpose
   until this exists.
 - **G3, a card header of fixed lines** (CARD-2, CARD-3). Nothing draws "the same number of item
   lines, then and n more" as one piece, and the product card hand-writes the tile.
-- **G4, a sheet and dialog header with a help slot and a two-line title** (HELP-1, TITLE-1). Today it
-  is a list of class constants (`sheet-title-row.ts`) applied by hand in three files
+- **G4, a sheet and dialog header with a help slot and a two-line title** (HELP-1, TITLE-1). Built in
+  release C as `SheetHeader` (F602: Back, title, help, one action, Close; a `dialog` and a `panel`
+  frame), moved onto nine sheets, live since 2026-11-24 in portal v0.47.0 (`origin/stable` `429e1b00`), where `sheet-title-row.ts` is gone.
+  At `9974e41b` it was a list of class constants (`sheet-title-row.ts`) applied by hand in three files
   (`MobileEditSheet.tsx`, Add a page, `MediaPicker`); `FullScreenDialog`, `StepDialog`,
-  `BusinessDialogShell`, `UI/dialog` and `UI/bottom-sheet` have no help slot and cut their titles
-  at one line.
+  `BusinessDialogShell`, `UI/dialog` and `UI/bottom-sheet` had no help slot and cut their titles
+  at one line; check each at the deployed line before you rely on it.
 - **G5, a shared, counted scroll lock** (PERF-1). Two hand copies exist.
 - **G6, a long sheet that is safe by default** (SHEET-1). `pinned` is opt-in and `UI/dialog` scrolls
   its whole box, and no test catches a new sheet that scrolls its title away. Pass `pinned`.

@@ -22,18 +22,17 @@ delivery-orchestrator run. An agent that dispatches nothing does not need it.
    "last fetched" note, fetch and read them yourself:
    ```bash
    export MSYS_NO_PATHCONV=1
-   git -C "$VIVREAL_REPOS/vivreal-hq" fetch origin
-   git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:docs/standards/live-values.md
-   git -C "$VIVREAL_REPOS/vivreal-hq" show origin/main:docs/standards/INDEX.md
+   git -C "$VIVREAL_REPOS/_wt/hq-main" fetch origin
+   git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:docs/standards/live-values.md
+   git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:docs/standards/INDEX.md
    ```
    A line `This checkout cannot load the current rules (...)` means the hq checkout the session
    started in is stale: the `origin/main` index printed under it is the one that holds. A single
    line saying `no rules index could be read` means that hq clone's `origin/main` predates the
    shared rules and no rule was printed: run the fetch it names, then the two `show` commands above.
-   These three commands are the main thread's one allowed exception to L-B-45 (section 3): a fetch
-   and a `git show origin/main:<path>` in `$VIVREAL_REPOS/vivreal-hq` touch no working-tree file,
-   so the owner's checkout and its uncommitted work stay as they were. Nothing else runs there, and
-   no brief passes these commands to an agent: an agent reads hq in a kept worktree.
+   They run in the kept hq worktree (shared-standards, "Path resolution"; F641), the main thread's
+   reads too: a fetch there moves the refs every hq worktree shares, and nothing runs in the hq
+   clone itself, which is an owner's checkout with their uncommitted work.
 2. **Read the release state** on the branch the live value `release-state` names, never on `main`:
    fetch, then read `docs/projects/next-release-<X>/progress.md` at `origin/<that branch>`.
 3. **Open the sheet** (section 6, `references/sheet.md`) and see what is claimed in Assigned to.
@@ -62,7 +61,8 @@ exception an owner must approve, never the plan's default.
 2. **Walk the whole batch on the local stack, on the runtime it deploys on, until it passes**
    (P-local-validate). Anything that makes a local walk row fail (a broken flow, wrong behaviour, a
    defect against what the batch promises) is fixed in that repo's batch, with a delta review, and
-   the walk runs again, until it passes; a note or nit that fails no row goes to the backlog
+   the walk runs again, until it passes, in the WALK-THEN-FIX order of section 5 (every row first,
+   then every approved fix moves in together); a note or nit that fails no row goes to the backlog
    (P-ship-first). Only when the walk passes do the deployments start. A runtime move is
    validated on the new runtime locally, never proven by a tier in production.
 3. **Then deploy the backends back to back,** each proven live
@@ -81,9 +81,18 @@ exception an owner must approve, never the plan's default.
    follow-up promote flips an alarm's actions. An alarm that could page at its own creation (an
    absence alarm with no datapoint yet) is a design question the plan answers without a second
    deployment, or an owner exception in `decisions.md` (`vivreal-infra:vivreal-observability`).
+   **An absence alarm (did-not-run, no data) is created with `TreatMissingData: notBreaching`**, or
+   with its actions off and a flip after its first datapoint (release C, L-C-27): CMS's new
+   pickup-reminder did-not-run alarm read missing data as breaching over 3 x 3600 s, went to ALARM
+   at its creation before the hourly sweep's first run, and paged the owners; its booking sibling
+   did the same on 2026-10-30. The plan and its review check every new alarm for a creation-time
+   breach.
 6. **Check every plan before you run it:** its table of deployments per repo says at most 1 for
    every repo. More than 1 for any repo needs an owner's exception recorded in hq `decisions.md`;
-   without it, send the plan back (the reviewer FAILs it too).
+   without it, send the plan back (the reviewer FAILs it too). It also carries the section "Help and
+   marketing this release makes untrue or adds" (HELP-MKT-IN-PLAN, P-post-release-help as amended;
+   `vivreal-workflow:vivreal-writing-plans`): one row per help page and per vivreal.io marketing page.
+   A release plan without it goes back too.
 
 ## 2. Slots: the check before every dispatch
 
@@ -98,6 +107,18 @@ SendMessage restarts it, and it counts toward the cap exactly like a new dispatc
 work, resumed agents included, before EVERY dispatch and EVERY resume, call by call: in a turn that
 makes several calls, recount before each one, never once for the turn. Release B went one over the
 cap twice that way (L-B-19, then L-B-25: two resumes in one turn beside three running agents).
+
+**The count line, written before every dispatch and every resume** (release C, L-C-07, the third
+repeat: a resume made 4 against a cap of 3, and the resumed builder was stopped with nothing
+written). Before each Agent call and each SendMessage that restarts a finished agent, write the
+line `running: <n> (<names>) / cap: <the live agent-cap as it stands now>` from the agent list, and
+make the call only when n is below the cap. A turn with three calls writes the line three times.
+
+**Recount after each stop, against the cap as it stands then** (L-C-15). A cap can be conditional
+(an extra slot granted only while two walkers run): when the condition ends, the cap drops with it,
+and a dispatch in the same turn counts against the lower number. Closing one of two walkers dropped
+the cap from 4 to 3, and a fourth agent went out in that turn, one over (stopped at once, nothing
+written).
 
 **Over the cap by a slip: stop one agent, do not leave it running** (owner amendment to P-cap,
 2026-11-19: "ok so lets stop an agent dont just leace it running"; the hq rule text follows in its
@@ -134,7 +155,16 @@ check decides only a slot no piece holds. Before any dispatch that is not on the
    side work; side work takes only the slots beyond it.
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
-planning for the next release. A repo already in flight runs to approval before any new repo
+planning for the next release. **Help and marketing drafting is release work, not after-work**
+(owner HELP-MKT-IN-PLAN, Justin 2026-11-24T15:00:51Z, amending P-post-release-help: "The help and
+marketing are suppsoed to be apart of the rlease planning ... Similar to howwe do dev docs an dskills
+updates after a release to make sure they're all up to date and accurate we need to do the same for
+the help site pages and marketing site pages"). From the plan's approval, each row of its "Help and
+marketing this release makes untrue or adds" section takes a free slot DURING the release, as the dev
+docs and skills passes do: `vivreal-content:help-page-producer` drafts it against the approved head,
+`vivreal-product:marketing-auditor` voice-passes it, the reviewer passes it; only its PUBLISH waits for
+the deploy that changes the screens it describes. Release C drafted only M-09 and M-10 during the
+release and left 28 help pages, 3 new pages and M-01 to M-08 for after (L-C-36). A repo already in flight runs to approval before any new repo
 starts (P-finish-repo). In the other owner's session, work only the rows that owner claimed in
 the sheet's Assigned to column (P-sheet); never staff the release path unprompted.
 
@@ -156,15 +186,25 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   uses it in the same turn.
 - **Never tell a coder to "consult an expert".** That consumes the coder's own task. Name the
   knowledge skill it should load instead.
-- **hq reads in a brief name a kept hq worktree, never `$VIVREAL_REPOS/vivreal-hq`** (release B,
-  L-B-45). `$VIVREAL_REPOS/vivreal-hq` IS an owner's own checkout, so a brief that says to read
-  code with `git -C "$VIVREAL_REPOS/<repo>" ...` sends every hq read there: on 2026-11-20 three
-  agents ran a read-only fetch or command in it although the same brief said to run nothing there,
-  and the main thread ran a `worktree list` in it. Nothing was written, and it still breaks the
-  owners' rule. Every brief names the hq worktree path for hq reads (a kept one under
-  `$VIVREAL_REPOS/_wt/`, at the line the read needs), and says plainly that nothing runs in
-  `$VIVREAL_REPOS/vivreal-hq`; the `git -C "$VIVREAL_REPOS/<repo>"` form stays only for the
-  other repos.
+- **A brief names a worktree for every repo it touches, never a clone at the root** (release B,
+  L-B-45; release C, L-C-01, F641). The hq clone IS an owner's own checkout, and so is every clone
+  beside it: on 2026-11-20 three agents ran a read-only fetch or command in the hq clone although
+  the same brief said to run nothing there, and on 2026-11-21 three more (a fetch, a worktree add
+  and remove, a `git show`). Every brief names the worktree path under `$VIVREAL_REPOS/_wt/` for each
+  repo (for hq reads, `$VIVREAL_REPOS/_wt/hq-main`), made by the main thread before the dispatch when the
+  repo has none, and says plainly that nothing runs in a clone. The vivreal-workflow owner-checkout
+  guard refuses a subagent's command in one (shared-standards, "Path resolution").
+- **The main thread runs nothing in an owner's checkout either** (release C, L-C-11, a repeat of
+  L-B-45). The guard lets the main thread through, so this one is a habit: on 2026-11-23 the main
+  thread ran a read-only `git status` in the hq clone to see whether a file had local edits. Ask the
+  owner instead, or copy the file to your scratch folder (a `cp` started from that folder) and
+  compare `git -C "$VIVREAL_REPOS/_wt/hq-main" hash-object <the copy>` with
+  `git -C "$VIVREAL_REPOS/_wt/hq-main" rev-parse origin/main:<path>`.
+- **A renderer publish brief scopes its fleet diff to the affected sites** (P-template-validate and
+  P-fleet-diff as amended, release C lesson L-C-03). A read of each site's composed sections picks
+  the sites whose pages draw a changed component; the report shows that list, how it was read, and
+  one unaffected site as a control. A change whose rows reach every site (a Templates batch) still
+  renders and builds every site. `vivreal-workflow:package-publisher` carries the steps.
 - **Briefs for a screen name the owners' UI rules** (release B, L-B-46). A design, review or walk
   brief that touches a portal or customer-site screen names `vivreal-knowledge:vivreal-portal-knowledge`
   `references/ui-rules.md` and what each agent owes against it: `vivreal-principal:designer` reads it
@@ -199,18 +239,34 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 
 ## 4. Owners
 
-- **An owner is Justin or Hunter**; either may give any GO (P-owners). **Collecting a GO**
-  (P-go-form): ask "Who is giving this go, Justin or Hunter?" in the same question, never infer it
-  from an account email or git config; run `date -u +%Y-%m-%dT%H:%M:%SZ` right after the answer;
-  quote `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of
-  the dispatch. For a portal release, ask for the walk sign-off on the exact head in the same
-  question.
+- **An owner is Justin or Hunter**; either may give any GO (P-owners). **Collecting a GO or an
+  owner decision** (P-go-form, amended by the owners' GO-IDENTITY, release C lesson L-C-22): read
+  the owner from the GitHub account this session's `gh` is signed in as, `gh api user --jq .login`,
+  and map it by P-go-form, the one place the login map lives (hq `docs/standards/process.md`, read
+  with `git -C "$VIVREAL_REPOS/_wt/hq-main" show origin/main:docs/standards/process.md`). Only when it
+  prints a login the map does not name, or nothing (`gh` signed out, the call failed), ask "Who is
+  giving this go, Justin or Hunter?" in the same question. Never infer the owner from the Claude
+  account, an account email or git config: release C's session ran on a shared support login for
+  part of a day. ALLOW: a GO typed in a session whose login the map names is recorded as that owner
+  with no question. REFUSE: a login the map does not name is never mapped to an owner, however
+  close it looks; ask. Run
+  `date -u +%Y-%m-%dT%H:%M:%SZ` right after the answer, and quote
+  `GO: "<exact words>" from <Justin|Hunter>, <ISO time>, <source>` in the FIRST prompt of the
+  dispatch. For a portal release, ask for the walk sign-off on the exact head in the same question.
 - **A blocking question stalls everything behind it, so at night only release-path questions go
   in a dialog** (release B main thread, 2026-11-18). A dialog the owner has not answered holds every
   other action of the session, including the free slots' work. When an owner may be away, ask in a
   dialog only for what the release path needs next (a GO, a STOP decision); put every other question
-  (backlog placement, wording, next-release scope) in the session's report or the release state, and
+  (backlog placement, next-release scope) in the session's report or the release state, and
   keep the slots working while it waits.
+- **Words need no owner sitting** (owners, Justin 2026-11-21T00:51:53Z, L-C-02; its hq
+  `docs/standards/process.md` row comes by its own reviewed hq PR). Owner-facing words (screens, emails, help pages, a design's lines) are
+  approved by a voice pass against hq `brand/voice.md` (`vivreal-product:marketing-auditor`) plus
+  the reviewer's pass of the design or batch that carries them. There is no word sitting step and
+  no words question to the owners: where a line offers two choices, the recommended one stands.
+  A line added or changed after its voice pass (a mockup answer, a builder's draft) gets its own
+  voice pass before the walk, and the main thread records each line in the release's word file.
+  Owners still decide features, behaviour, looks and mockups (PROC-4).
 - **One GO runs the whole remaining runbook** (P-blanket-go): dispatch the release engineer once
   in RUNBOOK mode with every remaining step and that GO quoted once; no per-step check-ins.
 - **A GO covers the door it names.** A GO recorded for one way of making a change (in Studio,
@@ -230,6 +286,35 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
 - **A reviewed walk plan first** (P-walk-plan): every change in the release maps to a row with
   preconditions, steps, the expected result, a REFUSE check and the view, and every blocker is
   cleared before the walk GO. Walk the exact flows before any recording (P-walk-before-footage).
+  A row that needs a Sentry event (the local portal sends none) or a Stripe event in key mode
+  (`stripe listen --forward-connect-to` forwards only connected accounts' events) is planned not
+  walkable (NW) with its named proof, or given a harness path, before the walk GO (release C,
+  H-P12-1 and H-P5-3).
+- **One walker run, every row first, then fix** (P-local-validate, its WALK-THEN-FIX clauses;
+  release C lessons L-C-21 and L-C-06). Moving each fix into the walk as it was approved cost a
+  stack restart per fix (eight on 2026-11-23), walkers paused or cut off at each, coordinator races
+  and rows walked on a moving target. So:
+  1. **One `vivreal-product:qa-walker` run walks every lane in plan order**, never one dispatch per
+     lane. It pauses only at a setup point (a stack restart the plan names, a tier flip, an owner
+     action), by a `NEED-<what>` line in its defects file, and goes on when the main thread writes
+     the done file the line names.
+  2. **It walks every row on the stack as it stands.** Each defect is filed live and the walk goes
+     on. No head moves and no stack restart to re-walk a fix mid-walk; a restart only at a setup
+     point or for a harness failure.
+  3. **Fixes are routed, built and reviewed in parallel while it walks** (P-route-finds, the held
+     fix slot of section 2 item 5). What waits is moving them in: never re-walk a section before
+     moving on.
+  4. **After the last row** (the walker's `## WALK PASS 1 COMPLETE` line), every approved fix moves
+     into the stack together, in one restart, then one walk over every failed row and the rows each
+     fix's rerun list names (`vivreal-workflow:vivreal-writing-plans`, "The walk plan and its fix
+     loop"), repeated until every row passes.
+- **A walk brief copies the plan's NW list for its lanes, word for word** (release C, the part 10
+  brief named two rows the plan makes not walkable locally). Never retype or summarise it.
+- **The stack starts detached** (release C, H-P10-1: a usage limit cut the walker's background
+  shells, and the stack's API children died with them). Whoever starts it starts it as a detached
+  process that outlives the starting shell (a Node `spawn` with `detached: true` and `unref()`, or
+  `setsid -f` in WSL), with its pid file in the current walk part's folder, so a later session can
+  find and stop it.
 - **A row names the account state its expected result rests on** (which payments provider is
   active, the plan, a connection, a sandbox item), and the walk reads that state before the row
   runs. A release B row expected one QA business to sell through Square in the same session that
@@ -251,12 +336,9 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   "Create my site" read as tested while it failed.
 - **From the walk's start to its end marker, the next slot that frees is held for its fixes,**
   never given to side work (section 2, item 5); the walk itself never waits for it.
-- **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
-  SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
-  defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered "^## "`, and route each
-  defect as it lands (section 3).
-- **Keep the walk machine awake** until the walk's end marker (a sleeping machine looks like a
-  stalled walk), and say so in the walk report.
+- **Watch the defects file, keep the machine awake, and clean up after the walk**: the steps are
+  `references/walks.md` (the defects watch and its re-arm, done files, helpers and watch pipes, the
+  keep-awake, the restart handshake). Read it before arming the first watch.
 - **Keep the walk's known errors off the Sentry quota:** add the project's IP inbound filter for
   the walk machine before the walk, and remove it after.
 - **Warn the owners before a walk's refusal and membership rows, and read Sentry right after**
@@ -267,6 +349,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   walk's end marker, list the issues first seen in its window per project the walk touched, tie
   each to its row, and resolve the test-caused ones with that reason (P-sentry-clean).
 
+## 5a. Deploy day
+
+Read `references/deploy-day.md` before the first lane starts (release C, L-C-25 to L-C-33): watch the
+run record by its line count, one heavy WSL build at a time across lanes, keep the machine awake from
+the first deploy to the last lane's end, no shared lock held across another lane's wait, bounded lane
+dispatches with `HANDOFF` lines, ghost runs listed and watched, an alarm paused only between two
+verifier runs, and no site deleted while its deploy runs.
+
 ## 6. Records
 
 - **Release state** (P-release-state): `progress.md` on the branch the live value `release-state`
@@ -276,13 +366,27 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   Assigned to column claims everything else, and a name goes in BEFORE work on a row starts.
   Only a main thread writes the sheet, never a subagent. Re-read the cells before every write.
   Update it with every batch state change, in the same pass as `progress.md`. Recipes, columns
-  and vocabularies: `references/sheet.md`.
+  and vocabularies: `references/sheet.md`. For a large refresh, dispatch
+  `vivreal-workflow:ledger-keeper` in its SHEET-PREP mode (release C, L-C-16): it reads the sheet
+  and the records and returns an edit list, which the main thread re-reads against the cells and
+  applies itself.
+- **An agent's STOP is recorded the same hour.** When a release-path agent reports STOP (a kit
+  stager's `STOPPED at step <k>`, a release engineer's STOP line), write it into the release's
+  `progress.md` with its reason within the hour, before deciding the next step (release C,
+  `design-fl10-placement.md` section 5).
 - **Backlog rows lag the release plan.** Before triaging the backlog or dispatching a fix from it,
   search the latest release plans for the item id; a row is not ticked when a release ships it.
 
 ## 7. Resume
 
 - Sweep for orphans first (`vivreal-workflow:fleet-concurrency`).
+- **A worktree a cut-off agent used is swept before anyone touches it** (release C, L-C-05). A
+  usage limit left one agent's shell running for hours, blocked on input in front of a scripted
+  file edit, in a worktree another agent then reviewed and approved. Before you resume that agent,
+  or dispatch a review or a merge of that worktree, list the processes whose command line names the
+  worktree (fleet-concurrency, "Sweep for orphans"), stop them, and check the worktree is clean at
+  its expected head (`git -C <worktree> status --porcelain` prints nothing and
+  `git -C <worktree> rev-parse HEAD` is the head the agent reported).
 - **A "stalled" notice describes the output stream, not the process.** Before relaunching, check
   the agent list and the agent's working directory for new writes; a relaunch beside a live
   agent in the same directory races it toward the same irreversible step.
@@ -323,13 +427,16 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   - **Skills** (`SK:` rows, P-post-release-skills): re-sync the skills and tighten agents from the
     release's slips; skills changes are reviewed on a local branch and pushed as one PR only when
     ready to merge (P-skills-push-after-review).
-  - **Help** (`HELP:` rows, P-post-release-help): one row per public help page (the help site, and
-    vivreal.io pages that teach owners how to do something) that a release change made untrue, and
-    one per new page a new feature or changed screen needs, taken from the release plan's "Help this
-    release makes untrue or adds" section. Each page is drafted by
-    `vivreal-content:help-page-producer` (verify-first, one article per run), reviewed, and published
-    under an owner GO through its PUBLISH mode, after an ADD in Studio or the content editor for a
-    new page or section. A page for a screen that changes at a deploy publishes after that deploy. A draft that
+  - **Help and marketing** (`HELP:` rows, one per page of either kind, P-post-release-help as amended by
+    HELP-MKT-IN-PLAN): one row per public help page and one per vivreal.io marketing page (home,
+    pricing, features, comparison and the like) that a release change made untrue, and one per new
+    page a new feature or changed screen needs, each its own row, copied from the release plan's "Help
+    and marketing this release makes untrue or adds" section. Each page is drafted DURING the release
+    (section 2) by `vivreal-content:help-page-producer` (verify-first, one page per run), voice-passed
+    by `vivreal-product:marketing-auditor`, reviewed, and published under an owner GO through its
+    PUBLISH mode, after an ADD in Studio or the content editor for a new page or section. Only the
+    publish sits on this list: a page for a screen that changes at a deploy publishes after that
+    deploy, and a row still undrafted at the deploy is a slip to record as a lesson. A draft that
     finds the feature off, or not buildable as written, STOPs and becomes a backlog row, never a page
     describing what an owner cannot do.
   - **Every help draft's defects file is triaged the same day** (L-B-36): each find becomes a
@@ -337,7 +444,7 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
     walk row. Help work is a product audit: release B's drafts and the regular-user question pass
     found eleven product defects, a lost paid sign-up among them (F537, F539, F540, F542 to F549).
 - Drain the `## Lessons` list (section 9): the release is not closed while a row is `owed`.
-- Each owner runs `node "$VIVREAL_REPOS/vivreal-hq/packages/fleet-ops/agent-usage/memory-audit.js" --count`
+- Each owner runs `node "$VIVREAL_REPOS/_wt/hq-main/packages/fleet-ops/agent-usage/memory-audit.js" --count`
   on their own machine; the target is `memory-only=0 broken=0`.
 
 ## 9. Where a lesson goes (in the session it is learned)
@@ -373,7 +480,7 @@ have no dependencies.
 ```bash
 export MSYS_NO_PATHCONV=1
 W="$VIVREAL_REPOS/_wt/hq-live-values"
-test -e "$W/.git" || git -C "$VIVREAL_REPOS/vivreal-hq" worktree add --detach "$W" origin/main
+test -e "$W/.git" || git -C "$VIVREAL_REPOS/_wt/hq-main" worktree add --detach "$W" origin/main
 # One chain: a dirty worktree stops it here, before the checkout can carry the edit along.
 test -z "$(git -C "$W" status --porcelain)" && cd "$W" && git fetch origin && git checkout --detach origin/main
 # Edit the ONE line of that key inside the live-values markers, keeping `- <key>: <value> | <source>`.
