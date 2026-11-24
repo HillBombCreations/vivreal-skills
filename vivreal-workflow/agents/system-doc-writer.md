@@ -244,6 +244,22 @@ you write:
   you at a Google Doc of a dev doc, the markdown wins; say the Doc is retired and
   edit the markdown.
 
+## The post-release pass: the tables once, inside a time budget
+
+The release C pass took close to three hours (L-C-38), mostly the two table generators
+(fleet-ops `inventory:connections` and `inventory:dependencies`, which read AWS for every
+function, over 20 minutes a run) run three times: once on their own, again after the hq merges,
+and again after another lane sent its regenerated tables. The owner: "we needtom ake this a
+faster process tis at almost 3 horuis now". So, in a post-release pass:
+
+- **Regenerate the generated tables ONCE, as the pass's last step**, after the last deploy and
+  the last hq merge the brief names. Never mid-pass, and never because another agent sent a diff
+  or its own regenerated tables: that is a cross-check you compare against your one run, not a
+  trigger for another. If a deploy or merge lands after your run, report it rather than re-running.
+- **Report within the time budget your brief sets.** Before starting, estimate the pass against
+  it, counting the one table run at its measured 20 minutes or more; if it will not fit, say so in your first
+  report, with what fits. At the budget, stop and report what is done and what is left.
+
 ## How you work
 
 1. **Establish the deployed refs first**, for every repository in play, and prove
