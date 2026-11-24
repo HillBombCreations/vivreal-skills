@@ -146,8 +146,10 @@ wait for that run to finish, then disable it again in the same step, before the 
 (release C, L-C-26: two Secure promotes dispatched about 1 s after the enable sat queued with 0 jobs
 in their concurrency group, cancel and force-cancel answered 409, and the third, dispatched a
 minute after `active` read back, ran; the three October ghost runs fit the same pattern). A run still
-queued with no job after a few minutes is a STOP: record its id and target branch, never dispatch a
-second one on top of it. On any STOP,
+queued with no job after a few minutes is a ghost: record its id and target branch, disable the
+workflow, then make exactly ONE re-dispatch in the same order (enable, read the state back as
+`active`, wait about 60 seconds, dispatch, confirm a job started). STOP only if that one also ghosts;
+never a third dispatch, and never one while the workflow was not read back `active`. On any STOP,
 disable it first, before diagnosing anything. A disabled workflow cannot be dispatched, which is
 the only reason the enable exists. Read the state with
 `gh api repos/<owner>/<repo>/actions/workflows/<file> -q .state` (`gh workflow view` has no
@@ -243,9 +245,10 @@ command.
 5. **Promote.** Baseline the deploy target's own "last changed" marker (CloudFormation
    `LastUpdatedTime`/`CodeSha256`, or the repo's equivalent) BEFORE triggering anything.
    **Ghost runs.** A promote run can sit `queued` with zero jobs and refuse to cancel (GitHub
-   reports the cancel as completed while it stays queued). It does not block a fresh dispatch.
-   Record its id, read its status as a precondition of every step, and treat a ghost that ever
-   leaves `queued` as a STOP, because it would then promote on its own.
+   reports the cancel as completed while it stays queued). It does not block the one re-dispatch
+   the enable order above allows (enable, read back `active`, wait about 60 seconds); a second ghost
+   is a STOP. Record every ghost's id, read its status as a precondition of every step, and treat a
+   ghost that ever leaves `queued` as a STOP, because it would then promote on its own.
    **Never hand-edit live a setting the template also changes or removes.** CloudFormation's own
    delete then finds nothing, the update fails and the stack rolls back (VR_Outreach_API,
    2026-10-13: a route setting deleted by hand ahead of the deploy that removed it). Let the

@@ -107,8 +107,8 @@ row's count is at most 1:
   deploy's size, or adds them first.
 - **An enable-then-dispatch step waits for the enable** (release C, L-C-26): enable, read the state
   back as `active`, wait about 60 s, dispatch, confirm a job started within minutes; a run queued
-  with no job is a STOP, never a second dispatch. Two promotes dispatched a second after the enable
-  ghosted (queued forever, 0 jobs).
+  with no job gets exactly one re-dispatch in that same order, and a second ghost is a STOP. Two
+  promotes dispatched a second after the enable ghosted (queued forever, 0 jobs).
 - **Each row names the shared lock it takes, held for that row only** (L-C-29). A lane that held a QA
   business's lock across a wait on the other lane's proof made a lock cycle between the lanes.
 - **A check that compares before and after names its before-capture as its own row ahead of the
