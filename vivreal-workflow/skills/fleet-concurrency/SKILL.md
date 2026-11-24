@@ -188,7 +188,9 @@ from the step's process; elsewhere `ps -eo pid,ppid,etime,time,args`) and measur
 as a delta over an interval. A leaf that is a network call (`git`, `gh`, `ssh`, `curl`) with no
 delta is a hang, not slow work: stop it, record the step VOID with that reason, and re-run it with a
 deadline (`vivreal-workflow:shared-standards`, "Network git calls"). A leaf whose CPU moves is
-working; keep waiting, bounded.
+working; keep waiting, bounded. After a timeout (exit 124), list the processes again: Git Bash's
+`timeout` may not kill `git.exe`'s grandchildren (`git-remote-https`, the credential manager), so
+stop any left behind.
 
 **Route every find at once (owner rule P-route-finds).** The moment a walk, review or
 coder surfaces a new item, hand it to the running builder that owns that repository or

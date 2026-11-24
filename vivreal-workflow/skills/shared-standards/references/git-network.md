@@ -8,14 +8,22 @@ login prompt nobody can see. So every one an agent runs (`ls-remote`, `fetch`, `
 
 ## The commands
 
-- **In a worktree:** `GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never timeout 60 git ls-remote origin <ref>`.
-  `GIT_TERMINAL_PROMPT=0` makes git fail at once instead of asking for a user name;
-  `GCM_INTERACTIVE=never` stops the Windows credential manager opening a sign-in window.
-- **A whole-repo fetch or a clone** gets a longer deadline (`timeout 300`).
-- **The one-off clone form** (SKILL.md, "Path resolution") takes no `GIT_*` variable: the
-  owner-checkout guard ends the form on one and refuses the command. Start it from your worktree, so
-  the `timeout` runs there, and keep the rest plain:
+- **Both variables, every time:** `GIT_TERMINAL_PROMPT=0` makes git fail at once instead of asking
+  for a user name, and `GCM_INTERACTIVE=never` stops the Windows credential manager opening a
+  sign-in window. With only the second, git falls back to its own "Username for" prompt after the
+  credential manager declines.
+- **The default: run it inside your own worktree**, which shares the clone's `.git`, so a fetch
+  there moves the same remote refs:
+  `cd "$VIVREAL_REPOS/_wt/<your worktree>" && GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never timeout 300 git fetch origin`,
+  and `... timeout 60 git ls-remote origin <ref>` for a read. A whole-repo fetch or a clone gets the
+  longer deadline (`timeout 300`).
+- **Only for a repo with no worktree yet, the one-off clone form** (SKILL.md, "Path resolution"),
+  which takes no `GIT_*` variable (the owner-checkout guard ends the form on one and refuses the
+  command):
   `cd "$VIVREAL_REPOS/_wt/<your worktree>" && GCM_INTERACTIVE=never timeout 300 git -C "$VIVREAL_REPOS/<repo>" fetch origin`.
+  This call is **capped, not prevented**: without `GIT_TERMINAL_PROMPT=0` a missing login can still
+  wait on git's prompt until the deadline ends it. Make the worktree right after it and fetch
+  there from then on.
 - **A hooked push** runs its repo's gate first, so its deadline covers the hook: `GIT_TERMINAL_PROMPT=0`
   and a `timeout` just under the Bash call's own (a call of `timeout: 600000` takes `timeout 590`).
 

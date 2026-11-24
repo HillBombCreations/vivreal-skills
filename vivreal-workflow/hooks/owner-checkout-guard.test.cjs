@@ -560,6 +560,35 @@ for (const [name, command] of PASS1_ONE_OFF_ALLOW) {
   });
 }
 
+// L-C-39 (shared-standards references/git-network.md): the network git forms the skill writes, as
+// a subagent's Bash call starts them, in an owner checkout.
+const GIT_NETWORK_ALLOW = [
+  ['the default: a fetch in your own worktree with no prompt and a deadline',
+    `cd "${V}/_wt/hq-main" && GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never timeout 300 git fetch origin`],
+  ['an ls-remote in your own worktree with no prompt and a deadline',
+    `cd ${WT} && GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never timeout 60 git ls-remote origin refs/heads/main`],
+  ['the one-off form for a repo with no worktree: a deadline from your worktree, no GIT_ variable',
+    `cd ${WT} && GCM_INTERACTIVE=never timeout 300 git -C ${CMS} fetch origin`],
+];
+for (const [name, command] of GIT_NETWORK_ALLOW) {
+  test(`ALLOW (subagent, L-C-39 git network form): ${name}`, () => {
+    assert.deepEqual(win(command, { cwd: OWNER }), { refuse: false }, command);
+  });
+}
+const GIT_NETWORK_REFUSE = [
+  ['GIT_TERMINAL_PROMPT on the one-off form ends it',
+    `cd ${WT} && GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never timeout 300 git -C ${CMS} fetch origin`],
+  ['GIT_SSH_COMMAND on the one-off form ends it',
+    `cd ${WT} && GIT_SSH_COMMAND=evil timeout 300 git -C ${CMS} fetch origin`],
+  ['GIT_SSH_COMMAND on a fetch in the owner checkout itself',
+    `cd ${OWNER} && GIT_SSH_COMMAND=evil timeout 300 git fetch origin`],
+];
+for (const [name, command] of GIT_NETWORK_REFUSE) {
+  test(`REFUSE (subagent, L-C-39 git network form): ${name}`, () => {
+    assert.equal(win(command, { cwd: OWNER }).refuse, true, command);
+  });
+}
+
 // guard-bypass: the folder stack, cd -, subshells and wrappers.
 const PASS1_BYPASS_REFUSE = [
   ['popd returns to the clone', `pushd ${WT} && popd && git status`, OWNER],
