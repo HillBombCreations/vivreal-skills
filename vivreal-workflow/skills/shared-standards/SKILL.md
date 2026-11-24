@@ -89,6 +89,13 @@ root, the main thread, the one-off clone form and the three fleets below. So eve
   file written through a path argument (`rm -rf <clone>/docs` from a worktree), a file a redirection writes, a
   file read from elsewhere. The rule still holds there.
 
+### Network git calls: a deadline and no prompt (release C, L-C-39)
+Every network git call an agent runs (`ls-remote`, `fetch`, `pull`, `clone`, `push`) runs with
+`GIT_TERMINAL_PROMPT=0` and a deadline (`timeout 60`, longer for a whole-repo fetch), and **a timeout
+is VOID with its reason, never a pass**: an hq docs tool's `git ls-remote` with neither sat at 0 CPU
+for over an hour. The commands, the one-off clone form (which takes no `GIT_*` variable), a hooked
+push and hq's implementation: [references/git-network.md](references/git-network.md).
+
 ### Cross-repo docs: the hq dev docs
 Cross-repo flows, decisions, dependency maps, the AWS estate and operations are described in the vivreal-hq dev docs, `${VIVREAL_REPOS}/_wt/hq-main/docs/dev-docs/README.md` (a symptom table, then use cases and references). Each repo's `CLAUDE.md` owns that repo's internals; the dev docs own what crosses repos (owners, 2026-11-04). Two hq tools, run from the kept hq worktree `${VIVREAL_REPOS}/_wt/hq-main`, find the right page before you change code: `npm run docs:route -- "<symptom or component>"` names the document to open, and `npm run docs:impact -- <repo>:<path>` lists the documents, maps and pinning tests that cover a file you are about to change. If either script is missing in that worktree, open the README's symptom table by hand. **The portal's `docs/ecosystem/` is frozen** (owners, 2026-11-04, a banner on each page points here): never cite it as current and never edit it.
 

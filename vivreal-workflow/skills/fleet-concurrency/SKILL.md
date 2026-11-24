@@ -180,6 +180,16 @@ races it toward the same irreversible step. Prefer handing new work of
 the same kind to an agent about to finish in the same repository over a fresh
 dispatch.
 
+**A step at 0 CPU for minutes: read its process tree before waiting longer** (release C,
+L-C-39). An hq docs tool's `git ls-remote`, run with no deadline, sat at 0 CPU for over an hour
+while the run looked busy. When an agent's step shows no new output and no CPU for a few minutes,
+walk the processes under it (Windows: `Get-CimInstance Win32_Process` by `ParentProcessId`, down
+from the step's process; elsewhere `ps -eo pid,ppid,etime,time,args`) and measure each leaf's CPU
+as a delta over an interval. A leaf that is a network call (`git`, `gh`, `ssh`, `curl`) with no
+delta is a hang, not slow work: stop it, record the step VOID with that reason, and re-run it with a
+deadline (`vivreal-workflow:shared-standards`, "Network git calls"). A leaf whose CPU moves is
+working; keep waiting, bounded.
+
 **Route every find at once (owner rule P-route-finds).** The moment a walk, review or
 coder surfaces a new item, hand it to the running builder that owns that repository or
 area by SendMessage ("after your current commit, do X in the same run, then report
