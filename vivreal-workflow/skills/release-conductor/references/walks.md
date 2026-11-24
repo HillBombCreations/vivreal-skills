@@ -7,7 +7,10 @@ slip; the lesson id names it in that release's `progress.md` Lessons table.
 - **Watch the defects file, do not wait for messages.** `vivreal-product:qa-walker` has no
   SendMessage, so never ask it to message the main thread. At walk start, arm Monitor on its live
   defects file, `tail -n 0 -F <walk>-defects.md | grep --line-buffered -E "^## |NEED-"`, and route
-  each defect as it lands (release-conductor section 3).
+  each defect as it lands (release-conductor section 3). A `tail -F` watch that delivers nothing
+  while the file grows is a dead watch, not a quiet walk: on deploy day the same watch on a run record
+  delivered no line for an hour on Windows (release C, L-C-25), so check the file's line count at
+  every re-arm and switch to the line-count poll of `references/deploy-day.md` when they disagree.
 - **Every re-arm reads the gap first** (release C, L-C-08). The watch expires (every 30 minutes on
   2026-11-23), and a `NEED-TIER-FREE` line written between one watch ending and the next waited 42
   minutes. Before arming again, grep the file for `NEED-` and `## ` lines newer than the last one

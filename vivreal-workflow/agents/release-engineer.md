@@ -85,6 +85,33 @@ the unit of work changes.
   coder on vivreal-hq `packages/admin-app` (and the Outreach API), and they never gate a portal
   release.
 
+## Deploy day in lanes (release C, 2026-11-24)
+
+Two release engineers ran release C's deployments in lanes; each rule below is one of that day's
+slips (release C `progress.md` Lessons). The main thread's half is `vivreal-workflow:release-conductor`
+`references/deploy-day.md`.
+
+- **A bounded row list, and `HANDOFF` lines as you go** (L-C-33). Three lane dispatches ran out of
+  working context mid-lane and handed rows back unrun. A lane dispatch carries deploys, or the checks
+  after them, never both. After each row, write a `HANDOFF` line in the run record (row, result, what
+  the next row needs), so a fresh dispatch can start at the next row; when your context runs low, stop
+  at a row boundary and report, never mid-row.
+- **Never hold a shared lock across a wait on another lane** (L-C-29). Take a QA business's lock for
+  one row and free it at the row's end; a lane that held one "until after" a row waiting on the other
+  lane's proof made a cycle.
+- **One heavy WSL build at a time across lanes** (L-C-25). Before a WSL build or a full suite, read
+  the run record for another lane's open heavy step and wait for its end line. Two webpack builds at
+  once hung WSL; `wsl --shutdown --force` cleared it where `wsl --shutdown` hung.
+- **The machine stays awake for the whole lane** (L-C-28). If the dispatch does not say the
+  keep-awake is held, ask before the first deploy: a sleep of about 6 hours turned nine timed reads
+  into late reads from logs and expired a saved QA session.
+- **A site is deleted only after its Deploy-Site run has ended** (L-C-30). Read the execution's end
+  and record its time before the delete; a delete under a running deploy threw an unhandled
+  `NotFoundException` in EventHandler and filed a test-caused Sentry issue.
+- **A before-and-after live check takes its before-capture as its own row ahead of the deploy**
+  (L-C-35). The runbook names it and the lane that owns it; a check with no before-capture taken is
+  recorded VOID, never PASS by reading only the after.
+
 ## Read this before your first release
 
 1. The target repo's own `CLAUDE.md` for its specific deploy mechanics, which workflow, which
@@ -113,8 +140,14 @@ before starting the next.
 five train repos' `promote.yml` and `release-cut.yml` carry no `schedule:` trigger, only
 `workflow_dispatch` (TD-2), and both workflows rest `disabled_manually` between releases. Never
 re-add a `schedule:`, and never leave either workflow enabled. Enable one only for the single
-dispatch a runbook step makes, in this order: read the lock (below), enable, dispatch, wait for that
-run to finish, then disable it again in the same step, before the next step starts. On any STOP,
+dispatch a runbook step makes, in this order: read the lock (below), enable, read the state back
+until it is `active`, wait about 60 seconds, dispatch, confirm a job started within a few minutes,
+wait for that run to finish, then disable it again in the same step, before the next step starts
+(release C, L-C-26: two Secure promotes dispatched about 1 s after the enable sat queued with 0 jobs
+in their concurrency group, cancel and force-cancel answered 409, and the third, dispatched a
+minute after `active` read back, ran; the three October ghost runs fit the same pattern). A run still
+queued with no job after a few minutes is a STOP: record its id and target branch, never dispatch a
+second one on top of it. On any STOP,
 disable it first, before diagnosing anything. A disabled workflow cannot be dispatched, which is
 the only reason the enable exists. Read the state with
 `gh api repos/<owner>/<repo>/actions/workflows/<file> -q .state` (`gh workflow view` has no

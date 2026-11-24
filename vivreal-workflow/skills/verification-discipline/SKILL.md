@@ -128,6 +128,14 @@ narrower than the data along a dimension nobody thought to check**, so it return
 rows, issued against the same tool, the same connection, and the same syntax. If the control comes
 back empty too, you have learned something about your query rather than about the system.
 
+**A one-off check script pairs its matcher with an independent proof, and runs once on a known-good
+input before it counts** (release C, L-C-37). Two of the main thread's own deploy-day check scripts
+reported a false FAIL first: one read an HTML value as not starting with its mark, the next took
+`slice(-1)` of an index of 0. Each was caught only because a byte-equal hash of the same content
+disagreed with the matcher. So a matcher's verdict stands beside a second proof by another route (a
+sha256 of the content, a count), a disagreement between them is a bug in the check until shown
+otherwise, and the script's first run is against an input you know passes, then one you know fails.
+
 ## Exclude at the source, never downstream
 
 A recursive search that filters its results instead of pruning its walk still visits everything. On

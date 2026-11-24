@@ -81,9 +81,18 @@ exception an owner must approve, never the plan's default.
    follow-up promote flips an alarm's actions. An alarm that could page at its own creation (an
    absence alarm with no datapoint yet) is a design question the plan answers without a second
    deployment, or an owner exception in `decisions.md` (`vivreal-infra:vivreal-observability`).
+   **An absence alarm (did-not-run, no data) is created with `TreatMissingData: notBreaching`**, or
+   with its actions off and a flip after its first datapoint (release C, L-C-27): CMS's new
+   pickup-reminder did-not-run alarm read missing data as breaching over 3 x 3600 s, went to ALARM
+   at its creation before the hourly sweep's first run, and paged the owners; its booking sibling
+   did the same on 2026-10-30. The plan and its review check every new alarm for a creation-time
+   breach.
 6. **Check every plan before you run it:** its table of deployments per repo says at most 1 for
    every repo. More than 1 for any repo needs an owner's exception recorded in hq `decisions.md`;
-   without it, send the plan back (the reviewer FAILs it too).
+   without it, send the plan back (the reviewer FAILs it too). It also carries the section "Help and
+   marketing this release makes untrue or adds" (HELP-MKT-IN-PLAN, P-post-release-help as amended;
+   `vivreal-workflow:vivreal-writing-plans`): one row per help page and per vivreal.io marketing page.
+   A release plan without it goes back too.
 
 ## 2. Slots: the check before every dispatch
 
@@ -146,7 +155,16 @@ check decides only a slot no piece holds. Before any dispatch that is not on the
    side work; side work takes only the slots beyond it.
 
 Side work, in order (P-idle-slots): the current release's post-release list, then research and
-planning for the next release. A repo already in flight runs to approval before any new repo
+planning for the next release. **Help and marketing drafting is release work, not after-work**
+(owner HELP-MKT-IN-PLAN, Justin 2026-11-24T15:00:51Z, amending P-post-release-help: "The help and
+marketing are suppsoed to be apart of the rlease planning ... Similar to howwe do dev docs an dskills
+updates after a release to make sure they're all up to date and accurate we need to do the same for
+the help site pages and marketing site pages"). From the plan's approval, each row of its "Help and
+marketing this release makes untrue or adds" section takes a free slot DURING the release, as the dev
+docs and skills passes do: `vivreal-content:help-page-producer` drafts it against the approved head,
+`vivreal-product:marketing-auditor` voice-passes it, the reviewer passes it; only its PUBLISH waits for
+the deploy that changes the screens it describes. Release C drafted only M-09 and M-10 during the
+release and left 28 help pages, 3 new pages and M-01 to M-08 for after (L-C-36). A repo already in flight runs to approval before any new repo
 starts (P-finish-repo). In the other owner's session, work only the rows that owner claimed in
 the sheet's Assigned to column (P-sheet); never staff the release path unprompted.
 
@@ -331,6 +349,14 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   walk's end marker, list the issues first seen in its window per project the walk touched, tie
   each to its row, and resolve the test-caused ones with that reason (P-sentry-clean).
 
+## 5a. Deploy day
+
+Read `references/deploy-day.md` before the first lane starts (release C, L-C-25 to L-C-33): watch the
+run record by its line count, one heavy WSL build at a time across lanes, keep the machine awake from
+the first deploy to the last lane's end, no shared lock held across another lane's wait, bounded lane
+dispatches with `HANDOFF` lines, ghost runs listed and watched, an alarm paused only between two
+verifier runs, and no site deleted while its deploy runs.
+
 ## 6. Records
 
 - **Release state** (P-release-state): `progress.md` on the branch the live value `release-state`
@@ -401,13 +427,16 @@ the sheet's Assigned to column (P-sheet); never staff the release path unprompte
   - **Skills** (`SK:` rows, P-post-release-skills): re-sync the skills and tighten agents from the
     release's slips; skills changes are reviewed on a local branch and pushed as one PR only when
     ready to merge (P-skills-push-after-review).
-  - **Help** (`HELP:` rows, P-post-release-help): one row per public help page (the help site, and
-    vivreal.io pages that teach owners how to do something) that a release change made untrue, and
-    one per new page a new feature or changed screen needs, taken from the release plan's "Help this
-    release makes untrue or adds" section. Each page is drafted by
-    `vivreal-content:help-page-producer` (verify-first, one article per run), reviewed, and published
-    under an owner GO through its PUBLISH mode, after an ADD in Studio or the content editor for a
-    new page or section. A page for a screen that changes at a deploy publishes after that deploy. A draft that
+  - **Help and marketing** (`HELP:` rows, one per page of either kind, P-post-release-help as amended by
+    HELP-MKT-IN-PLAN): one row per public help page and one per vivreal.io marketing page (home,
+    pricing, features, comparison and the like) that a release change made untrue, and one per new
+    page a new feature or changed screen needs, each its own row, copied from the release plan's "Help
+    and marketing this release makes untrue or adds" section. Each page is drafted DURING the release
+    (section 2) by `vivreal-content:help-page-producer` (verify-first, one page per run), voice-passed
+    by `vivreal-product:marketing-auditor`, reviewed, and published under an owner GO through its
+    PUBLISH mode, after an ADD in Studio or the content editor for a new page or section. Only the
+    publish sits on this list: a page for a screen that changes at a deploy publishes after that
+    deploy, and a row still undrafted at the deploy is a slip to record as a lesson. A draft that
     finds the feature off, or not buildable as written, STOPs and becomes a backlog row, never a page
     describing what an owner cannot do.
   - **Every help draft's defects file is triaged the same day** (L-B-36): each find becomes a

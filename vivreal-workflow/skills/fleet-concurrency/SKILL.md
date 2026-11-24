@@ -156,7 +156,10 @@ start it again for the next walk: an idle walk stack beside a portal review, a r
 proof, real-mongod tests and a renderer suite pinned the CPU for minutes on
 2026-11-12, and a coder's run took over two hours. **A timeout under load is a load
 signal, not a result:** re-run that test alone on a quiet machine before calling it
-a failure.
+a failure. **Inside WSL the limit is ONE heavy build at a time** (release C, L-C-25):
+two release lanes' webpack builds at once took WSL's memory to 16 GB and hung it, and
+`wsl --shutdown` hung too; only `wsl --shutdown --force` cleared it. Lanes sharing a
+machine take the WSL build turn one after another.
 
 **Prefer fewer, longer-lived agents to many short ones** when they contend for
 the same repository. The coordination cost is real and it is paid in wall clock
@@ -270,6 +273,12 @@ transcript is not a record. A session that resumes a batch reads those records
 first, before any re-run, re-proof or triage note, because triage notes lag what
 actually ran: on 2026-11-04 a resume session called a recorded index build "not
 recorded" while the PR comment holding it had been there for hours.
+
+**Watch a run record by its line count** (release C, L-C-25). On Windows, Git Bash
+`tail -F` on a run record written by the lanes' record script delivered no line in
+an hour while lines were appended, so a lane's request waited 1 hour 40 minutes.
+Poll `wc -l` against the last line handled and print the new lines with `sed -n`
+(`vivreal-workflow:release-conductor`, `references/deploy-day.md`).
 
 ## The habit that makes all of this checkable
 

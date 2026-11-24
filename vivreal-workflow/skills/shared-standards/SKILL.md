@@ -406,6 +406,13 @@ Portal-only, moved to [references/portal.md](references/portal.md). Read it ther
 - **A GitHub Actions billing refusal** is a completed, failed job with ZERO steps, whose logs
   expire. A job that has steps and fails is something else, and no runs at all is evidence of
   neither.
+- **A suite that runs in one process can outgrow the runner's memory, and a hung test step has no
+  log** (release C, L-C-34). EventHandler's deploy sat 34 minutes in "Test + coverage thresholds" with
+  no log uploaded: one mocha process under c8 peaked at about 7.1 GB on a 7.9 GB runner (fixed by
+  running 4 sequential shards of 3072 MB each, peak 3.4 GB). A repo whose CI suite runs in one process
+  measures its peak memory against the runner when its test count grows (`/usr/bin/time -v` on Linux),
+  and every deploy workflow's test step carries a `timeout-minutes`, so a hang fails instead of holding
+  the deploy.
 
 ## Testing rules
 Read [references/testing.md](references/testing.md) before writing or editing any test. It carries the test

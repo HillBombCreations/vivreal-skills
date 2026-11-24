@@ -57,15 +57,46 @@ one you pass because it used to be true. **Verify against the product, not again
   refused politely. Promotional copy that assumes coupons work is now safe.
 - **Paused and over-limit sites stay readable**, so "your site stays up" style reassurance is
   truthful for the read path. Do not extend it to editing, which is correctly frozen.
-- **Customer-facing AI actions are RETIRED**, deliberately, on every plan. Any copy offering an AI
-  action allowance, an AI quota, or per-customer AI editing as a plan benefit is **BLOCKING**: it
-  describes something no customer can use. This is an owner decision, not a temporary outage, so it
-  is a resolved prohibition rather than a verify-item. Check `@hillbombcreations/tier-quotas` if you
-  need to see it for yourself.
+- **AI in Vivreal is an AI agent the owner connects, on every plan; the in-app AI is retired.**
+  This bullet used to block every AI allowance, and that is now wrong: since MCP-ALL (owner
+  2026-11-17, live on the MCP server and in portal 0.46.0 since 2026-11-19) every plan connects an
+  AI agent through the Vivreal AI connection, each with its own monthly allowance of AI agent actions,
+  and the portal's plan cards say each plan's number. So: a plan's monthly AI agent actions is TRUE
+  copy only when its number is read from `@hillbombcreations/tier-quotas` (`mcpToolCalls`) at the
+  version the deployed portal pins, never from memory or a draft; an in-app assistant, in-app AI
+  site editing, AI that edits for each customer, or naming a model or vendor as "our AI" stays
+  **BLOCKING** (owner 2026-10-07 and 2026-10-08, `vivreal-knowledge:vivreal-brand-voice`). Release C
+  (F554, F555, live 2026-11-24) adds: a connection reaches only the areas its owner allowed, and an
+  AI agent can set a date that sends a post only with the Channels and posts area allowed, so copy
+  that says an AI agent "schedules your posts" names that permission or does not say it; the team
+  and billing access rows read as not available yet (their tools are off), so copy never lists them
+  as working. Real AI
+  checkout through a store stays a do-not-claim until a live run proves it (brand voice).
 
 **The general rule this keeps teaching:** a claim in an asset is only as good as the last time
 somebody checked it against the product, and the product moves weekly. When you pass a feature
 claim, say in the report **how** you verified it, not merely that you did.
+
+## Help and marketing pages during a release (HELP-MKT-IN-PLAN)
+
+Every release plan carries a "Help and marketing this release makes untrue or adds" section, one row
+per help page and per vivreal.io marketing page (owner rule HELP-MKT-IN-PLAN, Justin
+2026-11-24T15:00:51Z, amending P-post-release-help: "The help and marketing are suppsoed to be apart
+of the rlease planning"). Each page is drafted by `vivreal-content:help-page-producer` DURING the
+release and needs your voice pass before its review and its publish, so you are dispatched while the
+release is still being built and walked, not after the deploy. Per page:
+
+- **Audit each page as its own item**, help or marketing, by its plan row id (HU-01, M-04 and the
+  like): one verdict per page, never one verdict for a batch.
+- **Check the claims against the release they describe.** A draft written before the deploy marks
+  claims that hold only after it (`[AFTER <step>]`); pass such a claim only with its mark, and FAIL an
+  unmarked claim that the live product does not do yet.
+- **A marketing page gets the whole checklist**, item 11 (the first screen at 390) included, and a
+  plan row that changes a selling point is checked on both the page and every other page that repeats
+  it (home, pricing, the product and industry pages).
+- **Report the rows you did not get.** If the plan's section lists a page with no draft, say so: a
+  page undrafted at the deploy is a slip the main thread records (release C drafted 2 of its 41 pages
+  during the release, L-C-36).
 
 ## Audit protocol
 1. **Confirm it's a copy/asset critique** (not content production → content agents; not funnel economics → growth auditor). Identify the channel (landing page / pricing / email / social / ad / in-app) since best-practices differ by surface.

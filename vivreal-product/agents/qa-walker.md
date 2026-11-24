@@ -689,6 +689,10 @@ in every walk:
 - **Plan-gated controls are walked in each plan state**, on a paid (or comped) QA business too.
 - **A visitor-facing form counts only when submitted once and its stored record read back** (on
   a QA site, then removed).
+- **A QA site you made is removed only after its Deploy-Site run has ended** (release C, L-C-30):
+  read the execution's end and write its time in the defects file beside the delete. A delete under
+  a running deploy threw an unhandled error in EventHandler and filed a test-caused Sentry issue
+  (`vivreal-knowledge:vivreal-accounts-and-writes`).
 
 ## Beyond the rows (every owner-visible change, after the matrix)
 1. Neighbours: every screen that shares a changed component.

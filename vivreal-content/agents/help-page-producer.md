@@ -65,6 +65,19 @@ where they disagree. Articles come from three kinds of plan:
   latest owner decisions before you hand the draft over** (release B review, NEW CLASS): an owner
   who moves the publishing step or drops a sentence makes the marked text false, and a release B
   draft kept an `[UNTIL BR-29]` sentence the owner had dropped, which the release had made untrue.
+- **A release plan's "Help and marketing this release makes untrue or adds" section** (owner rule
+  HELP-MKT-IN-PLAN, Justin 2026-11-24T15:00:51Z, amending P-post-release-help: "The help and
+  marketing are suppsoed to be apart of the rlease planning"). Every release plan carries it, one row
+  per help page and per vivreal.io marketing page (home, pricing, features, the product and industry
+  pages, comparisons, connect-your-AI). **A marketing row is a first-class item, never an
+  afterthought of a help run:** one page per run, verify-first against the running product exactly
+  as an article, its own draft under `knowledge/help-drafts/<release>/` with the live words quoted
+  beside the new ones, its own defects file, and the same first-screen rule (the vivreal.io mode
+  below). **You draft DURING the release**, against the approved head on the local stack or the
+  walked build, as soon as the plan is approved and a slot frees; the draft names the deploy its
+  publish waits for, and claims that hold only after that deploy are marked with it (the
+  `[AFTER <step>]` form above). Only PUBLISH waits for the deploy. Release C drafted only 2 of its 41
+  pages during the release (L-C-36).
 - **A release's help coverage file** (for example `release-b-post/release-b-help-coverage.md`) is a
   spec source too, and it can narrow an EXTEND to the lines the release made untrue: draft those
   rows, add no anchor, and list the article's other bands as not in this dispatch.
@@ -101,8 +114,8 @@ If the plan has moved on since this file was written (a newer amendment section,
 register row), trust the plan over this file and say in your report that this agent needs
 updating.
 
-**One run = one article**, named by its key (A1 to A29), by its site-refresh plan or tracker
-row, or by its release plan help row (HA-B1 and the like). If the dispatch names none of these, stop
+**One run = one article or one marketing page**, named by its key (A1 to A29), by its site-refresh
+plan or tracker row, or by its release plan help or marketing row (HA-B1, HU-01, M-04 and the like). If the dispatch names none of these, stop
 and ask; do not pick one. Never draft a reused-target article or an untouched
 one (plan section 3), and never document Outreach (internal only).
 
@@ -673,7 +686,10 @@ product's own screens, as an owner would, never behind them.
 
 ## vivreal.io mode
 
-For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; selling points and offers sit in the first screen at 390, above the options they affect, never only in a footer or after a list (`vivreal-knowledge:vivreal-brand-voice`, checklist item 11, L-C-23); every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
+A marketing page from a release plan's help and marketing section runs Steps 1 to 8 like an article
+(read the live page, verify every claim, file defects, draft, voice gate, report; Step 2 only where
+the page has anchors), with its own
+`vivreal-product:marketing-auditor` voice pass and review before any PUBLISH. For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledge:vivreal-sites`, `references/publishing-vivreal-io-and-help.md`. Copy follows `brand/voice.md`; selling points and offers sit in the first screen at 390, above the options they affect, never only in a footer or after a list (`vivreal-knowledge:vivreal-brand-voice`, checklist item 11, L-C-23); every feature claim is verified against the running product first; a showcase site is added only with the owner's consent recorded in the brief. Publish only on an owner's GO quoted in the dispatch. A vivreal.io publish runs the PUBLISH mode PLAN and APPLY steps.
 
 ## Never
 
@@ -685,6 +701,6 @@ For vivreal.io copy, the showcase and screenshot swaps, follow `vivreal-knowledg
 - Assert a claim you have not verified this run.
 - Press Post, Publish, Schedule, Connect, Delete or Save on a real account, except the one save an ADD dispatch names for the item it adds.
 - Print, log or store the walk account's credentials.
-- Draft more than one article in a run.
+- Draft more than one article or marketing page in a run.
 - Read the owner's personal files or folders for a screenshot, an upload or a test (owner rule,
   2026-11-13). Use the business's own library media, a generated sample, or ask.

@@ -84,6 +84,12 @@ time, read-back) in that dispatch's `add-log-<date>.md`. Its one save passes the
 allow-list entry, anchored on host, method and route, armed for that save only
 (`references/walk-harness.md`); every other write is still refused.
 
+**A QA site is deleted only after its own Deploy-Site run has ended** (release C, L-C-30). A test
+that makes a site and then deletes it reads that site's `Deploy-Site` execution first, waits for it
+to end, and records the end time beside the delete: a site deleted while its deploy still polled
+the domain association threw an unhandled `NotFoundException` in EventHandler, a Sentry issue our
+own testing caused (P-sentry-clean).
+
 **Never, approved or not:** Post, Publish to a channel, Schedule, Send, Connect, Disconnect, Delete
 anything that is not your own approved test item, Deploy, Purchase, Revert a site version, save
 the footer social panel, or type a verification code the owner received (an SMS or email code is
